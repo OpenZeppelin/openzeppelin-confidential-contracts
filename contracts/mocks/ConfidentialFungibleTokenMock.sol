@@ -2,44 +2,74 @@
 
 pragma solidity ^0.8.24;
 
-import { TFHE, ebool, euint64 } from "fhevm/lib/TFHE.sol";
+import { TFHE, ebool, euint64, einput } from "fhevm/lib/TFHE.sol";
 import { IConfidentialFungibleTokenReceiver } from "../token/IConfidentialFungibleToken.sol";
 import { ConfidentialFungibleToken } from "../token/ConfidentialFungibleToken.sol";
+import { SepoliaZamaFHEVMConfig } from "fhevm/config/ZamaFHEVMConfig.sol";
 
-contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken {
+contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZamaFHEVMConfig {
+    address private immutable _owner;
+
     constructor(
         string memory name_,
         string memory symbol_,
         string memory tokenURI_
-    ) ConfidentialFungibleToken(name_, symbol_, tokenURI_) {}
+    ) ConfidentialFungibleToken(name_, symbol_, tokenURI_) {
+        _owner = msg.sender;
+    }
+
+    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
+        transferred = super._update(from, to, amount);
+
+        TFHE.allow(totalSupply(), _owner);
+    }
 
     function $_setOperator(address holder, address operator, uint48 until) public virtual {
         return _setOperator(holder, operator, until);
     }
 
-    function $_mint(address to, euint64 amount) public returns (euint64 transferred) {
-        return _mint(to, amount);
+    function $_mint(
+        address to,
+        einput encryptedAmount,
+        bytes calldata inputProof
+    ) public returns (euint64 transferred) {
+        return _mint(to, TFHE.asEuint64(encryptedAmount, inputProof));
     }
 
-    function $_transfer(address from, address to, euint64 amount) public returns (euint64 transferred) {
-        return _transfer(from, to, amount);
+    function $_transfer(
+        address from,
+        address to,
+        einput encryptedAmount,
+        bytes calldata inputProof
+    ) public returns (euint64 transferred) {
+        return _transfer(from, to, TFHE.asEuint64(encryptedAmount, inputProof));
     }
 
     function $_transferAndCall(
         address from,
         address to,
-        euint64 amount,
+        einput encryptedAmount,
+        bytes calldata inputProof,
         bytes calldata data
     ) public returns (euint64 transferred) {
-        return _transferAndCall(from, to, amount, data);
+        return _transferAndCall(from, to, TFHE.asEuint64(encryptedAmount, inputProof), data);
     }
 
-    function $_burn(address from, euint64 amount) public returns (euint64 transferred) {
-        return _burn(from, amount);
+    function $_burn(
+        address from,
+        einput encryptedAmount,
+        bytes calldata inputProof
+    ) public returns (euint64 transferred) {
+        return _burn(from, TFHE.asEuint64(encryptedAmount, inputProof));
     }
 
-    function $_update(address from, address to, euint64 amount) public virtual returns (euint64 transferred) {
-        return _update(from, to, amount);
+    function $_update(
+        address from,
+        address to,
+        einput encryptedAmount,
+        bytes calldata inputProof
+    ) public virtual returns (euint64 transferred) {
+        return _update(from, to, TFHE.asEuint64(encryptedAmount, inputProof));
     }
 }
 

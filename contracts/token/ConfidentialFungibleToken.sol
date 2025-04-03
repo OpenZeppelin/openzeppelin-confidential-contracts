@@ -6,6 +6,10 @@ import { TFHE, einput, ebool, euint64 } from "fhevm/lib/TFHE.sol";
 import { IConfidentialFungibleToken, IConfidentialFungibleTokenReceiver } from "./IConfidentialFungibleToken.sol";
 
 function tryIncrease(euint64 oldValue, euint64 delta) returns (ebool success, euint64 updated) {
+    if (euint64.unwrap(oldValue) == 0) {
+        oldValue = TFHE.asEuint64(0);
+    }
+
     euint64 newValue = TFHE.add(oldValue, delta);
     success = TFHE.ge(newValue, oldValue);
     updated = TFHE.select(success, newValue, oldValue);
