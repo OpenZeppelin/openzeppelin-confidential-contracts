@@ -9,6 +9,7 @@ const name = "ConfidentialFungibleToken";
 const symbol = "CFT";
 const uri = "https://example.com/metadata";
 
+/* eslint-disable no-unexpected-multiline */
 describe.only("ConfidentialFungibleToken", function () {
   const fixture = async () => {
     const accounts = await ethers.getSigners();
@@ -91,3 +92,4 @@ describe.only("ConfidentialFungibleToken", function () {
     });
   });
 });
+/* eslint-enable no-unexpected-multiline */
