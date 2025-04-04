@@ -13,11 +13,11 @@ const uri = "https://example.com/metadata";
 describe.only("ConfidentialFungibleToken", function () {
   const fixture = async () => {
     const accounts = await ethers.getSigners();
-    const [holder, recipient] = accounts;
+    const [holder, recipient, operator] = accounts;
 
     const token = await ethers.deployContract("ConfidentialFungibleTokenMock", [name, symbol, uri]);
 
-    return { accounts: accounts.slice(2), holder, recipient, token };
+    return { accounts: accounts.slice(3), holder, recipient, token, operator };
   };
 
   beforeEach(async function () {
@@ -62,33 +62,119 @@ describe.only("ConfidentialFungibleToken", function () {
         ["$_mint(address,bytes32,bytes)"](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
     });
 
-    it("to recipient", async function () {
-      const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
-      input.add64(400);
-      const encryptedInput = await input.encrypt();
+    for (const fromSender of [true, false]) {
+      describe(fromSender ? "from sender" : "from operator", function () {
+        beforeEach(async function () {
+          if (!fromSender) {
+            const timestamp = (await ethers.provider.getBlock("latest"))!.timestamp + 100;
+            await this.token.$_setOperator(this.holder, this.operator, timestamp);
+          }
+        });
+        for (const sufficientBalance of [true, false]) {
+          const transferAmount = sufficientBalance ? 400 : 1100;
+          describe(sufficientBalance ? "with sufficient balance" : "with insufficient balance", function () {
+            it.only("test", async function () {
+              const input = this.fhevm.createEncryptedInput(
+                this.token.target,
+                fromSender ? this.holder.address : this.operator.address,
+              );
+              input.add64(transferAmount);
+              const encryptedInput = await input.encrypt();
 
-      await this.token
-        .connect(this.holder)
-        ["confidentialTransfer(address,bytes32,bytes)"](
-          this.recipient.address,
-          encryptedInput.handles[0],
-          encryptedInput.inputProof,
-        );
+              if (fromSender) {
+                await this.token
+                  .connect(this.holder)
+                  ["confidentialTransfer(address,bytes32,bytes)"](
+                    this.recipient.address,
+                    encryptedInput.handles[0],
+                    encryptedInput.inputProof,
+                  );
+              } else {
+                await expect(this.token.isOperator(this.holder, this.operator)).to.eventually.be.true;
+                await this.token
+                  .connect(this.operator)
+                  ["confidentialTransferFrom(address,address,bytes32,bytes)"](
+                    this.holder.address,
+                    this.recipient.address,
+                    encryptedInput.handles[0],
+                    encryptedInput.inputProof,
+                  );
+              }
 
-      const holderBalanceHandle = await this.token.balanceOf(this.holder);
-      const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
+              const holderBalanceHandle = await this.token.balanceOf(this.holder);
+              const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
 
-      await expect(
-        reencryptEuint64(this.holder, this.fhevm, holderBalanceHandle, this.token.target),
-      ).to.eventually.equal(600);
+              await expect(
+                reencryptEuint64(this.holder, this.fhevm, holderBalanceHandle, this.token.target),
+              ).to.eventually.equal(sufficientBalance ? 600 : 1000);
 
-      await expect(
-        reencryptEuint64(this.recipient, this.fhevm, recipientBalanceHandle, this.token.target),
-      ).to.eventually.equal(400);
+              await expect(
+                reencryptEuint64(this.recipient, this.fhevm, recipientBalanceHandle, this.token.target),
+              ).to.eventually.equal(sufficientBalance ? 400 : 0);
 
-      await expect(
-        reencryptEuint64(this.holder, this.fhevm, recipientBalanceHandle, this.token.target),
-      ).to.be.rejectedWith("User is not authorized to reencrypt this handle!");
+              await expect(
+                reencryptEuint64(this.holder, this.fhevm, recipientBalanceHandle, this.token.target),
+              ).to.be.rejectedWith("User is not authorized to reencrypt this handle!");
+            });
+          });
+        }
+      });
+    }
+
+    describe("from sender", async function () {
+      it("successfully", async function () {
+        const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
+        input.add64(400);
+        const encryptedInput = await input.encrypt();
+
+        await this.token
+          .connect(this.holder)
+          ["confidentialTransfer(address,bytes32,bytes)"](
+            this.recipient.address,
+            encryptedInput.handles[0],
+            encryptedInput.inputProof,
+          );
+
+        const holderBalanceHandle = await this.token.balanceOf(this.holder);
+        const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
+
+        await expect(
+          reencryptEuint64(this.holder, this.fhevm, holderBalanceHandle, this.token.target),
+        ).to.eventually.equal(600);
+
+        await expect(
+          reencryptEuint64(this.recipient, this.fhevm, recipientBalanceHandle, this.token.target),
+        ).to.eventually.equal(400);
+
+        await expect(
+          reencryptEuint64(this.holder, this.fhevm, recipientBalanceHandle, this.token.target),
+        ).to.be.rejectedWith("User is not authorized to reencrypt this handle!");
+      });
+
+      it("with insufficient balance", async function () {
+        const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
+        input.add64(1100);
+        const encryptedInput = await input.encrypt();
+
+        await this.token
+          .connect(this.holder)
+          ["confidentialTransfer(address,bytes32,bytes)"](
+            this.recipient.address,
+            encryptedInput.handles[0],
+            encryptedInput.inputProof,
+          );
+
+        const holderBalanceHandle = await this.token.balanceOf(this.holder);
+        const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
+
+        await expect(
+          reencryptEuint64(this.holder, this.fhevm, holderBalanceHandle, this.token.target),
+        ).to.eventually.equal(1000);
+
+        await expect(
+          reencryptEuint64(this.recipient, this.fhevm, recipientBalanceHandle, this.token.target),
+        ).to.eventually.equal(0);
+      });
     });
   });
 });
