@@ -30,7 +30,6 @@ jobs:
         env:
           MNEMONIC:
             "exchange vintage ocean narrow danger return culture ignore trim solve clock hidden buddy wise emotion"
-          SEPOLIA_RPC_URL: "https://sepolia.infura.io/v3/YOUR-PROJECT-ID"
 
       - name: "Lint the code"
         run: "pnpm lint"
@@ -45,14 +44,12 @@ jobs:
         env:
           MNEMONIC:
             "exchange vintage ocean narrow danger return culture ignore trim solve clock hidden buddy wise emotion"
-          SEPOLIA_RPC_URL: "https://sepolia.infura.io/v3/YOUR-PROJECT-ID"
 
-      - name: "Test the contracts and generate the coverage report"
-        run: "pnpm coverage"
+      - name: "Test the contracts"
+        run: "pnpm test"
         env:
           MNEMONIC:
             "exchange vintage ocean narrow danger return culture ignore trim solve clock hidden buddy wise emotion"
-          SEPOLIA_RPC_URL: "https://sepolia.infura.io/v3/YOUR-PROJECT-ID"
 
       - name: "Add test summary"
         run: |
