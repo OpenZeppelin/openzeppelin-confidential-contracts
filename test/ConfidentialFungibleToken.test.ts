@@ -72,67 +72,81 @@ describe.only("ConfidentialFungibleToken", function () {
           }
         });
 
-        let sufficientBalance: boolean;
+        if (!asSender) {
+          it("without operator approval should fail", async function () {
+            await this.token.$_setOperator(this.holder, this.operator, 0);
 
-        it("sufficient balance", async function () {
-          sufficientBalance = true;
-        });
+            const input = this.fhevm.createEncryptedInput(this.token.target, this.operator.address);
+            input.add64(100);
+            const encryptedInput = await input.encrypt();
 
-        it("insufficient balance", async function () {
-          sufficientBalance = false;
-        });
+            await expect(
+              this.token
+                .connect(this.operator)
+                ["confidentialTransferFrom(address,address,bytes32,bytes)"](
+                  this.holder.address,
+                  this.recipient.address,
+                  encryptedInput.handles[0],
+                  encryptedInput.inputProof,
+                ),
+            )
+              .to.be.revertedWithCustomError(this.token, "UnauthorizedSpender")
+              .withArgs(this.holder.address, this.operator.address);
+          });
+        }
 
-        afterEach(async function () {
-          const transferAmount = sufficientBalance ? 400 : 1100;
-          const input = this.fhevm.createEncryptedInput(
-            this.token.target,
-            asSender ? this.holder.address : this.operator.address,
-          );
-          input.add64(transferAmount);
-          const encryptedInput = await input.encrypt();
+        for (const sufficientBalance of [false, true]) {
+          it(`${sufficientBalance ? "sufficient" : "insufficient"} balance`, async function () {
+            const transferAmount = sufficientBalance ? 400 : 1100;
+            const input = this.fhevm.createEncryptedInput(
+              this.token.target,
+              asSender ? this.holder.address : this.operator.address,
+            );
+            input.add64(transferAmount);
+            const encryptedInput = await input.encrypt();
 
-          let tx;
-          if (asSender) {
-            tx = await this.token
-              .connect(this.holder)
-              ["confidentialTransfer(address,bytes32,bytes)"](
-                this.recipient.address,
-                encryptedInput.handles[0],
-                encryptedInput.inputProof,
-              );
-          } else {
-            await expect(this.token.isOperator(this.holder, this.operator)).to.eventually.be.true;
-            tx = await this.token
-              .connect(this.operator)
-              ["confidentialTransferFrom(address,address,bytes32,bytes)"](
-                this.holder.address,
-                this.recipient.address,
-                encryptedInput.handles[0],
-                encryptedInput.inputProof,
-              );
-          }
-          const transferEvent = (await tx.wait()).logs.filter((log) => log.address === this.token.target)[0];
-          expect(transferEvent.args[0]).to.equal(this.holder.address);
-          expect(transferEvent.args[1]).to.equal(this.recipient.address);
+            let tx;
+            if (asSender) {
+              tx = await this.token
+                .connect(this.holder)
+                ["confidentialTransfer(address,bytes32,bytes)"](
+                  this.recipient.address,
+                  encryptedInput.handles[0],
+                  encryptedInput.inputProof,
+                );
+            } else {
+              tx = await this.token
+                .connect(this.operator)
+                ["confidentialTransferFrom(address,address,bytes32,bytes)"](
+                  this.holder.address,
+                  this.recipient.address,
+                  encryptedInput.handles[0],
+                  encryptedInput.inputProof,
+                );
+            }
+            const transferEvent = (await tx.wait()).logs.filter((log) => log.address === this.token.target)[0];
+            expect(transferEvent.args[0]).to.equal(this.holder.address);
+            expect(transferEvent.args[1]).to.equal(this.recipient.address);
 
-          const transferAmountHandle = transferEvent.args[2];
-          const holderBalanceHandle = await this.token.balanceOf(this.holder);
-          const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
+            const transferAmountHandle = transferEvent.args[2];
+            const holderBalanceHandle = await this.token.balanceOf(this.holder);
+            const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
 
-          await expect(
-            reencryptEuint64(this.holder, this.fhevm, transferAmountHandle, this.token.target),
-          ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
-          await expect(
-            reencryptEuint64(this.recipient, this.fhevm, transferAmountHandle, this.token.target),
-          ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
+            await expect(
+              reencryptEuint64(this.holder, this.fhevm, transferAmountHandle, this.token.target),
+            ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
+            await expect(
+              reencryptEuint64(this.recipient, this.fhevm, transferAmountHandle, this.token.target),
+            ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
 
-          await expect(
-            reencryptEuint64(this.holder, this.fhevm, holderBalanceHandle, this.token.target),
-          ).to.eventually.equal(1000 - (sufficientBalance ? transferAmount : 0));
-          await expect(
-            reencryptEuint64(this.recipient, this.fhevm, recipientBalanceHandle, this.token.target),
-          ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
-        });
+            await expect(
+              reencryptEuint64(this.holder, this.fhevm, holderBalanceHandle, this.token.target),
+            ).to.eventually.equal(1000 - (sufficientBalance ? transferAmount : 0));
+            await expect(
+              reencryptEuint64(this.recipient, this.fhevm, recipientBalanceHandle, this.token.target),
+            ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
+          });
+        }
       });
     }
   });
