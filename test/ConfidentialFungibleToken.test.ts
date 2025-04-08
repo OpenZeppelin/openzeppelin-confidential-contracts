@@ -115,16 +115,16 @@ describe.only("ConfidentialFungibleToken", function () {
           expect(transferEvent.args[0]).to.equal(this.holder.address);
           expect(transferEvent.args[1]).to.equal(this.recipient.address);
 
-          // const transferAmountHandle = transferEvent.args[2];
+          const transferAmountHandle = transferEvent.args[2];
           const holderBalanceHandle = await this.token.balanceOf(this.holder);
           const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
 
-          // await expect(
-          //   reencryptEuint64(this.holder, this.fhevm, transferAmountHandle, this.token.target),
-          // ).to.eventually.equal(transferAmount);
-          // await expect(
-          //   reencryptEuint64(this.recipient, this.fhevm, transferAmountHandle, this.token.target),
-          // ).to.eventually.equal(transferAmount);
+          await expect(
+            reencryptEuint64(this.holder, this.fhevm, transferAmountHandle, this.token.target),
+          ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
+          await expect(
+            reencryptEuint64(this.recipient, this.fhevm, transferAmountHandle, this.token.target),
+          ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
 
           await expect(
             reencryptEuint64(this.holder, this.fhevm, holderBalanceHandle, this.token.target),

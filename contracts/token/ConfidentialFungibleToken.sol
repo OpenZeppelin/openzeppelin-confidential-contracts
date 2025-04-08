@@ -33,7 +33,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     error InvalidReceiver(address receiver);
     error InvalidSender(address sender);
     error UnauthorizedSpender(address holder, address spender);
-    error UnauthorizedUseOfEncryptedValue(euint amount, address user);
+    error UnauthorizedUseOfEncryptedValue(euint64 amount, address user);
 
     constructor(string memory name_, string memory symbol_, string memory tokenURI_) {
         _name = name_;
@@ -227,6 +227,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
         if (from != address(0)) transferred.allow(from);
         if (to != address(0)) transferred.allow(to);
+        transferred.allowThis();
         emit ConfidentialTransfer(from, to, transferred);
     }
 
