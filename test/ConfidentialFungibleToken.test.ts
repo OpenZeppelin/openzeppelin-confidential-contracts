@@ -35,6 +35,7 @@ describe.only("ConfidentialFungibleToken", function () {
         .connect(this.holder)
         ["$_mint(address,bytes32,bytes)"](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
     });
+
     it("to a user", async function () {
       // Reencrypt with holder's key
       const balanceOfHandleHolder = await this.token.balanceOf(this.holder);
