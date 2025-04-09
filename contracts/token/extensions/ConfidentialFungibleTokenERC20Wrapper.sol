@@ -2,12 +2,13 @@
 
 pragma solidity ^0.8.24;
 
-import { TFHE, euint64 } from "fhevm/lib/TFHE.sol";
+import { TFHE, einput, euint64 } from "fhevm/lib/TFHE.sol";
 import { Gateway } from "fhevm/gateway/lib/Gateway.sol";
 import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import { IERC1363Receiver } from "@openzeppelin/contracts/interfaces/IERC1363Receiver.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { SafeCast } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
 
 abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleToken, IERC1363Receiver {
@@ -15,6 +16,8 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     using SafeCast for *;
 
     IERC20 public immutable token;
+    uint8 private immutable _decimals;
+    uint256 private immutable _rate;
 
     mapping(uint256 decryptionRequest => address) private _receivers;
 
@@ -28,6 +31,32 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
 
     constructor(IERC20 token_) {
         token = token_;
+
+        uint8 tokenDecimals = _tryGetAssetDecimals(token_);
+        if (tokenDecimals > 9) {
+            _decimals = 9;
+            _rate = 10 ** (tokenDecimals - 9);
+        } else {
+            _decimals = tokenDecimals;
+            _rate = 1;
+        }
+    }
+
+    function _tryGetAssetDecimals(IERC20 asset_) private view returns (uint8 assetDecimals) {
+        (bool success, bytes memory encodedDecimals) = address(asset_).staticcall(
+            abi.encodeCall(IERC20Metadata.decimals, ())
+        );
+        if (success && encodedDecimals.length >= 32) {
+            uint256 returnedDecimals = abi.decode(encodedDecimals, (uint256));
+            if (returnedDecimals <= type(uint8).max) {
+                return uint8(returnedDecimals);
+            }
+        }
+        return 18;
+    }
+
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
     }
 
     function onTransferReceived(
@@ -36,15 +65,26 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         uint256 value,
         bytes calldata data
     ) public virtual returns (bytes4) {
+        // check caller is the token contract
         require(address(token) == msg.sender, UnauthorizedCaller(msg.sender));
+
+        // transfer excess back to the sender
+        if (value % _rate > 0) SafeERC20.safeTransfer(token, from, value % _rate);
+
+        // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, value.asUint64().asEuint64());
+        _mint(to, (value / _rate).toUint64().asEuint64());
+
+        // return magic value
         return IERC1363Receiver.onTransferReceived.selector;
     }
 
-    function wrap(address to, uint256 amount) public virtual {
-        SafeERC20.safeTransferFrom(token, msg.sender, address(this), amount);
-        _mint(to, value.asUint64().asEuint64());
+    function wrap(address to, uint256 value) public virtual {
+        // take ownership of the tokens
+        SafeERC20.safeTransferFrom(token, msg.sender, address(this), value - (value % _rate));
+
+        // mint confidential token
+        _mint(to, (value / _rate).toUint64().asEuint64());
     }
 
     function unwrap(address from, address to, einput encryptedAmount, bytes calldata inputProof) public virtual {
@@ -78,6 +118,6 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         require(to != address(0), InvalidUnwrapRequest(requestID));
         delete _receivers[requestID];
 
-        SafeERC20.safeTransfer(token, to, amount);
+        SafeERC20.safeTransfer(token, to, amount * _rate);
     }
 }
