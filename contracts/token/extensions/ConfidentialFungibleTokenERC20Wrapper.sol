@@ -69,7 +69,8 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         require(address(token) == msg.sender, UnauthorizedCaller(msg.sender));
 
         // transfer excess back to the sender
-        if (value % _rate > 0) SafeERC20.safeTransfer(token, from, value % _rate);
+        uint256 excess = value % _rate;
+        if (excess > 0) SafeERC20.safeTransfer(token, from, excess);
 
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
@@ -100,7 +101,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
 
         // decrypt that burntAmount
         uint256[] memory cts = new uint256[](1);
-        cts[0] = Gateway.toUint256(burntAmount);
+        cts[0] = euint64.unwrap(burntAmount);
         uint256 requestID = Gateway.requestDecryption(
             cts,
             this.finalizeUnwrap.selector,
