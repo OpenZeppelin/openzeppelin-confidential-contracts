@@ -64,7 +64,7 @@ describe.only("ConfidentialFungibleTokenWrapper", function () {
       await initGateway();
     });
 
-    it("simple unwrap", async function () {
+    it("less than balance", async function () {
       const withdrawalAmount = ethers.parseUnits("10", 9);
       const input = this.fhevm.createEncryptedInput(this.wrapper.target, this.holder.address);
       input.add64(withdrawalAmount);
@@ -85,6 +85,45 @@ describe.only("ConfidentialFungibleTokenWrapper", function () {
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(
         withdrawalAmount * 10n ** 9n + ethers.parseUnits("900", 18),
       );
+    });
+
+    it("to invalid recipient", async function () {
+      const withdrawalAmount = ethers.parseUnits("10", 9);
+      const input = this.fhevm.createEncryptedInput(this.wrapper.target, this.holder.address);
+      input.add64(withdrawalAmount);
+      const encryptedInput = await input.encrypt();
+
+      await expect(
+        this.wrapper
+          .connect(this.holder)
+          ["unwrap(address,address,bytes32,bytes)"](
+            this.holder,
+            ethers.ZeroAddress,
+            encryptedInput.handles[0],
+            encryptedInput.inputProof,
+          ),
+      )
+        .to.be.revertedWithCustomError(this.wrapper, "InvalidTokenRecipient")
+        .withArgs(ethers.ZeroAddress);
+    });
+
+    it("more than balance", async function () {
+      const withdrawalAmount = ethers.parseUnits("1001", 9);
+      const input = this.fhevm.createEncryptedInput(this.wrapper.target, this.holder.address);
+      input.add64(withdrawalAmount);
+      const encryptedInput = await input.encrypt();
+
+      await this.wrapper
+        .connect(this.holder)
+        ["unwrap(address,address,bytes32,bytes)"](
+          this.holder,
+          this.holder,
+          encryptedInput.handles[0],
+          encryptedInput.inputProof,
+        );
+
+      await awaitAllDecryptionResults();
+      await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits("900", 18));
     });
   });
 });

@@ -23,6 +23,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
 
     error UnauthorizedCaller(address);
     error InvalidUnwrapRequest(uint256);
+    error InvalidTokenRecipient(address);
 
     modifier onlyGateway() {
         require(msg.sender == Gateway.gatewayContractAddress(), UnauthorizedCaller(msg.sender));
@@ -93,6 +94,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     }
 
     function unwrap(address from, address to, euint64 amount) public virtual {
+        require(to != address(0), InvalidTokenRecipient(to));
         require(amount.isAllowed(msg.sender), UnauthorizedUseOfEncryptedValue(amount, msg.sender));
         require(from == msg.sender || isOperator(from, msg.sender), UnauthorizedSpender(from, msg.sender));
 
