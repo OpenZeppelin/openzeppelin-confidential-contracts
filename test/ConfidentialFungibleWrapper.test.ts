@@ -16,7 +16,7 @@ describe.only("ConfidentialFungibleTokenWrapper", function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract("ERC20Mock", ["Public Token", "PT"]);
+    const token = await ethers.deployContract("ERC20Mock", ["Public Token", "PT", 18]);
     const wrapper = await ethers.deployContract("ConfidentialFungibleTokenERC20WrapperMock", [
       token,
       name,
@@ -124,6 +124,46 @@ describe.only("ConfidentialFungibleTokenWrapper", function () {
 
       await awaitAllDecryptionResults();
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits("900", 18));
+    });
+  });
+
+  describe("Initialization", function () {
+    describe("decimals", function () {
+      it("when underlying has 9 decimals", async function () {
+        const token = await ethers.deployContract("ERC20Mock", ["Public Token", "PT", 9]);
+        const wrapper = await ethers.deployContract("ConfidentialFungibleTokenERC20WrapperMock", [
+          token,
+          name,
+          symbol,
+          uri,
+        ]);
+
+        await expect(wrapper.decimals()).to.eventually.equal(9);
+      });
+
+      it("when underlying has more than 9 decimals", async function () {
+        const token = await ethers.deployContract("ERC20Mock", ["Public Token", "PT", 18]);
+        const wrapper = await ethers.deployContract("ConfidentialFungibleTokenERC20WrapperMock", [
+          token,
+          name,
+          symbol,
+          uri,
+        ]);
+
+        await expect(wrapper.decimals()).to.eventually.equal(9);
+      });
+
+      it("when underlying has less than 9 decimals", async function () {
+        const token = await ethers.deployContract("ERC20Mock", ["Public Token", "PT", 8]);
+        const wrapper = await ethers.deployContract("ConfidentialFungibleTokenERC20WrapperMock", [
+          token,
+          name,
+          symbol,
+          uri,
+        ]);
+
+        await expect(wrapper.decimals()).to.eventually.equal(8);
+      });
     });
   });
 });
