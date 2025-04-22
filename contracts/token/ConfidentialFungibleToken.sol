@@ -21,7 +21,25 @@ function tryDecrease(euint64 oldValue, euint64 delta) returns (ebool success, eu
     updated = TFHE.select(success, TFHE.sub(oldValue, delta), oldValue);
 }
 
-/// @dev Reference implementation for {IConfidentialFungibleToken}.
+/**
+ * @dev Reference implementation for {IConfidentialFungibleToken} using Fully Homomorphic Encryption (FHE).
+ *
+ * This contract implements a fungible token where balances and transfers are encrypted using TFHE,
+ * providing privacy and confidentiality to users. Token amounts are stored as encrypted unsigned 
+ * integers (euint64) that can only be decrypted by their owners or authorized parties.
+ *
+ * Key features:
+ * - All balances are encrypted and private by default
+ * - Transfers happen without revealing amounts
+ * - Support for operators (delegated transfer capabilities with time bounds)
+ * - ERC1363-like functionality with transfer-and-call pattern
+ * - Safe overflow/underflow handling for FHE operations
+ *
+ * The contract uses the Zama TFHE library for FHE operations, allowing computation on encrypted data
+ * without decryption. This enables confidential yet verifiable token transfers on public blockchains.
+ *
+ * Inherits from IConfidentialFungibleToken and extends its interface with implementation details.
+ */
 abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     using TFHE for *;
 
