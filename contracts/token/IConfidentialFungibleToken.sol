@@ -6,7 +6,7 @@ import { ebool, einput, euint64 } from "fhevm/lib/TFHE.sol";
 /// @dev Draft interface for a confidential fungible token standard utilizing the Zama TFHE library.
 interface IConfidentialFungibleToken {
     /**
-     * @dev Emitted when the `until` timestamp for an operator `operator` is updated for a given `holder.
+     * @dev Emitted when the `until` timestamp for an operator `operator` is updated for a given `holder`.
      * The operator may move any amount of tokens on behalf of the holder until the timestamp `until`.
      */
     event OperatorSet(address indexed holder, address indexed operator, uint48 until);
@@ -53,7 +53,7 @@ interface IConfidentialFungibleToken {
     function setOperator(address operator, uint48 until) external;
 
     /**
-     * @dev Transfer the encrypted amount `encryptedAmount` to `to` with the given input proof `inputProof`.
+     * @dev Transfers the encrypted amount `encryptedAmount` to `to` with the given input proof `inputProof`.
      *
      * Returns the encrypted amount that was actually transferred.
      */
@@ -65,13 +65,13 @@ interface IConfidentialFungibleToken {
 
     /**
      * @dev Similar to {confidentialTransfer-address-einput-bytes} but without an input proof. The caller
-     * *must* be already approved by ACL for the given `amount`.
+     * *must* already be approved by ACL for the given `amount`.
      */
     function confidentialTransfer(address to, euint64 amount) external returns (euint64 transferred);
 
     /**
-     * @dev Transfer the encrypted amount `encryptedAmount` from `from` to `to` with the given input proof `inputProof`.
-     * `msg.sender` must be either the `from` account or an operator for `from`.
+     * @dev Transfers the encrypted amount `encryptedAmount` from `from` to `to` with the given input proof
+     * `inputProof`. `msg.sender` must be either the `from` account or an operator for `from`.
      *
      * Returns the encrypted amount that was actually transferred.
      */
@@ -127,7 +127,12 @@ interface IConfidentialFungibleToken {
     ) external returns (euint64 transferred);
 }
 
+/// @dev Interface for contracts that can receive confidential token transfers with a callback.
 interface IConfidentialFungibleTokenReceiver {
+    /**
+     * @dev Called upon receiving a confidential token transfer. Returns an encrypted boolean indicating success
+     * of the callback. If false is returned, the transfer must be reversed.
+     */
     function onConfidentialTransferReceived(
         address operator,
         address from,
