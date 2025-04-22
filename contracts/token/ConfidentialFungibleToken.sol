@@ -33,20 +33,20 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     string private _tokenURI;
 
     /// @dev The given receiver `receiver` is invalid for transfers.
-    error InvalidReceiver(address receiver);
+    error ConfidentialFungibleTokenInvalidReceiver(address receiver);
 
     /// @dev The given sender `sender` is invalid for transfers.
-    error InvalidSender(address sender);
+    error ConfidentialFungibleTokenInvalidSender(address sender);
 
     /// @dev The given holder `holder` is not authorized to spend on behalf of `spender`.
-    error UnauthorizedSpender(address holder, address spender);
+    error ConfidentialFungibleTokenUnauthorizedSpender(address holder, address spender);
 
     /**
      * @dev The caller `user` does not have access to the encrypted value `amount`.
      *
      * NOTE: Try using the equivalent transfer function with an input proof.
      */
-    error UnauthorizedUseOfEncryptedValue(euint64 amount, address user);
+    error ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(euint64 amount, address user);
 
     constructor(string memory name_, string memory symbol_, string memory tokenURI_) {
         _name = name_;
@@ -106,7 +106,10 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
     /// @inheritdoc IConfidentialFungibleToken
     function confidentialTransfer(address to, euint64 amount) public virtual returns (euint64 transferred) {
-        require(amount.isAllowed(msg.sender), UnauthorizedUseOfEncryptedValue(amount, msg.sender));
+        require(
+            amount.isAllowed(msg.sender),
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
+        );
         transferred = _transfer(msg.sender, to, amount);
         transferred.allowTransient(msg.sender);
     }
@@ -118,7 +121,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         einput encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64 transferred) {
-        require(isOperator(from, msg.sender), UnauthorizedSpender(from, msg.sender));
+        require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
         transferred = _transfer(from, to, encryptedAmount.asEuint64(inputProof));
         transferred.allowTransient(msg.sender);
     }
@@ -129,8 +132,11 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         address to,
         euint64 amount
     ) public virtual returns (euint64 transferred) {
-        require(amount.isAllowed(msg.sender), UnauthorizedUseOfEncryptedValue(amount, msg.sender));
-        require(isOperator(from, msg.sender), UnauthorizedSpender(from, msg.sender));
+        require(
+            amount.isAllowed(msg.sender),
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
+        );
+        require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
         transferred = _transfer(from, to, amount);
         transferred.allowTransient(msg.sender);
     }
@@ -152,7 +158,10 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
-        require(amount.isAllowed(msg.sender), UnauthorizedUseOfEncryptedValue(amount, msg.sender));
+        require(
+            amount.isAllowed(msg.sender),
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
+        );
         transferred = _transferAndCall(msg.sender, to, amount, data);
         transferred.allowTransient(msg.sender);
     }
@@ -165,7 +174,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
-        require(isOperator(from, msg.sender), UnauthorizedSpender(from, msg.sender));
+        require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
         transferred = _transferAndCall(from, to, encryptedAmount.asEuint64(inputProof), data);
         transferred.allowTransient(msg.sender);
     }
@@ -177,8 +186,11 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
-        require(amount.isAllowed(msg.sender), UnauthorizedUseOfEncryptedValue(amount, msg.sender));
-        require(isOperator(from, msg.sender), UnauthorizedSpender(from, msg.sender));
+        require(
+            amount.isAllowed(msg.sender),
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
+        );
+        require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
         transferred = _transferAndCall(from, to, amount, data);
         transferred.allowTransient(msg.sender);
     }
@@ -200,18 +212,18 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     }
 
     function _mint(address to, euint64 amount) internal returns (euint64 transferred) {
-        require(to != address(0), InvalidReceiver(address(0)));
+        require(to != address(0), ConfidentialFungibleTokenInvalidReceiver(address(0)));
         return _update(address(0), to, amount);
     }
 
     function _burn(address from, euint64 amount) internal returns (euint64 transferred) {
-        require(from != address(0), InvalidSender(address(0)));
+        require(from != address(0), ConfidentialFungibleTokenInvalidSender(address(0)));
         return _update(from, address(0), amount);
     }
 
     function _transfer(address from, address to, euint64 amount) internal returns (euint64 transferred) {
-        require(from != address(0), InvalidSender(address(0)));
-        require(to != address(0), InvalidReceiver(address(0)));
+        require(from != address(0), ConfidentialFungibleTokenInvalidSender(address(0)));
+        require(to != address(0), ConfidentialFungibleTokenInvalidReceiver(address(0)));
         return _update(from, to, amount);
     }
 
@@ -281,7 +293,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
                 return retval;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
-                    revert InvalidReceiver(to);
+                    revert ConfidentialFungibleTokenInvalidReceiver(to);
                 } else {
                     assembly ("memory-safe") {
                         revert(add(32, reason), mload(reason))

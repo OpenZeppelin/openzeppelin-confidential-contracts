@@ -22,12 +22,15 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     /// @dev Mapping from gateway decryption request ID to the address that will receive the tokens
     mapping(uint256 decryptionRequest => address) private _receivers;
 
-    error UnauthorizedCaller(address);
-    error InvalidUnwrapRequest(uint256);
-    error InvalidTokenRecipient(address);
+    error ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller(address);
+    error ConfidentialFungibleTokenERC20WrapperInvalidUnwrapRequest(uint256);
+    error ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient(address);
 
     modifier onlyGateway() {
-        require(msg.sender == Gateway.gatewayContractAddress(), UnauthorizedCaller(msg.sender));
+        require(
+            msg.sender == Gateway.gatewayContractAddress(),
+            ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller(msg.sender)
+        );
         _;
     }
 
@@ -81,7 +84,10 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         bytes calldata data
     ) public virtual returns (bytes4) {
         // check caller is the token contract
-        require(address(underlying()) == msg.sender, UnauthorizedCaller(msg.sender));
+        require(
+            address(underlying()) == msg.sender,
+            ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller(msg.sender)
+        );
 
         // transfer excess back to the sender
         uint256 excess = value % rate();
@@ -108,9 +114,15 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     }
 
     function unwrap(address from, address to, euint64 amount) public virtual {
-        require(to != address(0), InvalidTokenRecipient(to));
-        require(amount.isAllowed(msg.sender), UnauthorizedUseOfEncryptedValue(amount, msg.sender));
-        require(from == msg.sender || isOperator(from, msg.sender), UnauthorizedSpender(from, msg.sender));
+        require(to != address(0), ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient(to));
+        require(
+            amount.isAllowed(msg.sender),
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
+        );
+        require(
+            from == msg.sender || isOperator(from, msg.sender),
+            ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender)
+        );
 
         // try to burn, see how much we actually got
         euint64 burntAmount = _burn(from, amount);
@@ -132,7 +144,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
 
     function finalizeUnwrap(uint256 requestID, uint64 amount) public virtual onlyGateway {
         address to = _receivers[requestID];
-        require(to != address(0), InvalidUnwrapRequest(requestID));
+        require(to != address(0), ConfidentialFungibleTokenERC20WrapperInvalidUnwrapRequest(requestID));
         delete _receivers[requestID];
 
         SafeERC20.safeTransfer(underlying(), to, amount * rate());
