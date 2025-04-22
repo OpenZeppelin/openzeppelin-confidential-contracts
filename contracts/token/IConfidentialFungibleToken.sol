@@ -15,7 +15,9 @@ interface IConfidentialFungibleToken {
     event ConfidentialTransfer(address indexed from, address indexed to, euint64 amount);
 
     /**
-     *  @dev Emitted when a confidential transfer is disclosed by either `from` or `to` by calling {discloseTransfer}.
+     * @dev Emitted when a confidential transfer is disclosed. Accounts with access to the amount `amount`
+     * emitted in {ConfidentialTransfer} should be able to disclose the transfer. This functionality is
+     * implementation specific.
      *
      * NOTE: A confidential transfer may be disclosed at any time after the transfer occurred. It may only be
      * disclosed once.
