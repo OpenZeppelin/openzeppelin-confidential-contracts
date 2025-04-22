@@ -14,7 +14,12 @@ interface IConfidentialFungibleToken {
     /// @dev Emitted when a confidential transfer is made from `from` to `to` of encrypted amount `amount`.
     event ConfidentialTransfer(address indexed from, address indexed to, euint64 amount);
 
-    /// @dev Emitted when a confidential transfer is disclosed by either `from` or `to` by calling {discloseTransfer}.
+    /**
+     *  @dev Emitted when a confidential transfer is disclosed by either `from` or `to` by calling {discloseTransfer}.
+     *
+     * NOTE: A confidential transfer may be disclosed at any time after the transfer occurred. It may only be
+     * disclosed once.
+     */
     event ConfidentialTransferDisclosed(address indexed from, address indexed to, uint64 amount);
 
     /// @dev Returns the name of the token.
