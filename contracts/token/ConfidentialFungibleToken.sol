@@ -24,7 +24,7 @@ function tryDecrease(euint64 oldValue, euint64 delta) returns (ebool success, eu
 /**
  * @dev Reference implementation for {IConfidentialFungibleToken}.
  *
- * This contract implements a fungible token where balances and transfers are encrypted using the Zama fhEVEM,
+ * This contract implements a fungible token where balances and transfers are encrypted using the Zama fhEVM,
  * providing confidentiality to users. Token amounts are stored as encrypted, unsigned integers (euint64)
  * that can only be decrypted by authorized parties.
  *
