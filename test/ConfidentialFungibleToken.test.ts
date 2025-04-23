@@ -90,7 +90,7 @@ describe.only("ConfidentialFungibleToken", function () {
                   encryptedInput.inputProof,
                 ),
             )
-              .to.be.revertedWithCustomError(this.token, "UnauthorizedSpender")
+              .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedSpender")
               .withArgs(this.holder.address, this.operator.address);
           });
         }

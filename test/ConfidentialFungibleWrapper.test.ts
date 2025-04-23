@@ -103,7 +103,7 @@ describe.only("ConfidentialFungibleTokenWrapper", function () {
             encryptedInput.inputProof,
           ),
       )
-        .to.be.revertedWithCustomError(this.wrapper, "InvalidTokenRecipient")
+        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient")
         .withArgs(ethers.ZeroAddress);
     });
 
