@@ -1,4 +1,3 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
@@ -12,7 +11,7 @@ const uri = "https://example.com/metadata";
 
 /* eslint-disable no-unexpected-multiline */
 describe.only("ConfidentialFungibleTokenWrapper", function () {
-  const fixture = async () => {
+  beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
@@ -24,12 +23,13 @@ describe.only("ConfidentialFungibleTokenWrapper", function () {
       uri,
     ]);
 
-    return { accounts: accounts.slice(3), holder, recipient, token, operator, wrapper };
-  };
-
-  beforeEach(async function () {
-    Object.assign(this, await loadFixture(fixture));
     this.fhevm = await createInstance();
+    this.accounts = accounts.slice(3);
+    this.holder = holder;
+    this.recipient = recipient;
+    this.token = token;
+    this.operator = operator;
+    this.wrapper = wrapper;
 
     await this.token.$_mint(this.holder.address, ethers.parseUnits("1000", 18));
     await this.token.connect(this.holder).approve(this.wrapper, ethers.MaxUint256);
