@@ -55,6 +55,9 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     /// @dev The given holder `holder` is not authorized to spend on behalf of `spender`.
     error ConfidentialFungibleTokenUnauthorizedSpender(address holder, address spender);
 
+    /// @dev The `holder` is trying to send tokens but has a balance of 0.
+    error ConfidentialFungibleTokenZeroBalance(address holder);
+
     /**
      * @dev The caller `user` does not have access to the encrypted value `amount`.
      *
@@ -267,6 +270,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
             ptr.allowThis();
             _totalSupply = ptr;
         } else {
+            require(euint64.unwrap(_balances[from]) != 0, ConfidentialFungibleTokenZeroBalance(from));
             (success, ptr) = tryDecrease(_balances[from], amount);
             ptr.allowThis();
             ptr.allow(from);

@@ -73,22 +73,22 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZama
     }
 }
 
-contract ConfidentialFungibleTokenReceiverMock is IConfidentialFungibleTokenReceiver {
-    uint64 private _threshold;
+// contract ConfidentialFungibleTokenReceiverMock is IConfidentialFungibleTokenReceiver {
+//     uint64 private _threshold;
 
-    event ConfidentialTransferReceived(address token, address operator, address from, euint64 value, bytes data);
+//     event ConfidentialTransferReceived(address token, address operator, address from, euint64 value, bytes data);
 
-    constructor(uint64 threshold) {
-        _threshold = threshold;
-    }
+//     constructor(uint64 threshold) {
+//         _threshold = threshold;
+//     }
 
-    function onConfidentialTransferReceived(
-        address operator,
-        address from,
-        euint64 value,
-        bytes calldata data
-    ) external returns (ebool) {
-        emit ConfidentialTransferReceived(msg.sender, operator, from, value, data);
-        return TFHE.ge(value, _threshold);
-    }
-}
+//     function onConfidentialTransferReceived(
+//         address operator,
+//         address from,
+//         euint64 value,
+//         bytes calldata data
+//     ) external returns (ebool) {
+//         emit ConfidentialTransferReceived(msg.sender, operator, from, value, data);
+//         return TFHE.ge(value, _threshold);
+//     }
+// }
