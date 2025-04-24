@@ -2,26 +2,25 @@
 
 pragma solidity ^0.8.24;
 
-import { TFHE, ebool, euint64, einput } from "fhevm/lib/TFHE.sol";
-import { IConfidentialFungibleTokenReceiver } from "../token/IConfidentialFungibleToken.sol";
+import { TFHE, euint64, einput } from "fhevm/lib/TFHE.sol";
 import { ConfidentialFungibleToken } from "../token/ConfidentialFungibleToken.sol";
 import { SepoliaZamaFHEVMConfig } from "fhevm/config/ZamaFHEVMConfig.sol";
 
 contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZamaFHEVMConfig {
-    address private immutable _owner;
+    address private immutable _OWNER;
 
     constructor(
         string memory name_,
         string memory symbol_,
         string memory tokenURI_
     ) ConfidentialFungibleToken(name_, symbol_, tokenURI_) {
-        _owner = msg.sender;
+        _OWNER = msg.sender;
     }
 
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
         transferred = super._update(from, to, amount);
 
-        TFHE.allow(totalSupply(), _owner);
+        TFHE.allow(totalSupply(), _OWNER);
     }
 
     function $_setOperator(address holder, address operator, uint48 until) public virtual {
@@ -72,23 +71,3 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZama
         return _update(from, to, TFHE.asEuint64(encryptedAmount, inputProof));
     }
 }
-
-// contract ConfidentialFungibleTokenReceiverMock is IConfidentialFungibleTokenReceiver {
-//     uint64 private _threshold;
-
-//     event ConfidentialTransferReceived(address token, address operator, address from, euint64 value, bytes data);
-
-//     constructor(uint64 threshold) {
-//         _threshold = threshold;
-//     }
-
-//     function onConfidentialTransferReceived(
-//         address operator,
-//         address from,
-//         euint64 value,
-//         bytes calldata data
-//     ) external returns (ebool) {
-//         emit ConfidentialTransferReceived(msg.sender, operator, from, value, data);
-//         return TFHE.ge(value, _threshold);
-//     }
-// }
