@@ -1,57 +1,32 @@
-name: "CI"
+name: checks
 
 on:
-  workflow_dispatch:
   pull_request:
   push:
     branches:
       - master
 
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MNEMONIC: "exchange vintage ocean narrow danger return culture ignore trim solve clock hidden buddy wise emotion"
+
 jobs:
-  ci:
+  lint:
     runs-on: "ubuntu-latest"
     steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v3"
+      - uses: actions/checkout@v4
+      - name: Set up environment
+        uses: ./.github/actions/setup
+      - run: pnpm run lint
 
-      - name: "Install Pnpm"
-        uses: "pnpm/action-setup@v2"
-        with:
-          version: "8"
-
-      - name: "Install Node.js"
-        uses: "actions/setup-node@v3"
-        with:
-          cache: "pnpm"
-          node-version: "lts/*"
-
-      - name: "Install the dependencies"
-        run: "pnpm install"
-        env:
-          MNEMONIC:
-            "exchange vintage ocean narrow danger return culture ignore trim solve clock hidden buddy wise emotion"
-
-      - name: "Lint the code"
-        run: "pnpm lint"
-
-      - name: "Add lint summary"
-        run: |
-          echo "## Lint results" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-
-      - name: "Compile the contracts and generate the TypeChain bindings"
-        run: "pnpm typechain"
-        env:
-          MNEMONIC:
-            "exchange vintage ocean narrow danger return culture ignore trim solve clock hidden buddy wise emotion"
-
-      - name: "Test the contracts"
-        run: "pnpm test"
-        env:
-          MNEMONIC:
-            "exchange vintage ocean narrow danger return culture ignore trim solve clock hidden buddy wise emotion"
-
-      - name: "Add test summary"
-        run: |
-          echo "## Test results" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+  tests:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up environment
+        uses: ./.github/actions/setup
+      - run: pnpm typechain
+      - run: pnpm test
