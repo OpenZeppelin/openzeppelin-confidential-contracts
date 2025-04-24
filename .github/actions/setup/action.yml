@@ -19,3 +19,4 @@ runs:
         key: npm-v3-${{ hashFiles('**/package-lock.json') }}
     - name: Install dependencies
       run: "pnpm install"
+      shell: bash
