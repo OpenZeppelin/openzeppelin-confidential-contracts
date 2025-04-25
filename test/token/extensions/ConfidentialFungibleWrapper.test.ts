@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-import { awaitAllDecryptionResults, initGateway } from "./_template/asyncDecrypt";
-import { createInstance } from "./_template/instance";
-import { reencryptEuint64 } from "./_template/reencrypt";
+import { awaitAllDecryptionResults, initGateway } from "../../_template/asyncDecrypt";
+import { createInstance } from "../../_template/instance";
+import { reencryptEuint64 } from "../../_template/reencrypt";
 
 const name = "ConfidentialFungibleToken";
 const symbol = "CFT";

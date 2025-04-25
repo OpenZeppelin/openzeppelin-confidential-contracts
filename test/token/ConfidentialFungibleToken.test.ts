@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-import { createInstance } from "./_template/instance";
-import { reencryptEuint64 } from "./_template/reencrypt";
+import { createInstance } from "../_template/instance";
+import { reencryptEuint64 } from "../_template/reencrypt";
 
 const name = "ConfidentialFungibleToken";
 const symbol = "CFT";
