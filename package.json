@@ -18,7 +18,7 @@
     "lint:sol:fix": "prettier --loglevel warn '{contracts,test}/**/*.sol' --write",
     "prepare": "husky",
     "test": "hardhat test",
-    "test:coverage": "hardhat coverage"
+    "coverage": "hardhat coverage"
   },
   "repository": {
      "type": "git",
