@@ -10,7 +10,7 @@ const symbol = "CFT";
 const uri = "https://example.com/metadata";
 
 /* eslint-disable no-unexpected-multiline */
-describe.only("ConfidentialFungibleTokenWrapper", function () {
+describe("ConfidentialFungibleTokenWrapper", function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
@@ -139,6 +139,7 @@ describe.only("ConfidentialFungibleTokenWrapper", function () {
         ]);
 
         await expect(wrapper.decimals()).to.eventually.equal(9);
+        await expect(wrapper.rate()).to.eventually.equal(1);
       });
 
       it("when underlying has more than 9 decimals", async function () {
@@ -151,6 +152,7 @@ describe.only("ConfidentialFungibleTokenWrapper", function () {
         ]);
 
         await expect(wrapper.decimals()).to.eventually.equal(9);
+        await expect(wrapper.rate()).to.eventually.equal(10n ** 9n);
       });
 
       it("when underlying has less than 9 decimals", async function () {
@@ -163,6 +165,20 @@ describe.only("ConfidentialFungibleTokenWrapper", function () {
         ]);
 
         await expect(wrapper.decimals()).to.eventually.equal(8);
+        await expect(wrapper.rate()).to.eventually.equal(1);
+      });
+
+      it("when underlying decimals are not available", async function () {
+        const token = await ethers.deployContract("ERC20RevertDecimalsMock");
+        const wrapper = await ethers.deployContract("ConfidentialFungibleTokenERC20WrapperMock", [
+          token,
+          name,
+          symbol,
+          uri,
+        ]);
+
+        await expect(wrapper.decimals()).to.eventually.equal(9);
+        await expect(wrapper.rate()).to.eventually.equal(10n ** 9n);
       });
     });
   });

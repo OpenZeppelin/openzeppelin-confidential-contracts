@@ -6,7 +6,7 @@ import { createInstance } from "../instance";
 import { getSigners, initSigners } from "../signers";
 import { bigIntToBytes64, bigIntToBytes128, bigIntToBytes256 } from "../utils";
 
-describe("TestAsyncDecrypt", function () {
+describe.skip("TestAsyncDecrypt", function () {
   before(async function () {
     await initSigners();
     this.signers = await getSigners();

@@ -10,7 +10,7 @@ contract ERC20Mock is ERC1363 {
         _decimals = decimals_;
     }
 
-    function decimals() public view override returns (uint8) {
+    function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }
 
@@ -20,5 +20,13 @@ contract ERC20Mock is ERC1363 {
 
     function $_burn(address from, uint256 amount) public {
         _burn(from, amount);
+    }
+}
+
+contract ERC20RevertDecimalsMock is ERC20Mock {
+    constructor() ERC20Mock("ERC20RevertDecimalsMock", "ERC20RevertDecimalsMock", 18) {}
+
+    function decimals() public pure override returns (uint8) {
+        revert("Decimals not available");
     }
 }

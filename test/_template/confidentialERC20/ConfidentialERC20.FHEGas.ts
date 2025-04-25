@@ -6,7 +6,7 @@ import { createInstance } from "../instance";
 import { getSigners, initSigners } from "../signers";
 import { deployConfidentialERC20Fixture } from "./ConfidentialERC20.fixture";
 
-describe("ConfidentialERC20:FHEGas", function () {
+describe.skip("ConfidentialERC20:FHEGas", function () {
   before(async function () {
     await initSigners();
     this.signers = await getSigners();

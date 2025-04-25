@@ -7,7 +7,7 @@ import { getSigners, initSigners } from "../signers";
 import { debug } from "../utils";
 import { deployConfidentialERC20Fixture } from "./ConfidentialERC20.fixture";
 
-describe("ConfidentialERC20", function () {
+describe.skip("ConfidentialERC20", function () {
   before(async function () {
     await initSigners();
     this.signers = await getSigners();

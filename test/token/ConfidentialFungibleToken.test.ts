@@ -9,7 +9,7 @@ const symbol = "CFT";
 const uri = "https://example.com/metadata";
 
 /* eslint-disable no-unexpected-multiline */
-describe.only("ConfidentialFungibleToken", function () {
+describe("ConfidentialFungibleToken", function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
