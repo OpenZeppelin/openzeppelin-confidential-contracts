@@ -11,6 +11,11 @@ import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
 
+/**
+ * @dev Simple wrapper contract built on top of {ConfidentialFungibleToken} that allows wrapping an ERC20 token
+ * into a confidential fungible token. The wrapper contract implements the {IERC1363Receiver} interface
+ * which allows users to transfer `ERC1363` tokens directly to the wrapper with a callback to wrap the tokens.
+ */
 abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleToken, IERC1363Receiver {
     using TFHE for *;
     using SafeCast for *;
@@ -22,9 +27,14 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     /// @dev Mapping from gateway decryption request ID to the address that will receive the tokens
     mapping(uint256 decryptionRequest => address) private _receivers;
 
-    error ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller(address);
-    error ConfidentialFungibleTokenERC20WrapperInvalidUnwrapRequest(uint256);
-    error ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient(address);
+    /// @dev The caller `caller` is unauthorized to call the given function.
+    error ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller(address caller);
+
+    /// @dev The unwrap request id being filled is invalid.
+    error ConfidentialFungibleTokenERC20WrapperInvalidUnwrapRequest(uint256 requestID);
+
+    /// @dev The chosen recipient `recipient` for the unwrap request is invalid.
+    error ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient(address recipient);
 
     modifier onlyGateway() {
         require(
@@ -52,14 +62,12 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
             abi.encodeCall(IERC20Metadata.decimals, ())
         );
         if (success && encodedDecimals.length >= 32) {
-            uint256 returnedDecimals = abi.decode(encodedDecimals, (uint256));
-            if (returnedDecimals <= type(uint8).max) {
-                return uint8(returnedDecimals);
-            }
+            return abi.decode(encodedDecimals, (uint8));
         }
         return 18;
     }
 
+    /// @inheritdoc ConfidentialFungibleToken
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }
@@ -77,6 +85,11 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         return _underlying;
     }
 
+    /**
+     * @dev `ERC1363` callback function which wraps tokens to the address specified in `data` or
+     * the address `from` (if no address is specified in `data`). This function refunds any excess tokens
+     * sent beyond the nearest multiple of {rate}. See {wrap} from more details on wrapping tokens.
+     */
     function onTransferReceived(
         address /*operator*/,
         address from,
@@ -101,6 +114,11 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         return IERC1363Receiver.onTransferReceived.selector;
     }
 
+    /**
+     * @dev Wraps value `value` of the underlying token into a confidential token and sends it to
+     * `to`. Tokens are exchanged at a fixed rate specified by {rate} such that `value / rate()` confidential
+     * tokens are sent. Amount transferred in is rounded down to the nearest multiple of {rate}.
+     */
     function wrap(address to, uint256 value) public virtual {
         // take ownership of the tokens
         SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), value - (value % rate()));
@@ -109,16 +127,32 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         _mint(to, (value / rate()).toUint64().asEuint64());
     }
 
+    /**
+     * @dev Variant of {unwrap} that passes an `inputProof` which approves the caller for the `encryptedAmount`
+     * in the ACL.
+     */
     function unwrap(address from, address to, einput encryptedAmount, bytes calldata inputProof) public virtual {
-        unwrap(from, to, encryptedAmount.asEuint64(inputProof));
+        _unwrap(from, to, encryptedAmount.asEuint64(inputProof));
     }
 
+    /**
+     * @dev Unwraps tokens from `from` and sends the underlying tokens to `to`. The caller must be `from`
+     * or be an approved operator for `from`. `amount * rate()` underlying tokens are sent to `to`.
+     *
+     * NOTE: This is an asynchronous function and waits for decryption to be completed off-chain before disbursing
+     * tokens.
+     * NOTE: The caller *must* already be approved by ACL for the given `amount`.
+     */
     function unwrap(address from, address to, euint64 amount) public virtual {
-        require(to != address(0), ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient(to));
         require(
             amount.isAllowed(msg.sender),
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
         );
+        _unwrap(from, to, amount);
+    }
+
+    function _unwrap(address from, address to, euint64 amount) internal virtual {
+        require(to != address(0), ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient(to));
         require(
             from == msg.sender || isOperator(from, msg.sender),
             ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender)
@@ -134,14 +168,18 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
             cts,
             this.finalizeUnwrap.selector,
             0,
-            block.timestamp + 3600,
+            block.timestamp + 1 days, // Max delay is 1 day
             false
-        ); // max delay ?
+        );
 
         // register who is getting the tokens
         _receivers[requestID] = to;
     }
 
+    /**
+     * @dev Called by the fhEVM gateway with the decrypted amount `amount` for a request id `requestId`.
+     * Fills unwrap requests.
+     */
     function finalizeUnwrap(uint256 requestID, uint64 amount) public virtual onlyGateway {
         address to = _receivers[requestID];
         require(to != address(0), ConfidentialFungibleTokenERC20WrapperInvalidUnwrapRequest(requestID));

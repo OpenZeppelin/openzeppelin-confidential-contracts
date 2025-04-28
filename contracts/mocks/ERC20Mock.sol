@@ -13,14 +13,6 @@ contract ERC20Mock is ERC1363 {
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }
-
-    function $_mint(address to, uint256 amount) public {
-        _mint(to, amount);
-    }
-
-    function $_burn(address from, uint256 amount) public {
-        _burn(from, amount);
-    }
 }
 
 contract ERC20RevertDecimalsMock is ERC20Mock {
@@ -28,5 +20,16 @@ contract ERC20RevertDecimalsMock is ERC20Mock {
 
     function decimals() public pure override returns (uint8) {
         revert("Decimals not available");
+    }
+}
+
+contract ERC20ExcessDecimalsMock is ERC20Mock {
+    constructor() ERC20Mock("ERC20ExcessDecimalsMock", "ERC20ExcessDecimalsMock", 18) {}
+
+    function decimals() public pure override returns (uint8) {
+        assembly {
+            mstore(0, 300)
+            return(0, 0x20)
+        }
     }
 }

@@ -14,7 +14,7 @@ describe("ConfidentialFungibleToken", function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract("ConfidentialFungibleTokenMock", [name, symbol, uri]);
+    const token = await ethers.deployContract("$ConfidentialFungibleTokenMock", [name, symbol, uri]);
     this.accounts = accounts.slice(3);
     this.holder = holder;
     this.recipient = recipient;
@@ -239,6 +239,25 @@ describe("ConfidentialFungibleToken", function () {
         }
       });
     }
+
+    it("internal function reverts on from address zero", async function () {
+      const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
+      input.add64(100);
+      const encryptedInput = await input.encrypt();
+
+      await expect(
+        this.token
+          .connect(this.holder)
+          ["$_transfer(address,address,bytes32,bytes)"](
+            ethers.ZeroAddress,
+            this.recipient.address,
+            encryptedInput.handles[0],
+            encryptedInput.inputProof,
+          ),
+      )
+        .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenInvalidSender")
+        .withArgs(ethers.ZeroAddress);
+    });
   });
 
   describe("transfer with callback", function () {

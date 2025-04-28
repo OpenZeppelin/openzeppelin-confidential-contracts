@@ -23,10 +23,6 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZama
         TFHE.allow(totalSupply(), _OWNER);
     }
 
-    function $_setOperator(address holder, address operator, uint48 until) public virtual {
-        return _setOperator(holder, operator, until);
-    }
-
     function $_mint(
         address to,
         einput encryptedAmount,
