@@ -128,14 +128,6 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     }
 
     /**
-     * @dev Variant of {unwrap} that passes an `inputProof` which approves the caller for the `encryptedAmount`
-     * in the ACL.
-     */
-    function unwrap(address from, address to, einput encryptedAmount, bytes calldata inputProof) public virtual {
-        _unwrap(from, to, encryptedAmount.asEuint64(inputProof));
-    }
-
-    /**
      * @dev Unwraps tokens from `from` and sends the underlying tokens to `to`. The caller must be `from`
      * or be an approved operator for `from`. `amount * rate()` underlying tokens are sent to `to`.
      *
@@ -149,6 +141,14 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
         );
         _unwrap(from, to, amount);
+    }
+
+    /**
+     * @dev Variant of {unwrap} that passes an `inputProof` which approves the caller for the `encryptedAmount`
+     * in the ACL.
+     */
+    function unwrap(address from, address to, einput encryptedAmount, bytes calldata inputProof) public virtual {
+        _unwrap(from, to, encryptedAmount.asEuint64(inputProof));
     }
 
     function _unwrap(address from, address to, euint64 amount) internal virtual {
