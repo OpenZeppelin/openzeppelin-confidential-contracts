@@ -12,17 +12,14 @@ interface IConfidentialFungibleToken {
     event OperatorSet(address indexed holder, address indexed operator, uint48 until);
 
     /// @dev Emitted when a confidential transfer is made from `from` to `to` of encrypted amount `amount`.
-    event ConfidentialTransfer(address indexed from, address indexed to, euint64 amount);
+    event ConfidentialTransfer(address indexed from, address indexed to, euint64 indexed amount);
 
     /**
-     * @dev Emitted when a confidential transfer is disclosed. Accounts with access to the amount `amount`
-     * emitted in {ConfidentialTransfer} should be able to disclose the transfer. This functionality is
-     * implementation specific.
-     *
-     * NOTE: A confidential transfer may be disclosed at any time after the transfer occurred. It may only be
-     * disclosed once.
+     * @dev Emitted when an encrypted amount is disclosed. Accounts with access to the encrypted amount
+     * `encryptedAmount` that is also accessible to this contract should be able to disclose the amount.
+     * This functionality is implementation specific.
      */
-    event ConfidentialTransferDisclosed(address indexed from, address indexed to, uint64 amount);
+    event EncryptedAmountDisclosed(euint64 indexed encryptedAmount, uint64 amount);
 
     /// @dev Returns the name of the token.
     function name() external view returns (string memory);

@@ -4,9 +4,10 @@ pragma solidity ^0.8.24;
 
 import { TFHE, euint64, einput } from "fhevm/lib/TFHE.sol";
 import { ConfidentialFungibleToken } from "../token/ConfidentialFungibleToken.sol";
+import { SepoliaZamaGatewayConfig } from "fhevm/config/ZamaGatewayConfig.sol";
 import { SepoliaZamaFHEVMConfig } from "fhevm/config/ZamaFHEVMConfig.sol";
 
-contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZamaFHEVMConfig {
+contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZamaFHEVMConfig, SepoliaZamaGatewayConfig {
     address private immutable _OWNER;
 
     constructor(
@@ -19,7 +20,6 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZama
 
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
         transferred = super._update(from, to, amount);
-
         TFHE.allow(totalSupply(), _OWNER);
     }
 

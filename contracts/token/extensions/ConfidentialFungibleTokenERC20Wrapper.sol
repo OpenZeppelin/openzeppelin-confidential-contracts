@@ -27,22 +27,8 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     /// @dev Mapping from gateway decryption request ID to the address that will receive the tokens
     mapping(uint256 decryptionRequest => address) private _receivers;
 
-    /// @dev The caller `caller` is unauthorized to call the given function.
-    error ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller(address caller);
-
-    /// @dev The unwrap request id being filled is invalid.
-    error ConfidentialFungibleTokenERC20WrapperInvalidUnwrapRequest(uint256 requestID);
-
     /// @dev The chosen recipient `recipient` for the unwrap request is invalid.
     error ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient(address recipient);
-
-    modifier onlyGateway() {
-        require(
-            msg.sender == Gateway.gatewayContractAddress(),
-            ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller(msg.sender)
-        );
-        _;
-    }
 
     constructor(IERC20 underlying_) {
         _underlying = underlying_;
@@ -97,10 +83,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         bytes calldata data
     ) public virtual returns (bytes4) {
         // check caller is the token contract
-        require(
-            address(underlying()) == msg.sender,
-            ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller(msg.sender)
-        );
+        require(address(underlying()) == msg.sender, ConfidentialFungibleTokenUnauthorizedCaller(msg.sender));
 
         // transfer excess back to the sender
         uint256 excess = value % rate();
@@ -182,7 +165,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
      */
     function finalizeUnwrap(uint256 requestID, uint64 amount) public virtual onlyGateway {
         address to = _receivers[requestID];
-        require(to != address(0), ConfidentialFungibleTokenERC20WrapperInvalidUnwrapRequest(requestID));
+        require(to != address(0), ConfidentialFungibleTokenInvalidGatewayRequest(requestID));
         delete _receivers[requestID];
 
         SafeERC20.safeTransfer(underlying(), to, amount * rate());
