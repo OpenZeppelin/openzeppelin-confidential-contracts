@@ -12,7 +12,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
 
 /**
- * @dev Simple wrapper contract built on top of {ConfidentialFungibleToken} that allows wrapping an ERC20 token
+ * @dev A wrapper contract built on top of {ConfidentialFungibleToken} that allows wrapping an ERC20 token
  * into a confidential fungible token. The wrapper contract implements the {IERC1363Receiver} interface
  * which allows users to transfer `ERC1363` tokens directly to the wrapper with a callback to wrap the tokens.
  */
