@@ -1,12 +1,15 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 
+import { awaitAllDecryptionResults, initGateway } from "../_template/asyncDecrypt";
 import { createInstance } from "../_template/instance";
 import { reencryptEuint64 } from "../_template/reencrypt";
+import { impersonate } from "../helpers/accounts";
 
 const name = "ConfidentialFungibleToken";
 const symbol = "CFT";
 const uri = "https://example.com/metadata";
+const gatewayAddress = "0x33347831500F1e73f0ccCBb95c9f86B94d7b1123";
 
 /* eslint-disable no-unexpected-multiline */
 describe("ConfidentialFungibleToken", function () {
@@ -214,7 +217,7 @@ describe("ConfidentialFungibleToken", function () {
                   encryptedInput.inputProof,
                 );
             }
-            const transferEvent = (await tx.wait()).logs.filter((log) => log.address === this.token.target)[0];
+            const transferEvent = (await tx.wait()).logs.filter((log: any) => log.address === this.token.target)[0];
             expect(transferEvent.args[0]).to.equal(this.holder.address);
             expect(transferEvent.args[1]).to.equal(this.recipient.address);
 
@@ -267,7 +270,7 @@ describe("ConfidentialFungibleToken", function () {
 
         // Verify event contents
         expect(tx).to.emit(this.recipientContract, "ConfidentialTransferCallback").withArgs(callbackSuccess);
-        const transferEvents = (await tx.wait()).logs.filter((log) => log.address === this.token.target);
+        const transferEvents = (await tx.wait()).logs.filter((log: any) => log.address === this.token.target);
 
         const outboundTransferEvent = transferEvents[0];
         const inboundTransferEvent = transferEvents[1];
@@ -330,6 +333,84 @@ describe("ConfidentialFungibleToken", function () {
       await expect(
         reencryptEuint64(this.recipient, this.fhevm, balanceOfHandle, this.token.target),
       ).to.eventually.equal(1000);
+    });
+  });
+
+  describe("disclose", function () {
+    let expectedAmount: any;
+    let expectedHandle: any;
+
+    before(async function () {
+      await initGateway();
+    });
+
+    beforeEach(async function () {
+      expectedAmount = undefined;
+      expectedHandle = undefined;
+    });
+
+    it("user balance", async function () {
+      const holderBalanceHandle = await this.token.balanceOf(this.holder);
+
+      await this.token.connect(this.holder).discloseEncryptedAmount(holderBalanceHandle);
+
+      expectedAmount = 1000n;
+      expectedHandle = holderBalanceHandle;
+    });
+
+    it("transaction amount", async function () {
+      const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
+      input.add64(400);
+      const encryptedInput = await input.encrypt();
+
+      const tx = await this.token["confidentialTransfer(address,bytes32,bytes)"](
+        this.recipient,
+        encryptedInput.handles[0],
+        encryptedInput.inputProof,
+      );
+
+      const transferEvent = (await tx.wait()).logs.filter((log: any) => log.address === this.token.target)[0];
+      const transferAmount = transferEvent.args[2];
+
+      await this.token.connect(this.recipient).discloseEncryptedAmount(transferAmount);
+
+      expectedAmount = 400n;
+      expectedHandle = transferAmount;
+    });
+
+    it("other user's balance", async function () {
+      const holderBalanceHandle = await this.token.balanceOf(this.holder);
+
+      await expect(this.token.connect(this.recipient).discloseEncryptedAmount(holderBalanceHandle))
+        .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue")
+        .withArgs(holderBalanceHandle, this.recipient);
+    });
+
+    it("finalized from invalid address", async function () {
+      await expect(this.token.connect(this.holder).finalizeDiscloseEncryptedAmount(0, 0))
+        .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedCaller")
+        .withArgs(this.holder.address);
+    });
+
+    it("finalized with invalid requestId", async function () {
+      await impersonate(hre, gatewayAddress);
+      const gatewaySigner = await ethers.getSigner(gatewayAddress);
+
+      await expect(this.token.connect(gatewaySigner).finalizeDiscloseEncryptedAmount(100, 0))
+        .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenInvalidGatewayRequest")
+        .withArgs(100);
+    });
+
+    afterEach(async function () {
+      if (expectedHandle === undefined || expectedAmount === undefined) return;
+
+      await awaitAllDecryptionResults();
+
+      // Check that event was correctly emitted
+      const eventFilter = this.token.filters.EncryptedAmountDisclosed();
+      const discloseEvent = (await this.token.queryFilter(eventFilter))[0];
+      expect(discloseEvent.args[0]).to.equal(expectedHandle);
+      expect(discloseEvent.args[1]).to.equal(expectedAmount);
     });
   });
 });
