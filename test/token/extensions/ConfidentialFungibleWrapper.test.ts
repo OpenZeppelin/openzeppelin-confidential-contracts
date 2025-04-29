@@ -95,7 +95,7 @@ describe("ConfidentialFungibleTokenWrapper", function () {
 
           it("from unauthorized caller", async function () {
             await expect(this.wrapper.connect(this.holder).onTransferReceived(this.holder, this.holder, 100, "0x"))
-              .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller")
+              .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenUnauthorizedCaller")
               .withArgs(this.holder.address);
           });
         }
@@ -235,7 +235,7 @@ describe("ConfidentialFungibleTokenWrapper", function () {
 
     it("finalized not by gateway", async function () {
       await expect(this.wrapper.connect(this.holder).finalizeUnwrap(12, 12))
-        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller")
+        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenUnauthorizedCaller")
         .withArgs(this.holder);
     });
 
@@ -244,7 +244,7 @@ describe("ConfidentialFungibleTokenWrapper", function () {
       const gatewaySigner = await ethers.getSigner(gatewayAddress);
 
       await expect(this.wrapper.connect(gatewaySigner).finalizeUnwrap(12, 12))
-        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenERC20WrapperInvalidUnwrapRequest")
+        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenInvalidGatewayRequest")
         .withArgs(12);
     });
   });
