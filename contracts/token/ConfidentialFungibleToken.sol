@@ -3,6 +3,7 @@
 pragma solidity ^0.8.24;
 
 import { TFHE, einput, ebool, euint64 } from "fhevm/lib/TFHE.sol";
+import { Gateway } from "fhevm/gateway/lib/Gateway.sol";
 import { IConfidentialFungibleToken, IConfidentialFungibleTokenReceiver } from "./IConfidentialFungibleToken.sol";
 
 function tryIncrease(euint64 oldValue, euint64 delta) returns (ebool success, euint64 updated) {
@@ -41,6 +42,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
+    mapping(uint256 requestId => euint64 encryptedValue) private _requestHandles;
     euint64 private _totalSupply;
     string private _name;
     string private _symbol;
@@ -64,6 +66,18 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
      * NOTE: Try using the equivalent transfer function with an input proof.
      */
     error ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(euint64 amount, address user);
+
+    error ConfidentialFungibleTokenUnauthorizedCaller(address caller);
+
+    error ConfidentialFungibleTokenInvalidGatewayRequest(uint256 requestId);
+
+    modifier onlyGateway() {
+        require(
+            msg.sender == Gateway.gatewayContractAddress(),
+            ConfidentialFungibleTokenUnauthorizedCaller(msg.sender)
+        );
+        _;
+    }
 
     constructor(string memory name_, string memory symbol_, string memory tokenURI_) {
         _name = name_;
@@ -212,15 +226,32 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         transferred.allowTransient(msg.sender);
     }
 
-    function discloseTransfer(
-        address /*from*/,
-        address /*to*/,
-        euint64 /*amount*/,
-        uint64 /*decryptedAmount*/,
-        bytes calldata /*decryptedProof*/,
-        bytes calldata /*inclusionProof*/
-    ) public virtual {
-        revert("not implemented yet");
+    function discloseEncryptedAmount(euint64 encryptedAmount) public virtual {
+        require(
+            encryptedAmount.isAllowed(msg.sender) && encryptedAmount.isAllowed(address(this)),
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(encryptedAmount, msg.sender)
+        );
+
+        uint256[] memory cts = new uint256[](1);
+        cts[0] = euint64.unwrap(encryptedAmount);
+        uint256 requestID = Gateway.requestDecryption(
+            cts,
+            this.finalizeDiscloseEncryptedAmount.selector,
+            0,
+            block.timestamp + 1 days,
+            false
+        );
+        _requestHandles[requestID] = encryptedAmount;
+    }
+
+    function finalizeDiscloseEncryptedAmount(uint256 requestId, uint64 amount) public virtual onlyGateway {
+        require(
+            euint64.unwrap(_requestHandles[requestId]) != 0,
+            ConfidentialFungibleTokenInvalidGatewayRequest(requestId)
+        );
+        emit EncryptedAmountDisclosed(_requestHandles[requestId], amount);
+
+        _requestHandles[requestId] = euint64.wrap(0);
     }
 
     function _setOperator(address holder, address operator, uint48 until) internal virtual {

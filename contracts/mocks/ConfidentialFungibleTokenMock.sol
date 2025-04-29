@@ -19,7 +19,6 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZama
 
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
         transferred = super._update(from, to, amount);
-
         TFHE.allow(totalSupply(), _OWNER);
     }
 
