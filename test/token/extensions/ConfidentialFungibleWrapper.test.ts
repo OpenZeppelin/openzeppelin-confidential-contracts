@@ -1,13 +1,15 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 
 import { awaitAllDecryptionResults, initGateway } from "../../_template/asyncDecrypt";
 import { createInstance } from "../../_template/instance";
 import { reencryptEuint64 } from "../../_template/reencrypt";
+import { impersonate } from "../../helpers/accounts";
 
 const name = "ConfidentialFungibleToken";
 const symbol = "CFT";
 const uri = "https://example.com/metadata";
+const gatewayAddress = "0x33347831500F1e73f0ccCBb95c9f86B94d7b1123";
 
 /* eslint-disable no-unexpected-multiline */
 describe("ConfidentialFungibleTokenWrapper", function () {
@@ -90,6 +92,12 @@ describe("ConfidentialFungibleTokenWrapper", function () {
               reencryptEuint64(this.recipient, this.fhevm, wrappedBalanceHandle, this.wrapper.target),
             ).to.eventually.equal(ethers.parseUnits("100", 9));
           });
+
+          it("from unauthorized caller", async function () {
+            await expect(this.wrapper.connect(this.holder).onTransferReceived(this.holder, this.holder, 100, "0x"))
+              .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller")
+              .withArgs(this.holder.address);
+          });
         }
       });
     }
@@ -126,24 +134,13 @@ describe("ConfidentialFungibleTokenWrapper", function () {
       );
     });
 
-    it("to invalid recipient", async function () {
-      const withdrawalAmount = ethers.parseUnits("10", 9);
-      const input = this.fhevm.createEncryptedInput(this.wrapper.target, this.holder.address);
-      input.add64(withdrawalAmount);
-      const encryptedInput = await input.encrypt();
+    it("unwrap full balance", async function () {
+      await this.wrapper
+        .connect(this.holder)
+        .unwrap(this.holder, this.holder, await this.wrapper.balanceOf(this.holder.address));
+      await awaitAllDecryptionResults();
 
-      await expect(
-        this.wrapper
-          .connect(this.holder)
-          ["unwrap(address,address,bytes32,bytes)"](
-            this.holder,
-            ethers.ZeroAddress,
-            encryptedInput.handles[0],
-            encryptedInput.inputProof,
-          ),
-      )
-        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient")
-        .withArgs(ethers.ZeroAddress);
+      await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits("1000", 18));
     });
 
     it("more than balance", async function () {
@@ -163,6 +160,26 @@ describe("ConfidentialFungibleTokenWrapper", function () {
 
       await awaitAllDecryptionResults();
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits("900", 18));
+    });
+
+    it("to invalid recipient", async function () {
+      const withdrawalAmount = ethers.parseUnits("10", 9);
+      const input = this.fhevm.createEncryptedInput(this.wrapper.target, this.holder.address);
+      input.add64(withdrawalAmount);
+      const encryptedInput = await input.encrypt();
+
+      await expect(
+        this.wrapper
+          .connect(this.holder)
+          ["unwrap(address,address,bytes32,bytes)"](
+            this.holder,
+            ethers.ZeroAddress,
+            encryptedInput.handles[0],
+            encryptedInput.inputProof,
+          ),
+      )
+        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient")
+        .withArgs(ethers.ZeroAddress);
     });
 
     it("via an approved operator", async function () {
@@ -214,6 +231,21 @@ describe("ConfidentialFungibleTokenWrapper", function () {
       await expect(this.wrapper.connect(this.holder).unwrap(this.holder, this.holder, totalSupplyHandle))
         .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue")
         .withArgs(totalSupplyHandle, this.holder);
+    });
+
+    it("finalized not by gateway", async function () {
+      await expect(this.wrapper.connect(this.holder).finalizeUnwrap(12, 12))
+        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenERC20WrapperUnauthorizedCaller")
+        .withArgs(this.holder);
+    });
+
+    it("finalized for an invalid request id", async function () {
+      await impersonate(hre, gatewayAddress);
+      const gatewaySigner = await ethers.getSigner(gatewayAddress);
+
+      await expect(this.wrapper.connect(gatewaySigner).finalizeUnwrap(12, 12))
+        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenERC20WrapperInvalidUnwrapRequest")
+        .withArgs(12);
     });
   });
 
