@@ -14,7 +14,7 @@ import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
 
 /**
  * @dev A wrapper contract built on top of {ConfidentialFungibleToken} that allows wrapping an `ERC20` token
- * into a confidential fungible token. The wrapper contract implements the {IERC1363Receiver} interface
+ * into a confidential fungible token. The wrapper contract implements the `IERC1363Receiver` interface
  * which allows users to transfer `ERC1363` tokens directly to the wrapper with a callback to wrap the tokens.
  */
 abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleToken, IERC1363Receiver {

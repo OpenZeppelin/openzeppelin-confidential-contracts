@@ -6,7 +6,7 @@ import { ebool, einput, euint64 } from "fhevm/lib/TFHE.sol";
 /// @dev Draft interface for a confidential fungible token standard utilizing the Zama TFHE library.
 interface IConfidentialFungibleToken {
     /**
-     * @dev Emitted when the `until` timestamp for an operator `operator` is updated for a given `holder`.
+     * @dev Emitted when the expiration timestamp for an operator `operator` is updated for a given `holder`.
      * The operator may move any amount of tokens on behalf of the holder until the timestamp `until`.
      */
     event OperatorSet(address indexed holder, address indexed operator, uint48 until);
@@ -15,9 +15,10 @@ interface IConfidentialFungibleToken {
     event ConfidentialTransfer(address indexed from, address indexed to, euint64 indexed amount);
 
     /**
-     * @dev Emitted when an encrypted amount is disclosed. Accounts with access to the encrypted amount
-     * `encryptedAmount` that is also accessible to this contract should be able to disclose the amount.
-     * This functionality is implementation specific.
+     * @dev Emitted when an encrypted amount is disclosed.
+     *
+     * Accounts with access to the encrypted amount `encryptedAmount` that is also accessible to this contract
+     * should be able to disclose the amount. This functionality is implementation specific.
      */
     event EncryptedAmountDisclosed(euint64 indexed encryptedAmount, uint64 amount);
 
@@ -68,7 +69,7 @@ interface IConfidentialFungibleToken {
 
     /**
      * @dev Transfers the encrypted amount `encryptedAmount` from `from` to `to` with the given input proof
-     * `inputProof`. `msg.sender` must be either the `from` account or an operator for `from`.
+     * `inputProof`. `msg.sender` must be either `from` or an operator for `from`.
      *
      * Returns the encrypted amount that was actually transferred.
      */
@@ -89,7 +90,7 @@ interface IConfidentialFungibleToken {
      * @dev Similar to {confidentialTransfer-address-einput-bytes} but with a callback to `to` after the transfer.
      *
      * The callback is made to the {IConfidentialFungibleTokenReceiver-onConfidentialTransferReceived} function on the
-     * `to` address with the actual transferred amount (may differ from the given `encryptedAmount`) and the given
+     * to address with the actual transferred amount (may differ from the given `encryptedAmount`) and the given
      * data `data`.
      */
     function confidentialTransferAndCall(
