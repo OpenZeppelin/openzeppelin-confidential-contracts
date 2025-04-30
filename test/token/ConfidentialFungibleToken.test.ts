@@ -34,6 +34,24 @@ describe("ConfidentialFungibleToken", function () {
       ["$_mint(address,bytes32,bytes)"](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
   });
 
+  describe("constructor", function () {
+    it("sets the name", async function () {
+      await expect(this.token.name()).to.eventually.equal(name);
+    });
+
+    it("sets the symbol", async function () {
+      await expect(this.token.symbol()).to.eventually.equal(symbol);
+    });
+
+    it("sets the uri", async function () {
+      await expect(this.token.tokenURI()).to.eventually.equal(uri);
+    });
+
+    it("decimals are 9", async function () {
+      await expect(this.token.decimals()).to.eventually.equal(9);
+    });
+  });
+
   describe("mint", function () {
     for (const existingUser of [false, true]) {
       it(`to ${existingUser ? "existing" : "new"} user`, async function () {

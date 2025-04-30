@@ -59,7 +59,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     /// @dev The given holder `holder` is not authorized to spend on behalf of `spender`.
     error ConfidentialFungibleTokenUnauthorizedSpender(address holder, address spender);
 
-    /// @dev The `holder` is trying to send tokens but has a balance of 0.
+    /// @dev The holder `holder` is trying to send tokens but has a balance of 0.
     error ConfidentialFungibleTokenZeroBalance(address holder);
 
     /**
@@ -69,8 +69,10 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
      */
     error ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(euint64 amount, address user);
 
+    /// @dev The given caller `caller` is not authorized for the current operation.
     error ConfidentialFungibleTokenUnauthorizedCaller(address caller);
 
+    /// @dev The given gateway request ID `requestId` is invalid.
     error ConfidentialFungibleTokenInvalidGatewayRequest(uint256 requestId);
 
     modifier onlyGateway() {
@@ -228,6 +230,13 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         transferred.allowTransient(msg.sender);
     }
 
+    /**
+     * @dev Discloses an encrypted amount `encryptedAmount` publicly via an {EncryptedAmountDisclosed}
+     * event. The caller and this contract must be authorized to use the encrypted amount on the ACL.
+     *
+     * NOTE: This is an asynchronous operation where the actual decryption happens off-chain and
+     * {finalizeDiscloseEncryptedAmount} is called with the result.
+     */
     function discloseEncryptedAmount(euint64 encryptedAmount) public virtual {
         require(
             encryptedAmount.isAllowed(msg.sender) && encryptedAmount.isAllowed(address(this)),
@@ -246,6 +255,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         _requestHandles[requestID] = encryptedAmount;
     }
 
+    /// @dev May only be called by the gateway contract. Finalizes a disclose encrypted amount request.
     function finalizeDiscloseEncryptedAmount(uint256 requestId, uint64 amount) public virtual onlyGateway {
         require(
             euint64.unwrap(_requestHandles[requestId]) != 0,
