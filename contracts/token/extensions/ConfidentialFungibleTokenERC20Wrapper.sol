@@ -27,9 +27,6 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     /// @dev Mapping from gateway decryption request ID to the address that will receive the tokens
     mapping(uint256 decryptionRequest => address) private _receivers;
 
-    /// @dev The chosen recipient `recipient` for the unwrap request is invalid.
-    error ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient(address recipient);
-
     constructor(IERC20 underlying_) {
         _underlying = underlying_;
 
@@ -135,7 +132,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     }
 
     function _unwrap(address from, address to, euint64 amount) internal virtual {
-        require(to != address(0), ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient(to));
+        require(to != address(0), ConfidentialFungibleTokenInvalidReceiver(to));
         require(
             from == msg.sender || isOperator(from, msg.sender),
             ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender)

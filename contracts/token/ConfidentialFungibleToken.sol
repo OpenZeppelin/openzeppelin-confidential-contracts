@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 
 import { TFHE, einput, ebool, euint64 } from "fhevm/lib/TFHE.sol";
 import { Gateway } from "fhevm/gateway/lib/Gateway.sol";
+
 import { IConfidentialFungibleToken } from "../interfaces/IConfidentialFungibleToken.sol";
 import { IConfidentialFungibleTokenReceiver } from "../interfaces/IConfidentialFungibleTokenReceiver.sol";
 
@@ -287,7 +288,9 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         sent.allowTransient(to);
 
         // Perform callback
-        transferred = _checkOnERC1363TransferReceived(msg.sender, from, to, sent, data).select(sent, 0.asEuint64());
+        transferred = ConfidentialFungibleTokenUtils
+            .checkOnERC1363TransferReceived(msg.sender, from, to, sent, data)
+            .select(sent, 0.asEuint64());
 
         // Refund if success fails. refund should never fail
         _update(to, from, sent.sub(transferred));
@@ -326,32 +329,5 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         if (to != address(0)) transferred.allow(to);
         transferred.allowThis();
         emit ConfidentialTransfer(from, to, transferred);
-    }
-
-    // TODO: move to utils library ?
-    function _checkOnERC1363TransferReceived(
-        address operator,
-        address from,
-        address to,
-        euint64 value,
-        bytes calldata data
-    ) private returns (ebool) {
-        if (to.code.length > 0) {
-            try
-                IConfidentialFungibleTokenReceiver(to).onConfidentialTransferReceived(operator, from, value, data)
-            returns (ebool retval) {
-                return retval;
-            } catch (bytes memory reason) {
-                if (reason.length == 0) {
-                    revert ConfidentialFungibleTokenInvalidReceiver(to);
-                } else {
-                    assembly ("memory-safe") {
-                        revert(add(32, reason), mload(reason))
-                    }
-                }
-            }
-        } else {
-            return true.asEbool();
-        }
     }
 }

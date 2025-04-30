@@ -178,7 +178,7 @@ describe("ConfidentialFungibleTokenWrapper", function () {
             encryptedInput.inputProof,
           ),
       )
-        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenERC20WrapperInvalidTokenRecipient")
+        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenInvalidReceiver")
         .withArgs(ethers.ZeroAddress);
     });
 
