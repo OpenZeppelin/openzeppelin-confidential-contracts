@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import { TFHE, ebool, euint64 } from "fhevm/lib/TFHE.sol";
 
-import { IConfidentialFungibleTokenReceiver } from "../IConfidentialFungibleToken.sol";
+import { IConfidentialFungibleTokenReceiver } from "../../interfaces/IConfidentialFungibleTokenReceiver.sol";
 import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
 
 /// @dev Library that provides common {ConfidentialFungibleToken} utility functions.
