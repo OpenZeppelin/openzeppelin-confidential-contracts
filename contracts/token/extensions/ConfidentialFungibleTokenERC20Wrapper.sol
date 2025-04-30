@@ -9,6 +9,7 @@ import { IERC20Metadata } from "@openzeppelin/contracts/interfaces/IERC20Metadat
 import { IERC1363Receiver } from "@openzeppelin/contracts/interfaces/IERC1363Receiver.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
 
 /**
