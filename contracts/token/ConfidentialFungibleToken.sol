@@ -4,7 +4,8 @@ pragma solidity ^0.8.24;
 
 import { TFHE, einput, ebool, euint64 } from "fhevm/lib/TFHE.sol";
 import { Gateway } from "fhevm/gateway/lib/Gateway.sol";
-import { IConfidentialFungibleToken, IConfidentialFungibleTokenReceiver } from "./IConfidentialFungibleToken.sol";
+import { IConfidentialFungibleToken } from "../interfaces/IConfidentialFungibleToken.sol";
+import { IConfidentialFungibleTokenReceiver } from "../interfaces/IConfidentialFungibleTokenReceiver.sol";
 
 function tryIncrease(euint64 oldValue, euint64 delta) returns (ebool success, euint64 updated) {
     if (euint64.unwrap(oldValue) == 0) {
