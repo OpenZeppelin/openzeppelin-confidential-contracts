@@ -35,8 +35,8 @@ task("test", async (_taskArgs, hre, runSuper) => {
       ),
     );
 
+    await kms.connect(zeroSigner).initialize(oneSigner.address);
     await Promise.all([
-      kms.connect(zeroSigner).initialize(oneSigner.address),
       kms.connect(oneSigner).addSigner(kmsSigner.address),
       input.connect(zeroSigner).initialize(oneSigner.address),
       gateway.connect(zeroSigner).addRelayer(zeroSigner.address),
