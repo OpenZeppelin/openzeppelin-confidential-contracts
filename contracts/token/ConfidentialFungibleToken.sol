@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.24;
 
-import { TFHE, einput, ebool, euint64 } from "fhevm/lib/TFHE.sol";
+import { FHE, externalEbool, externalEuint64, ebool, euint64 } from "@fhevm/solidity/lib/FHE.sol";
 import { Gateway } from "fhevm/gateway/lib/Gateway.sol";
 
 import { IConfidentialFungibleToken } from "../interfaces/IConfidentialFungibleToken.sol";
@@ -10,18 +10,18 @@ import { ConfidentialFungibleTokenUtils } from "./utils/ConfidentialFungibleToke
 
 function tryIncrease(euint64 oldValue, euint64 delta) returns (ebool success, euint64 updated) {
     if (euint64.unwrap(oldValue) == 0) {
-        success = TFHE.asEbool(true);
+        success = FHE.asEbool(true);
         updated = delta;
     } else {
-        euint64 newValue = TFHE.add(oldValue, delta);
-        success = TFHE.ge(newValue, oldValue);
-        updated = TFHE.select(success, newValue, oldValue);
+        euint64 newValue = FHE.add(oldValue, delta);
+        success = FHE.ge(newValue, oldValue);
+        updated = FHE.select(success, newValue, oldValue);
     }
 }
 
 function tryDecrease(euint64 oldValue, euint64 delta) returns (ebool success, euint64 updated) {
-    success = TFHE.ge(oldValue, delta);
-    updated = TFHE.select(success, TFHE.sub(oldValue, delta), oldValue);
+    success = FHE.ge(oldValue, delta);
+    updated = FHE.select(success, FHE.sub(oldValue, delta), oldValue);
 }
 
 /**
@@ -40,7 +40,7 @@ function tryDecrease(euint64 oldValue, euint64 delta) returns (ebool success, eu
  * - Safe overflow/underflow handling for FHE operations
  */
 abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
-    using TFHE for *;
+    using FHE for *;
 
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
@@ -132,10 +132,10 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     /// @inheritdoc IConfidentialFungibleToken
     function confidentialTransfer(
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64 transferred) {
-        transferred = _transfer(msg.sender, to, encryptedAmount.asEuint64(inputProof));
+        transferred = _transfer(msg.sender, to, encryptedAmount.fromExternal(inputProof));
         transferred.allowTransient(msg.sender);
     }
 
@@ -153,11 +153,11 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     function confidentialTransferFrom(
         address from,
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64 transferred) {
         require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
-        transferred = _transfer(from, to, encryptedAmount.asEuint64(inputProof));
+        transferred = _transfer(from, to, encryptedAmount.fromExternal(inputProof));
         transferred.allowTransient(msg.sender);
     }
 
@@ -179,11 +179,11 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     /// @inheritdoc IConfidentialFungibleToken
     function confidentialTransferAndCall(
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
-        transferred = _transferAndCall(msg.sender, to, encryptedAmount.asEuint64(inputProof), data);
+        transferred = _transferAndCall(msg.sender, to, encryptedAmount.fromExternal(inputProof), data);
         transferred.allowTransient(msg.sender);
     }
 
@@ -205,12 +205,12 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     function confidentialTransferFromAndCall(
         address from,
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
         require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
-        transferred = _transferAndCall(from, to, encryptedAmount.asEuint64(inputProof), data);
+        transferred = _transferAndCall(from, to, encryptedAmount.fromExternal(inputProof), data);
         transferred.allowTransient(msg.sender);
     }
 
@@ -244,7 +244,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         );
 
         uint256[] memory cts = new uint256[](1);
-        cts[0] = euint64.unwrap(encryptedAmount);
+        cts[0] = uint256(euint64.unwrap(encryptedAmount));
         uint256 requestID = Gateway.requestDecryption(
             cts,
             this.finalizeDiscloseEncryptedAmount.selector,

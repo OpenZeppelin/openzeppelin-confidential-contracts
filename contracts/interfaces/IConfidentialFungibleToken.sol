@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { ebool, einput, euint64 } from "fhevm/lib/TFHE.sol";
+import { externalEuint64, ebool, euint64 } from "@fhevm/solidity/lib/FHE.sol";
 
 /// @dev Draft interface for a confidential fungible token standard utilizing the Zama TFHE library.
 interface IConfidentialFungibleToken {
@@ -57,7 +57,7 @@ interface IConfidentialFungibleToken {
      */
     function confidentialTransfer(
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) external returns (euint64);
 
@@ -76,7 +76,7 @@ interface IConfidentialFungibleToken {
     function confidentialTransferFrom(
         address from,
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) external returns (euint64);
 
@@ -95,7 +95,7 @@ interface IConfidentialFungibleToken {
      */
     function confidentialTransferAndCall(
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
     ) external returns (euint64 transferred);
@@ -111,7 +111,7 @@ interface IConfidentialFungibleToken {
     function confidentialTransferFromAndCall(
         address from,
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
     ) external returns (euint64 transferred);
