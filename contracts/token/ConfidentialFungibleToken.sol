@@ -7,22 +7,7 @@ import { Gateway } from "fhevm/gateway/lib/Gateway.sol";
 
 import { IConfidentialFungibleToken } from "../interfaces/IConfidentialFungibleToken.sol";
 import { ConfidentialFungibleTokenUtils } from "./utils/ConfidentialFungibleTokenUtils.sol";
-
-function tryIncrease(euint64 oldValue, euint64 delta) returns (ebool success, euint64 updated) {
-    if (euint64.unwrap(oldValue) == 0) {
-        success = TFHE.asEbool(true);
-        updated = delta;
-    } else {
-        euint64 newValue = TFHE.add(oldValue, delta);
-        success = TFHE.ge(newValue, oldValue);
-        updated = TFHE.select(success, newValue, oldValue);
-    }
-}
-
-function tryDecrease(euint64 oldValue, euint64 delta) returns (ebool success, euint64 updated) {
-    success = TFHE.ge(oldValue, delta);
-    updated = TFHE.select(success, TFHE.sub(oldValue, delta), oldValue);
-}
+import { TFHESafeMath } from "../utils/TFHESafeMath.sol";
 
 /**
  * @dev Reference implementation for {IConfidentialFungibleToken}.
@@ -41,6 +26,7 @@ function tryDecrease(euint64 oldValue, euint64 delta) returns (ebool success, eu
  */
 abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     using TFHE for *;
+    using TFHESafeMath for euint64;
 
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
@@ -311,12 +297,12 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         euint64 ptr;
 
         if (from == address(0)) {
-            (success, ptr) = tryIncrease(_totalSupply, amount);
+            (success, ptr) = _totalSupply.tryIncrease(amount);
             ptr.allowThis();
             _totalSupply = ptr;
         } else {
             require(euint64.unwrap(_balances[from]) != 0, ConfidentialFungibleTokenZeroBalance(from));
-            (success, ptr) = tryDecrease(_balances[from], amount);
+            (success, ptr) = _balances[from].tryDecrease(amount);
             ptr.allowThis();
             ptr.allow(from);
             _balances[from] = ptr;
