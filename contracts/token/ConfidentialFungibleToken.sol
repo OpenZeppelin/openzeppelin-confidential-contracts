@@ -121,7 +121,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
     /// @inheritdoc IConfidentialFungibleToken
     function isOperator(address holder, address spender) public view virtual returns (bool) {
-        return block.timestamp <= _operators[holder][spender];
+        return holder == spender || block.timestamp <= _operators[holder][spender];
     }
 
     /// @inheritdoc IConfidentialFungibleToken

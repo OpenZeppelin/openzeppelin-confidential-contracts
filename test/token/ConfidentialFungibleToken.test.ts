@@ -281,29 +281,66 @@ describe("ConfidentialFungibleToken", function () {
       });
     }
 
-    it("full balance without storage proof", async function () {
-      const fullBalanceHandle = await this.token.balanceOf(this.holder);
+    describe("without input proof", function () {
+      for (const [usingTransferFrom, withCallback] of [false, true].flatMap((val) => [
+        [val, false],
+        [val, true],
+      ])) {
+        describe(`using ${usingTransferFrom ? "confidentialTransferFrom" : "confidentialTransfer"} ${
+          withCallback ? "with callback" : ""
+        }`, function () {
+          async function callTransfer(contract: any, from: any, to: any, amount: any) {
+            let functionParams = [to, amount];
 
-      await this.token.connect(this.holder).confidentialTransfer(this.recipient, fullBalanceHandle);
+            if (withCallback) {
+              functionParams.push("0x");
+              if (usingTransferFrom) {
+                functionParams.unshift(from);
+                await contract.connect(from).confidentialTransferFromAndCall(...functionParams);
+              } else {
+                await contract.connect(from).confidentialTransferAndCall(...functionParams);
+              }
+            } else {
+              if (usingTransferFrom) {
+                functionParams.unshift(from);
+                await contract.connect(from).confidentialTransferFrom(...functionParams);
+              } else {
+                await contract.connect(from).confidentialTransfer(...functionParams);
+              }
+            }
+          }
 
-      await expect(
-        reencryptEuint64(this.recipient, this.fhevm, await this.token.balanceOf(this.recipient), this.token.target),
-      ).to.eventually.equal(1000);
-    });
+          it("full balance", async function () {
+            const fullBalanceHandle = await this.token.balanceOf(this.holder);
 
-    it("other user balance without storage proof", async function () {
-      const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
-      input.add64(100);
-      const encryptedInput = await input.encrypt();
+            await callTransfer(this.token, this.holder, this.recipient, fullBalanceHandle);
 
-      await this.token
-        .connect(this.holder)
-        ["$_mint(address,bytes32,bytes)"](this.recipient, encryptedInput.handles[0], encryptedInput.inputProof);
+            await expect(
+              reencryptEuint64(
+                this.recipient,
+                this.fhevm,
+                await this.token.balanceOf(this.recipient),
+                this.token.target,
+              ),
+            ).to.eventually.equal(1000);
+          });
 
-      const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
-      await expect(this.token.connect(this.holder).confidentialTransfer(this.recipient, recipientBalanceHandle))
-        .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue")
-        .withArgs(recipientBalanceHandle, this.holder);
+          it("other user balance should revert", async function () {
+            const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
+            input.add64(100);
+            const encryptedInput = await input.encrypt();
+
+            await this.token
+              .connect(this.holder)
+              ["$_mint(address,bytes32,bytes)"](this.recipient, encryptedInput.handles[0], encryptedInput.inputProof);
+
+            const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
+            await expect(callTransfer(this.token, this.holder, this.recipient, recipientBalanceHandle))
+              .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue")
+              .withArgs(recipientBalanceHandle, this.holder);
+          });
+        });
+      }
     });
 
     it("internal function reverts on from address zero", async function () {
