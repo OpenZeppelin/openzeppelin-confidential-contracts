@@ -229,7 +229,7 @@ describe("ConfidentialFungibleTokenWrapper", function () {
       const totalSupplyHandle = await this.wrapper.totalSupply();
 
       await expect(this.wrapper.connect(this.holder).unwrap(this.holder, this.holder, totalSupplyHandle))
-        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue")
+        .to.be.revertedWithCustomError(this.wrapper, "ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount")
         .withArgs(totalSupplyHandle, this.holder);
     });
 

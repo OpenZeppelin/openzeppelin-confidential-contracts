@@ -23,12 +23,12 @@ library ConfidentialFungibleTokenUtils {
         address operator,
         address from,
         address to,
-        euint64 value,
+        euint64 amount,
         bytes calldata data
     ) internal returns (ebool) {
         if (to.code.length > 0) {
             try
-                IConfidentialFungibleTokenReceiver(to).onConfidentialTransferReceived(operator, from, value, data)
+                IConfidentialFungibleTokenReceiver(to).onConfidentialTransferReceived(operator, from, amount, data)
             returns (ebool retval) {
                 return retval;
             } catch (bytes memory reason) {

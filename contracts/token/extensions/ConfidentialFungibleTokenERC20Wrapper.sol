@@ -77,35 +77,35 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     function onTransferReceived(
         address /*operator*/,
         address from,
-        uint256 value,
+        uint256 amount,
         bytes calldata data
     ) public virtual returns (bytes4) {
         // check caller is the token contract
         require(address(underlying()) == msg.sender, ConfidentialFungibleTokenUnauthorizedCaller(msg.sender));
 
         // transfer excess back to the sender
-        uint256 excess = value % rate();
+        uint256 excess = amount % rate();
         if (excess > 0) SafeERC20.safeTransfer(underlying(), from, excess);
 
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, (value / rate()).toUint64().asEuint64());
+        _mint(to, (amount / rate()).toUint64().asEuint64());
 
         // return magic value
         return IERC1363Receiver.onTransferReceived.selector;
     }
 
     /**
-     * @dev Wraps value `value` of the underlying token into a confidential token and sends it to
-     * `to`. Tokens are exchanged at a fixed rate specified by {rate} such that `value / rate()` confidential
+     * @dev Wraps amount `amount` of the underlying token into a confidential token and sends it to
+     * `to`. Tokens are exchanged at a fixed rate specified by {rate} such that `amount / rate()` confidential
      * tokens are sent. Amount transferred in is rounded down to the nearest multiple of {rate}.
      */
-    function wrap(address to, uint256 value) public virtual {
+    function wrap(address to, uint256 amount) public virtual {
         // take ownership of the tokens
-        SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), value - (value % rate()));
+        SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
 
         // mint confidential token
-        _mint(to, (value / rate()).toUint64().asEuint64());
+        _mint(to, (amount / rate()).toUint64().asEuint64());
     }
 
     /**
@@ -119,7 +119,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     function unwrap(address from, address to, euint64 amount) public virtual {
         require(
             amount.isAllowed(msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         _unwrap(from, to, amount);
     }

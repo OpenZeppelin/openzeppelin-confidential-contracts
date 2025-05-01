@@ -30,7 +30,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
-    mapping(uint256 requestId => euint64 encryptedValue) private _requestHandles;
+    mapping(uint256 requestId => euint64 encryptedAmount) private _requestHandles;
     euint64 private _totalSupply;
     string private _name;
     string private _symbol;
@@ -49,11 +49,11 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     error ConfidentialFungibleTokenZeroBalance(address holder);
 
     /**
-     * @dev The caller `user` does not have access to the encrypted value `amount`.
+     * @dev The caller `user` does not have access to the encrypted amount `amount`.
      *
      * NOTE: Try using the equivalent transfer function with an input proof.
      */
-    error ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(euint64 amount, address user);
+    error ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(euint64 amount, address user);
 
     /// @dev The given caller `caller` is not authorized for the current operation.
     error ConfidentialFungibleTokenUnauthorizedCaller(address caller);
@@ -129,7 +129,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     function confidentialTransfer(address to, euint64 amount) public virtual returns (euint64 transferred) {
         require(
             amount.isAllowed(msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         transferred = _transfer(msg.sender, to, amount);
         transferred.allowTransient(msg.sender);
@@ -155,7 +155,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     ) public virtual returns (euint64 transferred) {
         require(
             amount.isAllowed(msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
         transferred = _transfer(from, to, amount);
@@ -181,7 +181,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     ) public virtual returns (euint64 transferred) {
         require(
             amount.isAllowed(msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         transferred = _transferAndCall(msg.sender, to, amount, data);
         transferred.allowTransient(msg.sender);
@@ -209,7 +209,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     ) public virtual returns (euint64 transferred) {
         require(
             amount.isAllowed(msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(amount, msg.sender)
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
         transferred = _transferAndCall(from, to, amount, data);
@@ -226,7 +226,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     function discloseEncryptedAmount(euint64 encryptedAmount) public virtual {
         require(
             encryptedAmount.isAllowed(msg.sender) && encryptedAmount.isAllowed(address(this)),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue(encryptedAmount, msg.sender)
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
 
         uint256[] memory cts = new uint256[](1);

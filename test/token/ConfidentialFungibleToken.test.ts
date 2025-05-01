@@ -336,7 +336,7 @@ describe("ConfidentialFungibleToken", function () {
 
             const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
             await expect(callTransfer(this.token, this.holder, this.recipient, recipientBalanceHandle))
-              .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue")
+              .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount")
               .withArgs(recipientBalanceHandle, this.holder);
           });
         });
@@ -501,7 +501,7 @@ describe("ConfidentialFungibleToken", function () {
       const holderBalanceHandle = await this.token.balanceOf(this.holder);
 
       await expect(this.token.connect(this.recipient).discloseEncryptedAmount(holderBalanceHandle))
-        .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedUseOfEncryptedValue")
+        .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount")
         .withArgs(holderBalanceHandle, this.recipient);
     });
 
