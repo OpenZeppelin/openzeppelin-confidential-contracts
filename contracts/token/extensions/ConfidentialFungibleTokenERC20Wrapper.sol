@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.24;
 
-import { TFHE, einput, euint64 } from "fhevm/lib/TFHE.sol";
+import { FHE, externalEbool, externalEuint64, ebool, euint64 } from "@fhevm/solidity/lib/FHE.sol";
 import { Gateway } from "fhevm/gateway/lib/Gateway.sol";
 import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
@@ -18,7 +18,7 @@ import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
  * which allows users to transfer `ERC1363` tokens directly to the wrapper with a callback to wrap the tokens.
  */
 abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleToken, IERC1363Receiver {
-    using TFHE for *;
+    using FHE for *;
     using SafeCast for *;
 
     IERC20 private immutable _underlying;
@@ -128,8 +128,13 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
      * @dev Variant of {unwrap} that passes an `inputProof` which approves the caller for the `encryptedAmount`
      * in the ACL.
      */
-    function unwrap(address from, address to, einput encryptedAmount, bytes calldata inputProof) public virtual {
-        _unwrap(from, to, encryptedAmount.asEuint64(inputProof));
+    function unwrap(
+        address from,
+        address to,
+        externalEuint64 encryptedAmount,
+        bytes calldata inputProof
+    ) public virtual {
+        _unwrap(from, to, encryptedAmount.fromExternal(inputProof));
     }
 
     function _unwrap(address from, address to, euint64 amount) internal virtual {
@@ -144,7 +149,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
 
         // decrypt that burntAmount
         uint256[] memory cts = new uint256[](1);
-        cts[0] = euint64.unwrap(burntAmount);
+        cts[0] = uint256(euint64.unwrap(burntAmount));
         uint256 requestID = Gateway.requestDecryption(
             cts,
             this.finalizeUnwrap.selector,

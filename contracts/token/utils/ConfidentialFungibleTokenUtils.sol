@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { TFHE, ebool, euint64 } from "fhevm/lib/TFHE.sol";
+import { FHE, ebool, euint64 } from "@fhevm/solidity/lib/FHE.sol";
 
 import { IConfidentialFungibleTokenReceiver } from "../../interfaces/IConfidentialFungibleTokenReceiver.sol";
 import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
 
 /// @dev Library that provides common {ConfidentialFungibleToken} utility functions.
 library ConfidentialFungibleTokenUtils {
-    using TFHE for *;
+    using FHE for *;
 
     /**
      * @dev Performs an `ERC1363` like transfer callback to the recipient of the transfer `to`. Should be invoked
