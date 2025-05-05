@@ -10,7 +10,7 @@
   "scripts": {
     "clean": "hardhat clean && rimraf build contracts/build",
     "compile": "hardhat compile",
-    "docs": "prepare-docs && oz-docs",
+    "docs": "npm run prepare-docs && oz-docs",
     "docs:watch": "oz-docs watch contracts docs/templates docs/config.js",
     "lint": "npm run lint:js && npm run lint:sol",
     "lint:fix": "npm run lint:js:fix && npm run lint:sol:fix",

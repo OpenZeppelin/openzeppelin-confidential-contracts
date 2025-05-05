@@ -4,4 +4,5 @@
 NOTE: This document is better viewed at https://docs.openzeppelin.com/community-contracts/token
 
 Hello World
+
 {{ConfidentialFungibleToken}}
