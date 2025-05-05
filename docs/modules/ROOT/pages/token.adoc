@@ -1,0 +1,38 @@
+= Confidential Fungible Token
+
+The xref:api:token.adoc#ConfidentialFungibleToken[Confidential Fungible Token] is a standard fungible token implementation that is similar to `ERC20`, but built from the ground up with confidentiality in mind. All balance and transfer amounts are represented as cypher-text handles, ensuring that no data is leaked to the public.
+
+[[usage]]
+== Usage
+
+[[transfer]]
+=== Transfer
+
+The token standard exposes eight different transfer functions. They are all permutations of the following options:
+
+* `transfer` and `transferFrom`: `transfer` moves tokens from the sender while `transferFrom` moves tokens from a specified `from` address. See xref:#operator[operator].
+* With and without `inputProof`: An `inputProof` can be provided to prove that the sender knows the value of the cypher-text `amount` provided.
+* With and without an `ERC1363` style callback: The standard implements callbacks, see the callback section for more details.
+
+Select the appropriate transfer function and generate a cypher-text using https://github.com/zama-ai/fhevm-js[fhevm-js]. If the cypher-text is a new value, or the sender does not have permission to access the cypher text, an input-proof must be provided to show that the sender knows the value of the cypher-text.
+
+[[operator]]
+=== Operator
+
+An operator is an address that has the ability to move tokens on behalf of another address by calling `transferFrom`. If Bob is an operator for Alice, Bob can move any amount of Alice's tokens at any point in time. Operators are set using an expiration timestamp--this can be thought of as a limited duration infinite approval for an `ERC20`. Below is an example of setting Bob as an operator for Alice for 24 hours.
+
+```typescript
+const alice: Wallet;
+const expirationTimestamp = Math.round(Date.now()) + 60 * 60 * 24; // Now + 24 hours
+
+await tokenContract.connect(alice).setOperator(bob, expirationTimestamp);
+```
+
+WARNING: Setting an operator for any amount of time allows the operator to _**take all of your tokens**_. Carefully vet all potential operators before giving operator approval.
+
+[[callback]]
+=== Callback
+
+The token standard exposes transfer functions with and without callbacks. It is up to the caller to decide if a callback is necessary for the transfer. When supported, callbacks allow for skipping the operator approval step and directly invoking the receiver contract via a callback.
+
+Smart contracts that are the target of a callback must implement xref:api:interfaces.adoc#IConfidentialFungibleTokenReceiver[IConfidentialFungibleTokenReceiver]. After balances are updated for a transfer, the callback is triggered by calling the xref:api:interfaces.adoc#IConfidentialFungibleTokenReceiver-onConfidentialTransferReceived-address-address-euint64-bytes-[onConfidentialTransferReceived] function. The function must either revert or return an `ebool` indicating success. If the callback returns false, the token transfer is reversed.

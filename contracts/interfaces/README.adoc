@@ -3,7 +3,10 @@
 [.readme-notice]
 NOTE: This document is better viewed at https://docs.openzeppelin.com/community-contracts/token
 
-Hello World
+These interfaces are available as `.sol` files and are useful to interact with third party contracts that implement them.
+
+* {IConfidentialFungibleToken}
+* {IConfidentialFungibleTokenReceiver}
 
 {{IConfidentialFungibleToken}}
 {{IConfidentialFungibleTokenReceiver}}

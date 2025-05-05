@@ -1,9 +1,11 @@
 = Confidential Contracts
 
+A library of smart contracts that use cypher-texts for amount, allowing for a wide variety of confidential use-cases, such as confidential tokens, auctions, vesting, voting etc. While the contracts are not written in an opinionated method (other than using the standard encrypted values published by Zama), for testing and examples in the documentation, the https://github.com/zama-ai/fhevm-solidity[Zama fhEVM] will be used to operate on and decrypt https://www.zama.ai/introduction-to-homomorphic-encryption[FHE] cypher-texts.
+
 [[security]]
 == Security
 
-Contracts in the community library are provided as is, with no particular guarantees. Given changes in this repository are more frequent, the code is not formally audited and not covered by the https://www.immunefi.com/bounty/openzeppelin[bug bounty program on Immunefi].
+Contracts in the confidential contracts library are provided as is, with no particular guarantees. Given changes in this repository are more frequent, the code is not formally audited and not covered by the https://www.immunefi.com/bounty/openzeppelin[bug bounty program on Immunefi].
 
 Similarly, the code has no backward compatibility guarantees.
 
