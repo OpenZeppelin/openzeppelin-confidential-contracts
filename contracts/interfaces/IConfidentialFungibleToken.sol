@@ -81,8 +81,8 @@ interface IConfidentialFungibleToken {
     ) external returns (euint64);
 
     /**
-     * @dev Similar to {confidentialTransferFrom-address-einput-bytes} but without an input proof. The caller
-     * *must* already be allowed by ACL for the given `amount`.
+     * @dev Similar to {confidentialTransferFrom-address-address-einput-bytes} but without an input proof. The caller
+     * *must* be already allowed by ACL for the given `amount`.
      */
     function confidentialTransferFrom(address from, address to, euint64 amount) external returns (euint64 transferred);
 
@@ -107,7 +107,10 @@ interface IConfidentialFungibleToken {
         bytes calldata data
     ) external returns (euint64 transferred);
 
-    /// @dev Similar to {confidentialTransferFrom-address-einput-bytes} but with a callback to `to` after the transfer.
+    /**
+     * @dev Similar to {confidentialTransferFrom-address-address-einput-bytes} but with a callback to `to` after
+     * the transfer.
+     */
     function confidentialTransferFromAndCall(
         address from,
         address to,
@@ -116,7 +119,11 @@ interface IConfidentialFungibleToken {
         bytes calldata data
     ) external returns (euint64 transferred);
 
-    /// @dev Similar to {confidentialTransferFrom-address-euint64} but with a callback to `to` after the transfer.
+    /**
+     * @dev Similar to {confidentialTransferFrom-address-address-euint64} but with a callback to `to`
+     * after the transfer.
+     *
+     */
     function confidentialTransferFromAndCall(
         address from,
         address to,

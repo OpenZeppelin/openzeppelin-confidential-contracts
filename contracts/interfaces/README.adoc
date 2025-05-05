@@ -5,4 +5,5 @@ NOTE: This document is better viewed at https://docs.openzeppelin.com/community-
 
 Hello World
 
+{{IConfidentialFungibleToken}}
 {{IConfidentialFungibleTokenReceiver}}
