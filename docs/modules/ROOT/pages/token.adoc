@@ -49,4 +49,51 @@ Here is an example of a contract with a privileged minter and burner.
 include::api:example$ConfidentialFungibleTokenMintableBurnable.sol[]
 ----
 
-=== Swap `ConfidentialFungibleToken` to `ERC20`
+=== Swaps
+
+Swapping is one of the most primitive use-cases for fungible tokens. Below are examples for swapping between confidential and non-confidential tokens.
+
+==== Swap `ERC20` to `ConfidentialFungibleToken`
+
+Swapping from a non-confidential `ERC20` to a confidential `ConfidentialFungibleToken` is simple and actually done within the `ConfidentialFungibleTokenERC20Wrapper`. See the excerpt from the `wrap` function below.
+
+[source,solidity]
+----
+function wrap(address to, uint256 amount) public virtual {
+    // take ownership of the tokens
+    SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
+
+    // mint confidential token
+    _mint(to, (amount / rate()).toUint64().asEuint64());
+}
+----
+
+The `ERC20` token is simply transferred in, which would revert on failure. We then transfer out the correct amount of the `ConfidentialFungibleToken` using the internal `_mint` function, which is guaranteed to succeed.
+
+==== Swap `ConfidentialFungibleToken` to `ConfidentialFungibleToken`
+
+Swapping from a confidential `ConfidentialFungibleToken` to another confidential `ConfidentialFungibleToken` is a bit more complex although quite simple given the usage of the `TFHE` library. For the sake of the example, we will swap from `fromToken` to `toToken` with a 1:1 exchange rate.
+
+```solidity
+function swapConfidentialForConfidential(IConfidentialFungibleToken fromToken, IConfidentialFungibleToken toToken, address from, euint64 amount) public virtual {
+    require(fromToken.isOperator(address(this), msg.sender));
+
+    amount.allowTransient(address(fromToken));
+    euint64 amountTransferred = fromToken.transferFrom(msg.sender, address(this), amount);
+    
+    amountTransferred.allowTransient(address(toToken));
+    toToken.transfer(msg.sender, amountTransferred);
+}
+```
+The steps are as follows:
+
+. Check operator approval
+. Allow the `fromToken` to access `amount`
+. Transfer from `from` to this contract for `amount`
+. Allow the `toToken` to access `amountTransferred`
+. Transfer `amountTransferred` to `msg.sender`
+
+==== Swap `ConfidentialFungibleToken` to `ERC20`
+
+Swapping from a confidential token to a non-confidential token is the most complex since the decrypted data must be accessed to accurately complete the request.
+

@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 
 import { TFHE, einput, ebool, euint64 } from "fhevm/lib/TFHE.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-
 import { ConfidentialFungibleToken } from "../../token/ConfidentialFungibleToken.sol";
 
 contract ConfidentialFungibleTokenMintableBurnable is ConfidentialFungibleToken, Ownable {
