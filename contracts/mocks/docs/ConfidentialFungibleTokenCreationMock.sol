@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.24;
 
-import { TFHE, euint64, einput } from "fhevm/lib/TFHE.sol";
 import { ConfidentialFungibleToken } from "../../token/ConfidentialFungibleToken.sol";
 import { SepoliaZamaGatewayConfig } from "fhevm/config/ZamaGatewayConfig.sol";
 import { SepoliaZamaFHEVMConfig } from "fhevm/config/ZamaFHEVMConfig.sol";
