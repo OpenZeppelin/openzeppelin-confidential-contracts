@@ -120,19 +120,17 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         address to,
         einput encryptedAmount,
         bytes calldata inputProof
-    ) public virtual returns (euint64 transferred) {
-        transferred = _transfer(msg.sender, to, encryptedAmount.asEuint64(inputProof));
-        transferred.allowTransient(msg.sender);
+    ) public virtual returns (euint64) {
+        return _transfer(msg.sender, to, encryptedAmount.asEuint64(inputProof));
     }
 
     /// @inheritdoc IConfidentialFungibleToken
-    function confidentialTransfer(address to, euint64 amount) public virtual returns (euint64 transferred) {
+    function confidentialTransfer(address to, euint64 amount) public virtual returns (euint64) {
         require(
             amount.isAllowed(msg.sender),
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
-        transferred = _transfer(msg.sender, to, amount);
-        transferred.allowTransient(msg.sender);
+        return _transfer(msg.sender, to, amount);
     }
 
     /// @inheritdoc IConfidentialFungibleToken
@@ -281,7 +279,6 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     ) internal returns (euint64 transferred) {
         // Try to transfer amount + replace input with actually transferred amount.
         euint64 sent = _transfer(from, to, amount);
-        sent.allowTransient(to);
 
         // Perform callback
         transferred = ConfidentialFungibleTokenUtils
