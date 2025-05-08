@@ -95,5 +95,10 @@ The steps are as follows:
 
 ==== Swap `ConfidentialFungibleToken` to `ERC20`
 
-Swapping from a confidential token to a non-confidential token is the most complex since the decrypted data must be accessed to accurately complete the request.
+Swapping from a confidential token to a non-confidential token is the most complex since the decrypted data must be accessed to accurately complete the request. Decryption in our example will be done off-chain and relayed back using Zama's Gateway. Below is an example of a contract doing a 1:1 swap from a confidential token to an ERC20 token.
+
+[source,solidity]
+----
+include::api:example$SwapConfidentialToERC20.sol[]
+----
 
