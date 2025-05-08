@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import { ManagedVault } from "./ManagedVault.sol";
+
 abstract contract VestingBase {
     struct VestingStream {
         uint48 startTime;
@@ -11,11 +14,24 @@ abstract contract VestingBase {
     }
 
     mapping(uint256 => VestingStream) private _vestingStreams;
+    mapping(uint256 vestingId => address managedVault) private _managedVaults;
+    address private _managedVaultImplementation = address(new ManagedVault());
     uint256 numVestingStreams;
+
+    function claim(uint256 streamId) public virtual {
+        require(msg.sender == _vestingStreams[streamId].recipient);
+        _claim(streamId);
+    }
+
+    function createManagedVault(uint256 streamId) public virtual returns (address) {
+        return _createManagedVault(streamId);
+    }
 
     function _doTransferIn(address from, uint256 amount) internal virtual returns (uint256);
 
     function _doTransferOut(address to, uint256 amount) internal virtual returns (uint256);
+
+    function _doTransferOut(address from, address to, uint256 amount) internal virtual returns (uint256);
 
     function _mul(uint256 a, uint256 b) internal virtual returns (uint256);
 
@@ -44,11 +60,6 @@ abstract contract VestingBase {
         });
     }
 
-    function claim(uint256 streamId) public virtual {
-        require(msg.sender == _vestingStreams[streamId].recipient);
-        _claim(streamId);
-    }
-
     function _claim(uint256 streamId) internal virtual {
         VestingStream storage stream = _vestingStreams[streamId];
         uint256 claimAmount = _sub(
@@ -56,7 +67,28 @@ abstract contract VestingBase {
             stream.claimed
         );
 
-        uint256 amountTransferredOut = _doTransferOut(stream.recipient, claimAmount);
+        uint256 amountTransferredOut;
+
+        // If managed vault exists, do transfer out from there
+        address managedVault = _managedVaults[streamId];
+        if (managedVault != address(0)) {
+            amountTransferredOut = _doTransferOut(managedVault, stream.recipient, claimAmount);
+        } else {
+            amountTransferredOut = _doTransferOut(stream.recipient, claimAmount);
+        }
+
         stream.claimed = _prestore(_add(stream.claimed, amountTransferredOut));
+    }
+
+    function _createManagedVault(uint256 streamId) internal virtual returns (address) {
+        require(_managedVaults[streamId] == address(0), "Vault already exists");
+        require(_vestingStreams[streamId].recipient == msg.sender, "Not the recipient");
+
+        address vault = Clones.clone(_managedVaultImplementation);
+        _managedVaults[streamId] = vault;
+
+        _doTransferOut(vault, _vestingStreams[streamId].totalAmount - _vestingStreams[streamId].claimed);
+
+        return vault;
     }
 }
