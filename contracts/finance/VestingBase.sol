@@ -13,6 +13,11 @@ abstract contract VestingBase {
         uint256 claimed;
     }
 
+    error VestingBaseMangedVaultAlreadyExists(uint256 vestingStream, address managedVault);
+    error VestingBaseOnlyRecipient(address recipient);
+
+    event VestingBaseManagedVaultCreated(uint256 vestingStreamId, address managedVault);
+
     mapping(uint256 => VestingStream) private _vestingStreams;
     mapping(uint256 vestingId => address managedVault) private _managedVaults;
     address private _managedVaultImplementation = address(new ManagedVault());
@@ -81,13 +86,17 @@ abstract contract VestingBase {
     }
 
     function _createManagedVault(uint256 streamId) internal virtual returns (address) {
-        require(_managedVaults[streamId] == address(0), "Vault already exists");
-        require(_vestingStreams[streamId].recipient == msg.sender, "Not the recipient");
+        address existingVault = _managedVaults[streamId];
+        require(existingVault == address(0), VestingBaseMangedVaultAlreadyExists(streamId, existingVault));
+        address recipient = _vestingStreams[streamId].recipient;
+        require(recipient == msg.sender, VestingBaseOnlyRecipient(recipient));
 
         address vault = Clones.clone(_managedVaultImplementation);
         _managedVaults[streamId] = vault;
 
         _doTransferOut(vault, _vestingStreams[streamId].totalAmount - _vestingStreams[streamId].claimed);
+
+        emit VestingBaseManagedVaultCreated(streamId, vault);
 
         return vault;
     }
