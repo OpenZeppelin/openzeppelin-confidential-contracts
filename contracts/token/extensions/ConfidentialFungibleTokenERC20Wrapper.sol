@@ -41,16 +41,6 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         }
     }
 
-    function _tryGetAssetDecimals(IERC20 asset_) private view returns (uint8 assetDecimals) {
-        (bool success, bytes memory encodedDecimals) = address(asset_).staticcall(
-            abi.encodeCall(IERC20Metadata.decimals, ())
-        );
-        if (success && encodedDecimals.length >= 32) {
-            return abi.decode(encodedDecimals, (uint8));
-        }
-        return 18;
-    }
-
     /// @inheritdoc ConfidentialFungibleToken
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
@@ -132,6 +122,18 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         _unwrap(from, to, encryptedAmount.asEuint64(inputProof));
     }
 
+    /**
+     * @dev Called by the fhEVM gateway with the decrypted amount `amount` for a request id `requestId`.
+     * Fills unwrap requests.
+     */
+    function finalizeUnwrap(uint256 requestID, uint64 amount) public virtual onlyGateway {
+        address to = _receivers[requestID];
+        require(to != address(0), ConfidentialFungibleTokenInvalidGatewayRequest(requestID));
+        delete _receivers[requestID];
+
+        SafeERC20.safeTransfer(underlying(), to, amount * rate());
+    }
+
     function _unwrap(address from, address to, euint64 amount) internal virtual {
         require(to != address(0), ConfidentialFungibleTokenInvalidReceiver(to));
         require(
@@ -157,15 +159,13 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         _receivers[requestID] = to;
     }
 
-    /**
-     * @dev Called by the fhEVM gateway with the decrypted amount `amount` for a request id `requestId`.
-     * Fills unwrap requests.
-     */
-    function finalizeUnwrap(uint256 requestID, uint64 amount) public virtual onlyGateway {
-        address to = _receivers[requestID];
-        require(to != address(0), ConfidentialFungibleTokenInvalidGatewayRequest(requestID));
-        delete _receivers[requestID];
-
-        SafeERC20.safeTransfer(underlying(), to, amount * rate());
+    function _tryGetAssetDecimals(IERC20 asset_) private view returns (uint8 assetDecimals) {
+        (bool success, bytes memory encodedDecimals) = address(asset_).staticcall(
+            abi.encodeCall(IERC20Metadata.decimals, ())
+        );
+        if (success && encodedDecimals.length >= 32) {
+            return abi.decode(encodedDecimals, (uint8));
+        }
+        return 18;
     }
 }
