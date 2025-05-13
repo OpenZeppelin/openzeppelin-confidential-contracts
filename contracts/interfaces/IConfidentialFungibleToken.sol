@@ -63,7 +63,7 @@ interface IConfidentialFungibleToken {
 
     /**
      * @dev Similar to {confidentialTransfer-address-einput-bytes} but without an input proof. The caller
-     * *must* already be approved by ACL for the given `amount`.
+     * *must* already be allowed by ACL for the given `amount`.
      */
     function confidentialTransfer(address to, euint64 amount) external returns (euint64 transferred);
 
@@ -82,7 +82,7 @@ interface IConfidentialFungibleToken {
 
     /**
      * @dev Similar to {confidentialTransferFrom-address-einput-bytes} but without an input proof. The caller
-     * *must* be already approved by ACL for the given `amount`.
+     * *must* be already allowed by ACL for the given `amount`.
      */
     function confidentialTransferFrom(address from, address to, euint64 amount) external returns (euint64 transferred);
 
