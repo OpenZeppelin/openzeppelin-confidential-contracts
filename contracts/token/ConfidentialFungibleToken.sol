@@ -243,11 +243,9 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
     /// @dev May only be called by the gateway contract. Finalizes a disclose encrypted amount request.
     function finalizeDiscloseEncryptedAmount(uint256 requestId, uint64 amount) public virtual onlyGateway {
-        require(
-            euint64.unwrap(_requestHandles[requestId]) != 0,
-            ConfidentialFungibleTokenInvalidGatewayRequest(requestId)
-        );
-        emit EncryptedAmountDisclosed(_requestHandles[requestId], amount);
+        euint64 requestHandle = _requestHandles[requestId];
+        require(euint64.unwrap(requestHandle) != 0, ConfidentialFungibleTokenInvalidGatewayRequest(requestId));
+        emit EncryptedAmountDisclosed(requestHandle, amount);
 
         _requestHandles[requestId] = euint64.wrap(0);
     }
@@ -301,8 +299,9 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
             ptr.allowThis();
             _totalSupply = ptr;
         } else {
-            require(euint64.unwrap(_balances[from]) != 0, ConfidentialFungibleTokenZeroBalance(from));
-            (success, ptr) = _balances[from].tryDecrease(amount);
+            euint64 fromBalance = _balances[from];
+            require(euint64.unwrap(fromBalance) != 0, ConfidentialFungibleTokenZeroBalance(from));
+            (success, ptr) = fromBalance.tryDecrease(amount);
             ptr.allowThis();
             ptr.allow(from);
             _balances[from] = ptr;
