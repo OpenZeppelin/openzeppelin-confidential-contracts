@@ -18,9 +18,6 @@ import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
  * which allows users to transfer `ERC1363` tokens directly to the wrapper with a callback to wrap the tokens.
  */
 abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleToken, IERC1363Receiver {
-    using TFHE for *;
-    using SafeCast for *;
-
     IERC20 private immutable _underlying;
     uint8 private immutable _decimals;
     uint256 private immutable _rate;
@@ -79,7 +76,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
 
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, (amount / rate()).toUint64().asEuint64());
+        _mint(to, TFHE.asEuint64(SafeCast.toUint64(amount / rate())));
 
         // return magic value
         return IERC1363Receiver.onTransferReceived.selector;
@@ -95,7 +92,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
 
         // mint confidential token
-        _mint(to, (amount / rate()).toUint64().asEuint64());
+        _mint(to, TFHE.asEuint64(SafeCast.toUint64(amount / rate())));
     }
 
     /**
@@ -108,7 +105,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
      */
     function unwrap(address from, address to, euint64 amount) public virtual {
         require(
-            amount.isAllowed(msg.sender),
+            TFHE.isAllowed(amount, msg.sender),
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         _unwrap(from, to, amount);
@@ -119,7 +116,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
      * in the ACL.
      */
     function unwrap(address from, address to, einput encryptedAmount, bytes calldata inputProof) public virtual {
-        _unwrap(from, to, encryptedAmount.asEuint64(inputProof));
+        _unwrap(from, to, TFHE.asEuint64(encryptedAmount, inputProof));
     }
 
     /**

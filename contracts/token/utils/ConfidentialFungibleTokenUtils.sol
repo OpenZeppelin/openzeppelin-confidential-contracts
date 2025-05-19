@@ -8,8 +8,6 @@ import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
 
 /// @dev Library that provides common {ConfidentialFungibleToken} utility functions.
 library ConfidentialFungibleTokenUtils {
-    using TFHE for *;
-
     /**
      * @dev Performs an `ERC1363` like transfer callback to the recipient of the transfer `to`. Should be invoked
      * after all transfers "withCallback" on a {ConfidentialFungibleToken}.
@@ -41,7 +39,7 @@ library ConfidentialFungibleTokenUtils {
                 }
             }
         } else {
-            return true.asEbool();
+            return TFHE.asEbool(true);
         }
     }
 }

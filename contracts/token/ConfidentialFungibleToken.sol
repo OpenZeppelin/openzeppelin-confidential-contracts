@@ -25,9 +25,6 @@ import { TFHESafeMath } from "../utils/TFHESafeMath.sol";
  * - Safe overflow/underflow handling for FHE operations
  */
 abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
-    using TFHE for *;
-    using TFHESafeMath for euint64;
-
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
     mapping(uint256 requestId => euint64 encryptedAmount) private _requestHandles;
@@ -121,13 +118,13 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         einput encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64) {
-        return _transfer(msg.sender, to, encryptedAmount.asEuint64(inputProof));
+        return _transfer(msg.sender, to, TFHE.asEuint64(encryptedAmount, inputProof));
     }
 
     /// @inheritdoc IConfidentialFungibleToken
     function confidentialTransfer(address to, euint64 amount) public virtual returns (euint64) {
         require(
-            amount.isAllowed(msg.sender),
+            TFHE.isAllowed(amount, msg.sender),
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         return _transfer(msg.sender, to, amount);
@@ -141,8 +138,8 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         bytes calldata inputProof
     ) public virtual returns (euint64 transferred) {
         require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
-        transferred = _transfer(from, to, encryptedAmount.asEuint64(inputProof));
-        transferred.allowTransient(msg.sender);
+        transferred = _transfer(from, to, TFHE.asEuint64(encryptedAmount, inputProof));
+        TFHE.allowTransient(transferred, msg.sender);
     }
 
     /// @inheritdoc IConfidentialFungibleToken
@@ -152,12 +149,12 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         euint64 amount
     ) public virtual returns (euint64 transferred) {
         require(
-            amount.isAllowed(msg.sender),
+            TFHE.isAllowed(amount, msg.sender),
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
         transferred = _transfer(from, to, amount);
-        transferred.allowTransient(msg.sender);
+        TFHE.allowTransient(transferred, msg.sender);
     }
 
     /// @inheritdoc IConfidentialFungibleToken
@@ -167,8 +164,8 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
-        transferred = _transferAndCall(msg.sender, to, encryptedAmount.asEuint64(inputProof), data);
-        transferred.allowTransient(msg.sender);
+        transferred = _transferAndCall(msg.sender, to, TFHE.asEuint64(encryptedAmount, inputProof), data);
+        TFHE.allowTransient(transferred, msg.sender);
     }
 
     /// @inheritdoc IConfidentialFungibleToken
@@ -178,11 +175,11 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
         require(
-            amount.isAllowed(msg.sender),
+            TFHE.isAllowed(amount, msg.sender),
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         transferred = _transferAndCall(msg.sender, to, amount, data);
-        transferred.allowTransient(msg.sender);
+        TFHE.allowTransient(transferred, msg.sender);
     }
 
     /// @inheritdoc IConfidentialFungibleToken
@@ -194,8 +191,8 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
         require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
-        transferred = _transferAndCall(from, to, encryptedAmount.asEuint64(inputProof), data);
-        transferred.allowTransient(msg.sender);
+        transferred = _transferAndCall(from, to, TFHE.asEuint64(encryptedAmount, inputProof), data);
+        TFHE.allowTransient(transferred, msg.sender);
     }
 
     /// @inheritdoc IConfidentialFungibleToken
@@ -206,12 +203,12 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
         require(
-            amount.isAllowed(msg.sender),
+            TFHE.isAllowed(amount, msg.sender),
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
         transferred = _transferAndCall(from, to, amount, data);
-        transferred.allowTransient(msg.sender);
+        TFHE.allowTransient(transferred, msg.sender);
     }
 
     /**
@@ -223,7 +220,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
      */
     function discloseEncryptedAmount(euint64 encryptedAmount) public virtual {
         require(
-            encryptedAmount.isAllowed(msg.sender) && encryptedAmount.isAllowed(address(this)),
+            TFHE.isAllowed(encryptedAmount, msg.sender) && TFHE.isAllowed(encryptedAmount, address(this)),
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
 
@@ -279,12 +276,14 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         euint64 sent = _transfer(from, to, amount);
 
         // Perform callback
-        transferred = ConfidentialFungibleTokenUtils
-            .checkOnERC1363TransferReceived(msg.sender, from, to, sent, data)
-            .select(sent, 0.asEuint64());
+        transferred = TFHE.select(
+            ConfidentialFungibleTokenUtils.checkOnERC1363TransferReceived(msg.sender, from, to, sent, data),
+            sent,
+            TFHE.asEuint64(0)
+        );
 
         // Refund if success fails. refund should never fail
-        _update(to, from, sent.sub(transferred));
+        _update(to, from, TFHE.sub(sent, transferred));
     }
 
     function _update(address from, address to, euint64 amount) internal virtual returns (euint64 transferred) {
@@ -292,34 +291,34 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         euint64 ptr;
 
         if (from == address(0)) {
-            (success, ptr) = _totalSupply.tryIncrease(amount);
-            ptr.allowThis();
+            (success, ptr) = TFHESafeMath.tryIncrease(_totalSupply, amount);
+            TFHE.allowThis(ptr);
             _totalSupply = ptr;
         } else {
             euint64 fromBalance = _balances[from];
             require(euint64.unwrap(fromBalance) != 0, ConfidentialFungibleTokenZeroBalance(from));
-            (success, ptr) = fromBalance.tryDecrease(amount);
-            ptr.allowThis();
-            ptr.allow(from);
+            (success, ptr) = TFHESafeMath.tryDecrease(fromBalance, amount);
+            TFHE.allowThis(ptr);
+            TFHE.allow(ptr, from);
             _balances[from] = ptr;
         }
 
-        transferred = success.select(amount, 0.asEuint64());
+        transferred = TFHE.select(success, amount, TFHE.asEuint64(0));
 
         if (to == address(0)) {
-            ptr = _totalSupply.sub(transferred);
-            ptr.allowThis();
+            ptr = TFHE.sub(_totalSupply, transferred);
+            TFHE.allowThis(ptr);
             _totalSupply = ptr;
         } else {
-            ptr = _balances[to].add(transferred);
-            ptr.allowThis();
-            ptr.allow(to);
+            ptr = TFHE.add(_balances[to], transferred);
+            TFHE.allowThis(ptr);
+            TFHE.allow(ptr, to);
             _balances[to] = ptr;
         }
 
-        if (from != address(0)) transferred.allow(from);
-        if (to != address(0)) transferred.allow(to);
-        transferred.allowThis();
+        if (from != address(0)) TFHE.allow(transferred, from);
+        if (to != address(0)) TFHE.allow(transferred, to);
+        TFHE.allowThis(transferred);
         emit ConfidentialTransfer(from, to, transferred);
     }
 }
