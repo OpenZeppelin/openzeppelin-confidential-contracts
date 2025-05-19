@@ -163,7 +163,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         (bool success, bytes memory encodedDecimals) = address(asset_).staticcall(
             abi.encodeCall(IERC20Metadata.decimals, ())
         );
-        if (success && encodedDecimals.length >= 32) {
+        if (success && encodedDecimals.length == 32) {
             return abi.decode(encodedDecimals, (uint8));
         }
         return 18;
