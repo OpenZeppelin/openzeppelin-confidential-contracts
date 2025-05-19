@@ -1,6 +1,8 @@
 = Confidential Fungible Token
 
-The xref:api:token.adoc#ConfidentialFungibleToken[Confidential Fungible Token] is a standard fungible token implementation that is similar to `ERC20`, but built from the ground up with confidentiality in mind. All balance and transfer amounts are represented as cypher-text handles, ensuring that no data is leaked to the public.
+The xref:api:token.adoc#ConfidentialFungibleToken[Confidential Fungible Token] is a standard fungible token implementation that is similar to `ERC20`, but built from the ground up with confidentiality in mind. All balance and transfer amounts are represented as cypher-text handles, ensuring that no data is leaked to the public. 
+
+While the standard is built with inspiration from ERC-20, it is not ERC-20 compliant--the standard takes learning from all tokens built over the past 10 years (ERC-20, ERC-721, ERC-1155, ERC-6909 etc) and provides a functional interface for maximal functionality.
 
 [[usage]]
 == Usage
@@ -12,7 +14,7 @@ The token standard exposes eight different transfer functions. They are all perm
 
 * `transfer` and `transferFrom`: `transfer` moves tokens from the sender while `transferFrom` moves tokens from a specified `from` address. See xref:#operator[operator].
 * With and without `inputProof`: An `inputProof` can be provided to prove that the sender knows the value of the cypher-text `amount` provided.
-* With and without an `ERC1363` style callback: The standard implements callbacks, see the callback section for more details.
+* With and without an `ERC1363` style callback: The standard implements callbacks, see the xref:#callback[callback] section for more details.
 
 Select the appropriate transfer function and generate a cypher-text using https://github.com/zama-ai/fhevm-js[fhevm-js]. If the cypher-text is a new value, or the sender does not have permission to access the cypher text, an input-proof must be provided to show that the sender knows the value of the cypher-text.
 
@@ -28,6 +30,8 @@ const expirationTimestamp = Math.round(Date.now()) + 60 * 60 * 24; // Now + 24 h
 await tokenContract.connect(alice).setOperator(bob, expirationTimestamp);
 ```
 
+NOTE: Operators do not have allowance to reencrypt/decrypt balance handles for other addresses. This means that operators cannot transfer full balances and can only know success after a transaction (by decrypting the transferred amount).
+
 WARNING: Setting an operator for any amount of time allows the operator to _**take all of your tokens**_. Carefully vet all potential operators before giving operator approval.
 
 [[callback]]
@@ -35,14 +39,14 @@ WARNING: Setting an operator for any amount of time allows the operator to _**ta
 
 The token standard exposes transfer functions with and without callbacks. It is up to the caller to decide if a callback is necessary for the transfer. For smart contracts that support it, callbacks allow the operator approval step to be skipped and directly invoke the receiver contract via a callback.
 
-Smart contracts that are the target of a callback must implement xref:api:interfaces.adoc#IConfidentialFungibleTokenReceiver[IConfidentialFungibleTokenReceiver]. After balances are updated for a transfer, the callback is triggered by calling the xref:api:interfaces.adoc#IConfidentialFungibleTokenReceiver-onConfidentialTransferReceived-address-address-euint64-bytes-[onConfidentialTransferReceived] function. The function must either revert or return an `ebool` indicating success. If the callback returns false, the token transfer is reversed.
+Smart contracts that are the target of a callback must implement xref:api:interfaces.adoc#IConfidentialFungibleTokenReceiver[`++IConfidentialFungibleTokenReceiver++`]. After balances are updated for a transfer, the callback is triggered by calling the xref:api:interfaces.adoc#IConfidentialFungibleTokenReceiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`++onConfidentialTransferReceived++`] function. The function must either revert or return an `ebool` indicating success. If the callback returns false, the token transfer is reversed.
 
 [[examples]]
 == Examples
 
 === Privileged Minter/Burner
 
-Here is an example of a contract with a privileged minter and burner.
+Here is an example of a contract for a confidential fungible token with a privileged minter and burner.
 
 [source,solidity]
 ----
@@ -74,17 +78,11 @@ The `ERC20` token is simply transferred in, which would revert on failure. We th
 
 Swapping from a confidential `ConfidentialFungibleToken` to another confidential `ConfidentialFungibleToken` is a bit more complex although quite simple given the usage of the `TFHE` library. For the sake of the example, we will swap from `fromToken` to `toToken` with a 1:1 exchange rate.
 
-```solidity
-function swapConfidentialForConfidential(IConfidentialFungibleToken fromToken, IConfidentialFungibleToken toToken, address from, euint64 amount) public virtual {
-    require(fromToken.isOperator(address(this), msg.sender));
+[source,solidity]
+----
+include::api:example$SwapConfidentialFungibleTokenToConfidentialFungibleToken.sol[lines=8..24]
+----
 
-    amount.allowTransient(address(fromToken));
-    euint64 amountTransferred = fromToken.transferFrom(msg.sender, address(this), amount);
-    
-    amountTransferred.allowTransient(address(toToken));
-    toToken.transfer(msg.sender, amountTransferred);
-}
-```
 The steps are as follows:
 
 . Check operator approval
