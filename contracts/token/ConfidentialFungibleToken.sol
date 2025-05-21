@@ -294,36 +294,37 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
     function _update(address from, address to, euint64 amount) internal virtual returns (euint64 transferred) {
         ebool success;
-        euint64 ptr;
+
+        euint64 fromBalanceBefore = _balances[from];
+        euint64 fromBalanceAfter;
+        euint64 toBalanceBefore = _balances[to];
+        euint64 toBalanceAfter;
 
         if (from == address(0)) {
-            (success, ptr) = _totalSupply.tryIncrease(amount);
-            ptr.allowThis();
-            _totalSupply = ptr;
+            (success, fromBalanceAfter) = _totalSupply.tryIncrease(amount);
+            fromBalanceAfter.allowThis();
+            _totalSupply = fromBalanceAfter;
         } else {
-            require(euint64.unwrap(_balances[from]) != 0, ConfidentialFungibleTokenZeroBalance(from));
-            (success, ptr) = _balances[from].tryDecrease(amount);
-            ptr.allowThis();
-            ptr.allow(from);
-            _balances[from] = ptr;
+            require(euint64.unwrap(fromBalanceBefore) != 0, ConfidentialFungibleTokenZeroBalance(from));
+            (success, fromBalanceAfter) = fromBalanceBefore.tryDecrease(amount);
+            fromBalanceAfter.allowThis();
+            fromBalanceAfter.allow(from);
+            _balances[from] = fromBalanceAfter;
         }
 
         transferred = success.select(amount, 0.asEuint64());
 
         if (to == address(0)) {
-            ptr = _totalSupply.sub(transferred);
-            ptr.allowThis();
-            _totalSupply = ptr;
+            toBalanceAfter = _totalSupply.sub(transferred);
+            toBalanceAfter.allowThis();
+            _totalSupply = toBalanceAfter;
         } else {
-            ptr = _balances[to].add(transferred);
-            ptr.allowThis();
-            ptr.allow(to);
-            _balances[to] = ptr;
+            toBalanceAfter = toBalanceBefore.add(transferred);
+            toBalanceAfter.allowThis();
+            toBalanceAfter.allow(to);
+            _balances[to] = toBalanceAfter;
         }
 
-        if (from != address(0)) transferred.allow(from);
-        if (to != address(0)) transferred.allow(to);
-        transferred.allowThis();
-        emit ConfidentialTransfer(from, to, transferred);
+        emit ConfidentialTransfer(from, to, fromBalanceBefore, fromBalanceAfter, toBalanceBefore, toBalanceAfter);
     }
 }

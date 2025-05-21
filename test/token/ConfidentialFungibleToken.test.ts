@@ -255,27 +255,35 @@ describe("ConfidentialFungibleToken", function () {
             expect(transferEvent.args[0]).to.equal(this.holder.address);
             expect(transferEvent.args[1]).to.equal(this.recipient.address);
 
-            const transferAmountHandle = transferEvent.args[2];
+            const fromBalanceBeforeHandle = transferEvent.args[2];
+            const fromBalanceAfterHandle = transferEvent.args[3];
+            const toBalanceBeforeHandle = transferEvent.args[4];
+            const toBalanceAfterHandle = transferEvent.args[5];
             const holderBalanceHandle = await this.token.balanceOf(this.holder);
             const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
 
-            await expect(
-              reencryptEuint64(this.holder, this.fhevm, transferAmountHandle, this.token.target),
-            ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
-            await expect(
-              reencryptEuint64(this.recipient, this.fhevm, transferAmountHandle, this.token.target),
-            ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
-            // Other can not reencrypt the transfer amount
-            await expect(
-              reencryptEuint64(this.operator, this.fhevm, transferAmountHandle, this.token.target),
-            ).to.be.rejectedWith("User is not authorized to reencrypt this handle!");
+            expect(fromBalanceAfterHandle).to.equal(holderBalanceHandle);
+            expect(toBalanceAfterHandle).to.equal(recipientBalanceHandle);
 
-            await expect(
-              reencryptEuint64(this.holder, this.fhevm, holderBalanceHandle, this.token.target),
-            ).to.eventually.equal(1000 - (sufficientBalance ? transferAmount : 0));
-            await expect(
-              reencryptEuint64(this.recipient, this.fhevm, recipientBalanceHandle, this.token.target),
-            ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
+            const fromBalanceBefore =
+              fromBalanceBeforeHandle != 0
+                ? await reencryptEuint64(this.holder, this.fhevm, fromBalanceBeforeHandle, this.token.target)
+                : 0n;
+            const fromBalanceAfter =
+              fromBalanceAfterHandle != 0
+                ? await reencryptEuint64(this.holder, this.fhevm, fromBalanceAfterHandle, this.token.target)
+                : 0n;
+            const toBalanceBefore =
+              toBalanceBeforeHandle != 0
+                ? await reencryptEuint64(this.recipient, this.fhevm, toBalanceBeforeHandle, this.token.target)
+                : 0n;
+            const toBalanceAfter =
+              toBalanceAfterHandle != 0
+                ? await reencryptEuint64(this.recipient, this.fhevm, toBalanceAfterHandle, this.token.target)
+                : 0n;
+
+            expect(fromBalanceBefore - fromBalanceAfter).to.equal(sufficientBalance ? transferAmount : 0n);
+            expect(toBalanceAfter - toBalanceBefore).to.equal(sufficientBalance ? transferAmount : 0n);
           });
         }
       });
@@ -396,15 +404,41 @@ describe("ConfidentialFungibleToken", function () {
 
         expect(outboundTransferEvent.args[0]).to.equal(this.holder.address);
         expect(outboundTransferEvent.args[1]).to.equal(this.recipientContract.target);
-        await expect(
-          reencryptEuint64(this.holder, this.fhevm, outboundTransferEvent.args[2], this.token.target),
-        ).to.eventually.equal(1000);
+
+        const outboundTransferFromBalanceBeforeHandle = outboundTransferEvent.args[2];
+        const outboundTransferFromBalanceAfterHandle = outboundTransferEvent.args[3];
+        const outboundTransferFromBalanceBefore = await reencryptEuint64(
+          this.holder,
+          this.fhevm,
+          outboundTransferFromBalanceBeforeHandle,
+          this.token.target,
+        );
+        const outboundTransferFromBalanceAfter = await reencryptEuint64(
+          this.holder,
+          this.fhevm,
+          outboundTransferFromBalanceAfterHandle,
+          this.token.target,
+        );
+        expect(outboundTransferFromBalanceBefore - outboundTransferFromBalanceAfter).to.equal(1000);
 
         expect(inboundTransferEvent.args[0]).to.equal(this.recipientContract.target);
         expect(inboundTransferEvent.args[1]).to.equal(this.holder.address);
-        await expect(
-          reencryptEuint64(this.holder, this.fhevm, inboundTransferEvent.args[2], this.token.target),
-        ).to.eventually.equal(callbackSuccess ? 0 : 1000);
+
+        const inboundTransferToBalanceBeforeHandle = inboundTransferEvent.args[4];
+        const inboundTransferToBalanceAfterHandle = inboundTransferEvent.args[5];
+        const inboundTransferToBalanceBefore = await reencryptEuint64(
+          this.holder,
+          this.fhevm,
+          inboundTransferToBalanceBeforeHandle,
+          this.token.target,
+        );
+        const inboundTransferToBalanceAfter = await reencryptEuint64(
+          this.holder,
+          this.fhevm,
+          inboundTransferToBalanceAfterHandle,
+          this.token.target,
+        );
+        expect(inboundTransferToBalanceAfter - inboundTransferToBalanceBefore).to.equal(callbackSuccess ? 0 : 1000);
       });
     }
 
@@ -475,26 +509,6 @@ describe("ConfidentialFungibleToken", function () {
 
       expectedAmount = 1000n;
       expectedHandle = holderBalanceHandle;
-    });
-
-    it("transaction amount", async function () {
-      const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
-      input.add64(400);
-      const encryptedInput = await input.encrypt();
-
-      const tx = await this.token["confidentialTransfer(address,bytes32,bytes)"](
-        this.recipient,
-        encryptedInput.handles[0],
-        encryptedInput.inputProof,
-      );
-
-      const transferEvent = (await tx.wait()).logs.filter((log: any) => log.address === this.token.target)[0];
-      const transferAmount = transferEvent.args[2];
-
-      await this.token.connect(this.recipient).discloseEncryptedAmount(transferAmount);
-
-      expectedAmount = 400n;
-      expectedHandle = transferAmount;
     });
 
     it("other user's balance", async function () {

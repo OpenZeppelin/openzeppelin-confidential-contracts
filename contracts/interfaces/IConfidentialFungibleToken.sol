@@ -12,7 +12,14 @@ interface IConfidentialFungibleToken {
     event OperatorSet(address indexed holder, address indexed operator, uint48 until);
 
     /// @dev Emitted when a confidential transfer is made from `from` to `to` of encrypted amount `amount`.
-    event ConfidentialTransfer(address indexed from, address indexed to, euint64 indexed amount);
+    event ConfidentialTransfer(
+        address indexed from,
+        address indexed to,
+        euint64 fromBalanceBefore,
+        euint64 fromBalanceAfter,
+        euint64 toBalanceBefore,
+        euint64 toBalanceAfter
+    );
 
     /**
      * @dev Emitted when an encrypted amount is disclosed.
