@@ -52,6 +52,8 @@ jobs:
       - name: Set up environment
         uses: ./.github/actions/setup
       - uses: crytic/slither-action@v0.4.0
+        with:
+          node-version: 20.x
 
   codespell:
     runs-on: ubuntu-latest
