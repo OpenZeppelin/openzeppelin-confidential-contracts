@@ -247,7 +247,7 @@ export const createEncryptedInputMocked = (contractAddress: string, userAddress:
       return this;
     },
     addBytes64(value: Uint8Array) {
-      if (value.length !== 64) throw Error("Uncorrect length of input Uint8Array, should be 64 for an ebytes64");
+      if (value.length !== 64) throw Error("Incorrect length of input Uint8Array, should be 64 for an ebytes64");
       const bigIntValue = bytesToBigInt(value);
       checkEncryptedValue(bigIntValue, 512);
       values.push(bigIntValue);
@@ -257,7 +257,7 @@ export const createEncryptedInputMocked = (contractAddress: string, userAddress:
       return this;
     },
     addBytes128(value: Uint8Array) {
-      if (value.length !== 128) throw Error("Uncorrect length of input Uint8Array, should be 128 for an ebytes128");
+      if (value.length !== 128) throw Error("Incorrect length of input Uint8Array, should be 128 for an ebytes128");
       const bigIntValue = bytesToBigInt(value);
       checkEncryptedValue(bigIntValue, 1024);
       values.push(bigIntValue);
@@ -267,7 +267,7 @@ export const createEncryptedInputMocked = (contractAddress: string, userAddress:
       return this;
     },
     addBytes256(value: Uint8Array) {
-      if (value.length !== 256) throw Error("Uncorrect length of input Uint8Array, should be 256 for an ebytes256");
+      if (value.length !== 256) throw Error("Incorrect length of input Uint8Array, should be 256 for an ebytes256");
       const bigIntValue = bytesToBigInt(value);
       checkEncryptedValue(bigIntValue, 2048);
       values.push(bigIntValue);

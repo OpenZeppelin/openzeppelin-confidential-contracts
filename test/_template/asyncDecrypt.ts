@@ -47,7 +47,7 @@ export const initGateway = async (): Promise<void> => {
     // evm_snapshot is not supported in coverage mode
     await ethers.provider.send("set_lastBlockSnapshotForDecrypt", [firstBlockListening]);
   }
-  // this function will emit logs for every request and fulfilment of a decryption
+  // this function will emit logs for every request and fulfillment of a decryption
   gateway = await ethers.getContractAt(gatewayArtifact.abi, GATEWAYCONTRACT_ADDRESS);
   gateway.on(
     "EventDecryption",

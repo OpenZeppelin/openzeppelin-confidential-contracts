@@ -89,7 +89,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} a handle to decrypt
    * @returns {bool}
@@ -108,7 +108,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} handle to decrypt
    * @returns {bigint}
@@ -127,7 +127,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} a handle to decrypt
    * @returns {bigint}
@@ -146,7 +146,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} handle to decrypt
    * @returns {bigint}
@@ -165,7 +165,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} handle to decrypt
    * @returns {bigint}
@@ -184,7 +184,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} handle to decrypt
    * @returns {bigint}
@@ -203,7 +203,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} handle to decrypt
    * @returns {bigint}
@@ -222,7 +222,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} handle to decrypt
    * @returns {bigint}
@@ -241,7 +241,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} handle to decrypt
    * @returns {string}
@@ -262,7 +262,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} a handle to decrypt
    * @returns {bigint}
@@ -281,7 +281,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} handle to decrypt
    * @returns {bigint}
@@ -300,7 +300,7 @@ export const debug = {
    * @debug
    * This function is intended for debugging purposes only.
    * It cannot be used in production code, since it requires the FHE private key for decryption.
-   * In production, decryption is only possible via an asyncronous on-chain call to the Gateway.
+   * In production, decryption is only possible via an asynchronous on-chain call to the Gateway.
    *
    * @param {bigint} handle to decrypt
    * @returns {bigint}
