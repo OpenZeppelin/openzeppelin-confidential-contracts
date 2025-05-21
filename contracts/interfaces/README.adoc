@@ -1,7 +1,7 @@
 = Interfaces
 
 [.readme-notice]
-NOTE: This document is better viewed at https://docs.openzeppelin.com/community-contracts/token
+NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api/interfaces
 
 These interfaces are available as `.sol` files and are useful to interact with third party contracts that implement them.
 

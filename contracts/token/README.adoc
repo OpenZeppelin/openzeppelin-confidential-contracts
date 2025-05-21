@@ -1,7 +1,7 @@
 = Tokens
 
 [.readme-notice]
-NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/token
+NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api/token
 
 This set of interfaces, contracts, and utilities are all related to the evolving Confidential Token Standard. The standard utilizes the Zama fhEVM co-processor for manipulating FHE values. All amounts are stored on-chain as cypher-text handles (or pointers) to values stored on the co-processor.
 
