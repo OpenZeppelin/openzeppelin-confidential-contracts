@@ -161,26 +161,39 @@ describe("ConfidentialFungibleToken", function () {
         });
 
         if (!asSender) {
-          it("without operator approval should fail", async function () {
-            await this.token.$_setOperator(this.holder, this.operator, 0);
+          for (const withCallback of [false, true]) {
+            describe(withCallback ? "with callback" : "without callback", function () {
+              it("without operator approval should fail", async function () {
+                await this.token.$_setOperator(this.holder, this.operator, 0);
 
-            const input = this.fhevm.createEncryptedInput(this.token.target, this.operator.address);
-            input.add64(100);
-            const encryptedInput = await input.encrypt();
+                const input = this.fhevm.createEncryptedInput(this.token.target, this.operator.address);
+                input.add64(100);
+                const encryptedInput = await input.encrypt();
 
-            await expect(
-              this.token
-                .connect(this.operator)
-                ["confidentialTransferFrom(address,address,bytes32,bytes)"](
+                let params = [
                   this.holder.address,
                   this.recipient.address,
                   encryptedInput.handles[0],
                   encryptedInput.inputProof,
-                ),
-            )
-              .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedSpender")
-              .withArgs(this.holder.address, this.operator.address);
-          });
+                ];
+                if (withCallback) {
+                  params.push("0x");
+                }
+
+                await expect(
+                  this.token
+                    .connect(this.operator)
+                    [
+                      withCallback
+                        ? "confidentialTransferFromAndCall(address,address,bytes32,bytes,bytes)"
+                        : "confidentialTransferFrom(address,address,bytes32,bytes)"
+                    ](...params),
+                )
+                  .to.be.revertedWithCustomError(this.token, "ConfidentialFungibleTokenUnauthorizedSpender")
+                  .withArgs(this.holder.address, this.operator.address);
+              });
+            });
+          }
         }
 
         // Edge cases to run with sender as caller
