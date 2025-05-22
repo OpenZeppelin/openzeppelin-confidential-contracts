@@ -4,13 +4,8 @@ description: Common environment setup
 runs:
   using: composite
   steps:
-    - name: "Install Pnpm"
-      uses: "pnpm/action-setup@v4"
-      with:
-        version: "8"
     - uses: actions/setup-node@v4
       with:
-        cache: "pnpm"
         node-version: 20.19.2
     - uses: actions/cache@v4
       id: cache
@@ -18,5 +13,5 @@ runs:
         path: '**/node_modules'
         key: npm-v3-${{ hashFiles('**/package-lock.json') }}
     - name: Install dependencies
-      run: "pnpm install"
+      run: npm ci --legacy-peer-deps
       shell: bash
