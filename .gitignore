@@ -62,4 +62,3 @@ contracts-exposed
 /cache_forge
 
 yarn.lock
-package-lock.json
