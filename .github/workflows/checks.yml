@@ -54,6 +54,7 @@ jobs:
         with:
           node-version: 20.19.2
           solc-version: 0.8.29
+          target: contracts/
 
   codespell:
     runs-on: ubuntu-latest
