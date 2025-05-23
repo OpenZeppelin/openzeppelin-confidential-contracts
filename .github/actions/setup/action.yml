@@ -10,11 +10,8 @@ runs:
     - uses: actions/cache@v4
       id: cache
       with:
-        path: '**/node_modules'
+        path: "**/node_modules"
         key: npm-v3-${{ hashFiles('**/package-lock.json') }}
     - name: Install dependencies
       run: npm ci
-      shell: bash
-    - name: Temp Workaround
-      run: npm install solidity-comments-linux-x64-gnu
       shell: bash
