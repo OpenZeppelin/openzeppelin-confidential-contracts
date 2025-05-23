@@ -25,18 +25,6 @@ const config: HardhatUserConfig = {
       evmVersion: "cancun",
     },
   },
-  networks: {
-    hardhat: {
-      accounts: {
-        count: 10,
-        mnemonic: process.env.MNEMONIC,
-        path: "m/44'/60'/0'/0",
-      },
-    },
-  },
-  namedAccounts: {
-    deployer: 0,
-  },
   gasReporter: {
     currency: "USD",
     enabled: !!process.env.REPORT_GAS,
