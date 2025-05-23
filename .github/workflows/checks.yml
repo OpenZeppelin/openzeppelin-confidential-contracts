@@ -54,7 +54,6 @@ jobs:
         with:
           node-version: 20.19.2
           solc-version: 0.8.29
-          slither-args: --filter-paths "node_modules"
 
   codespell:
     runs-on: ubuntu-latest
