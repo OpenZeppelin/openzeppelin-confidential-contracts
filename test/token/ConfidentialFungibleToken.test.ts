@@ -372,7 +372,7 @@ describe("ConfidentialFungibleToken", function () {
             describe("without operator approval", function () {
               beforeEach(async function () {
                 await this.token.connect(this.holder).setOperator(this.operator.address, 0);
-                await allowHandle(hre, this.holder, this.operator.address, await this.token.balanceOf(this.holder));
+                await allowHandle(hre, this.holder, this.operator, await this.token.balanceOf(this.holder));
               });
 
               it("should revert", async function () {
