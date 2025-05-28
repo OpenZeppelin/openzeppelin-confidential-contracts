@@ -12,4 +12,8 @@ abstract contract ConfidentialFungibleTokenVotes is ConfidentialFungibleToken, V
 
         _transferVotingUnits(from, to, transferred);
     }
+
+    function _getVotingUnits(address account) internal view virtual override returns (euint64) {
+        return balanceOf(account);
+    }
 }
