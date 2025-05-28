@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import { IERC6372 } from "@openzeppelin/contracts/interfaces/IERC6372.sol";
 import { TFHE, einput, euint64 } from "fhevm/lib/TFHE.sol";
 import { Time } from "@openzeppelin/contracts/utils/types/Time.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import { CheckpointConfidential } from "../../utils/structs/CheckpointConfidential.sol";
 
-abstract contract VotesConfidential {
+abstract contract VotesConfidential is IERC6372 {
     using TFHE for *;
     using CheckpointConfidential for CheckpointConfidential.TraceEuint64;
 
@@ -21,6 +22,16 @@ abstract contract VotesConfidential {
     CheckpointConfidential.TraceEuint64 private _totalCheckpoints;
 
     event DelegateVotesChanged(address indexed delegate, euint64 previousVotes, euint64 newVotes);
+
+    /**
+     * @dev Emitted when an account changes their delegate.
+     */
+    event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
+
+    /**
+     * @dev The clock was incorrectly modified.
+     */
+    error ERC6372InconsistentClock();
 
     /**
      * @dev Lookup to future votes is not available.
@@ -44,6 +55,14 @@ abstract contract VotesConfidential {
         return Time.blockNumber();
     }
 
+    function CLOCK_MODE() public view virtual returns (string memory) {
+        // Check that the clock was not modified
+        if (clock() != Time.blockNumber()) {
+            revert ERC6372InconsistentClock();
+        }
+        return "mode=blocknumber&from=default";
+    }
+
     function getPastVotes(address account, uint256 timepoint) public view virtual returns (euint64) {
         return _delegateCheckpoints[account].upperLookupRecent(_validateTimepoint(timepoint));
     }
@@ -54,6 +73,18 @@ abstract contract VotesConfidential {
 
     function delegates(address account) public view virtual returns (address) {
         return _delegatee[account];
+    }
+
+    function delegate(address delegatee) public virtual {
+        _delegate(msg.sender, delegatee);
+    }
+
+    function _delegate(address account, address delegatee) internal virtual {
+        address oldDelegate = delegates(account);
+        _delegatee[account] = delegatee;
+
+        emit DelegateChanged(account, oldDelegate, delegatee);
+        _moveDelegateVotes(oldDelegate, delegatee, _getVotingUnits(account));
     }
 
     function _transferVotingUnits(address from, address to, euint64 amount) internal virtual {
@@ -94,4 +125,9 @@ abstract contract VotesConfidential {
     function _subtract(euint64 a, euint64 b) private returns (euint64) {
         return a.sub(b);
     }
+
+    /**
+     * @dev Must return the voting units held by an account.
+     */
+    function _getVotingUnits(address) internal view virtual returns (euint64);
 }
