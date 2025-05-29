@@ -11,6 +11,8 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
 
     address private immutable _OWNER;
 
+    uint48 private _clockOverrideVal;
+
     constructor() {
         _OWNER = msg.sender;
     }
@@ -27,5 +29,16 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
         transferred = super._update(from, to, amount);
 
         TFHE.allow(getCurrentTotalSupply(), _OWNER);
+    }
+
+    function _setClockOverride(uint48 val) external {
+        _clockOverrideVal = val;
+    }
+
+    function clock() public view virtual override returns (uint48) {
+        if (_clockOverrideVal != 0) {
+            return _clockOverrideVal;
+        }
+        return super.clock();
     }
 }

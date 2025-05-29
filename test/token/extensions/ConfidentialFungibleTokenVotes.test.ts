@@ -208,4 +208,16 @@ describe("ConfidentialFungibleTokenVotes", function () {
       ).to.eventually.equal(2000);
     });
   });
+
+  describe("Clock", async function () {
+    it("check CLOCK_MODE", async function () {
+      await expect(this.token.CLOCK_MODE()).to.eventually.eq("mode=blocknumber&from=default");
+    });
+
+    it("clock inconsistency", async function () {
+      await this.token._setClockOverride(1000);
+
+      await expect(this.token.CLOCK_MODE()).to.be.revertedWithCustomError(this.token, "ERC6372InconsistentClock");
+    });
+  });
 });
