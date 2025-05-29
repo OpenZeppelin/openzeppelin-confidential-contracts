@@ -160,7 +160,7 @@ describe("ConfidentialFungibleTokenVotes", function () {
       await expect(this.token.getPastTotalSupply(this.blockNumber)).to.eventually.eq(ethers.ZeroHash);
     });
 
-    it.only("for multiple mints and transfers", async function () {
+    it("for multiple mints and transfers", async function () {
       // Mint to holder
       await this.token["$_mint(address,bytes32,bytes)"](
         this.holder,
