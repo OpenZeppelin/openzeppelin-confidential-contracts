@@ -210,7 +210,7 @@ library CheckpointConfidential {
     ) private pure returns (CheckpointEuint64 storage result) {
         assembly {
             mstore(0, self.slot)
-            result.slot := add(keccak256(0, 0x20), pos)
+            result.slot := add(keccak256(0, 0x20), mul(pos, 2))
         }
     }
 }

@@ -71,6 +71,10 @@ abstract contract VotesConfidential is IERC6372 {
         return _totalCheckpoints.upperLookupRecent(_validateTimepoint(timepoint));
     }
 
+    function getCurrentTotalSupply() public view virtual returns (euint64) {
+        return _totalCheckpoints.latest();
+    }
+
     function delegates(address account) public view virtual returns (address) {
         return _delegatee[account];
     }
@@ -89,41 +93,45 @@ abstract contract VotesConfidential is IERC6372 {
 
     function _transferVotingUnits(address from, address to, euint64 amount) internal virtual {
         if (from == address(0)) {
-            _push(_totalCheckpoints, _add, amount);
+            euint64 newValue = _totalCheckpoints.latest().add(amount);
+            newValue.allowThis();
+
+            _push(_totalCheckpoints, newValue);
         }
         if (to == address(0)) {
-            _push(_totalCheckpoints, _subtract, amount);
+            euint64 newValue = _totalCheckpoints.latest().sub(amount);
+            newValue.allowThis();
+
+            _push(_totalCheckpoints, newValue);
         }
         _moveDelegateVotes(delegates(from), delegates(to), amount);
     }
 
     function _moveDelegateVotes(address from, address to, euint64 amount) internal virtual {
+        CheckpointConfidential.TraceEuint64 storage store;
         if (from != to && euint64.unwrap(amount) != 0) {
             if (from != address(0)) {
-                (euint64 oldValue, euint64 newValue) = _push(_delegateCheckpoints[from], _subtract, amount);
+                store = _delegateCheckpoints[from];
+                euint64 newValue = store.latest().sub(amount);
+                newValue.allowThis();
+                newValue.allow(from);
+                euint64 oldValue = _push(store, newValue);
                 emit DelegateVotesChanged(from, oldValue, newValue);
             }
             if (to != address(0)) {
-                (euint64 oldValue, euint64 newValue) = _push(_delegateCheckpoints[to], _add, amount);
+                store = _delegateCheckpoints[to];
+                euint64 newValue = store.latest().add(amount);
+                newValue.allowThis();
+                newValue.allow(to);
+                euint64 oldValue = _push(store, newValue);
                 emit DelegateVotesChanged(to, oldValue, newValue);
             }
         }
     }
 
-    function _push(
-        CheckpointConfidential.TraceEuint64 storage store,
-        function(euint64, euint64) returns (euint64) op,
-        euint64 delta
-    ) private returns (euint64 oldValue, euint64 newValue) {
-        return store.push(clock(), op(store.latest(), delta));
-    }
-
-    function _add(euint64 a, euint64 b) private returns (euint64) {
-        return a.add(b);
-    }
-
-    function _subtract(euint64 a, euint64 b) private returns (euint64) {
-        return a.sub(b);
+    function _push(CheckpointConfidential.TraceEuint64 storage store, euint64 value) private returns (euint64) {
+        (euint64 oldValue, ) = store.push(clock(), value);
+        return oldValue;
     }
 
     /**
