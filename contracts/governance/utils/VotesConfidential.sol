@@ -5,10 +5,13 @@ import { TFHE, einput, euint64 } from "fhevm/lib/TFHE.sol";
 import { IERC6372 } from "@openzeppelin/contracts/interfaces/IERC6372.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { Time } from "@openzeppelin/contracts/utils/types/Time.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
 
 import { CheckpointConfidential } from "../../utils/structs/CheckpointConfidential.sol";
 
-abstract contract VotesConfidential is IERC6372 {
+abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
     using TFHE for *;
     using CheckpointConfidential for CheckpointConfidential.TraceEuint64;
 
@@ -20,6 +23,9 @@ abstract contract VotesConfidential is IERC6372 {
     mapping(address delegatee => CheckpointConfidential.TraceEuint64) private _delegateCheckpoints;
 
     CheckpointConfidential.TraceEuint64 private _totalCheckpoints;
+
+    /// @dev The signature used has expired.
+    error VotesExpiredSignature(uint256 expiry);
 
     /// @dev Emitted when a token transfer or delegate change results in changes to a delegate's number of voting units.
     event DelegateVotesChanged(address indexed delegate, euint64 previousVotes, euint64 newVotes);
@@ -99,6 +105,28 @@ abstract contract VotesConfidential is IERC6372 {
     /// @dev Delegates votes from the sender to `delegatee`.
     function delegate(address delegatee) public virtual {
         _delegate(msg.sender, delegatee);
+    }
+
+    /// @dev Delegates votes from signer to `delegatee`.
+    function delegateBySig(
+        address delegatee,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public virtual {
+        if (block.timestamp > expiry) {
+            revert VotesExpiredSignature(expiry);
+        }
+        address signer = ECDSA.recover(
+            _hashTypedDataV4(keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry))),
+            v,
+            r,
+            s
+        );
+        _useCheckedNonce(signer, nonce);
+        _delegate(signer, delegatee);
     }
 
     /**
