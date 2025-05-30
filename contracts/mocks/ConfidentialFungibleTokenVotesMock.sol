@@ -3,8 +3,12 @@ pragma solidity ^0.8.24;
 
 import { TFHE, euint64, einput } from "fhevm/lib/TFHE.sol";
 import { SepoliaZamaFHEVMConfig } from "fhevm/config/ZamaFHEVMConfig.sol";
-import { ConfidentialFungibleTokenVotes } from "../token/extensions/ConfidentialFungibleTokenVotes.sol";
+import {
+    ConfidentialFungibleTokenVotes,
+    ConfidentialFungibleToken
+} from "../token/extensions/ConfidentialFungibleTokenVotes.sol";
 import { CheckpointConfidential } from "../utils/structs/CheckpointConfidential.sol";
+import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleTokenVotes, SepoliaZamaFHEVMConfig {
     using CheckpointConfidential for CheckpointConfidential.TraceEuint64;
@@ -13,7 +17,11 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
 
     uint48 private _clockOverrideVal;
 
-    constructor() {
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        string memory tokenURI_
+    ) ConfidentialFungibleToken(name_, symbol_, tokenURI_) EIP712(name_, "1.0.0") {
         _OWNER = msg.sender;
     }
 
