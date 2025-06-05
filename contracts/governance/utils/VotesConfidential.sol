@@ -92,6 +92,12 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
         return _totalCheckpoints.upperLookupRecent(_validateTimepoint(timepoint));
     }
 
+    /**
+     * @dev Returns the current total supply of votes as an encrypted uint64 (euint64). Must be implemented
+     * by the derived contract.
+     */
+    function totalSupply() public view virtual returns (euint64);
+
     /// @dev Returns the current total supply of votes.
     function getCurrentTotalSupply() public view virtual returns (euint64) {
         return _totalCheckpoints.latest();
@@ -147,17 +153,8 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
      * should be zero. Total supply of voting units will be adjusted with mints and burns.
      */
     function _transferVotingUnits(address from, address to, euint64 amount) internal virtual {
-        if (from == address(0)) {
-            euint64 newValue = _totalCheckpoints.latest().add(amount);
-            newValue.allowThis();
-
-            _push(_totalCheckpoints, newValue);
-        }
-        if (to == address(0)) {
-            euint64 newValue = _totalCheckpoints.latest().sub(amount);
-            newValue.allowThis();
-
-            _push(_totalCheckpoints, newValue);
+        if (from == address(0) || to == address(0)) {
+            _push(_totalCheckpoints, totalSupply());
         }
         _moveDelegateVotes(delegates(from), delegates(to), amount);
     }
