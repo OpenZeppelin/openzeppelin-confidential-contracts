@@ -2,6 +2,8 @@ import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
+// @ts-ignore
+import { Delegation, getDomain } from "../../../lib/openzeppelin-contracts/test/helpers/eip712";
 import { createInstance } from "../../_template/instance";
 import { reencryptEuint64 } from "../../_template/reencrypt";
 
@@ -22,6 +24,7 @@ describe("ConfidentialFungibleTokenVotes", function () {
     this.recipient = recipient;
     this.token = token;
     this.operator = operator;
+    this.domain = await getDomain(this.token);
 
     const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
     input.add64(1000);
@@ -39,6 +42,50 @@ describe("ConfidentialFungibleTokenVotes", function () {
         .withArgs(this.holder, ethers.ZeroAddress, this.recipient);
 
       await expect(this.token.delegates(this.holder)).to.eventually.eq(this.recipient);
+    });
+
+    describe("by sig", function () {
+      for (let nonce of [0, 1]) {
+        it(`with ${nonce == 0 ? "valid" : "invalid"} nonce`, async function () {
+          const { r, s, v } = await this.holder
+            .signTypedData(
+              this.domain,
+              { Delegation },
+              { delegatee: this.recipient.address, nonce, expiry: ethers.MaxUint256 },
+            )
+            .then(ethers.Signature.from);
+
+          const tx = this.token
+            .connect(this.operator)
+            .delegateBySig(this.recipient.address, nonce, ethers.MaxUint256, v, r, s);
+
+          if (nonce == 1) {
+            await expect(tx)
+              .to.be.revertedWithCustomError(this.token, "InvalidAccountNonce")
+              .withArgs(this.holder.address, 0);
+          } else {
+            await tx;
+            await expect(this.token.delegates(this.holder)).to.eventually.eq(this.recipient);
+          }
+        });
+      }
+
+      for (let expiry of [ethers.MaxUint256, 0]) {
+        it(`with ${expiry == ethers.MaxUint256 ? "valid" : "invalid"} expiry`, async function () {
+          const { r, s, v } = await this.holder
+            .signTypedData(this.domain, { Delegation }, { delegatee: this.recipient.address, nonce: 0, expiry })
+            .then(ethers.Signature.from);
+
+          const tx = this.token.connect(this.operator).delegateBySig(this.recipient.address, 0, expiry, v, r, s);
+
+          if (expiry == 0) {
+            await expect(tx).to.be.revertedWithCustomError(this.token, "VotesExpiredSignature").withArgs(expiry);
+          } else {
+            await tx;
+            await expect(this.token.delegates(this.holder)).to.eventually.eq(this.recipient);
+          }
+        });
+      }
     });
   });
 
