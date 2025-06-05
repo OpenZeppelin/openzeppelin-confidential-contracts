@@ -1,6 +1,6 @@
 {
   "name": "@openzeppelin/contracts-confidential",
-  "description": "",
+  "description": "Smart Contract library for use with confidential coprocessors",
   "version": "0.1.0",
   "author": "OpenZeppelin Community <maintainers@openzeppelin.org>",
   "license": "MIT",
