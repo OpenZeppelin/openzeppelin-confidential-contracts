@@ -12,10 +12,12 @@ runs:
       with:
         path: '**/node_modules'
         key: npm-v3-${{ hashFiles('**/package-lock.json') }}
-    - name: Install dependencies
+    - name: Install NPM dependencies
       run: npm ci
       shell: bash
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
       with:
         version: stable
+    - name: Install Foundry dependencies
+      run: forge install
