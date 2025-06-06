@@ -204,7 +204,7 @@ describe("ConfidentialFungibleTokenVotes", function () {
     });
 
     it("for no activity", async function () {
-      mine();
+      await mine();
       await expect(this.token.getPastTotalSupply(this.blockNumber)).to.eventually.eq(ethers.ZeroHash);
     });
 
