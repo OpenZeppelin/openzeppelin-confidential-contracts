@@ -21,3 +21,4 @@ runs:
         version: stable
     - name: Install Foundry dependencies
       run: forge install
+      shell: bash
