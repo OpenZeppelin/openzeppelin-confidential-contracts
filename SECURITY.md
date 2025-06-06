@@ -1,6 +1,6 @@
 # Security Policy
 
-Security vulnerabilities should be disclosed to the project maintainers through by email to security@openzeppelin.com. This repo is not currently covered by the OpenZeppelin Immunefi.
+Security vulnerabilities should be disclosed to the project maintainers by email to security@openzeppelin.com. The OpenZeppelin Immunefi does not currently cover this repo.
 
 ## Security Patches
 
