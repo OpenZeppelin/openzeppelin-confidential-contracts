@@ -8,6 +8,7 @@ import { Time } from "@openzeppelin/contracts/utils/types/Time.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
+import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import { CheckpointConfidential } from "../../utils/structs/CheckpointConfidential.sol";
 
@@ -26,6 +27,9 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
 
     /// @dev The signature used has expired.
     error VotesExpiredSignature(uint256 expiry);
+
+    /// @dev The signature is invalid.
+    error VotesInvalidSignature(address signer);
 
     /// @dev Emitted when a token transfer or delegate change results in changes to a delegate's number of voting units.
     event DelegateVotesChanged(address indexed delegate, euint64 previousVotes, euint64 newVotes);
@@ -113,26 +117,28 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
         _delegate(msg.sender, delegatee);
     }
 
-    /// @dev Delegates votes from signer to `delegatee`.
+    /// @dev Delegates votes from `delegator` to `delegatee`.
     function delegateBySig(
+        address delegator,
         address delegatee,
         uint256 nonce,
         uint256 expiry,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        bytes memory signature
     ) public virtual {
         if (block.timestamp > expiry) {
             revert VotesExpiredSignature(expiry);
         }
-        address signer = ECDSA.recover(
-            _hashTypedDataV4(keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry))),
-            v,
-            r,
-            s
-        );
-        _useCheckedNonce(signer, nonce);
-        _delegate(signer, delegatee);
+        if (
+            !SignatureChecker.isValidSignatureNow(
+                delegator,
+                _hashTypedDataV4(keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry))),
+                signature
+            )
+        ) {
+            revert VotesInvalidSignature(delegator);
+        }
+        _useCheckedNonce(delegator, nonce);
+        _delegate(delegator, delegatee);
     }
 
     /**
