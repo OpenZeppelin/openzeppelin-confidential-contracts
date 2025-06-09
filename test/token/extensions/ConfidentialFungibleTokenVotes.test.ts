@@ -47,17 +47,15 @@ describe("ConfidentialFungibleTokenVotes", function () {
     describe("by sig", function () {
       for (let nonce of [0, 1]) {
         it(`with ${nonce == 0 ? "valid" : "invalid"} nonce`, async function () {
-          const { r, s, v } = await this.holder
-            .signTypedData(
-              this.domain,
-              { Delegation },
-              { delegatee: this.recipient.address, nonce, expiry: ethers.MaxUint256 },
-            )
-            .then(ethers.Signature.from);
+          const sig = await this.holder.signTypedData(
+            this.domain,
+            { Delegation },
+            { delegatee: this.recipient.address, nonce, expiry: ethers.MaxUint256 },
+          );
 
           const tx = this.token
             .connect(this.operator)
-            .delegateBySig(this.recipient.address, nonce, ethers.MaxUint256, v, r, s);
+            .delegateBySig(this.holder, this.recipient.address, nonce, ethers.MaxUint256, sig);
 
           if (nonce == 1) {
             await expect(tx)
@@ -72,11 +70,15 @@ describe("ConfidentialFungibleTokenVotes", function () {
 
       for (let expiry of [ethers.MaxUint256, 0]) {
         it(`with ${expiry == ethers.MaxUint256 ? "valid" : "invalid"} expiry`, async function () {
-          const { r, s, v } = await this.holder
-            .signTypedData(this.domain, { Delegation }, { delegatee: this.recipient.address, nonce: 0, expiry })
-            .then(ethers.Signature.from);
+          const sig = await this.holder.signTypedData(
+            this.domain,
+            { Delegation },
+            { delegatee: this.recipient.address, nonce: 0, expiry },
+          );
 
-          const tx = this.token.connect(this.operator).delegateBySig(this.recipient.address, 0, expiry, v, r, s);
+          const tx = this.token
+            .connect(this.operator)
+            .delegateBySig(this.holder, this.recipient.address, 0, expiry, sig);
 
           if (expiry == 0) {
             await expect(tx).to.be.revertedWithCustomError(this.token, "VotesExpiredSignature").withArgs(expiry);
