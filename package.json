@@ -53,7 +53,7 @@
     "dotenv": "^16.0.3",
     "eslint": "^9.9.0",
     "eslint-config-prettier": "^8.5.0",
-    "ethers": "^6.8.0",
+    "ethers": "^6.14.3",
     "extra-bigint": "^1.1.18",
     "fhevm": "^0.6.2",
     "fhevm-contracts": "^0.2.1",
@@ -92,6 +92,9 @@
   },
   "optionalDependencies": {
     "solidity-comments-linux-x64-gnu": "^0.1.1"
+  },
+  "overrides": {
+    "elliptic": "6.6.1"
   },
   "engines": {
     "node": ">=20.0.0"
