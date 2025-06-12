@@ -21,7 +21,7 @@ import { TFHESafeMath } from "../utils/TFHESafeMath.sol";
  * - All balances are encrypted
  * - Transfers happen without revealing amounts
  * - Support for operators (delegated transfer capabilities with time bounds)
- * - ERC1363-like functionality with transfer-and-call pattern
+ * - Transfer and call pattern
  * - Safe overflow/underflow handling for FHE operations
  */
 abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
@@ -277,7 +277,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
         // Perform callback
         transferred = TFHE.select(
-            ConfidentialFungibleTokenUtils.checkOnERC1363TransferReceived(msg.sender, from, to, sent, data),
+            ConfidentialFungibleTokenUtils.checkOnTransferReceived(msg.sender, from, to, sent, data),
             sent,
             TFHE.asEuint64(0)
         );
