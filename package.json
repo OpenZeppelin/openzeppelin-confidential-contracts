@@ -5,7 +5,8 @@
   "author": "OpenZeppelin Community <maintainers@openzeppelin.org>",
   "license": "MIT",
   "files": [
-    "contracts"
+    "/contracts/**/*.sol",
+    "!/contracts/mocks/**/*"
   ],
   "scripts": {
     "clean": "hardhat clean && rimraf build contracts/build",
