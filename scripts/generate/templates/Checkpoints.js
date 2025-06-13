@@ -41,7 +41,7 @@ bytes32 private constant ZERO = bytes32(0);
  *
  * Returns previous value and new value.
  *
- * IMPORTANT: Never accept \`key\` as a user input, since an arbitrary \`type(uint96).max\` key set will disable the
+ * IMPORTANT: Never accept \`key\` as a user input, since an arbitrary \`type(uint256).max\` key set will disable the
  * library.
  */
 function push(
