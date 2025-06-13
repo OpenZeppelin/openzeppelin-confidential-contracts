@@ -1,1 +1,1 @@
-npx lint-staged
+../lib/openzeppelin-contracts/.husky/pre-commit
