@@ -21,6 +21,7 @@
     "prepare": "husky",
     "prepare-docs": "scripts/prepare-docs.sh",
     "test": "hardhat test",
+    "test:generation": "scripts/checks/generation.sh",
     "coverage": "hardhat coverage",
     "generate": "scripts/generate/run.js"
   },
