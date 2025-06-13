@@ -33,6 +33,8 @@ jobs:
       - name: Set up environment
         uses: ./.github/actions/setup
       - run: npm run test
+      - name: Check procedurally generated contracts are up-to-date
+        run: npm run test:generation
 
   coverage:
     runs-on: ubuntu-latest
