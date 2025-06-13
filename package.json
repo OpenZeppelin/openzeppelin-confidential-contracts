@@ -21,7 +21,8 @@
     "prepare": "husky",
     "prepare-docs": "scripts/prepare-docs.sh",
     "test": "hardhat test",
-    "coverage": "hardhat coverage"
+    "coverage": "hardhat coverage",
+    "generate": "scripts/generate/run.js"
   },
   "repository": {
     "type": "git",

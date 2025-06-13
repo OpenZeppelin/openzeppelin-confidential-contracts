@@ -1,13 +1,11 @@
 // OPTIONS
-const VALUE_SIZES = [224, 208, 160];
+const VALUE_SIZES = [32, 64];
 
 const defaultOpts = (size) => ({
-  historyTypeName: `Trace${size}`,
-  checkpointTypeName: `Checkpoint${size}`,
+  historyTypeName: `TraceEuint${size}`,
+  checkpointTypeName: `CheckpointEuint${size}`,
   checkpointFieldName: "_checkpoints",
-  keyTypeName: `uint${256 - size}`,
-  keyFieldName: "_key",
-  valueTypeName: `uint${size}`,
+  valueTypeName: `euint${size}`,
   valueFieldName: "_value",
 });
 
