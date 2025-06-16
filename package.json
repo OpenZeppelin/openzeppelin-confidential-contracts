@@ -23,7 +23,7 @@
     "test": "hardhat test",
     "test:generation": "scripts/checks/generation.sh",
     "coverage": "hardhat coverage",
-    "generate": "scripts/generate/run.js"
+    "generate": ""
   },
   "repository": {
     "type": "git",
