@@ -5,8 +5,8 @@ const { OPTS } = require('./CheckpointsConfidential.opts');
 const header = `\
 pragma solidity ^0.8.24;
 
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import { ${OPTS.map(opt => opt.valueTypeName).join(', ')} } from "fhevm/lib/TFHE.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {${OPTS.map(opt => opt.valueTypeName).join(', ')}} from "fhevm/lib/TFHE.sol";
 
 /**
  * @dev This library defines the \`Trace*\` struct, for checkpointing values as they change at different points in
@@ -44,7 +44,7 @@ bytes32 private constant ZERO = bytes32(0);
  * IMPORTANT: Never accept \`key\` as a user input, since an arbitrary \`type(uint256).max\` key set will disable the
  * library.
  */
-function push(
+function _push(
     TraceBytes32 storage self,
     uint256 key,
     bytes32 value
@@ -56,7 +56,7 @@ function push(
  * @dev Returns the value in the first (oldest) checkpoint with key greater or equal than the search key, or zero if
  * there is none.
  */
-function lowerLookup(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
+function _lowerLookup(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
     uint256 len = self._checkpoints.length;
     uint256 pos = _lowerBinaryLookup(self._checkpoints, key, 0, len);
     return pos == len ? ZERO : _unsafeAccess(self._checkpoints, pos)._value;
@@ -66,7 +66,7 @@ function lowerLookup(TraceBytes32 storage self, uint256 key) private view return
  * @dev Returns the value in the last (most recent) checkpoint with key lower or equal than the search key, or zero
  * if there is none.
  */
-function upperLookup(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
+function _upperLookup(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
     uint256 len = self._checkpoints.length;
     uint256 pos = _upperBinaryLookup(self._checkpoints, key, 0, len);
     return pos == 0 ? ZERO : _unsafeAccess(self._checkpoints, pos - 1)._value;
@@ -79,7 +79,7 @@ function upperLookup(TraceBytes32 storage self, uint256 key) private view return
  * NOTE: This is a variant of {upperLookup} that is optimized to find "recent" checkpoint (checkpoints with high
  * keys).
  */
-function upperLookupRecent(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
+function _upperLookupRecent(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
     uint256 len = self._checkpoints.length;
 
     uint256 low = 0;
@@ -102,7 +102,7 @@ function upperLookupRecent(TraceBytes32 storage self, uint256 key) private view 
 /**
  * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
  */
-function latest(TraceBytes32 storage self) private view returns (bytes32) {
+function _latest(TraceBytes32 storage self) private view returns (bytes32) {
     uint256 pos = self._checkpoints.length;
     return pos == 0 ? ZERO : _unsafeAccess(self._checkpoints, pos - 1)._value;
 }
@@ -111,7 +111,7 @@ function latest(TraceBytes32 storage self) private view returns (bytes32) {
  * @dev Returns whether there is a checkpoint in the structure (i.e. it is not empty), and if so the key and value
  * in the most recent checkpoint.
  */
-function latestCheckpoint(
+function _latestCheckpoint(
     TraceBytes32 storage self
 ) private view returns (bool exists, uint256 _key, bytes32 _value) {
     uint256 pos = self._checkpoints.length;
@@ -148,11 +148,11 @@ function _insert(
         if (lastKey == key) {
             last._value = value;
         } else {
-            self.push(CheckpointBytes32({ _key: key, _value: value }));
+            self.push(CheckpointBytes32({_key: key, _value: value}));
         }
         return (lastValue, value);
     } else {
-        self.push(CheckpointBytes32({ _key: key, _value: value }));
+        self.push(CheckpointBytes32({_key: key, _value: value}));
         return (ZERO, value);
     }
 }
@@ -251,7 +251,7 @@ function push(
     uint256 key,
     ${opts.valueTypeName} value
 ) internal returns (${opts.valueTypeName} oldValue, ${opts.valueTypeName} newValue) {
-    (bytes32 oldValueAsBytes32, bytes32 newValueAsBytes32) = push(
+    (bytes32 oldValueAsBytes32, bytes32 newValueAsBytes32) = _push(
         _toTraceBytes32(self),
         key,
         bytes32(${opts.valueTypeName}.unwrap(value))
@@ -264,7 +264,7 @@ function push(
  * there is none.
  */
 function lowerLookup(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(uint256(lowerLookup(_toTraceBytes32(self), key)));
+    return ${opts.valueTypeName}.wrap(uint256(_lowerLookup(_toTraceBytes32(self), key)));
 }
 
 /**
@@ -272,7 +272,7 @@ function lowerLookup(${opts.historyTypeName} storage self, uint256 key) internal
  * if there is none.
  */
 function upperLookup(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(uint256(upperLookup(_toTraceBytes32(self), key)));
+    return ${opts.valueTypeName}.wrap(uint256(_upperLookup(_toTraceBytes32(self), key)));
 }
 
 /**
@@ -283,14 +283,14 @@ function upperLookup(${opts.historyTypeName} storage self, uint256 key) internal
  * keys).
  */
 function upperLookupRecent(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(uint256(upperLookupRecent(_toTraceBytes32(self), key)));
+    return ${opts.valueTypeName}.wrap(uint256(_upperLookupRecent(_toTraceBytes32(self), key)));
 }
 
 /**
  * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
  */
 function latest(${opts.historyTypeName} storage self) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(uint256(latest(_toTraceBytes32(self))));
+    return ${opts.valueTypeName}.wrap(uint256(_latest(_toTraceBytes32(self))));
 }
 
 /**
@@ -301,7 +301,7 @@ function latestCheckpoint(
     ${opts.historyTypeName} storage self
 ) internal view returns (bool exists, uint256 _key, ${opts.valueTypeName} ${opts.valueFieldName}) {
     bytes32 ${opts.valueFieldName}AsBytes32;
-    (exists, _key, ${opts.valueFieldName}AsBytes32) = latestCheckpoint(_toTraceBytes32(self));
+    (exists, _key, ${opts.valueFieldName}AsBytes32) = _latestCheckpoint(_toTraceBytes32(self));
     return (exists, _key, ${opts.valueTypeName}.wrap(uint256(${opts.valueFieldName}AsBytes32)));
 }
 
