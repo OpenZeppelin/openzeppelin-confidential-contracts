@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { TFHE, ebool, euint64 } from "fhevm/lib/TFHE.sol";
-import { SepoliaZamaFHEVMConfig } from "fhevm/config/ZamaFHEVMConfig.sol";
-import { IConfidentialFungibleTokenReceiver } from "../interfaces/IConfidentialFungibleTokenReceiver.sol";
+import {TFHE, ebool, euint64} from "fhevm/lib/TFHE.sol";
+import {SepoliaZamaFHEVMConfig} from "fhevm/config/ZamaFHEVMConfig.sol";
+import {IConfidentialFungibleTokenReceiver} from "../interfaces/IConfidentialFungibleTokenReceiver.sol";
 
 contract ConfidentialFungibleTokenReceiverMock is IConfidentialFungibleTokenReceiver, SepoliaZamaFHEVMConfig {
     using TFHE for *;

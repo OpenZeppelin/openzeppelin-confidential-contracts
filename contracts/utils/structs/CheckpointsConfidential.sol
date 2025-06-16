@@ -3,8 +3,8 @@
 
 pragma solidity ^0.8.24;
 
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import { euint32, euint64 } from "fhevm/lib/TFHE.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {euint32, euint64} from "fhevm/lib/TFHE.sol";
 
 /**
  * @dev This library defines the `Trace*` struct, for checkpointing values as they change at different points in
@@ -340,11 +340,11 @@ library CheckpointsConfidential {
             if (lastKey == key) {
                 last._value = value;
             } else {
-                self.push(CheckpointBytes32({ _key: key, _value: value }));
+                self.push(CheckpointBytes32({_key: key, _value: value}));
             }
             return (lastValue, value);
         } else {
-            self.push(CheckpointBytes32({ _key: key, _value: value }));
+            self.push(CheckpointBytes32({_key: key, _value: value}));
             return (ZERO, value);
         }
     }
