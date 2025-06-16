@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// This file was procedurally generated from scripts/generate/templates/Checkpoints.js.
+// This file was procedurally generated from scripts/generate/templates/CheckpointsConfidential.js.
 
 pragma solidity ^0.8.24;
 
@@ -13,7 +13,7 @@ import { euint32, euint64 } from "fhevm/lib/TFHE.sol";
  * To create a history of checkpoints, define a variable type `Checkpoints.Trace*` in your contract, and store a new
  * checkpoint for the current transaction block using the {push} function.
  */
-library Checkpoints {
+library CheckpointsConfidential {
     /**
      * @dev A value was attempted to be inserted on a past checkpoint.
      */

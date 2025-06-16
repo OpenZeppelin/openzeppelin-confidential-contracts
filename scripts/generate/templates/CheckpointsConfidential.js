@@ -1,5 +1,5 @@
 const format = require("../format-lines");
-const { OPTS } = require("./Checkpoints.opts");
+const { OPTS } = require("./CheckpointsConfidential.opts");
 
 // TEMPLATE
 const header = `\
@@ -362,7 +362,7 @@ function at(${opts.historyTypeName} storage self, uint32 pos) internal view retu
 // GENERATE
 module.exports = format(
   header.trimEnd(),
-  "library Checkpoints {",
+  "library CheckpointsConfidential {",
   format(
     [].concat(
       errors,
