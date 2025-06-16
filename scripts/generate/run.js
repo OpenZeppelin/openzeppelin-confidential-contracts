@@ -32,7 +32,7 @@ function generateFromTemplate(file, template, outputPrefix = "") {
 
 // Contracts
 for (const [file, template] of Object.entries({
-  "utils/structs/Checkpoints.sol": "./templates/Checkpoints.js",
+  "utils/structs/CheckpointsConfidential.sol": "./templates/CheckpointsConfidential.js",
 })) {
   generateFromTemplate(file, template, "./contracts/");
 }
