@@ -327,8 +327,8 @@ module.exports = format(
   format(
     [].concat(
       errors,
-      baseImplementation,
       OPTS.map((opts) => template(opts)),
+      baseImplementation,
     ),
   ).trimEnd(),
   "}",
