@@ -1,14 +1,14 @@
-const { ethers } = require("hardhat");
-const { expect } = require("chai");
-const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { ethers } = require('hardhat');
+const { expect } = require('chai');
+const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
 
-const { VALUE_SIZES } = require("../../../scripts/generate/templates/CheckpointsConfidential.opts");
+const { VALUE_SIZES } = require('../../../scripts/generate/templates/CheckpointsConfidential.opts');
 
-describe("CheckpointsConfidential", function () {
+describe('CheckpointsConfidential', function () {
   for (const size of VALUE_SIZES) {
     describe(`TraceEuint${size}`, function () {
       const fixture = async () => {
-        const mock = await ethers.deployContract("$CheckpointsConfidential");
+        const mock = await ethers.deployContract('$CheckpointsConfidential');
         const methods = {
           at: (...args) => mock.getFunction(`$at_CheckpointsConfidential_TraceEuint${size}`)(0, ...args),
           latest: (...args) => mock.getFunction(`$latest_CheckpointsConfidential_TraceEuint${size}`)(0, ...args),
@@ -38,13 +38,13 @@ describe("CheckpointsConfidential", function () {
         Object.assign(this, await loadFixture(fixture));
       });
 
-      describe("without checkpoints", function () {
-        it("at zero reverts", async function () {
+      describe('without checkpoints', function () {
+        it('at zero reverts', async function () {
           // Reverts with array out of bound access, which is unspecified
           await expect(this.methods.at(0)).to.be.reverted;
         });
 
-        it("returns zero as latest value", async function () {
+        it('returns zero as latest value', async function () {
           expect(await this.methods.latest()).to.equal(0n);
 
           const ckpt = await this.methods.latestCheckpoint();
@@ -53,15 +53,15 @@ describe("CheckpointsConfidential", function () {
           expect(ckpt[2]).to.equal(0n);
         });
 
-        it("lookup returns 0", async function () {
+        it('lookup returns 0', async function () {
           expect(await this.methods.lowerLookup(0)).to.equal(0n);
           expect(await this.methods.upperLookup(0)).to.equal(0n);
           expect(await this.methods.upperLookupRecent(0)).to.equal(0n);
         });
       });
 
-      describe("with checkpoints", function () {
-        beforeEach("pushing checkpoints", async function () {
+      describe('with checkpoints', function () {
+        beforeEach('pushing checkpoints', async function () {
           this.checkpoints = [
             { key: 2n, value: 17n },
             { key: 3n, value: 42n },
@@ -74,7 +74,7 @@ describe("CheckpointsConfidential", function () {
           }
         });
 
-        it("at keys", async function () {
+        it('at keys', async function () {
           for (const [index, { key, value }] of this.checkpoints.entries()) {
             const at = await this.methods.at(index);
             expect(at._value).to.equal(value);
@@ -82,24 +82,24 @@ describe("CheckpointsConfidential", function () {
           }
         });
 
-        it("length", async function () {
+        it('length', async function () {
           expect(await this.methods.length()).to.equal(this.checkpoints.length);
         });
 
-        it("returns latest value", async function () {
+        it('returns latest value', async function () {
           const latest = this.checkpoints.at(-1);
           expect(await this.methods.latest()).to.equal(latest.value);
           expect(await this.methods.latestCheckpoint()).to.deep.equal([true, latest.key, latest.value]);
         });
 
-        it("cannot push values in the past", async function () {
+        it('cannot push values in the past', async function () {
           await expect(this.methods.push(this.checkpoints.at(-1).key - 1n, 0n)).to.be.revertedWithCustomError(
             this.mock,
-            "CheckpointUnorderedInsertion",
+            'CheckpointUnorderedInsertion',
           );
         });
 
-        it("can update last value", async function () {
+        it('can update last value', async function () {
           const newValue = 42n;
 
           // check length before the update
@@ -113,24 +113,24 @@ describe("CheckpointsConfidential", function () {
           expect(await this.methods.length()).to.equal(this.checkpoints.length);
         });
 
-        it("lower lookup", async function () {
+        it('lower lookup', async function () {
           for (let i = 0; i < 14; ++i) {
-            const value = this.checkpoints.find((x) => i <= x.key)?.value || 0n;
+            const value = this.checkpoints.find(x => i <= x.key)?.value || 0n;
 
             expect(await this.methods.lowerLookup(i)).to.equal(value);
           }
         });
 
-        it("upper lookup & upperLookupRecent", async function () {
+        it('upper lookup & upperLookupRecent', async function () {
           for (let i = 0; i < 14; ++i) {
-            const value = this.checkpoints.findLast((x) => i >= x.key)?.value || 0n;
+            const value = this.checkpoints.findLast(x => i >= x.key)?.value || 0n;
 
             expect(await this.methods.upperLookup(i)).to.equal(value);
             expect(await this.methods.upperLookupRecent(i)).to.equal(value);
           }
         });
 
-        it("upperLookupRecent with more than 5 checkpoints", async function () {
+        it('upperLookupRecent with more than 5 checkpoints', async function () {
           const moreCheckpoints = [
             { key: 12n, value: 22n },
             { key: 13n, value: 131n },
@@ -145,7 +145,7 @@ describe("CheckpointsConfidential", function () {
           }
 
           for (let i = 0; i < 25; ++i) {
-            const value = allCheckpoints.findLast((x) => i >= x.key)?.value || 0n;
+            const value = allCheckpoints.findLast(x => i >= x.key)?.value || 0n;
             expect(await this.methods.upperLookup(i)).to.equal(value);
             expect(await this.methods.upperLookupRecent(i)).to.equal(value);
           }

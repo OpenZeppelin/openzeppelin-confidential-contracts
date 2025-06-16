@@ -1,5 +1,5 @@
-import { Signer } from "ethers";
-import { FhevmInstance } from "fhevmjs/node";
+import { Signer } from 'ethers';
+import { FhevmInstance } from 'fhevmjs/node';
 
 const EBOOL_T = 0;
 const EUINT4_T = 1;
@@ -16,17 +16,17 @@ const EBYTES256_T = 11;
 
 export function verifyType(handle: bigint, expectedType: number) {
   if (handle === 0n) {
-    throw "Handle is not initialized";
+    throw 'Handle is not initialized';
   }
 
   if (handle.toString(2).length > 256) {
-    throw "Handle is not a bytes32";
+    throw 'Handle is not a bytes32';
   }
 
   const typeCt = handle >> 8n;
 
   if (Number(typeCt % 256n) !== expectedType) {
-    throw "Wrong encrypted type for the handle";
+    throw 'Wrong encrypted type for the handle';
   }
 }
 
@@ -108,7 +108,7 @@ export async function reencryptEaddress(
 ): Promise<string> {
   verifyType(handle, EUINT160_T);
   const addressAsUint160: bigint = await reencryptHandle(signer, instance, handle, contractAddress);
-  const handleStr = "0x" + addressAsUint160.toString(16).padStart(40, "0");
+  const handleStr = '0x' + addressAsUint160.toString(16).padStart(40, '0');
   return handleStr;
 }
 
@@ -170,7 +170,7 @@ async function reencryptHandle(
     handle,
     privateKey,
     publicKey,
-    signature.replace("0x", ""),
+    signature.replace('0x', ''),
     contractAddress,
     await signer.getAddress(),
   );

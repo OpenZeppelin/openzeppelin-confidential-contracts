@@ -1,12 +1,12 @@
-const format = require("../format-lines");
-const { OPTS } = require("./CheckpointsConfidential.opts");
+const format = require('../format-lines');
+const { OPTS } = require('./CheckpointsConfidential.opts');
 
 // TEMPLATE
 const header = `\
 pragma solidity ^0.8.24;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import { ${OPTS.map((opt) => opt.valueTypeName).join(", ")} } from "fhevm/lib/TFHE.sol";
+import { ${OPTS.map(opt => opt.valueTypeName).join(', ')} } from "fhevm/lib/TFHE.sol";
 
 /**
  * @dev This library defines the \`Trace*\` struct, for checkpointing values as they change at different points in
@@ -219,7 +219,7 @@ function _unsafeAccess(
 }
 `;
 
-const template = (opts) => `\
+const template = opts => `\
 struct ${opts.historyTypeName} {
     ${opts.checkpointTypeName}[] ${opts.checkpointFieldName};
 }
@@ -323,13 +323,13 @@ function at(${opts.historyTypeName} storage self, uint32 pos) internal view retu
 // GENERATE
 module.exports = format(
   header.trimEnd(),
-  "library CheckpointsConfidential {",
+  'library CheckpointsConfidential {',
   format(
     [].concat(
       errors,
-      OPTS.map((opts) => template(opts)),
+      OPTS.map(opts => template(opts)),
       baseImplementation,
     ),
   ).trimEnd(),
-  "}",
+  '}',
 );

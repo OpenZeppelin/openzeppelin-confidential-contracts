@@ -1,9 +1,9 @@
-import { extendProvider } from "hardhat/config";
-import { ProviderWrapper } from "hardhat/plugins";
-import type { EIP1193Provider, RequestArguments } from "hardhat/types";
+import { extendProvider } from 'hardhat/config';
+import { ProviderWrapper } from 'hardhat/plugins';
+import type { EIP1193Provider, RequestArguments } from 'hardhat/types';
 
 interface Test {
-  request: EIP1193Provider["request"];
+  request: EIP1193Provider['request'];
 }
 
 class CustomProvider extends ProviderWrapper implements Test {
@@ -18,29 +18,29 @@ class CustomProvider extends ProviderWrapper implements Test {
     this.lastBlockSnapshotForDecrypt = 0;
   }
 
-  async request(args: RequestArguments): ReturnType<EIP1193Provider["request"]> {
+  async request(args: RequestArguments): ReturnType<EIP1193Provider['request']> {
     switch (args.method) {
-      case "evm_revert": {
+      case 'evm_revert': {
         const result = await this._wrappedProvider.request(args);
         this.lastBlockSnapshot = this.lastBlockSnapshotForDecrypt = await (
-          this._wrappedProvider.request({ method: "eth_blockNumber" }) as Promise<string>
+          this._wrappedProvider.request({ method: 'eth_blockNumber' }) as Promise<string>
         ).then(parseInt);
         this.lastCounterRand = (await this._wrappedProvider.request({
-          method: "eth_call",
-          params: [{ to: "0x000000000000000000000000000000000000005d", data: "0x1f20d85c" }, "latest"],
+          method: 'eth_call',
+          params: [{ to: '0x000000000000000000000000000000000000005d', data: '0x1f20d85c' }, 'latest'],
         })) as number;
         return result;
       }
-      case "get_lastBlockSnapshot":
+      case 'get_lastBlockSnapshot':
         return [this.lastBlockSnapshot, this.lastCounterRand];
 
-      case "get_lastBlockSnapshotForDecrypt":
+      case 'get_lastBlockSnapshotForDecrypt':
         return this.lastBlockSnapshotForDecrypt;
 
-      case "set_lastBlockSnapshot":
+      case 'set_lastBlockSnapshot':
         return (this.lastBlockSnapshot = Array.isArray(args.params!) && args.params[0]);
 
-      case "set_lastBlockSnapshotForDecrypt":
+      case 'set_lastBlockSnapshotForDecrypt':
         return (this.lastBlockSnapshotForDecrypt = Array.isArray(args.params!) && args.params[0]);
 
       default:
@@ -49,4 +49,4 @@ class CustomProvider extends ProviderWrapper implements Test {
   }
 }
 
-extendProvider(async (provider) => new CustomProvider(provider));
+extendProvider(async provider => new CustomProvider(provider));
