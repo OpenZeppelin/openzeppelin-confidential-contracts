@@ -48,7 +48,7 @@ function push(
     TraceBytes32 storage self,
     uint256 key,
     bytes32 value
-) internal returns (bytes32 oldValue, bytes32 newValue) {
+) private returns (bytes32 oldValue, bytes32 newValue) {
     return _insert(self._checkpoints, key, value);
 }
 
@@ -56,7 +56,7 @@ function push(
  * @dev Returns the value in the first (oldest) checkpoint with key greater or equal than the search key, or zero if
  * there is none.
  */
-function lowerLookup(TraceBytes32 storage self, uint256 key) internal view returns (bytes32) {
+function lowerLookup(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
     uint256 len = self._checkpoints.length;
     uint256 pos = _lowerBinaryLookup(self._checkpoints, key, 0, len);
     return pos == len ? ZERO : _unsafeAccess(self._checkpoints, pos)._value;
@@ -66,7 +66,7 @@ function lowerLookup(TraceBytes32 storage self, uint256 key) internal view retur
  * @dev Returns the value in the last (most recent) checkpoint with key lower or equal than the search key, or zero
  * if there is none.
  */
-function upperLookup(TraceBytes32 storage self, uint256 key) internal view returns (bytes32) {
+function upperLookup(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
     uint256 len = self._checkpoints.length;
     uint256 pos = _upperBinaryLookup(self._checkpoints, key, 0, len);
     return pos == 0 ? ZERO : _unsafeAccess(self._checkpoints, pos - 1)._value;
@@ -79,7 +79,7 @@ function upperLookup(TraceBytes32 storage self, uint256 key) internal view retur
  * NOTE: This is a variant of {upperLookup} that is optimized to find "recent" checkpoint (checkpoints with high
  * keys).
  */
-function upperLookupRecent(TraceBytes32 storage self, uint256 key) internal view returns (bytes32) {
+function upperLookupRecent(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
     uint256 len = self._checkpoints.length;
 
     uint256 low = 0;
@@ -102,7 +102,7 @@ function upperLookupRecent(TraceBytes32 storage self, uint256 key) internal view
 /**
  * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
  */
-function latest(TraceBytes32 storage self) internal view returns (bytes32) {
+function latest(TraceBytes32 storage self) private view returns (bytes32) {
     uint256 pos = self._checkpoints.length;
     return pos == 0 ? ZERO : _unsafeAccess(self._checkpoints, pos - 1)._value;
 }
@@ -113,7 +113,7 @@ function latest(TraceBytes32 storage self) internal view returns (bytes32) {
  */
 function latestCheckpoint(
     TraceBytes32 storage self
-) internal view returns (bool exists, uint256 _key, bytes32 _value) {
+) private view returns (bool exists, uint256 _key, bytes32 _value) {
     uint256 pos = self._checkpoints.length;
     if (pos == 0) {
         return (false, 0, ZERO);
@@ -121,20 +121,6 @@ function latestCheckpoint(
         CheckpointBytes32 storage ckpt = _unsafeAccess(self._checkpoints, pos - 1);
         return (true, ckpt._key, ckpt._value);
     }
-}
-
-/**
- * @dev Returns the number of checkpoints.
- */
-function length(TraceBytes32 storage self) internal view returns (uint256) {
-    return self._checkpoints.length;
-}
-
-/**
- * @dev Returns checkpoint at given position.
- */
-function at(TraceBytes32 storage self, uint32 pos) internal view returns (CheckpointBytes32 memory) {
-    return self._checkpoints[pos];
 }
 
 /**
@@ -243,6 +229,15 @@ struct ${opts.checkpointTypeName} {
     ${opts.valueTypeName} ${opts.valueFieldName};
 }
 
+function _toTraceBytes32(${opts.historyTypeName} storage self) private pure returns (TraceBytes32 storage) {
+    TraceBytes32 storage res;
+    assembly ("memory-safe") {
+        res.slot := self.slot
+    }
+
+    return res;
+}
+
 /**
  * @dev Pushes a (\`key\`, \`value\`) pair into a ${opts.historyTypeName} so that it is stored as the checkpoint.
  *
@@ -256,15 +251,11 @@ function push(
     uint256 key,
     ${opts.valueTypeName} value
 ) internal returns (${opts.valueTypeName} oldValue, ${opts.valueTypeName} newValue) {
-    TraceBytes32 storage selfAsTraceBytes32;
-    assembly {
-        selfAsTraceBytes32.slot := self.slot
-    }
-
-    bytes32 oldValueAsBytes32;
-    bytes32 newValueAsBytes32;
-
-    (oldValueAsBytes32, newValueAsBytes32) = push(selfAsTraceBytes32, key, bytes32(${opts.valueTypeName}.unwrap(value)));
+    (bytes32 oldValueAsBytes32, bytes32 newValueAsBytes32) = push(
+        _toTraceBytes32(self),
+        key,
+        bytes32(${opts.valueTypeName}.unwrap(value))
+    );
     return (${opts.valueTypeName}.wrap(uint256(oldValueAsBytes32)), ${opts.valueTypeName}.wrap(uint256(newValueAsBytes32)));
 }
 
@@ -273,13 +264,7 @@ function push(
  * there is none.
  */
 function lowerLookup(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    TraceBytes32 storage selfAsTraceBytes32;
-    assembly {
-        selfAsTraceBytes32.slot := self.slot
-    }
-
-    bytes32 resAsBytes32 = lowerLookup(selfAsTraceBytes32, key);
-    return ${opts.valueTypeName}.wrap(uint256(resAsBytes32));
+    return ${opts.valueTypeName}.wrap(uint256(lowerLookup(_toTraceBytes32(self), key)));
 }
 
 /**
@@ -287,13 +272,7 @@ function lowerLookup(${opts.historyTypeName} storage self, uint256 key) internal
  * if there is none.
  */
 function upperLookup(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    TraceBytes32 storage selfAsTraceBytes32;
-    assembly {
-        selfAsTraceBytes32.slot := self.slot
-    }
-
-    bytes32 resAsBytes32 = upperLookup(selfAsTraceBytes32, key);
-    return ${opts.valueTypeName}.wrap(uint256(resAsBytes32));
+    return ${opts.valueTypeName}.wrap(uint256(upperLookup(_toTraceBytes32(self), key)));
 }
 
 /**
@@ -304,26 +283,14 @@ function upperLookup(${opts.historyTypeName} storage self, uint256 key) internal
  * keys).
  */
 function upperLookupRecent(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    TraceBytes32 storage selfAsTraceBytes32;
-    assembly {
-        selfAsTraceBytes32.slot := self.slot
-    }
-
-    bytes32 resAsBytes32 = upperLookupRecent(selfAsTraceBytes32, key);
-    return ${opts.valueTypeName}.wrap(uint256(resAsBytes32));
+    return ${opts.valueTypeName}.wrap(uint256(upperLookupRecent(_toTraceBytes32(self), key)));
 }
 
 /**
  * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
  */
 function latest(${opts.historyTypeName} storage self) internal view returns (${opts.valueTypeName}) {
-    TraceBytes32 storage selfAsTraceBytes32;
-    assembly {
-        selfAsTraceBytes32.slot := self.slot
-    }
-
-    bytes32 resAsBytes32 = latest(selfAsTraceBytes32);
-    return ${opts.valueTypeName}.wrap(uint256(resAsBytes32));
+    return ${opts.valueTypeName}.wrap(uint256(latest(_toTraceBytes32(self))));
 }
 
 /**
@@ -333,14 +300,8 @@ function latest(${opts.historyTypeName} storage self) internal view returns (${o
 function latestCheckpoint(
     ${opts.historyTypeName} storage self
 ) internal view returns (bool exists, uint256 _key, ${opts.valueTypeName} ${opts.valueFieldName}) {
-    TraceBytes32 storage selfAsTraceBytes32;
-    assembly {
-        selfAsTraceBytes32.slot := self.slot
-    }
-
     bytes32 ${opts.valueFieldName}AsBytes32;
-    (exists, _key, ${opts.valueFieldName}AsBytes32) = latestCheckpoint(selfAsTraceBytes32);
-
+    (exists, _key, ${opts.valueFieldName}AsBytes32) = latestCheckpoint(_toTraceBytes32(self));
     return (exists, _key, ${opts.valueTypeName}.wrap(uint256(${opts.valueFieldName}AsBytes32)));
 }
 

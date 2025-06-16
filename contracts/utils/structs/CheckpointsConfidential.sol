@@ -42,7 +42,7 @@ library CheckpointsConfidential {
         TraceBytes32 storage self,
         uint256 key,
         bytes32 value
-    ) internal returns (bytes32 oldValue, bytes32 newValue) {
+    ) private returns (bytes32 oldValue, bytes32 newValue) {
         return _insert(self._checkpoints, key, value);
     }
 
@@ -50,7 +50,7 @@ library CheckpointsConfidential {
      * @dev Returns the value in the first (oldest) checkpoint with key greater or equal than the search key, or zero if
      * there is none.
      */
-    function lowerLookup(TraceBytes32 storage self, uint256 key) internal view returns (bytes32) {
+    function lowerLookup(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
         uint256 len = self._checkpoints.length;
         uint256 pos = _lowerBinaryLookup(self._checkpoints, key, 0, len);
         return pos == len ? ZERO : _unsafeAccess(self._checkpoints, pos)._value;
@@ -60,7 +60,7 @@ library CheckpointsConfidential {
      * @dev Returns the value in the last (most recent) checkpoint with key lower or equal than the search key, or zero
      * if there is none.
      */
-    function upperLookup(TraceBytes32 storage self, uint256 key) internal view returns (bytes32) {
+    function upperLookup(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
         uint256 len = self._checkpoints.length;
         uint256 pos = _upperBinaryLookup(self._checkpoints, key, 0, len);
         return pos == 0 ? ZERO : _unsafeAccess(self._checkpoints, pos - 1)._value;
@@ -73,7 +73,7 @@ library CheckpointsConfidential {
      * NOTE: This is a variant of {upperLookup} that is optimized to find "recent" checkpoint (checkpoints with high
      * keys).
      */
-    function upperLookupRecent(TraceBytes32 storage self, uint256 key) internal view returns (bytes32) {
+    function upperLookupRecent(TraceBytes32 storage self, uint256 key) private view returns (bytes32) {
         uint256 len = self._checkpoints.length;
 
         uint256 low = 0;
@@ -96,7 +96,7 @@ library CheckpointsConfidential {
     /**
      * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
      */
-    function latest(TraceBytes32 storage self) internal view returns (bytes32) {
+    function latest(TraceBytes32 storage self) private view returns (bytes32) {
         uint256 pos = self._checkpoints.length;
         return pos == 0 ? ZERO : _unsafeAccess(self._checkpoints, pos - 1)._value;
     }
@@ -107,7 +107,7 @@ library CheckpointsConfidential {
      */
     function latestCheckpoint(
         TraceBytes32 storage self
-    ) internal view returns (bool exists, uint256 _key, bytes32 _value) {
+    ) private view returns (bool exists, uint256 _key, bytes32 _value) {
         uint256 pos = self._checkpoints.length;
         if (pos == 0) {
             return (false, 0, ZERO);
@@ -115,20 +115,6 @@ library CheckpointsConfidential {
             CheckpointBytes32 storage ckpt = _unsafeAccess(self._checkpoints, pos - 1);
             return (true, ckpt._key, ckpt._value);
         }
-    }
-
-    /**
-     * @dev Returns the number of checkpoints.
-     */
-    function length(TraceBytes32 storage self) internal view returns (uint256) {
-        return self._checkpoints.length;
-    }
-
-    /**
-     * @dev Returns checkpoint at given position.
-     */
-    function at(TraceBytes32 storage self, uint32 pos) internal view returns (CheckpointBytes32 memory) {
-        return self._checkpoints[pos];
     }
 
     /**
@@ -235,6 +221,15 @@ library CheckpointsConfidential {
         euint32 _value;
     }
 
+    function _toTraceBytes32(TraceEuint32 storage self) private pure returns (TraceBytes32 storage) {
+        TraceBytes32 storage res;
+        assembly ("memory-safe") {
+            res.slot := self.slot
+        }
+
+        return res;
+    }
+
     /**
      * @dev Pushes a (`key`, `value`) pair into a TraceEuint32 so that it is stored as the checkpoint.
      *
@@ -248,15 +243,11 @@ library CheckpointsConfidential {
         uint256 key,
         euint32 value
     ) internal returns (euint32 oldValue, euint32 newValue) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
-        bytes32 oldValueAsBytes32;
-        bytes32 newValueAsBytes32;
-
-        (oldValueAsBytes32, newValueAsBytes32) = push(selfAsTraceBytes32, key, bytes32(euint32.unwrap(value)));
+        (bytes32 oldValueAsBytes32, bytes32 newValueAsBytes32) = push(
+            _toTraceBytes32(self),
+            key,
+            bytes32(euint32.unwrap(value))
+        );
         return (euint32.wrap(uint256(oldValueAsBytes32)), euint32.wrap(uint256(newValueAsBytes32)));
     }
 
@@ -265,13 +256,7 @@ library CheckpointsConfidential {
      * there is none.
      */
     function lowerLookup(TraceEuint32 storage self, uint256 key) internal view returns (euint32) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
-        bytes32 resAsBytes32 = lowerLookup(selfAsTraceBytes32, key);
-        return euint32.wrap(uint256(resAsBytes32));
+        return euint32.wrap(uint256(lowerLookup(_toTraceBytes32(self), key)));
     }
 
     /**
@@ -279,13 +264,7 @@ library CheckpointsConfidential {
      * if there is none.
      */
     function upperLookup(TraceEuint32 storage self, uint256 key) internal view returns (euint32) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
-        bytes32 resAsBytes32 = upperLookup(selfAsTraceBytes32, key);
-        return euint32.wrap(uint256(resAsBytes32));
+        return euint32.wrap(uint256(upperLookup(_toTraceBytes32(self), key)));
     }
 
     /**
@@ -296,26 +275,14 @@ library CheckpointsConfidential {
      * keys).
      */
     function upperLookupRecent(TraceEuint32 storage self, uint256 key) internal view returns (euint32) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
-        bytes32 resAsBytes32 = upperLookupRecent(selfAsTraceBytes32, key);
-        return euint32.wrap(uint256(resAsBytes32));
+        return euint32.wrap(uint256(upperLookupRecent(_toTraceBytes32(self), key)));
     }
 
     /**
      * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
      */
     function latest(TraceEuint32 storage self) internal view returns (euint32) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
-        bytes32 resAsBytes32 = latest(selfAsTraceBytes32);
-        return euint32.wrap(uint256(resAsBytes32));
+        return euint32.wrap(uint256(latest(_toTraceBytes32(self))));
     }
 
     /**
@@ -325,14 +292,8 @@ library CheckpointsConfidential {
     function latestCheckpoint(
         TraceEuint32 storage self
     ) internal view returns (bool exists, uint256 _key, euint32 _value) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
         bytes32 _valueAsBytes32;
-        (exists, _key, _valueAsBytes32) = latestCheckpoint(selfAsTraceBytes32);
-
+        (exists, _key, _valueAsBytes32) = latestCheckpoint(_toTraceBytes32(self));
         return (exists, _key, euint32.wrap(uint256(_valueAsBytes32)));
     }
 
@@ -359,6 +320,15 @@ library CheckpointsConfidential {
         euint64 _value;
     }
 
+    function _toTraceBytes32(TraceEuint64 storage self) private pure returns (TraceBytes32 storage) {
+        TraceBytes32 storage res;
+        assembly ("memory-safe") {
+            res.slot := self.slot
+        }
+
+        return res;
+    }
+
     /**
      * @dev Pushes a (`key`, `value`) pair into a TraceEuint64 so that it is stored as the checkpoint.
      *
@@ -372,15 +342,11 @@ library CheckpointsConfidential {
         uint256 key,
         euint64 value
     ) internal returns (euint64 oldValue, euint64 newValue) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
-        bytes32 oldValueAsBytes32;
-        bytes32 newValueAsBytes32;
-
-        (oldValueAsBytes32, newValueAsBytes32) = push(selfAsTraceBytes32, key, bytes32(euint64.unwrap(value)));
+        (bytes32 oldValueAsBytes32, bytes32 newValueAsBytes32) = push(
+            _toTraceBytes32(self),
+            key,
+            bytes32(euint64.unwrap(value))
+        );
         return (euint64.wrap(uint256(oldValueAsBytes32)), euint64.wrap(uint256(newValueAsBytes32)));
     }
 
@@ -389,13 +355,7 @@ library CheckpointsConfidential {
      * there is none.
      */
     function lowerLookup(TraceEuint64 storage self, uint256 key) internal view returns (euint64) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
-        bytes32 resAsBytes32 = lowerLookup(selfAsTraceBytes32, key);
-        return euint64.wrap(uint256(resAsBytes32));
+        return euint64.wrap(uint256(lowerLookup(_toTraceBytes32(self), key)));
     }
 
     /**
@@ -403,13 +363,7 @@ library CheckpointsConfidential {
      * if there is none.
      */
     function upperLookup(TraceEuint64 storage self, uint256 key) internal view returns (euint64) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
-        bytes32 resAsBytes32 = upperLookup(selfAsTraceBytes32, key);
-        return euint64.wrap(uint256(resAsBytes32));
+        return euint64.wrap(uint256(upperLookup(_toTraceBytes32(self), key)));
     }
 
     /**
@@ -420,26 +374,14 @@ library CheckpointsConfidential {
      * keys).
      */
     function upperLookupRecent(TraceEuint64 storage self, uint256 key) internal view returns (euint64) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
-        bytes32 resAsBytes32 = upperLookupRecent(selfAsTraceBytes32, key);
-        return euint64.wrap(uint256(resAsBytes32));
+        return euint64.wrap(uint256(upperLookupRecent(_toTraceBytes32(self), key)));
     }
 
     /**
      * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
      */
     function latest(TraceEuint64 storage self) internal view returns (euint64) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
-        bytes32 resAsBytes32 = latest(selfAsTraceBytes32);
-        return euint64.wrap(uint256(resAsBytes32));
+        return euint64.wrap(uint256(latest(_toTraceBytes32(self))));
     }
 
     /**
@@ -449,14 +391,8 @@ library CheckpointsConfidential {
     function latestCheckpoint(
         TraceEuint64 storage self
     ) internal view returns (bool exists, uint256 _key, euint64 _value) {
-        TraceBytes32 storage selfAsTraceBytes32;
-        assembly {
-            selfAsTraceBytes32.slot := self.slot
-        }
-
         bytes32 _valueAsBytes32;
-        (exists, _key, _valueAsBytes32) = latestCheckpoint(selfAsTraceBytes32);
-
+        (exists, _key, _valueAsBytes32) = latestCheckpoint(_toTraceBytes32(self));
         return (exists, _key, euint64.wrap(uint256(_valueAsBytes32)));
     }
 
