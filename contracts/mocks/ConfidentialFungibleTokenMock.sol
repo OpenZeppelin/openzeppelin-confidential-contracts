@@ -7,7 +7,7 @@ import {ConfidentialFungibleToken} from "../token/ConfidentialFungibleToken.sol"
 import {SepoliaZamaGatewayConfig} from "fhevm/config/ZamaGatewayConfig.sol";
 import {SepoliaZamaFHEVMConfig} from "fhevm/config/ZamaFHEVMConfig.sol";
 
-// solhint-disable-next-line func-name-mixedcase
+// solhint-disable func-name-mixedcase
 contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZamaFHEVMConfig, SepoliaZamaGatewayConfig {
     address private immutable _OWNER;
 
