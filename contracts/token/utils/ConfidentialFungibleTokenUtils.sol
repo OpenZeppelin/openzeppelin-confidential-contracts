@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {TFHE, ebool, euint64} from "fhevm/lib/TFHE.sol";
+import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 
 import {IConfidentialFungibleTokenReceiver} from "../../interfaces/IConfidentialFungibleTokenReceiver.sol";
 import {ConfidentialFungibleToken} from "../ConfidentialFungibleToken.sol";
@@ -26,12 +26,19 @@ library ConfidentialFungibleTokenUtils {
     ) internal returns (ebool) {
         if (to.code.length > 0) {
             try
-                IConfidentialFungibleTokenReceiver(to).onConfidentialTransferReceived(operator, from, amount, data)
+                IConfidentialFungibleTokenReceiver(to)
+                    .onConfidentialTransferReceived(
+                        operator,
+                        from,
+                        amount,
+                        data
+                    )
             returns (ebool retval) {
                 return retval;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
-                    revert ConfidentialFungibleToken.ConfidentialFungibleTokenInvalidReceiver(to);
+                    revert ConfidentialFungibleToken
+                        .ConfidentialFungibleTokenInvalidReceiver(to);
                 } else {
                     assembly ("memory-safe") {
                         revert(add(32, reason), mload(reason))
@@ -39,7 +46,7 @@ library ConfidentialFungibleTokenUtils {
                 }
             }
         } else {
-            return TFHE.asEbool(true);
+            return FHE.asEbool(true);
         }
     }
 }

@@ -34,8 +34,8 @@
     "url": "https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/issues"
   },
   "dependencies": {
+    "@fhevm/solidity": "^0.7.0-4",
     "openzeppelin-solidity": "file:lib/openzeppelin-contracts",
-    "fhevm": "^0.6.2"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.0",
@@ -44,6 +44,7 @@
     "@changesets/read": "^0.6.0",
     "@eslint/compat": "^1.2.8",
     "@eslint/js": "^9.9.0",
+    "@fhevm/hardhat-plugin": "^0.0.1-2",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@openzeppelin/docs-utils": "^0.1.5",
     "@trivago/prettier-plugin-sort-imports": "^4.0.0",
@@ -56,6 +57,7 @@
     "@types/node": "^18.19.59",
     "@typescript-eslint/eslint-plugin": "^8.0.1",
     "@typescript-eslint/parser": "^8.0.1",
+    "@zama-fhe/relayer-sdk": "^0.1.0-5",
     "chai": "^4.3.7",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.3",
@@ -63,9 +65,6 @@
     "eslint-config-prettier": "^8.5.0",
     "ethers": "^6.14.3",
     "extra-bigint": "^1.1.18",
-    "fhevm-contracts": "^0.2.1",
-    "fhevm-core-contracts": "^0.6.1",
-    "fhevmjs": "^0.6.1",
     "fs-extra": "^10.1.0",
     "glob": "^11.0.0",
     "globals": "^15.9.0",

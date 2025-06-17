@@ -1,24 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {TFHE, einput, euint64} from "fhevm/lib/TFHE.sol";
+import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IConfidentialFungibleToken} from "../../interfaces/IConfidentialFungibleToken.sol";
 
 contract SwapConfidentialFungibleTokenToConfidentialFungibleToken {
     function swapConfidentialForConfidential(
         IConfidentialFungibleToken fromToken,
         IConfidentialFungibleToken toToken,
-        einput amountInput,
+        externalEuint64 amountInput,
         bytes calldata inputProof
     ) public virtual {
         require(fromToken.isOperator(address(this), msg.sender));
 
-        euint64 amount = TFHE.asEuint64(amountInput, inputProof);
+        euint64 amount = FHE.fromExternal(amountInput, inputProof);
 
-        TFHE.allowTransient(amount, address(fromToken));
-        euint64 amountTransferred = fromToken.confidentialTransferFrom(msg.sender, address(this), amount);
+        FHE.allowTransient(amount, address(fromToken));
+        euint64 amountTransferred = fromToken.confidentialTransferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
 
-        TFHE.allowTransient(amountTransferred, address(toToken));
+        FHE.allowTransient(amountTransferred, address(toToken));
         toToken.confidentialTransfer(msg.sender, amountTransferred);
     }
 }

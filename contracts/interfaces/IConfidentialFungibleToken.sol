@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {einput, euint64} from "fhevm/lib/TFHE.sol";
+import { euint64, externalEuint64 } from "@fhevm/solidity/lib/FHE.sol";
 
 /// @dev Draft interface for a confidential fungible token standard utilizing the Zama TFHE library.
 interface IConfidentialFungibleToken {
@@ -57,12 +57,12 @@ interface IConfidentialFungibleToken {
      */
     function confidentialTransfer(
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) external returns (euint64);
 
     /**
-     * @dev Similar to {confidentialTransfer-address-einput-bytes} but without an input proof. The caller
+     * @dev Similar to {confidentialTransfer-address-externalEuint64-bytes} but without an input proof. The caller
      * *must* already be allowed by ACL for the given `amount`.
      */
     function confidentialTransfer(address to, euint64 amount) external returns (euint64 transferred);
@@ -76,18 +76,19 @@ interface IConfidentialFungibleToken {
     function confidentialTransferFrom(
         address from,
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) external returns (euint64);
 
     /**
-     * @dev Similar to {confidentialTransferFrom-address-address-einput-bytes} but without an input proof. The caller
-     * *must* be already allowed by ACL for the given `amount`.
+     * @dev Similar to {confidentialTransferFrom-address-address-externalEuint64-bytes} but without an input proof.
+     * The caller *must* be already allowed by ACL for the given `amount`.
      */
     function confidentialTransferFrom(address from, address to, euint64 amount) external returns (euint64 transferred);
 
     /**
-     * @dev Similar to {confidentialTransfer-address-einput-bytes} but with a callback to `to` after the transfer.
+     * @dev Similar to {confidentialTransfer-address-externalEuint64-bytes} but with a callback to `to` after
+     * the transfer.
      *
      * The callback is made to the {IConfidentialFungibleTokenReceiver-onConfidentialTransferReceived} function on the
      * to address with the actual transferred amount (may differ from the given `encryptedAmount`) and the given
@@ -95,7 +96,7 @@ interface IConfidentialFungibleToken {
      */
     function confidentialTransferAndCall(
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
     ) external returns (euint64 transferred);
@@ -108,13 +109,13 @@ interface IConfidentialFungibleToken {
     ) external returns (euint64 transferred);
 
     /**
-     * @dev Similar to {confidentialTransferFrom-address-address-einput-bytes} but with a callback to `to` after
-     * the transfer.
+     * @dev Similar to {confidentialTransferFrom-address-address-externalEuint64-bytes} but with a callback to `to`
+     * after the transfer.
      */
     function confidentialTransferFromAndCall(
         address from,
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
     ) external returns (euint64 transferred);
