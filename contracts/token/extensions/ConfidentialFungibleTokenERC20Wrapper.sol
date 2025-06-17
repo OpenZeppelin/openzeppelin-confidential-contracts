@@ -2,8 +2,7 @@
 
 pragma solidity ^0.8.26;
 
-import { TFHE, einput, euint64 } from "fhevm/lib/TFHE.sol";
-import { Gateway } from "fhevm/gateway/lib/Gateway.sol";
+import { FHE, externalEuint64, euint64 } from "@fhevm/solidity/lib/FHE.sol";
 import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { IERC20Metadata } from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import { IERC1363Receiver } from "@openzeppelin/contracts/interfaces/IERC1363Receiver.sol";
@@ -76,7 +75,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
 
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, TFHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
 
         // return magic value
         return IERC1363Receiver.onTransferReceived.selector;
@@ -92,7 +91,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
 
         // mint confidential token
-        _mint(to, TFHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
     }
 
     /**
@@ -105,7 +104,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
      */
     function unwrap(address from, address to, euint64 amount) public virtual {
         require(
-            TFHE.isAllowed(amount, msg.sender),
+            FHE.isAllowed(amount, msg.sender),
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         _unwrap(from, to, amount);
@@ -115,15 +114,21 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
      * @dev Variant of {unwrap} that passes an `inputProof` which approves the caller for the `encryptedAmount`
      * in the ACL.
      */
-    function unwrap(address from, address to, einput encryptedAmount, bytes calldata inputProof) public virtual {
-        _unwrap(from, to, TFHE.asEuint64(encryptedAmount, inputProof));
+    function unwrap(
+        address from,
+        address to,
+        externalEuint64 encryptedAmount,
+        bytes calldata inputProof
+    ) public virtual {
+        _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /**
      * @dev Called by the fhEVM gateway with the decrypted amount `amount` for a request id `requestId`.
      * Fills unwrap requests.
      */
-    function finalizeUnwrap(uint256 requestID, uint64 amount) public virtual onlyGateway {
+    function finalizeUnwrap(uint256 requestID, uint64 amount, bytes[] memory signatures) public virtual {
+        FHE.checkSignatures(requestID, signatures);
         address to = _receivers[requestID];
         require(to != address(0), ConfidentialFungibleTokenInvalidGatewayRequest(requestID));
         delete _receivers[requestID];
@@ -142,15 +147,9 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         euint64 burntAmount = _burn(from, amount);
 
         // decrypt that burntAmount
-        uint256[] memory cts = new uint256[](1);
+        bytes32[] memory cts = new bytes32[](1);
         cts[0] = euint64.unwrap(burntAmount);
-        uint256 requestID = Gateway.requestDecryption(
-            cts,
-            this.finalizeUnwrap.selector,
-            0,
-            block.timestamp + 1 days, // Max delay is 1 day
-            false
-        );
+        uint256 requestID = FHE.requestDecryption(cts, this.finalizeUnwrap.selector);
 
         // register who is getting the tokens
         _receivers[requestID] = to;

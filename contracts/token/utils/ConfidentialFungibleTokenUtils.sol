@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { TFHE, ebool, euint64 } from "fhevm/lib/TFHE.sol";
+import { FHE, ebool, euint64 } from "@fhevm/solidity/lib/FHE.sol";
 
 import { IConfidentialFungibleTokenReceiver } from "../../interfaces/IConfidentialFungibleTokenReceiver.sol";
 import { ConfidentialFungibleToken } from "../ConfidentialFungibleToken.sol";
@@ -39,7 +39,7 @@ library ConfidentialFungibleTokenUtils {
                 }
             }
         } else {
-            return TFHE.asEbool(true);
+            return FHE.asEbool(true);
         }
     }
 }

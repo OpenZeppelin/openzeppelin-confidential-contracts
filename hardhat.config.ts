@@ -1,3 +1,4 @@
+import "@fhevm/hardhat-plugin";
 import "@nomicfoundation/hardhat-chai-matchers";
 import "@nomicfoundation/hardhat-ethers";
 import dotenv from "dotenv";
