@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {einput, euint64, TFHE} from "fhevm/lib/TFHE.sol";
+import {TFHE, einput, euint64} from "fhevm/lib/TFHE.sol";
 import {IConfidentialFungibleToken} from "../../interfaces/IConfidentialFungibleToken.sol";
 
 contract SwapConfidentialFungibleTokenToConfidentialFungibleToken {
