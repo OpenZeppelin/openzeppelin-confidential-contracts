@@ -7,6 +7,7 @@ import {ConfidentialFungibleToken} from "../token/ConfidentialFungibleToken.sol"
 import {SepoliaZamaGatewayConfig} from "fhevm/config/ZamaGatewayConfig.sol";
 import {SepoliaZamaFHEVMConfig} from "fhevm/config/ZamaFHEVMConfig.sol";
 
+// solhint-disable-next-line func-name-mixedcase
 contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZamaFHEVMConfig, SepoliaZamaGatewayConfig {
     address private immutable _OWNER;
 
@@ -23,7 +24,6 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZama
         TFHE.allow(totalSupply(), _OWNER);
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     function $_mint(
         address to,
         einput encryptedAmount,
@@ -32,7 +32,6 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZama
         return _mint(to, TFHE.asEuint64(encryptedAmount, inputProof));
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     function $_transfer(
         address from,
         address to,
@@ -42,7 +41,6 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZama
         return _transfer(from, to, TFHE.asEuint64(encryptedAmount, inputProof));
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     function $_transferAndCall(
         address from,
         address to,
@@ -53,7 +51,6 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZama
         return _transferAndCall(from, to, TFHE.asEuint64(encryptedAmount, inputProof), data);
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     function $_burn(
         address from,
         einput encryptedAmount,
@@ -62,7 +59,6 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaZama
         return _burn(from, TFHE.asEuint64(encryptedAmount, inputProof));
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     function $_update(
         address from,
         address to,
