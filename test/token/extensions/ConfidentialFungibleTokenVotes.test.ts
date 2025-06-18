@@ -1,22 +1,21 @@
-import { mine } from "@nomicfoundation/hardhat-network-helpers";
-import { expect } from "chai";
-import { ethers } from "hardhat";
-
 // @ts-ignore
-import { Delegation, getDomain } from "../../../lib/openzeppelin-contracts/test/helpers/eip712";
-import { createInstance } from "../../_template/instance";
-import { reencryptEuint64 } from "../../_template/reencrypt";
+import { Delegation, getDomain } from '../../../lib/openzeppelin-contracts/test/helpers/eip712';
+import { createInstance } from '../../_template/instance';
+import { reencryptEuint64 } from '../../_template/reencrypt';
+import { mine } from '@nomicfoundation/hardhat-network-helpers';
+import { expect } from 'chai';
+import { ethers } from 'hardhat';
 
-const name = "ConfidentialFungibleTokenVotes";
-const symbol = "CFT";
-const uri = "https://example.com/metadata";
+const name = 'ConfidentialFungibleTokenVotes';
+const symbol = 'CFT';
+const uri = 'https://example.com/metadata';
 
-describe("ConfidentialFungibleTokenVotes", function () {
+describe('ConfidentialFungibleTokenVotes', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract("$ConfidentialFungibleTokenVotesMock", [name, symbol, uri]);
+    const token = await ethers.deployContract('$ConfidentialFungibleTokenVotesMock', [name, symbol, uri]);
 
     this.fhevm = await createInstance();
     this.accounts = accounts.slice(3);
@@ -31,22 +30,22 @@ describe("ConfidentialFungibleTokenVotes", function () {
     this.encryptedInput = await input.encrypt();
   });
 
-  describe("delegate", async function () {
-    it("by default is null address", async function () {
+  describe('delegate', async function () {
+    it('by default is null address', async function () {
       await expect(this.token.delegates(this.holder)).to.eventually.eq(ethers.ZeroAddress);
     });
 
-    it("can be set", async function () {
+    it('can be set', async function () {
       await expect(this.token.connect(this.holder).delegate(this.recipient))
-        .to.emit(this.token, "DelegateChanged")
+        .to.emit(this.token, 'DelegateChanged')
         .withArgs(this.holder, ethers.ZeroAddress, this.recipient);
 
       await expect(this.token.delegates(this.holder)).to.eventually.eq(this.recipient);
     });
 
-    describe("by sig", function () {
+    describe('by sig', function () {
       for (let nonce of [0, 1]) {
-        it(`with ${nonce == 0 ? "valid" : "invalid"} nonce`, async function () {
+        it(`with ${nonce == 0 ? 'valid' : 'invalid'} nonce`, async function () {
           const sig = await this.holder.signTypedData(
             this.domain,
             { Delegation },
@@ -59,7 +58,7 @@ describe("ConfidentialFungibleTokenVotes", function () {
 
           if (nonce == 1) {
             await expect(tx)
-              .to.be.revertedWithCustomError(this.token, "InvalidAccountNonce")
+              .to.be.revertedWithCustomError(this.token, 'InvalidAccountNonce')
               .withArgs(this.holder.address, 0);
           } else {
             await tx;
@@ -69,7 +68,7 @@ describe("ConfidentialFungibleTokenVotes", function () {
       }
 
       for (let expiry of [ethers.MaxUint256, 0]) {
-        it(`with ${expiry == ethers.MaxUint256 ? "valid" : "invalid"} expiry`, async function () {
+        it(`with ${expiry == ethers.MaxUint256 ? 'valid' : 'invalid'} expiry`, async function () {
           const sig = await this.holder.signTypedData(
             this.domain,
             { Delegation },
@@ -81,7 +80,7 @@ describe("ConfidentialFungibleTokenVotes", function () {
             .delegateBySig(this.holder, this.recipient.address, 0, expiry, sig);
 
           if (expiry == 0) {
-            await expect(tx).to.be.revertedWithCustomError(this.token, "VotesExpiredSignature").withArgs(expiry);
+            await expect(tx).to.be.revertedWithCustomError(this.token, 'VotesExpiredSignature').withArgs(expiry);
           } else {
             await tx;
             await expect(this.token.delegates(this.holder)).to.eventually.eq(this.recipient);
@@ -91,13 +90,13 @@ describe("ConfidentialFungibleTokenVotes", function () {
     });
   });
 
-  describe("getVotes", async function () {
-    it("for account with zero balance", async function () {
+  describe('getVotes', async function () {
+    it('for account with zero balance', async function () {
       await expect(this.token.getVotes(this.holder)).to.eventually.eq(ethers.ZeroHash);
     });
 
-    it("for account with non-zero balance", async function () {
-      await this.token["$_mint(address,bytes32,bytes)"](
+    it('for account with non-zero balance', async function () {
+      await this.token['$_mint(address,bytes32,bytes)'](
         this.holder,
         this.encryptedInput.handles[0],
         this.encryptedInput.inputProof,
@@ -108,8 +107,8 @@ describe("ConfidentialFungibleTokenVotes", function () {
       await expect(reencryptEuint64(this.holder, this.fhevm, votesHandle, this.token.target)).to.eventually.equal(1000);
     });
 
-    it("for account with non-zero balance cannot reencrypt by other", async function () {
-      await this.token["$_mint(address,bytes32,bytes)"](
+    it('for account with non-zero balance cannot reencrypt by other', async function () {
+      await this.token['$_mint(address,bytes32,bytes)'](
         this.holder,
         this.encryptedInput.handles[0],
         this.encryptedInput.inputProof,
@@ -121,18 +120,18 @@ describe("ConfidentialFungibleTokenVotes", function () {
     });
   });
 
-  describe("getPastVotes", async function () {
+  describe('getPastVotes', async function () {
     beforeEach(async function () {
       this.blockNumber = await ethers.provider.getBlockNumber();
     });
 
-    it("for account with no activity", async function () {
+    it('for account with no activity', async function () {
       await expect(this.token.getPastVotes(this.holder, this.blockNumber - 10)).to.eventually.eq(ethers.ZeroHash);
     });
 
-    it("for account with simple activity", async function () {
+    it('for account with simple activity', async function () {
       await this.token.connect(this.holder).delegate(this.holder);
-      await this.token["$_mint(address,bytes32,bytes)"](
+      await this.token['$_mint(address,bytes32,bytes)'](
         this.holder,
         this.encryptedInput.handles[0],
         this.encryptedInput.inputProof,
@@ -146,10 +145,10 @@ describe("ConfidentialFungibleTokenVotes", function () {
       await expect(reencryptEuint64(this.holder, this.fhevm, votesHandle, this.token.target)).to.eventually.equal(1000);
     });
 
-    it("for account with complex activity", async function () {
+    it('for account with complex activity', async function () {
       // Initial mint of 1000
       await this.token.connect(this.holder).delegate(this.holder);
-      await this.token["$_mint(address,bytes32,bytes)"](
+      await this.token['$_mint(address,bytes32,bytes)'](
         this.holder,
         this.encryptedInput.handles[0],
         this.encryptedInput.inputProof,
@@ -162,7 +161,7 @@ describe("ConfidentialFungibleTokenVotes", function () {
       const encryptedInput = await input.encrypt();
       await this.token
         .connect(this.holder)
-        ["confidentialTransfer(address,bytes32,bytes)"](
+        ['confidentialTransfer(address,bytes32,bytes)'](
           this.operator,
           encryptedInput.handles[0],
           encryptedInput.inputProof,
@@ -193,26 +192,26 @@ describe("ConfidentialFungibleTokenVotes", function () {
       ).to.eventually.equal(0);
     });
 
-    it("in the future", async function () {
+    it('in the future', async function () {
       await expect(this.token.getPastVotes(this.holder, this.blockNumber + 10))
-        .to.be.revertedWithCustomError(this.token, "ERC5805FutureLookup")
+        .to.be.revertedWithCustomError(this.token, 'ERC5805FutureLookup')
         .withArgs(this.blockNumber + 10, this.blockNumber);
     });
   });
 
-  describe("getPastTotalSupply", function () {
+  describe('getPastTotalSupply', function () {
     beforeEach(async function () {
       this.blockNumber = await ethers.provider.getBlockNumber();
     });
 
-    it("for no activity", async function () {
+    it('for no activity', async function () {
       await mine();
       await expect(this.token.getPastTotalSupply(this.blockNumber)).to.eventually.eq(ethers.ZeroHash);
     });
 
-    it("for multiple mints and transfers", async function () {
+    it('for multiple mints and transfers', async function () {
       // Mint to holder
-      await this.token["$_mint(address,bytes32,bytes)"](
+      await this.token['$_mint(address,bytes32,bytes)'](
         this.holder,
         this.encryptedInput.handles[0],
         this.encryptedInput.inputProof,
@@ -225,7 +224,7 @@ describe("ConfidentialFungibleTokenVotes", function () {
       const encryptedInput = await input.encrypt();
       await this.token
         .connect(this.holder)
-        ["confidentialTransfer(address,bytes32,bytes)"](
+        ['confidentialTransfer(address,bytes32,bytes)'](
           this.operator,
           encryptedInput.handles[0],
           encryptedInput.inputProof,
@@ -233,7 +232,7 @@ describe("ConfidentialFungibleTokenVotes", function () {
       const afterTransferBlock = await ethers.provider.getBlockNumber();
 
       // Mint to recipient
-      await this.token["$_mint(address,bytes32,bytes)"](
+      await this.token['$_mint(address,bytes32,bytes)'](
         this.recipient,
         this.encryptedInput.handles[0],
         this.encryptedInput.inputProof,
@@ -258,15 +257,15 @@ describe("ConfidentialFungibleTokenVotes", function () {
     });
   });
 
-  describe("Clock", async function () {
-    it("check CLOCK_MODE", async function () {
-      await expect(this.token.CLOCK_MODE()).to.eventually.eq("mode=blocknumber&from=default");
+  describe('Clock', async function () {
+    it('check CLOCK_MODE', async function () {
+      await expect(this.token.CLOCK_MODE()).to.eventually.eq('mode=blocknumber&from=default');
     });
 
-    it("clock inconsistency", async function () {
+    it('clock inconsistency', async function () {
       await this.token._setClockOverride(1000);
 
-      await expect(this.token.CLOCK_MODE()).to.be.revertedWithCustomError(this.token, "ERC6372InconsistentClock");
+      await expect(this.token.CLOCK_MODE()).to.be.revertedWithCustomError(this.token, 'ERC6372InconsistentClock');
     });
   });
 });

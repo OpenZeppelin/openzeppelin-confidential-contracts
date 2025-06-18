@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { TFHE, einput, euint64 } from "fhevm/lib/TFHE.sol";
-import { IERC6372 } from "@openzeppelin/contracts/interfaces/IERC6372.sol";
-import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { Time } from "@openzeppelin/contracts/utils/types/Time.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import { Nonces } from "@openzeppelin/contracts/utils/Nonces.sol";
-import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {TFHE, einput, euint64} from "fhevm/lib/TFHE.sol";
+import {IERC6372} from "@openzeppelin/contracts/interfaces/IERC6372.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
-import { CheckpointConfidential } from "../../utils/structs/CheckpointConfidential.sol";
+import {CheckpointsConfidential} from "../../utils/structs/CheckpointsConfidential.sol";
 
 abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
     using TFHE for *;
-    using CheckpointConfidential for CheckpointConfidential.TraceEuint64;
+    using CheckpointsConfidential for CheckpointsConfidential.TraceEuint64;
 
     bytes32 private constant DELEGATION_TYPEHASH =
         keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
 
     mapping(address account => address) private _delegatee;
 
-    mapping(address delegatee => CheckpointConfidential.TraceEuint64) private _delegateCheckpoints;
+    mapping(address delegatee => CheckpointsConfidential.TraceEuint64) private _delegateCheckpoints;
 
-    CheckpointConfidential.TraceEuint64 private _totalCheckpoints;
+    CheckpointsConfidential.TraceEuint64 private _totalCheckpoints;
 
     /// @dev The signature used has expired.
     error VotesExpiredSignature(uint256 expiry);
@@ -169,7 +169,7 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
      * @dev Moves delegated votes from one delegate to another.
      */
     function _moveDelegateVotes(address from, address to, euint64 amount) internal virtual {
-        CheckpointConfidential.TraceEuint64 storage store;
+        CheckpointsConfidential.TraceEuint64 storage store;
         if (from != to && euint64.unwrap(amount) != 0) {
             if (from != address(0)) {
                 store = _delegateCheckpoints[from];
@@ -202,7 +202,7 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
      */
     function _getVotingUnits(address) internal view virtual returns (euint64);
 
-    function _push(CheckpointConfidential.TraceEuint64 storage store, euint64 value) private returns (euint64) {
+    function _push(CheckpointsConfidential.TraceEuint64 storage store, euint64 value) private returns (euint64) {
         (euint64 oldValue, ) = store.push(clock(), value);
         return oldValue;
     }

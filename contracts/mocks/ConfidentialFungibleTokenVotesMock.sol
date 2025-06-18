@@ -1,18 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { TFHE, euint64, einput } from "fhevm/lib/TFHE.sol";
-import { SepoliaZamaFHEVMConfig } from "fhevm/config/ZamaFHEVMConfig.sol";
-import {
-    ConfidentialFungibleTokenVotes,
-    ConfidentialFungibleToken
-} from "../token/extensions/ConfidentialFungibleTokenVotes.sol";
-import { CheckpointConfidential } from "../utils/structs/CheckpointConfidential.sol";
-import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {TFHE, euint64, einput} from "fhevm/lib/TFHE.sol";
+import {SepoliaZamaFHEVMConfig} from "fhevm/config/ZamaFHEVMConfig.sol";
+import {ConfidentialFungibleTokenVotes, ConfidentialFungibleToken} from "../token/extensions/ConfidentialFungibleTokenVotes.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleTokenVotes, SepoliaZamaFHEVMConfig {
-    using CheckpointConfidential for CheckpointConfidential.TraceEuint64;
-
     address private immutable _OWNER;
 
     uint48 private _clockOverrideVal;
@@ -25,6 +19,7 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
         _OWNER = msg.sender;
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function $_mint(
         address to,
         einput encryptedAmount,
