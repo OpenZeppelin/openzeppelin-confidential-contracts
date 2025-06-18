@@ -9,10 +9,6 @@ import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
 import "solidity-docgen";
 
-import "./hardhat/coverage";
-import "./hardhat/provider";
-import "./hardhat/testEnvironment";
-
 dotenv.config();
 
 const config: HardhatUserConfig = {
