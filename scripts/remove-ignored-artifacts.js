@@ -1,0 +1,1 @@
+../lib/openzeppelin-contracts/scripts/remove-ignored-artifacts.js
