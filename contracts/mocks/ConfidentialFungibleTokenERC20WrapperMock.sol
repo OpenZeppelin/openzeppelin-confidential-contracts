@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { SepoliaZamaFHEVMConfig } from "fhevm/config/ZamaFHEVMConfig.sol";
-import { SepoliaZamaGatewayConfig } from "fhevm/config/ZamaGatewayConfig.sol";
-import {
-    ConfidentialFungibleTokenERC20Wrapper,
-    ConfidentialFungibleToken
-} from "../token/extensions/ConfidentialFungibleTokenERC20Wrapper.sol";
-import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {SepoliaZamaFHEVMConfig} from "fhevm/config/ZamaFHEVMConfig.sol";
+import {SepoliaZamaGatewayConfig} from "fhevm/config/ZamaGatewayConfig.sol";
+import {ConfidentialFungibleTokenERC20Wrapper, ConfidentialFungibleToken} from "../token/extensions/ConfidentialFungibleTokenERC20Wrapper.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract ConfidentialFungibleTokenERC20WrapperMock is
     SepoliaZamaFHEVMConfig,

@@ -1,19 +1,18 @@
-import { toBigIntBE, toBufferBE } from "bigint-buffer";
-import crypto from "crypto";
-import { Wallet, ethers } from "ethers";
-import hre from "hardhat";
-import { Keccak } from "sha3";
-import { isAddress } from "web3-validator";
-
 import {
   ACL_ADDRESS,
   INPUTVERIFIER_ADDRESS,
   KMSVERIFIER_ADDRESS,
   PRIVATE_KEY_COPROCESSOR_ACCOUNT,
   PRIVATE_KEY_KMS_SIGNER,
-} from "./constants";
-import { insertSQL } from "./coprocessorUtils";
-import { awaitCoprocessor, getClearText } from "./coprocessorUtils";
+} from './constants';
+import { insertSQL } from './coprocessorUtils';
+import { awaitCoprocessor, getClearText } from './coprocessorUtils';
+import { toBigIntBE, toBufferBE } from 'bigint-buffer';
+import crypto from 'crypto';
+import { Wallet, ethers } from 'ethers';
+import hre from 'hardhat';
+import { Keccak } from 'sha3';
+import { isAddress } from 'web3-validator';
 
 enum Types {
   ebool = 0,
@@ -103,7 +102,7 @@ function createUintToUint8ArrayFunction(numBits: number) {
         totalBuffer = Buffer.concat([byteBuffer, combinedBuffer]);
         break;
       default:
-        throw Error("Non-supported numBits");
+        throw Error('Non-supported numBits');
     }
 
     return totalBuffer;
@@ -120,13 +119,13 @@ export const reencryptRequestMocked = async (
 ) => {
   // Signature checking:
   const domain = {
-    name: "Authorization token",
-    version: "1",
+    name: 'Authorization token',
+    version: '1',
     chainId: hre.network.config.chainId,
     verifyingContract: contractAddress,
   };
   const types = {
-    Reencrypt: [{ name: "publicKey", type: "bytes" }],
+    Reencrypt: [{ name: 'publicKey', type: 'bytes' }],
   };
   const value = {
     publicKey: `0x${publicKey}`,
@@ -135,22 +134,22 @@ export const reencryptRequestMocked = async (
   const normalizedSignerAddress = ethers.getAddress(signerAddress);
   const normalizedUserAddress = ethers.getAddress(userAddress);
   if (normalizedSignerAddress !== normalizedUserAddress) {
-    throw new Error("Invalid EIP-712 signature!");
+    throw new Error('Invalid EIP-712 signature!');
   }
 
   // ACL checking
-  const aclArtifact = await import("fhevm-core-contracts/artifacts/contracts/ACL.sol/ACL.json");
+  const aclArtifact = await import('fhevm-core-contracts/artifacts/contracts/ACL.sol/ACL.json');
   const acl = await hre.ethers.getContractAt(aclArtifact.abi, ACL_ADDRESS);
   const userAllowed = await acl.persistAllowed(handle, userAddress);
   const contractAllowed = await acl.persistAllowed(handle, contractAddress);
   if (!userAllowed) {
-    throw new Error("User is not authorized to reencrypt this handle!");
+    throw new Error('User is not authorized to reencrypt this handle!');
   }
   if (!contractAllowed) {
-    throw new Error("dApp contract is not authorized to reencrypt this handle!");
+    throw new Error('dApp contract is not authorized to reencrypt this handle!');
   }
   if (userAddress === contractAddress) {
-    throw new Error("userAddress should not be equal to contractAddress when requesting reencryption!");
+    throw new Error('userAddress should not be equal to contractAddress when requesting reencryption!');
   }
   await awaitCoprocessor();
   return BigInt(await getClearText(handle));
@@ -158,122 +157,122 @@ export const reencryptRequestMocked = async (
 
 export const createEncryptedInputMocked = (contractAddress: string, userAddress: string) => {
   if (!isAddress(contractAddress)) {
-    throw new Error("Contract address is not a valid address.");
+    throw new Error('Contract address is not a valid address.');
   }
 
   if (!isAddress(userAddress)) {
-    throw new Error("User address is not a valid address.");
+    throw new Error('User address is not a valid address.');
   }
 
   const values: bigint[] = [];
   const bits: (keyof typeof ENCRYPTION_TYPES)[] = [];
   return {
     addBool(value: boolean | number | bigint) {
-      if (value == null) throw new Error("Missing value");
-      if (typeof value !== "boolean" && typeof value !== "number" && typeof value !== "bigint")
-        throw new Error("The value must be a boolean, a number or a bigint.");
-      if ((typeof value !== "bigint" || typeof value !== "number") && Number(value) > 1)
-        throw new Error("The value must be 1 or 0.");
+      if (value == null) throw new Error('Missing value');
+      if (typeof value !== 'boolean' && typeof value !== 'number' && typeof value !== 'bigint')
+        throw new Error('The value must be a boolean, a number or a bigint.');
+      if ((typeof value !== 'bigint' || typeof value !== 'number') && Number(value) > 1)
+        throw new Error('The value must be 1 or 0.');
       values.push(BigInt(value));
       bits.push(2); // ebool takes 2 bits instead of one: only exception in TFHE-rs
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     add4(value: number | bigint) {
       checkEncryptedValue(value, 4);
       values.push(BigInt(value));
       bits.push(4);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     add8(value: number | bigint) {
       checkEncryptedValue(value, 8);
       values.push(BigInt(value));
       bits.push(8);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     add16(value: number | bigint) {
       checkEncryptedValue(value, 16);
       values.push(BigInt(value));
       bits.push(16);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     add32(value: number | bigint) {
       checkEncryptedValue(value, 32);
       values.push(BigInt(value));
       bits.push(32);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     add64(value: number | bigint) {
       checkEncryptedValue(value, 64);
       values.push(BigInt(value));
       bits.push(64);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     add128(value: number | bigint) {
       checkEncryptedValue(value, 128);
       values.push(BigInt(value));
       bits.push(128);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     addAddress(value: string) {
       if (!isAddress(value)) {
-        throw new Error("The value must be a valid address.");
+        throw new Error('The value must be a valid address.');
       }
       values.push(BigInt(value));
       bits.push(160);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     add256(value: number | bigint) {
       checkEncryptedValue(value, 256);
       values.push(BigInt(value));
       bits.push(256);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     addBytes64(value: Uint8Array) {
-      if (value.length !== 64) throw Error("Incorrect length of input Uint8Array, should be 64 for an ebytes64");
+      if (value.length !== 64) throw Error('Incorrect length of input Uint8Array, should be 64 for an ebytes64');
       const bigIntValue = bytesToBigInt(value);
       checkEncryptedValue(bigIntValue, 512);
       values.push(bigIntValue);
       bits.push(512);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     addBytes128(value: Uint8Array) {
-      if (value.length !== 128) throw Error("Incorrect length of input Uint8Array, should be 128 for an ebytes128");
+      if (value.length !== 128) throw Error('Incorrect length of input Uint8Array, should be 128 for an ebytes128');
       const bigIntValue = bytesToBigInt(value);
       checkEncryptedValue(bigIntValue, 1024);
       values.push(bigIntValue);
       bits.push(1024);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     addBytes256(value: Uint8Array) {
-      if (value.length !== 256) throw Error("Incorrect length of input Uint8Array, should be 256 for an ebytes256");
+      if (value.length !== 256) throw Error('Incorrect length of input Uint8Array, should be 256 for an ebytes256');
       const bigIntValue = bytesToBigInt(value);
       checkEncryptedValue(bigIntValue, 2048);
       values.push(bigIntValue);
       bits.push(2048);
-      if (sum(bits) > 2048) throw Error("Packing more than 2048 bits in a single input ciphertext is unsupported");
-      if (bits.length > 256) throw Error("Packing more than 256 variables in a single input ciphertext is unsupported");
+      if (sum(bits) > 2048) throw Error('Packing more than 2048 bits in a single input ciphertext is unsupported');
+      if (bits.length > 256) throw Error('Packing more than 256 variables in a single input ciphertext is unsupported');
       return this;
     },
     getValues() {
@@ -307,28 +306,28 @@ export const createEncryptedInputMocked = (contractAddress: string, userAddress:
         dataInput.set([i, ENCRYPTION_TYPES[v], 0], 29);
         return dataInput;
       });
-      let inputProof = "0x" + numberToHex(handles.length); // for coprocessor : numHandles + numSignersKMS + hashCT + list_handles + signatureCopro + signatureKMSSigners (total len : 1+1+32+NUM_HANDLES*32+65+65*numSignersKMS)
+      let inputProof = '0x' + numberToHex(handles.length); // for coprocessor : numHandles + numSignersKMS + hashCT + list_handles + signatureCopro + signatureKMSSigners (total len : 1+1+32+NUM_HANDLES*32+65+65*numSignersKMS)
       // for native : numHandles + numSignersKMS + list_handles + signatureKMSSigners + bundleCiphertext (total len : 1+1+NUM_HANDLES*32+65*numSignersKMS+bundleCiphertext.length)
       const numSigners = 1; // @note: only 1 signer in mocked mode for the moment
       inputProof += numberToHex(numSigners);
       //if (process.env.IS_COPROCESSOR === "true") { // @note: for now we support only the coprocessor mode, not native
       // coprocessor
-      inputProof += hash.toString("hex");
+      inputProof += hash.toString('hex');
 
-      const listHandlesStr = handles.map((i) => uint8ArrayToHexString(i));
-      listHandlesStr.map((handle) => (inputProof += handle));
-      const listHandles = listHandlesStr.map((i) => BigInt("0x" + i));
+      const listHandlesStr = handles.map(i => uint8ArrayToHexString(i));
+      listHandlesStr.map(handle => (inputProof += handle));
+      const listHandles = listHandlesStr.map(i => BigInt('0x' + i));
       const sigCoproc = await computeInputSignatureCopro(
-        "0x" + hash.toString("hex"),
+        '0x' + hash.toString('hex'),
         listHandles,
         userAddress,
         contractAddress,
       );
       inputProof += sigCoproc.slice(2);
 
-      const signaturesKMS = await computeInputSignaturesKMS("0x" + hash.toString("hex"), userAddress, contractAddress);
-      signaturesKMS.map((sigKMS) => (inputProof += sigKMS.slice(2)));
-      listHandlesStr.map((handle, i) => insertSQL("0x" + handle, values[i]));
+      const signaturesKMS = await computeInputSignaturesKMS('0x' + hash.toString('hex'), userAddress, contractAddress);
+      signaturesKMS.map(sigKMS => (inputProof += sigKMS.slice(2)));
+      listHandlesStr.map((handle, i) => insertSQL('0x' + handle, values[i]));
       /*} else {
         // native
         const listHandlesStr = handles.map((i) => uint8ArrayToHexString(i));
@@ -354,24 +353,24 @@ export const createEncryptedInputMocked = (contractAddress: string, userAddress:
 
 function uint8ArrayToHexString(uint8Array: Uint8Array) {
   return Array.from(uint8Array)
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 function numberToHex(num: number) {
   const hex = num.toString(16);
-  return hex.length % 2 ? "0" + hex : hex;
+  return hex.length % 2 ? '0' + hex : hex;
 }
 
 const checkEncryptedValue = (value: number | bigint, bits: number) => {
-  if (value == null) throw new Error("Missing value");
+  if (value == null) throw new Error('Missing value');
   let limit;
   if (bits >= 8) {
-    limit = BigInt(`0x${new Array(bits / 8).fill(null).reduce((v) => `${v}ff`, "")}`);
+    limit = BigInt(`0x${new Array(bits / 8).fill(null).reduce(v => `${v}ff`, '')}`);
   } else {
     limit = BigInt(2 ** bits - 1);
   }
-  if (typeof value !== "number" && typeof value !== "bigint") throw new Error("Value must be a number or a bigint.");
+  if (typeof value !== 'number' && typeof value !== 'bigint') throw new Error('Value must be a number or a bigint.');
   if (value > limit) {
     throw new Error(`The value exceeds the limit for ${bits}bits integer (${limit.toString()}).`);
   }
@@ -432,8 +431,8 @@ async function coprocSign(
   const aclAdd = ACL_ADDRESS;
 
   const domain = {
-    name: "InputVerifier",
-    version: "1",
+    name: 'InputVerifier',
+    version: '1',
     chainId: chainId,
     verifyingContract: inputAdd,
   };
@@ -441,24 +440,24 @@ async function coprocSign(
   const types = {
     CiphertextVerificationForCopro: [
       {
-        name: "aclAddress",
-        type: "address",
+        name: 'aclAddress',
+        type: 'address',
       },
       {
-        name: "hashOfCiphertext",
-        type: "bytes32",
+        name: 'hashOfCiphertext',
+        type: 'bytes32',
       },
       {
-        name: "handlesList",
-        type: "uint256[]",
+        name: 'handlesList',
+        type: 'uint256[]',
       },
       {
-        name: "userAddress",
-        type: "address",
+        name: 'userAddress',
+        type: 'address',
       },
       {
-        name: "contractAddress",
-        type: "address",
+        name: 'contractAddress',
+        type: 'address',
       },
     ],
   };
@@ -491,8 +490,8 @@ async function kmsSign(
   const aclAdd = ACL_ADDRESS;
 
   const domain = {
-    name: "KMSVerifier",
-    version: "1",
+    name: 'KMSVerifier',
+    version: '1',
     chainId: chainId,
     verifyingContract: kmsVerifierAdd,
   };
@@ -500,20 +499,20 @@ async function kmsSign(
   const types = {
     CiphertextVerificationForKMS: [
       {
-        name: "aclAddress",
-        type: "address",
+        name: 'aclAddress',
+        type: 'address',
       },
       {
-        name: "hashOfCiphertext",
-        type: "bytes32",
+        name: 'hashOfCiphertext',
+        type: 'bytes32',
       },
       {
-        name: "userAddress",
-        type: "address",
+        name: 'userAddress',
+        type: 'address',
       },
       {
-        name: "contractAddress",
-        type: "address",
+        name: 'contractAddress',
+        type: 'address',
       },
     ],
   };

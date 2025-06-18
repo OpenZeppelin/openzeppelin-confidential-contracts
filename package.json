@@ -1,11 +1,12 @@
 {
   "name": "@openzeppelin/contracts-confidential",
-  "description": "Smart Contract library for use with confidential coprocessors",
+  "description": "",
   "version": "0.1.0",
   "author": "OpenZeppelin Community <maintainers@openzeppelin.org>",
   "license": "MIT",
   "files": [
-    "contracts"
+    "/contracts/**/*.sol",
+    "!/contracts/mocks/**/*"
   ],
   "scripts": {
     "clean": "hardhat clean && rimraf build contracts/build",
@@ -21,7 +22,9 @@
     "prepare": "husky",
     "prepare-docs": "scripts/prepare-docs.sh",
     "test": "hardhat test",
-    "coverage": "hardhat coverage"
+    "test:generation": "scripts/checks/generation.sh",
+    "coverage": "hardhat coverage",
+    "generate": ""
   },
   "repository": {
     "type": "git",
@@ -31,7 +34,7 @@
     "url": "https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/issues"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.3.0",
+    "openzeppelin-solidity": "file:lib/openzeppelin-contracts",
     "fhevm": "^0.6.2"
   },
   "devDependencies": {
@@ -74,15 +77,15 @@
     "hardhat-preprocessor": "^0.1.5",
     "husky": "^9.1.7",
     "lint-staged": "^15.2.10",
-    "lodash.startcase": "^4.4.0",
     "lodash": "^4.17.21",
+    "lodash.startcase": "^4.4.0",
     "mocha": "^10.1.0",
     "prettier": "^2.8.4",
     "prettier-plugin-solidity": "^1.1.2",
     "rimraf": "^4.1.2",
     "sha3": "^2.1.4",
     "solhint": "^3.4.0",
-    "solhint-plugin-prettier": "^0.0.5",
+    "solhint-plugin-openzeppelin": "file:scripts/solhint-custom",
     "solidity-comments": "^0.0.2",
     "solidity-coverage": "0.8.12",
     "solidity-docgen": "^0.6.0-beta.36",

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { TFHE, ebool, euint64 } from "fhevm/lib/TFHE.sol";
+import {TFHE, ebool, euint64} from "fhevm/lib/TFHE.sol";
 
 /**
  * @dev Library providing safe arithmetic operations for encrypted values

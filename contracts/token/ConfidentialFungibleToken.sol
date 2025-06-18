@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.26;
 
-import { TFHE, einput, ebool, euint64 } from "fhevm/lib/TFHE.sol";
-import { Gateway } from "fhevm/gateway/lib/Gateway.sol";
+import {TFHE, einput, ebool, euint64} from "fhevm/lib/TFHE.sol";
+import {Gateway} from "fhevm/gateway/lib/Gateway.sol";
 
-import { IConfidentialFungibleToken } from "../interfaces/IConfidentialFungibleToken.sol";
-import { ConfidentialFungibleTokenUtils } from "./utils/ConfidentialFungibleTokenUtils.sol";
-import { TFHESafeMath } from "../utils/TFHESafeMath.sol";
+import {IConfidentialFungibleToken} from "../interfaces/IConfidentialFungibleToken.sol";
+import {ConfidentialFungibleTokenUtils} from "./utils/ConfidentialFungibleTokenUtils.sol";
+import {TFHESafeMath} from "../utils/TFHESafeMath.sol";
 
 /**
  * @dev Reference implementation for {IConfidentialFungibleToken}.
