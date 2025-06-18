@@ -79,7 +79,7 @@ describe('ConfidentialFungibleTokenVotes', function () {
             .connect(this.operator)
             .delegateBySig(this.holder, this.recipient.address, 0, expiry, sig);
 
-          if (expiry == 0) {
+          if (expiry == 0n) {
             await expect(tx).to.be.revertedWithCustomError(this.token, 'VotesExpiredSignature').withArgs(expiry);
           } else {
             await tx;
@@ -87,6 +87,23 @@ describe('ConfidentialFungibleTokenVotes', function () {
           }
         });
       }
+
+      it('with invalid signature', async function () {
+        const expiry = ethers.MaxUint256;
+        const sig = await this.holder.signTypedData(
+          this.domain,
+          { Delegation },
+          { delegatee: this.recipient.address, nonce: 0, expiry },
+        );
+
+        await expect(
+          this.token
+            .connect(this.operator)
+            .delegateBySig(this.holder, this.recipient.address, 0, expiry, sig.slice(0, -2)),
+        )
+          .to.be.revertedWithCustomError(this.token, 'VotesInvalidSignature')
+          .withArgs(this.holder);
+      });
     });
   });
 
