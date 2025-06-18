@@ -1,3 +1,4 @@
+import "@fhevm/hardhat-plugin";
 import "@nomicfoundation/hardhat-chai-matchers";
 import "@nomicfoundation/hardhat-ethers";
 import dotenv from "dotenv";
@@ -7,10 +8,6 @@ import "hardhat-ignore-warnings";
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
 import "solidity-docgen";
-
-import "./hardhat/coverage";
-import "./hardhat/provider";
-import "./hardhat/testEnvironment";
 
 dotenv.config();
 
