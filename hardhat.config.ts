@@ -1,6 +1,7 @@
 import "@fhevm/hardhat-plugin";
 import "@nomicfoundation/hardhat-chai-matchers";
 import "@nomicfoundation/hardhat-ethers";
+import "@typechain/hardhat";
 import dotenv from "dotenv";
 import "hardhat-exposed";
 import "hardhat-gas-reporter";
@@ -27,9 +28,6 @@ const config: HardhatUserConfig = {
     enabled: !!process.env.REPORT_GAS,
     excludeContracts: [],
     src: './contracts',
-  },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
   },
   typechain: {
     outDir: 'types',
