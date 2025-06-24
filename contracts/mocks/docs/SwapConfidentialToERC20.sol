@@ -21,40 +21,23 @@ contract SwapConfidentialToERC20 {
         _toToken = toToken;
     }
 
-    function swapConfidentialToERC20(
-        externalEuint64 encryptedInput,
-        bytes memory inputProof
-    ) public {
+    function swapConfidentialToERC20(externalEuint64 encryptedInput, bytes memory inputProof) public {
         euint64 amount = encryptedInput.fromExternal(inputProof);
         amount.allowTransient(address(_fromToken));
-        euint64 amountTransferred = _fromToken.confidentialTransferFrom(
-            msg.sender,
-            address(this),
-            amount
-        );
+        euint64 amountTransferred = _fromToken.confidentialTransferFrom(msg.sender, address(this), amount);
 
         bytes32[] memory cts = new bytes32[](1);
         cts[0] = euint64.unwrap(amountTransferred);
-        uint256 requestID = FHE.requestDecryption(
-            cts,
-            this.finalizeSwap.selector
-        );
+        uint256 requestID = FHE.requestDecryption(cts, this.finalizeSwap.selector);
 
         // register who is getting the tokens
         _receivers[requestID] = msg.sender;
     }
 
-    function finalizeSwap(
-        uint256 requestID,
-        uint64 amount,
-        bytes[] memory signatures
-    ) public virtual {
+    function finalizeSwap(uint256 requestID, uint64 amount, bytes[] memory signatures) public virtual {
         FHE.checkSignatures(requestID, signatures);
         address to = _receivers[requestID];
-        require(
-            to != address(0),
-            SwapConfidentialToERC20InvalidGatewayRequest(requestID)
-        );
+        require(to != address(0), SwapConfidentialToERC20InvalidGatewayRequest(requestID));
         delete _receivers[requestID];
 
         if (amount != 0) {

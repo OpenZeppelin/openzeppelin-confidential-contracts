@@ -13,10 +13,7 @@ library TFHESafeMath {
      * `success` will be true and `updated` will be the new value. Otherwise, `success` will be false
      * and `updated` will be the original value.
      */
-    function tryIncrease(
-        euint64 oldValue,
-        euint64 delta
-    ) internal returns (ebool success, euint64 updated) {
+    function tryIncrease(euint64 oldValue, euint64 delta) internal returns (ebool success, euint64 updated) {
         if (euint64.unwrap(oldValue) == 0) {
             success = FHE.asEbool(true);
             updated = delta;
@@ -32,10 +29,7 @@ library TFHESafeMath {
      * `success` will be true and `updated` will be the new value. Otherwise, `success` will be false
      * and `updated` will be the original value.
      */
-    function tryDecrease(
-        euint64 oldValue,
-        euint64 delta
-    ) internal returns (ebool success, euint64 updated) {
+    function tryDecrease(euint64 oldValue, euint64 delta) internal returns (ebool success, euint64 updated) {
         success = FHE.ge(oldValue, delta);
         updated = FHE.select(success, FHE.sub(oldValue, delta), oldValue);
     }

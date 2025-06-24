@@ -16,10 +16,7 @@ import {ConfidentialFungibleToken} from "../ConfidentialFungibleToken.sol";
  * into a confidential fungible token. The wrapper contract implements the `IERC1363Receiver` interface
  * which allows users to transfer `ERC1363` tokens directly to the wrapper with a callback to wrap the tokens.
  */
-abstract contract ConfidentialFungibleTokenERC20Wrapper is
-    ConfidentialFungibleToken,
-    IERC1363Receiver
-{
+abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleToken, IERC1363Receiver {
     IERC20 private immutable _underlying;
     uint8 private immutable _decimals;
     uint256 private immutable _rate;
@@ -70,10 +67,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is
         bytes calldata data
     ) public virtual returns (bytes4) {
         // check caller is the token contract
-        require(
-            address(underlying()) == msg.sender,
-            ConfidentialFungibleTokenUnauthorizedCaller(msg.sender)
-        );
+        require(address(underlying()) == msg.sender, ConfidentialFungibleTokenUnauthorizedCaller(msg.sender));
 
         // transfer excess back to the sender
         uint256 excess = amount % rate();
@@ -94,12 +88,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is
      */
     function wrap(address to, uint256 amount) public virtual {
         // take ownership of the tokens
-        SafeERC20.safeTransferFrom(
-            underlying(),
-            msg.sender,
-            address(this),
-            amount - (amount % rate())
-        );
+        SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
 
         // mint confidential token
         _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
@@ -116,10 +105,7 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is
     function unwrap(address from, address to, euint64 amount) public virtual {
         require(
             FHE.isAllowed(amount, msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(
-                amount,
-                msg.sender
-            )
+            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
         );
         _unwrap(from, to, amount);
     }
@@ -141,27 +127,16 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is
      * @dev Called by the fhEVM gateway with the decrypted amount `amount` for a request id `requestId`.
      * Fills unwrap requests.
      */
-    function finalizeUnwrap(
-        uint256 requestID,
-        uint64 amount,
-        bytes[] memory signatures
-    ) public virtual {
+    function finalizeUnwrap(uint256 requestID, uint64 amount, bytes[] memory signatures) public virtual {
         FHE.checkSignatures(requestID, signatures);
         address to = _receivers[requestID];
-        require(
-            to != address(0),
-            ConfidentialFungibleTokenInvalidGatewayRequest(requestID)
-        );
+        require(to != address(0), ConfidentialFungibleTokenInvalidGatewayRequest(requestID));
         delete _receivers[requestID];
 
         SafeERC20.safeTransfer(underlying(), to, amount * rate());
     }
 
-    function _unwrap(
-        address from,
-        address to,
-        euint64 amount
-    ) internal virtual {
+    function _unwrap(address from, address to, euint64 amount) internal virtual {
         require(to != address(0), ConfidentialFungibleTokenInvalidReceiver(to));
         require(
             from == msg.sender || isOperator(from, msg.sender),
@@ -174,20 +149,16 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is
         // decrypt that burntAmount
         bytes32[] memory cts = new bytes32[](1);
         cts[0] = euint64.unwrap(burntAmount);
-        uint256 requestID = FHE.requestDecryption(
-            cts,
-            this.finalizeUnwrap.selector
-        );
+        uint256 requestID = FHE.requestDecryption(cts, this.finalizeUnwrap.selector);
 
         // register who is getting the tokens
         _receivers[requestID] = to;
     }
 
-    function _tryGetAssetDecimals(
-        IERC20 asset_
-    ) private view returns (uint8 assetDecimals) {
-        (bool success, bytes memory encodedDecimals) = address(asset_)
-            .staticcall(abi.encodeCall(IERC20Metadata.decimals, ()));
+    function _tryGetAssetDecimals(IERC20 asset_) private view returns (uint8 assetDecimals) {
+        (bool success, bytes memory encodedDecimals) = address(asset_).staticcall(
+            abi.encodeCall(IERC20Metadata.decimals, ())
+        );
         if (success && encodedDecimals.length == 32) {
             return abi.decode(encodedDecimals, (uint8));
         }

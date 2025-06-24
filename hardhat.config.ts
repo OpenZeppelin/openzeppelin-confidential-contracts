@@ -1,14 +1,14 @@
-import "@fhevm/hardhat-plugin";
-import "@nomicfoundation/hardhat-chai-matchers";
-import "@nomicfoundation/hardhat-ethers";
-import "@typechain/hardhat";
-import dotenv from "dotenv";
-import "hardhat-exposed";
-import "hardhat-gas-reporter";
-import "hardhat-ignore-warnings";
-import { HardhatUserConfig } from "hardhat/config";
-import "solidity-coverage";
-import "solidity-docgen";
+import '@fhevm/hardhat-plugin';
+import '@nomicfoundation/hardhat-chai-matchers';
+import '@nomicfoundation/hardhat-ethers';
+import '@typechain/hardhat';
+import dotenv from 'dotenv';
+import 'hardhat-exposed';
+import 'hardhat-gas-reporter';
+import 'hardhat-ignore-warnings';
+import { HardhatUserConfig } from 'hardhat/config';
+import 'solidity-coverage';
+import 'solidity-docgen';
 
 dotenv.config();
 

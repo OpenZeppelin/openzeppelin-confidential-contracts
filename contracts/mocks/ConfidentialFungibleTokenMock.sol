@@ -5,11 +5,8 @@ pragma solidity ^0.8.24;
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ConfidentialFungibleToken} from "../token/ConfidentialFungibleToken.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-
-contract ConfidentialFungibleTokenMock is
-    ConfidentialFungibleToken,
-    SepoliaConfig
-{
+// solhint-disable func-name-mixedcase
+contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaConfig {
     address private immutable _OWNER;
 
     constructor(
@@ -20,11 +17,7 @@ contract ConfidentialFungibleTokenMock is
         _OWNER = msg.sender;
     }
 
-    function _update(
-        address from,
-        address to,
-        euint64 amount
-    ) internal virtual override returns (euint64 transferred) {
+    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
         transferred = super._update(from, to, amount);
         FHE.allow(totalSupply(), _OWNER);
     }
@@ -43,8 +36,7 @@ contract ConfidentialFungibleTokenMock is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public returns (euint64 transferred) {
-        return
-            _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     function $_transferAndCall(
@@ -54,13 +46,7 @@ contract ConfidentialFungibleTokenMock is
         bytes calldata inputProof,
         bytes calldata data
     ) public returns (euint64 transferred) {
-        return
-            _transferAndCall(
-                from,
-                to,
-                FHE.fromExternal(encryptedAmount, inputProof),
-                data
-            );
+        return _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data);
     }
 
     function $_burn(

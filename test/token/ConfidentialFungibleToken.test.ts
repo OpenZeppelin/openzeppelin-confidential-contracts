@@ -1,15 +1,14 @@
-import { FhevmType } from "@fhevm/hardhat-plugin";
-import { expect } from "chai";
-import hre, { ethers, fhevm } from "hardhat";
+import { allowHandle } from '../helpers/accounts';
+import { FhevmType } from '@fhevm/hardhat-plugin';
+import { expect } from 'chai';
+import hre, { ethers, fhevm } from 'hardhat';
 
-import { allowHandle } from "../helpers/accounts";
-
-const name = "ConfidentialFungibleToken";
-const symbol = "CFT";
-const uri = "https://example.com/metadata";
+const name = 'ConfidentialFungibleToken';
+const symbol = 'CFT';
+const uri = 'https://example.com/metadata';
 
 /* eslint-disable no-unexpected-multiline */
-describe("ConfidentialFungibleToken", function () {
+describe('ConfidentialFungibleToken', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
@@ -92,7 +91,7 @@ describe("ConfidentialFungibleToken", function () {
       });
     }
 
-    it("from zero address", async function () {
+    it('from zero address', async function () {
       const encryptedInput = await fhevm
         .createEncryptedInput(this.token.target, this.holder.address)
         .add64(400)
@@ -135,7 +134,7 @@ describe("ConfidentialFungibleToken", function () {
       });
     }
 
-    it("from zero address", async function () {
+    it('from zero address', async function () {
       const encryptedInput = await fhevm
         .createEncryptedInput(this.token.target, this.holder.address)
         .add64(400)
@@ -215,7 +214,7 @@ describe("ConfidentialFungibleToken", function () {
 
         // Edge cases to run with sender as caller
         if (asSender) {
-          it("with no balance should revert", async function () {
+          it('with no balance should revert', async function () {
             const encryptedInput = await fhevm
               .createEncryptedInput(this.token.target, this.recipient.address)
               .add64(100)
@@ -234,7 +233,7 @@ describe("ConfidentialFungibleToken", function () {
               .withArgs(this.recipient.address);
           });
 
-          it("to zero address", async function () {
+          it('to zero address', async function () {
             const encryptedInput = await fhevm
               .createEncryptedInput(this.token.target, this.holder.address)
               .add64(100)
@@ -356,7 +355,7 @@ describe("ConfidentialFungibleToken", function () {
             ).to.eventually.equal(1000);
           });
 
-          it("other user balance should revert", async function () {
+          it('other user balance should revert', async function () {
             const encryptedInput = await fhevm
               .createEncryptedInput(this.token.target, this.holder.address)
               .add64(100)
@@ -398,7 +397,7 @@ describe("ConfidentialFungibleToken", function () {
       }
     });
 
-    it("internal function reverts on from address zero", async function () {
+    it('internal function reverts on from address zero', async function () {
       const encryptedInput = await fhevm
         .createEncryptedInput(this.token.target, this.holder.address)
         .add64(100)
@@ -517,7 +516,7 @@ describe("ConfidentialFungibleToken", function () {
     });
   });
 
-  describe("disclose", function () {
+  describe('disclose', function () {
     let expectedAmount: any;
     let expectedHandle: any;
 
@@ -535,7 +534,7 @@ describe("ConfidentialFungibleToken", function () {
       expectedHandle = holderBalanceHandle;
     });
 
-    it("transaction amount", async function () {
+    it('transaction amount', async function () {
       const encryptedInput = await fhevm
         .createEncryptedInput(this.token.target, this.holder.address)
         .add64(400)
@@ -564,7 +563,7 @@ describe("ConfidentialFungibleToken", function () {
         .withArgs(holderBalanceHandle, this.recipient);
     });
 
-    it("invalid signature reverts", async function () {
+    it('invalid signature reverts', async function () {
       const holderBalanceHandle = await this.token.balanceOf(this.holder);
       await this.token.connect(this.holder).discloseEncryptedAmount(holderBalanceHandle);
 

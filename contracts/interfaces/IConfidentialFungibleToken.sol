@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { euint64, externalEuint64 } from "@fhevm/solidity/lib/FHE.sol";
+import {euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 
 /// @dev Draft interface for a confidential fungible token standard utilizing the Zama TFHE library.
 interface IConfidentialFungibleToken {

@@ -26,19 +26,12 @@ library ConfidentialFungibleTokenUtils {
     ) internal returns (ebool) {
         if (to.code.length > 0) {
             try
-                IConfidentialFungibleTokenReceiver(to)
-                    .onConfidentialTransferReceived(
-                        operator,
-                        from,
-                        amount,
-                        data
-                    )
+                IConfidentialFungibleTokenReceiver(to).onConfidentialTransferReceived(operator, from, amount, data)
             returns (ebool retval) {
                 return retval;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
-                    revert ConfidentialFungibleToken
-                        .ConfidentialFungibleTokenInvalidReceiver(to);
+                    revert ConfidentialFungibleToken.ConfidentialFungibleTokenInvalidReceiver(to);
                 } else {
                     assembly ("memory-safe") {
                         revert(add(32, reason), mload(reason))

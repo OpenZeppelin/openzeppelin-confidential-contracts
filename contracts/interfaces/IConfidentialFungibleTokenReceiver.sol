@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { ebool, euint64 } from "@fhevm/solidity/lib/FHE.sol";
+import {ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 
 /// @dev Interface for contracts that can receive confidential token transfers with a callback.
 interface IConfidentialFungibleTokenReceiver {
