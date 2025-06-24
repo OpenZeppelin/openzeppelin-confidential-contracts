@@ -2,15 +2,14 @@ import { FhevmType } from "@fhevm/hardhat-plugin";
 import { expect } from "chai";
 import hre, { ethers, fhevm } from "hardhat";
 
-import { allowHandle, impersonate } from "../helpers/accounts";
+import { allowHandle } from "../helpers/accounts";
 
 const name = "ConfidentialFungibleToken";
 const symbol = "CFT";
 const uri = "https://example.com/metadata";
-const gatewayAddress = "0x33347831500F1e73f0ccCBb95c9f86B94d7b1123";
 
 /* eslint-disable no-unexpected-multiline */
-describe.only("ConfidentialFungibleToken", function () {
+describe("ConfidentialFungibleToken", function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
@@ -518,13 +517,9 @@ describe.only("ConfidentialFungibleToken", function () {
     });
   });
 
-  describe.skip("disclose", function () {
+  describe("disclose", function () {
     let expectedAmount: any;
     let expectedHandle: any;
-
-    before(async function () {
-      await initGateway();
-    });
 
     beforeEach(async function () {
       expectedAmount = undefined;
@@ -569,25 +564,17 @@ describe.only("ConfidentialFungibleToken", function () {
         .withArgs(holderBalanceHandle, this.recipient);
     });
 
-    it('finalized from invalid address', async function () {
-      await expect(this.token.connect(this.holder).finalizeDiscloseEncryptedAmount(0, 0))
-        .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenUnauthorizedCaller')
-        .withArgs(this.holder.address);
-    });
+    it("invalid signature reverts", async function () {
+      const holderBalanceHandle = await this.token.balanceOf(this.holder);
+      await this.token.connect(this.holder).discloseEncryptedAmount(holderBalanceHandle);
 
-    it('finalized with invalid requestId', async function () {
-      await impersonate(hre, gatewayAddress);
-      const gatewaySigner = await ethers.getSigner(gatewayAddress);
-
-      await expect(this.token.connect(gatewaySigner).finalizeDiscloseEncryptedAmount(100, 0))
-        .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenInvalidGatewayRequest')
-        .withArgs(100);
+      await expect(this.token.connect(this.holder).finalizeDiscloseEncryptedAmount(0, 0, [])).to.be.reverted;
     });
 
     afterEach(async function () {
       if (expectedHandle === undefined || expectedAmount === undefined) return;
 
-      await awaitAllDecryptionResults();
+      await fhevm.awaitDecryptionOracle();
 
       // Check that event was correctly emitted
       const eventFilter = this.token.filters.EncryptedAmountDisclosed();
