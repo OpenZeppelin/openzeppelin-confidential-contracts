@@ -15,3 +15,4 @@ ignore:
   - "contracts/mocks"
   - "contracts/_template"
   - "hardhat"
+  - "contracts/utils/structs/temporary-Checkpoints.sol"
