@@ -23,7 +23,7 @@
     "prepare-docs": "scripts/prepare-docs.sh",
     "test": "hardhat test",
     "test:generation": "scripts/checks/generation.sh",
-    "coverage": "hardhat coverage",
+    "coverage": "SOLIDITY_COVERAGE=true hardhat coverage",
     "generate": "scripts/generate/run.js"
   },
   "repository": {
