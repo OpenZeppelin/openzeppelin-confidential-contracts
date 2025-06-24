@@ -34,7 +34,7 @@
     "url": "https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/issues"
   },
   "dependencies": {
-    "@fhevm/solidity": "^0.7.0-4",
+    "@fhevm/solidity": "0.7.0",
     "@openzeppelin/contracts": "file:lib/openzeppelin-contracts/contracts"
   },
   "devDependencies": {
