@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// const cp = require('child_process');
+const cp = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const format = require('./format-lines');
@@ -13,7 +13,7 @@ function getVersion(path) {
   }
 }
 
-function generateFromTemplate(file, template, outputPrefix = '') {
+function generateFromTemplate(file, template, outputPrefix = '', lint = false) {
   const script = path.relative(path.join(__dirname, '../..'), __filename);
   const input = path.join(path.dirname(script), template);
   const output = path.join(outputPrefix, file);
@@ -27,14 +27,17 @@ function generateFromTemplate(file, template, outputPrefix = '') {
   );
 
   fs.writeFileSync(output, content);
-  // cp.execFileSync('prettier', ['--write', output]);
+  lint && cp.execFileSync('prettier', ['--write', output]);
 }
+
+// Some templates needs to go through the linter after generation
+const needsLinter = ['utils/structs/CheckpointsConfidential.sol'];
 
 // Contracts
 for (const [file, template] of Object.entries({
   'utils/structs/CheckpointsConfidential.sol': './templates/CheckpointsConfidential.js',
 })) {
-  generateFromTemplate(file, template, './contracts/');
+  generateFromTemplate(file, template, './contracts/', needsLinter.includes(file));
 }
 
 // // Tests
