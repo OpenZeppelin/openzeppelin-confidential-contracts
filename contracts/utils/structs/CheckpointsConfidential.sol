@@ -15,26 +15,20 @@ import {Checkpoints} from "./temporary-Checkpoints.sol";
  * checkpoint for the current transaction block using the {push} function.
  */
 library CheckpointsConfidential {
+    using Checkpoints for Checkpoints.Trace256;
+
     /**
      * @dev A value was attempted to be inserted on a past checkpoint.
      */
     error CheckpointUnorderedInsertion();
 
     struct TraceEuint32 {
-        CheckpointEuint32[] _checkpoints;
+        Checkpoints.Trace256 _inner;
     }
 
     struct CheckpointEuint32 {
         uint256 _key;
         euint32 _value;
-    }
-
-    function _toTrace256(TraceEuint32 storage self) private pure returns (Checkpoints.Trace256 storage res) {
-        assembly ("memory-safe") {
-            res.slot := self.slot
-        }
-
-        return res;
     }
 
     /**
@@ -50,11 +44,7 @@ library CheckpointsConfidential {
         uint256 key,
         euint32 value
     ) internal returns (euint32 oldValue, euint32 newValue) {
-        (uint256 oldValueAsUint256, uint256 newValueAsUint256) = Checkpoints.push(
-            _toTrace256(self),
-            key,
-            uint256(euint32.unwrap(value))
-        );
+        (uint256 oldValueAsUint256, uint256 newValueAsUint256) = self._inner.push(key, uint256(euint32.unwrap(value)));
         return (euint32.wrap(oldValueAsUint256), euint32.wrap(newValueAsUint256));
     }
 
@@ -63,7 +53,7 @@ library CheckpointsConfidential {
      * there is none.
      */
     function lowerLookup(TraceEuint32 storage self, uint256 key) internal view returns (euint32) {
-        return euint32.wrap(Checkpoints.lowerLookup(_toTrace256(self), key));
+        return euint32.wrap(self._inner.lowerLookup(key));
     }
 
     /**
@@ -71,7 +61,7 @@ library CheckpointsConfidential {
      * if there is none.
      */
     function upperLookup(TraceEuint32 storage self, uint256 key) internal view returns (euint32) {
-        return euint32.wrap(Checkpoints.upperLookup(_toTrace256(self), key));
+        return euint32.wrap(self._inner.upperLookup(key));
     }
 
     /**
@@ -82,14 +72,14 @@ library CheckpointsConfidential {
      * keys).
      */
     function upperLookupRecent(TraceEuint32 storage self, uint256 key) internal view returns (euint32) {
-        return euint32.wrap(Checkpoints.upperLookupRecent(_toTrace256(self), key));
+        return euint32.wrap(self._inner.upperLookupRecent(key));
     }
 
     /**
      * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
      */
     function latest(TraceEuint32 storage self) internal view returns (euint32) {
-        return euint32.wrap(Checkpoints.latest(_toTrace256(self)));
+        return euint32.wrap(self._inner.latest());
     }
 
     /**
@@ -100,7 +90,7 @@ library CheckpointsConfidential {
         TraceEuint32 storage self
     ) internal view returns (bool exists, uint256 _key, euint32 _value) {
         uint256 _valueAsUint256;
-        (exists, _key, _valueAsUint256) = Checkpoints.latestCheckpoint(_toTrace256(self));
+        (exists, _key, _valueAsUint256) = self._inner.latestCheckpoint();
         return (exists, _key, euint32.wrap(_valueAsUint256));
     }
 
@@ -108,31 +98,24 @@ library CheckpointsConfidential {
      * @dev Returns the number of checkpoints.
      */
     function length(TraceEuint32 storage self) internal view returns (uint256) {
-        return self._checkpoints.length;
+        return self._inner.length();
     }
 
     /**
      * @dev Returns checkpoint at given position.
      */
     function at(TraceEuint32 storage self, uint32 pos) internal view returns (CheckpointEuint32 memory) {
-        return self._checkpoints[pos];
+        Checkpoints.Checkpoint256 memory checkpoint = self._inner.at(pos);
+        return CheckpointEuint32({_key: checkpoint._key, _value: euint32.wrap(checkpoint._value)});
     }
 
     struct TraceEuint64 {
-        CheckpointEuint64[] _checkpoints;
+        Checkpoints.Trace256 _inner;
     }
 
     struct CheckpointEuint64 {
         uint256 _key;
         euint64 _value;
-    }
-
-    function _toTrace256(TraceEuint64 storage self) private pure returns (Checkpoints.Trace256 storage res) {
-        assembly ("memory-safe") {
-            res.slot := self.slot
-        }
-
-        return res;
     }
 
     /**
@@ -148,11 +131,7 @@ library CheckpointsConfidential {
         uint256 key,
         euint64 value
     ) internal returns (euint64 oldValue, euint64 newValue) {
-        (uint256 oldValueAsUint256, uint256 newValueAsUint256) = Checkpoints.push(
-            _toTrace256(self),
-            key,
-            uint256(euint64.unwrap(value))
-        );
+        (uint256 oldValueAsUint256, uint256 newValueAsUint256) = self._inner.push(key, uint256(euint64.unwrap(value)));
         return (euint64.wrap(oldValueAsUint256), euint64.wrap(newValueAsUint256));
     }
 
@@ -161,7 +140,7 @@ library CheckpointsConfidential {
      * there is none.
      */
     function lowerLookup(TraceEuint64 storage self, uint256 key) internal view returns (euint64) {
-        return euint64.wrap(Checkpoints.lowerLookup(_toTrace256(self), key));
+        return euint64.wrap(self._inner.lowerLookup(key));
     }
 
     /**
@@ -169,7 +148,7 @@ library CheckpointsConfidential {
      * if there is none.
      */
     function upperLookup(TraceEuint64 storage self, uint256 key) internal view returns (euint64) {
-        return euint64.wrap(Checkpoints.upperLookup(_toTrace256(self), key));
+        return euint64.wrap(self._inner.upperLookup(key));
     }
 
     /**
@@ -180,14 +159,14 @@ library CheckpointsConfidential {
      * keys).
      */
     function upperLookupRecent(TraceEuint64 storage self, uint256 key) internal view returns (euint64) {
-        return euint64.wrap(Checkpoints.upperLookupRecent(_toTrace256(self), key));
+        return euint64.wrap(self._inner.upperLookupRecent(key));
     }
 
     /**
      * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
      */
     function latest(TraceEuint64 storage self) internal view returns (euint64) {
-        return euint64.wrap(Checkpoints.latest(_toTrace256(self)));
+        return euint64.wrap(self._inner.latest());
     }
 
     /**
@@ -198,7 +177,7 @@ library CheckpointsConfidential {
         TraceEuint64 storage self
     ) internal view returns (bool exists, uint256 _key, euint64 _value) {
         uint256 _valueAsUint256;
-        (exists, _key, _valueAsUint256) = Checkpoints.latestCheckpoint(_toTrace256(self));
+        (exists, _key, _valueAsUint256) = self._inner.latestCheckpoint();
         return (exists, _key, euint64.wrap(_valueAsUint256));
     }
 
@@ -206,13 +185,14 @@ library CheckpointsConfidential {
      * @dev Returns the number of checkpoints.
      */
     function length(TraceEuint64 storage self) internal view returns (uint256) {
-        return self._checkpoints.length;
+        return self._inner.length();
     }
 
     /**
      * @dev Returns checkpoint at given position.
      */
     function at(TraceEuint64 storage self, uint32 pos) internal view returns (CheckpointEuint64 memory) {
-        return self._checkpoints[pos];
+        Checkpoints.Checkpoint256 memory checkpoint = self._inner.at(pos);
+        return CheckpointEuint64({_key: checkpoint._key, _value: euint64.wrap(checkpoint._value)});
     }
 }

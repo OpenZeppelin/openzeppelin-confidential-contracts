@@ -18,6 +18,10 @@ import {Checkpoints} from "./temporary-Checkpoints.sol";
  */
 `;
 
+const libraryUsage = `\
+using Checkpoints for Checkpoints.Trace256;
+`;
+
 const errors = `\
 /**
  * @dev A value was attempted to be inserted on a past checkpoint.
@@ -27,20 +31,12 @@ error CheckpointUnorderedInsertion();
 
 const template = opts => `\
 struct ${opts.historyTypeName} {
-    ${opts.checkpointTypeName}[] ${opts.checkpointFieldName};
+    Checkpoints.Trace256 _inner;
 }
 
 struct ${opts.checkpointTypeName} {
     uint256 _key;
     ${opts.valueTypeName} ${opts.valueFieldName};
-}
-
-function _toTrace256(${opts.historyTypeName} storage self) private pure returns (Checkpoints.Trace256 storage res) {
-    assembly ("memory-safe") {
-        res.slot := self.slot
-    }
-
-    return res;
 }
 
 /**
@@ -56,8 +52,7 @@ function push(
     uint256 key,
     ${opts.valueTypeName} value
 ) internal returns (${opts.valueTypeName} oldValue, ${opts.valueTypeName} newValue) {
-    (uint256 oldValueAsUint256, uint256 newValueAsUint256) = Checkpoints.push(
-        _toTrace256(self),
+    (uint256 oldValueAsUint256, uint256 newValueAsUint256) = self._inner.push(
         key,
         uint256(${opts.valueTypeName}.unwrap(value))
     );
@@ -69,7 +64,7 @@ function push(
  * there is none.
  */
 function lowerLookup(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(Checkpoints.lowerLookup(_toTrace256(self), key));
+    return ${opts.valueTypeName}.wrap(self._inner.lowerLookup(key));
 }
 
 /**
@@ -77,7 +72,7 @@ function lowerLookup(${opts.historyTypeName} storage self, uint256 key) internal
  * if there is none.
  */
 function upperLookup(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(Checkpoints.upperLookup(_toTrace256(self), key));
+    return ${opts.valueTypeName}.wrap(self._inner.upperLookup(key));
 }
 
 /**
@@ -88,15 +83,15 @@ function upperLookup(${opts.historyTypeName} storage self, uint256 key) internal
  * keys).
  */
 function upperLookupRecent(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(Checkpoints.upperLookupRecent(_toTrace256(self), key));
+    return ${opts.valueTypeName}.wrap(self._inner.upperLookupRecent(key));
 }
 
 /**
  * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
  */
 function latest(${opts.historyTypeName} storage self) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(Checkpoints.latest(_toTrace256(self)));
-}
+    return ${opts.valueTypeName}.wrap(self._inner.latest());
+}   
 
 /**
  * @dev Returns whether there is a checkpoint in the structure (i.e. it is not empty), and if so the key and value
@@ -106,7 +101,7 @@ function latestCheckpoint(
     ${opts.historyTypeName} storage self
 ) internal view returns (bool exists, uint256 _key, ${opts.valueTypeName} ${opts.valueFieldName}) {
     uint256 ${opts.valueFieldName}AsUint256;
-    (exists, _key, ${opts.valueFieldName}AsUint256) = Checkpoints.latestCheckpoint(_toTrace256(self));
+    (exists, _key, ${opts.valueFieldName}AsUint256) = self._inner.latestCheckpoint();
     return (exists, _key, ${opts.valueTypeName}.wrap(${opts.valueFieldName}AsUint256));
 }
 
@@ -114,14 +109,15 @@ function latestCheckpoint(
  * @dev Returns the number of checkpoints.
  */
 function length(${opts.historyTypeName} storage self) internal view returns (uint256) {
-    return self.${opts.checkpointFieldName}.length;
+    return self._inner.length();
 }
 
 /**
  * @dev Returns checkpoint at given position.
  */
 function at(${opts.historyTypeName} storage self, uint32 pos) internal view returns (${opts.checkpointTypeName} memory) {
-    return self.${opts.checkpointFieldName}[pos];
+    Checkpoints.Checkpoint256 memory checkpoint = self._inner.at(pos);
+    return ${opts.checkpointTypeName}({_key: checkpoint._key, ${opts.valueFieldName}: ${opts.valueTypeName}.wrap(checkpoint._value)});
 }
 `;
 
@@ -131,6 +127,7 @@ module.exports = format(
   'library CheckpointsConfidential {',
   format(
     [].concat(
+      libraryUsage,
       errors,
       OPTS.map(opts => template(opts)),
     ),
