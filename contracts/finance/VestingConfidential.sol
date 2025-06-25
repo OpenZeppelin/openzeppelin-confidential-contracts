@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { TFHE, einput, ebool, euint64, einput } from "fhevm/lib/TFHE.sol";
+import {TFHE, einput, ebool, euint64, einput} from "fhevm/lib/TFHE.sol";
 
-import { VestingBase } from "./VestingBase.sol";
-import { ManagedVault } from "./ManagedVault.sol";
-import { ConfidentialFungibleToken } from "../token/ConfidentialFungibleToken.sol";
+import {VestingBase} from "./VestingBase.sol";
+import {ManagedVault} from "./ManagedVault.sol";
+import {ConfidentialFungibleToken} from "../token/ConfidentialFungibleToken.sol";
 
 contract ConfidentialVesting is VestingBase {
     using TFHE for *;
