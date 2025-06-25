@@ -7,7 +7,7 @@ import {VestingBase} from "./VestingBase.sol";
 import {ManagedVault} from "./ManagedVault.sol";
 import {ConfidentialFungibleToken} from "../token/ConfidentialFungibleToken.sol";
 
-contract ConfidentialVesting is VestingBase {
+contract VestingConfidential is VestingBase {
     using TFHE for *;
 
     ConfidentialFungibleToken immutable token;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { ManagedVault } from "./ManagedVault.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {ManagedVault} from "./ManagedVault.sol";
 
 abstract contract VestingBase {
     struct VestingStream {
@@ -21,7 +21,7 @@ abstract contract VestingBase {
     mapping(uint256 => VestingStream) private _vestingStreams;
     mapping(uint256 vestingId => address managedVault) private _managedVaults;
     address private _managedVaultImplementation = address(new ManagedVault());
-    uint256 numVestingStreams;
+    uint256 private _numVestingStreams;
 
     function claim(uint256 streamId) public virtual {
         require(msg.sender == _vestingStreams[streamId].recipient);
@@ -56,7 +56,7 @@ abstract contract VestingBase {
     ) internal {
         uint256 amountTransferredIn = _doTransferIn(msg.sender, amount);
 
-        _vestingStreams[++numVestingStreams] = VestingStream({
+        _vestingStreams[++_numVestingStreams] = VestingStream({
             startTime: startTime,
             recipient: recipient,
             totalAmount: _prestore(_min(amountTransferredIn, amount)),

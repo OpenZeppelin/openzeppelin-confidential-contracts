@@ -1,21 +1,20 @@
-import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
-import { time } from "@nomicfoundation/hardhat-network-helpers";
-import { expect } from "chai";
-import { ethers } from "hardhat";
+import { createInstance } from '../_template/instance';
+import { reencryptEuint64 } from '../_template/reencrypt';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { time } from '@nomicfoundation/hardhat-network-helpers';
+import { expect } from 'chai';
+import { ethers } from 'hardhat';
 
-import { createInstance } from "../_template/instance";
-import { reencryptEuint64 } from "../_template/reencrypt";
+const name = 'ConfidentialFungibleToken';
+const symbol = 'CFT';
+const uri = 'https://example.com/metadata';
 
-const name = "ConfidentialFungibleToken";
-const symbol = "CFT";
-const uri = "https://example.com/metadata";
-
-describe("ConfidentialVesting", function () {
+describe('VestingConfidential', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract("$ConfidentialFungibleTokenMock", [name, symbol, uri]);
+    const token = await ethers.deployContract('$ConfidentialFungibleTokenMock', [name, symbol, uri]);
     this.accounts = accounts.slice(3);
     this.holder = holder;
     this.recipient = recipient;
@@ -29,13 +28,13 @@ describe("ConfidentialVesting", function () {
 
     await this.token
       .connect(this.holder)
-      ["$_mint(address,bytes32,bytes)"](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
+      ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
 
-    this.vesting = await ethers.deployContract("$ConfidentialVestingMock", [this.token]);
+    this.vesting = await ethers.deployContract('$VestingConfidentialMock', [this.token]);
     await this.token.$_setOperator(this.holder, this.vesting, Math.round(Date.now() / 1000) + 100);
   });
 
-  it("create vesting", async function () {
+  it('create vesting', async function () {
     const input = this.fhevm.createEncryptedInput(this.vesting.target, this.holder.address);
     input.add64(500);
     const totalVestingAmount = await input.encrypt();
@@ -56,7 +55,7 @@ describe("ConfidentialVesting", function () {
       );
   });
 
-  describe("with stream vesting", function () {
+  describe('with stream vesting', function () {
     beforeEach(async function () {
       const vestingStartTime = (await time.latest()) + 10;
       const input = this.fhevm.createEncryptedInput(this.vesting.target, this.holder.address);
@@ -87,8 +86,8 @@ describe("ConfidentialVesting", function () {
       this.vestingStream = vestingStream;
     });
 
-    describe("claim", function () {
-      it("from commingled funds", async function () {
+    describe('claim', function () {
+      it('from commingled funds', async function () {
         await time.setNextBlockTimestamp(this.vestingStream.startTime + 10);
         await this.vesting.connect(this.recipient).claim(this.vestingStream.id);
 
@@ -106,10 +105,10 @@ describe("ConfidentialVesting", function () {
         ).to.eventually.equal(this.vestingStream.vestingPerSecond * 11);
       });
 
-      it("from managed vault", async function () {
+      it('from managed vault', async function () {
         await expect(this.vesting.connect(this.recipient).createManagedVault(this.vestingStream.id)).to.emit(
           this.vesting,
-          "VestingBaseManagedVaultCreated",
+          'VestingBaseManagedVaultCreated',
         );
 
         await time.setNextBlockTimestamp(this.vestingStream.startTime + 10);
@@ -117,10 +116,10 @@ describe("ConfidentialVesting", function () {
 
         const transferEvent = (await tx.wait()).logs.filter((log: any) => log.address === this.token.target)[0];
         expect(transferEvent.topics[1]).to.not.equal(
-          ethers.AbiCoder.defaultAbiCoder().encode(["address"], [this.vesting.target]),
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [this.vesting.target]),
         );
         expect(transferEvent.topics[2]).to.equal(
-          ethers.AbiCoder.defaultAbiCoder().encode(["address"], [this.recipient.address]),
+          ethers.AbiCoder.defaultAbiCoder().encode(['address'], [this.recipient.address]),
         );
 
         await expect(
@@ -129,31 +128,31 @@ describe("ConfidentialVesting", function () {
       });
     });
 
-    describe("managed vault", async function () {
-      it("creation works", async function () {
+    describe('managed vault', async function () {
+      it('creation works', async function () {
         const tx = await this.vesting.connect(this.recipient).createManagedVault(this.vestingStream.id);
 
         const managedVaultCreationEvent = (await tx.wait()).logs.filter(
           (log: any) => log.address === this.vesting.target,
         )[0];
 
-        expect(tx).to.emit(this.vesting, "VestingBaseManagedVaultCreated");
+        expect(tx).to.emit(this.vesting, 'VestingBaseManagedVaultCreated');
         expect(tx)
-          .to.emit(this.token, "ConfidentialTransfer")
+          .to.emit(this.token, 'ConfidentialTransfer')
           .withArgs(this.vesting, managedVaultCreationEvent.args[1], anyValue);
-        expect(tx).to.emit(this.token, "OperatorSet");
+        expect(tx).to.emit(this.token, 'OperatorSet');
       });
 
       it("can't create twice", async function () {
         await this.vesting.connect(this.recipient).createManagedVault(this.vestingStream.id);
         await expect(this.vesting.connect(this.recipient).createManagedVault(this.vestingStream.id))
-          .to.be.revertedWithCustomError(this.vesting, "VestingBaseMangedVaultAlreadyExists")
+          .to.be.revertedWithCustomError(this.vesting, 'VestingBaseMangedVaultAlreadyExists')
           .withArgs(1, anyValue);
       });
 
-      it("only stream recipient can create", async function () {
+      it('only stream recipient can create', async function () {
         await expect(this.vesting.connect(this.operator).createManagedVault(this.vestingStream.id))
-          .to.be.revertedWithCustomError(this.vesting, "VestingBaseOnlyRecipient")
+          .to.be.revertedWithCustomError(this.vesting, 'VestingBaseOnlyRecipient')
           .withArgs(this.recipient);
       });
     });
