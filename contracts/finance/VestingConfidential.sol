@@ -34,8 +34,8 @@ contract VestingConfidential is VestingBase {
         return euint64.unwrap(token.confidentialTransferFrom(from, to, encryptedAmount));
     }
 
-    function _createManagedVault(uint256 streamId) internal virtual override returns (address) {
-        address vault = super._createManagedVault(streamId);
+    function _setUpManagedVault(uint256 streamId) internal virtual override returns (address) {
+        address vault = super._setUpManagedVault(streamId);
 
         // Set this contract as operator for the vault
         ManagedVault(vault).call(

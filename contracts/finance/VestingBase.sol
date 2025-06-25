@@ -13,14 +13,13 @@ abstract contract VestingBase {
         uint256 claimed;
     }
 
-    error VestingBaseMangedVaultAlreadyExists(uint256 vestingStream, address managedVault);
     error VestingBaseOnlyRecipient(address recipient);
 
     event VestingBaseManagedVaultCreated(uint256 vestingStreamId, address managedVault);
 
     mapping(uint256 => VestingStream) private _vestingStreams;
     mapping(uint256 vestingId => address managedVault) private _managedVaults;
-    address private _managedVaultImplementation = address(new ManagedVault());
+    address private immutable _managedVaultImplementation = address(new ManagedVault());
     uint256 private _numVestingStreams;
 
     function claim(uint256 streamId) public virtual {
@@ -28,8 +27,21 @@ abstract contract VestingBase {
         _claim(streamId);
     }
 
-    function createManagedVault(uint256 streamId) public virtual returns (address) {
-        return _createManagedVault(streamId);
+    function getOrCreateManagedVault(uint256 streamId) public virtual returns (address) {
+        address existingVault = getManagedVault(streamId);
+        if (existingVault != address(0)) {
+            return existingVault;
+        }
+        // claim(streamId);
+        return _setUpManagedVault(streamId);
+    }
+
+    function getManagedVault(uint256 streamId) public view virtual returns (address) {
+        return _managedVaults[streamId];
+    }
+
+    function managedVaultImplementation() public view virtual returns (address) {
+        return _managedVaultImplementation;
     }
 
     function _doTransferIn(address from, uint256 amount) internal virtual returns (uint256);
@@ -85,16 +97,14 @@ abstract contract VestingBase {
         stream.claimed = _prestore(_add(stream.claimed, amountTransferredOut));
     }
 
-    function _createManagedVault(uint256 streamId) internal virtual returns (address) {
-        address existingVault = _managedVaults[streamId];
-        require(existingVault == address(0), VestingBaseMangedVaultAlreadyExists(streamId, existingVault));
+    function _setUpManagedVault(uint256 streamId) internal virtual returns (address) {
         address recipient = _vestingStreams[streamId].recipient;
         require(recipient == msg.sender, VestingBaseOnlyRecipient(recipient));
 
-        address vault = Clones.clone(_managedVaultImplementation);
+        address vault = Clones.clone(managedVaultImplementation());
         _managedVaults[streamId] = vault;
 
-        _doTransferOut(vault, _vestingStreams[streamId].totalAmount - _vestingStreams[streamId].claimed);
+        _doTransferOut(vault, _sub(_vestingStreams[streamId].totalAmount, _vestingStreams[streamId].claimed));
 
         emit VestingBaseManagedVaultCreated(streamId, vault);
 

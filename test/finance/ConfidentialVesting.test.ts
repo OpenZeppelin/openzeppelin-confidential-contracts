@@ -106,7 +106,7 @@ describe('VestingConfidential', function () {
       });
 
       it('from managed vault', async function () {
-        await expect(this.vesting.connect(this.recipient).createManagedVault(this.vestingStream.id)).to.emit(
+        await expect(this.vesting.connect(this.recipient).getOrCreateManagedVault(this.vestingStream.id)).to.emit(
           this.vesting,
           'VestingBaseManagedVaultCreated',
         );
@@ -130,7 +130,7 @@ describe('VestingConfidential', function () {
 
     describe('managed vault', async function () {
       it('creation works', async function () {
-        const tx = await this.vesting.connect(this.recipient).createManagedVault(this.vestingStream.id);
+        const tx = await this.vesting.connect(this.recipient).getOrCreateManagedVault(this.vestingStream.id);
 
         const managedVaultCreationEvent = (await tx.wait()).logs.filter(
           (log: any) => log.address === this.vesting.target,
@@ -143,15 +143,16 @@ describe('VestingConfidential', function () {
         expect(tx).to.emit(this.token, 'OperatorSet');
       });
 
-      it("can't create twice", async function () {
-        await this.vesting.connect(this.recipient).createManagedVault(this.vestingStream.id);
-        await expect(this.vesting.connect(this.recipient).createManagedVault(this.vestingStream.id))
-          .to.be.revertedWithCustomError(this.vesting, 'VestingBaseMangedVaultAlreadyExists')
-          .withArgs(1, anyValue);
+      it("won't create twice", async function () {
+        await this.vesting.connect(this.recipient).getOrCreateManagedVault(this.vestingStream.id);
+        await expect(this.vesting.connect(this.recipient).getOrCreateManagedVault(this.vestingStream.id)).to.not.emit(
+          this.vesting,
+          'VestingBaseManagedVaultCreated',
+        );
       });
 
       it('only stream recipient can create', async function () {
-        await expect(this.vesting.connect(this.operator).createManagedVault(this.vestingStream.id))
+        await expect(this.vesting.connect(this.operator).getOrCreateManagedVault(this.vestingStream.id))
           .to.be.revertedWithCustomError(this.vesting, 'VestingBaseOnlyRecipient')
           .withArgs(this.recipient);
       });
