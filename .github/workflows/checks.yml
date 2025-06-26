@@ -58,9 +58,7 @@ jobs:
           submodules: recursive
       - name: Set up environment
         uses: ./.github/actions/setup
-      - uses: crytic/slither-action@v0.4.1
-        with:
-          node-version: "20.19.2"
+      - uses: crytic/slither-action@f197989dea5b53e986d0f88c60a034ddd77ec9a8 # v0.4.0
 
   codespell:
     runs-on: ubuntu-latest
