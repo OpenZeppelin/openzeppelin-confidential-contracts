@@ -16,7 +16,7 @@ describe('CheckpointsConfidential', function () {
             mock.getFunction(`$latestCheckpoint_CheckpointsConfidential_TraceEuint${size}`)(0, ...args),
           length: (...args) => mock.getFunction(`$length_CheckpointsConfidential_TraceEuint${size}`)(0, ...args),
           push: (...args) =>
-            mock.getFunction(`$push_CheckpointsConfidential_TraceEuint${size}_euint${size}(uint256,uint256,uint256)`)(
+            mock.getFunction(`$push_CheckpointsConfidential_TraceEuint${size}_euint${size}(uint256,uint256,bytes32)`)(
               0,
               ...args,
             ),
@@ -63,11 +63,11 @@ describe('CheckpointsConfidential', function () {
       describe('with checkpoints', function () {
         beforeEach('pushing checkpoints', async function () {
           this.checkpoints = [
-            { key: 2n, value: 17n },
-            { key: 3n, value: 42n },
-            { key: 5n, value: 101n },
-            { key: 7n, value: 23n },
-            { key: 11n, value: 99n },
+            { key: 2n, value: `0x${17n.toString(16).padStart(64, '0')}` },
+            { key: 3n, value: `0x${42n.toString(16).padStart(64, '0')}` },
+            { key: 5n, value: `0x${101n.toString(16).padStart(64, '0')}` },
+            { key: 7n, value: `0x${23n.toString(16).padStart(64, '0')}` },
+            { key: 11n, value: `0x${99n.toString(16).padStart(64, '0')}` },
           ];
           for (const { key, value } of this.checkpoints) {
             await this.methods.push(key, value);
@@ -91,14 +91,13 @@ describe('CheckpointsConfidential', function () {
         });
 
         it('cannot push values in the past', async function () {
-          await expect(this.methods.push(this.checkpoints.at(-1).key - 1n, 0n)).to.be.revertedWithCustomError(
-            this.mock,
-            'CheckpointUnorderedInsertion',
-          );
+          await expect(
+            this.methods.push(this.checkpoints.at(-1).key - 1n, ethers.ZeroHash),
+          ).to.be.revertedWithCustomError(this.mock, 'CheckpointUnorderedInsertion');
         });
 
         it('can update last value', async function () {
-          const newValue = 42n;
+          const newValue = `0x${42n.toString(16).padStart(64, '0')}`;
 
           // check length before the update
           await expect(this.methods.length()).to.eventually.equal(this.checkpoints.length);
@@ -130,11 +129,11 @@ describe('CheckpointsConfidential', function () {
 
         it('upperLookupRecent with more than 5 checkpoints', async function () {
           const moreCheckpoints = [
-            { key: 12n, value: 22n },
-            { key: 13n, value: 131n },
-            { key: 17n, value: 45n },
-            { key: 19n, value: 31452n },
-            { key: 21n, value: 0n },
+            { key: 12n, value: `0x${22n.toString(16).padStart(64, '0')}` },
+            { key: 13n, value: `0x${131n.toString(16).padStart(64, '0')}` },
+            { key: 17n, value: `0x${45n.toString(16).padStart(64, '0')}` },
+            { key: 19n, value: `0x${31452n.toString(16).padStart(64, '0')}` },
+            { key: 21n, value: `0x${0n.toString(16).padStart(64, '0')}` },
           ];
           const allCheckpoints = [].concat(this.checkpoints, moreCheckpoints);
 
