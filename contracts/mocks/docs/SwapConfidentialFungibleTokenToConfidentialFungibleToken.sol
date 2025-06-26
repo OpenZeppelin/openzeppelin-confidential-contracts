@@ -11,7 +11,7 @@ contract SwapConfidentialFungibleTokenToConfidentialFungibleToken {
         einput amountInput,
         bytes calldata inputProof
     ) public virtual {
-        require(fromToken.isOperator(address(this), msg.sender));
+        require(fromToken.isOperator(msg.sender, address(this)));
 
         euint64 amount = TFHE.asEuint64(amountInput, inputProof);
 
