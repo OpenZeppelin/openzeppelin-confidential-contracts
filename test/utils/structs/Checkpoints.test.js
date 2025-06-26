@@ -76,9 +76,7 @@ describe('CheckpointsConfidential', function () {
 
         it('at keys', async function () {
           for (const [index, { key, value }] of this.checkpoints.entries()) {
-            const at = await this.methods.at(index);
-            expect(at._value).to.equal(value);
-            expect(at._key).to.equal(key);
+            await expect(this.methods.at(index)).to.eventually.deep.equal([key, value]);
           }
         });
 

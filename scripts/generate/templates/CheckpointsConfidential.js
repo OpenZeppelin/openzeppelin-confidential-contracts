@@ -34,11 +34,6 @@ struct ${opts.historyTypeName} {
     Checkpoints.Trace256 _inner;
 }
 
-struct ${opts.checkpointTypeName} {
-    uint256 _key;
-    ${opts.valueTypeName} ${opts.valueFieldName};
-}
-
 /**
  * @dev Pushes a (\`key\`, \`value\`) pair into a ${opts.historyTypeName} so that it is stored as the checkpoint.
  *
@@ -91,7 +86,7 @@ function upperLookupRecent(${opts.historyTypeName} storage self, uint256 key) in
  */
 function latest(${opts.historyTypeName} storage self) internal view returns (${opts.valueTypeName}) {
     return ${opts.valueTypeName}.wrap(self._inner.latest());
-}   
+}
 
 /**
  * @dev Returns whether there is a checkpoint in the structure (i.e. it is not empty), and if so the key and value
@@ -99,10 +94,10 @@ function latest(${opts.historyTypeName} storage self) internal view returns (${o
  */
 function latestCheckpoint(
     ${opts.historyTypeName} storage self
-) internal view returns (bool exists, uint256 _key, ${opts.valueTypeName} ${opts.valueFieldName}) {
-    uint256 ${opts.valueFieldName}AsUint256;
-    (exists, _key, ${opts.valueFieldName}AsUint256) = self._inner.latestCheckpoint();
-    return (exists, _key, ${opts.valueTypeName}.wrap(${opts.valueFieldName}AsUint256));
+) internal view returns (bool exists, uint256 key, ${opts.valueTypeName} value) {
+    uint256 valueAsUint256;
+    (exists, key, valueAsUint256) = self._inner.latestCheckpoint();
+    value = ${opts.valueTypeName}.wrap(valueAsUint256);
 }
 
 /**
@@ -115,9 +110,10 @@ function length(${opts.historyTypeName} storage self) internal view returns (uin
 /**
  * @dev Returns checkpoint at given position.
  */
-function at(${opts.historyTypeName} storage self, uint32 pos) internal view returns (${opts.checkpointTypeName} memory) {
+function at(${opts.historyTypeName} storage self, uint32 pos) internal view returns (uint256 key, ${opts.valueTypeName} value) {
     Checkpoints.Checkpoint256 memory checkpoint = self._inner.at(pos);
-    return ${opts.checkpointTypeName}({_key: checkpoint._key, ${opts.valueFieldName}: ${opts.valueTypeName}.wrap(checkpoint._value)});
+    key = checkpoint._key;
+    value = ${opts.valueTypeName}.wrap(checkpoint._value);
 }
 `;
 

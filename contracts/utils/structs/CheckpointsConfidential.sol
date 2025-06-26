@@ -26,11 +26,6 @@ library CheckpointsConfidential {
         Checkpoints.Trace256 _inner;
     }
 
-    struct CheckpointEuint32 {
-        uint256 _key;
-        euint32 _value;
-    }
-
     /**
      * @dev Pushes a (`key`, `value`) pair into a TraceEuint32 so that it is stored as the checkpoint.
      *
@@ -88,10 +83,10 @@ library CheckpointsConfidential {
      */
     function latestCheckpoint(
         TraceEuint32 storage self
-    ) internal view returns (bool exists, uint256 _key, euint32 _value) {
-        uint256 _valueAsUint256;
-        (exists, _key, _valueAsUint256) = self._inner.latestCheckpoint();
-        return (exists, _key, euint32.wrap(_valueAsUint256));
+    ) internal view returns (bool exists, uint256 key, euint32 value) {
+        uint256 valueAsUint256;
+        (exists, key, valueAsUint256) = self._inner.latestCheckpoint();
+        value = euint32.wrap(valueAsUint256);
     }
 
     /**
@@ -104,18 +99,14 @@ library CheckpointsConfidential {
     /**
      * @dev Returns checkpoint at given position.
      */
-    function at(TraceEuint32 storage self, uint32 pos) internal view returns (CheckpointEuint32 memory) {
+    function at(TraceEuint32 storage self, uint32 pos) internal view returns (uint256 key, euint32 value) {
         Checkpoints.Checkpoint256 memory checkpoint = self._inner.at(pos);
-        return CheckpointEuint32({_key: checkpoint._key, _value: euint32.wrap(checkpoint._value)});
+        key = checkpoint._key;
+        value = euint32.wrap(checkpoint._value);
     }
 
     struct TraceEuint64 {
         Checkpoints.Trace256 _inner;
-    }
-
-    struct CheckpointEuint64 {
-        uint256 _key;
-        euint64 _value;
     }
 
     /**
@@ -175,10 +166,10 @@ library CheckpointsConfidential {
      */
     function latestCheckpoint(
         TraceEuint64 storage self
-    ) internal view returns (bool exists, uint256 _key, euint64 _value) {
-        uint256 _valueAsUint256;
-        (exists, _key, _valueAsUint256) = self._inner.latestCheckpoint();
-        return (exists, _key, euint64.wrap(_valueAsUint256));
+    ) internal view returns (bool exists, uint256 key, euint64 value) {
+        uint256 valueAsUint256;
+        (exists, key, valueAsUint256) = self._inner.latestCheckpoint();
+        value = euint64.wrap(valueAsUint256);
     }
 
     /**
@@ -191,8 +182,9 @@ library CheckpointsConfidential {
     /**
      * @dev Returns checkpoint at given position.
      */
-    function at(TraceEuint64 storage self, uint32 pos) internal view returns (CheckpointEuint64 memory) {
+    function at(TraceEuint64 storage self, uint32 pos) internal view returns (uint256 key, euint64 value) {
         Checkpoints.Checkpoint256 memory checkpoint = self._inner.at(pos);
-        return CheckpointEuint64({_key: checkpoint._key, _value: euint64.wrap(checkpoint._value)});
+        key = checkpoint._key;
+        value = euint64.wrap(checkpoint._value);
     }
 }
