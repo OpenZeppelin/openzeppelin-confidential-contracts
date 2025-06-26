@@ -87,7 +87,7 @@ abstract contract VestingBase {
         uint256 amountTransferredOut;
 
         // If managed vault exists, do transfer out from there
-        address managedVault = _managedVaults[streamId];
+        address managedVault = getManagedVault(streamId);
         if (managedVault != address(0)) {
             amountTransferredOut = _doTransferOut(managedVault, stream.recipient, claimAmount);
         } else {
