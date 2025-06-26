@@ -45,7 +45,7 @@ describe('CheckpointsConfidential', function () {
         });
 
         it('returns zero as latest value', async function () {
-          expect(await this.methods.latest()).to.equal(0n);
+          await expect(this.methods.latest()).to.eventually.equal(0n);
 
           const ckpt = await this.methods.latestCheckpoint();
           expect(ckpt[0]).to.be.false;
@@ -54,9 +54,9 @@ describe('CheckpointsConfidential', function () {
         });
 
         it('lookup returns 0', async function () {
-          expect(await this.methods.lowerLookup(0)).to.equal(0n);
-          expect(await this.methods.upperLookup(0)).to.equal(0n);
-          expect(await this.methods.upperLookupRecent(0)).to.equal(0n);
+          await expect(this.methods.lowerLookup(0)).to.eventually.equal(0n);
+          await expect(this.methods.upperLookup(0)).to.eventually.equal(0n);
+          await expect(this.methods.upperLookupRecent(0)).to.eventually.equal(0n);
         });
       });
 
@@ -81,13 +81,13 @@ describe('CheckpointsConfidential', function () {
         });
 
         it('length', async function () {
-          expect(await this.methods.length()).to.equal(this.checkpoints.length);
+          await expect(this.methods.length()).to.eventually.equal(this.checkpoints.length);
         });
 
         it('returns latest value', async function () {
           const latest = this.checkpoints.at(-1);
-          expect(await this.methods.latest()).to.equal(latest.value);
-          expect(await this.methods.latestCheckpoint()).to.deep.equal([true, latest.key, latest.value]);
+          await expect(this.methods.latest()).to.eventually.equal(latest.value);
+          await expect(this.methods.latestCheckpoint()).to.eventually.deep.equal([true, latest.key, latest.value]);
         });
 
         it('cannot push values in the past', async function () {
@@ -101,21 +101,21 @@ describe('CheckpointsConfidential', function () {
           const newValue = 42n;
 
           // check length before the update
-          expect(await this.methods.length()).to.equal(this.checkpoints.length);
+          await expect(this.methods.length()).to.eventually.equal(this.checkpoints.length);
 
           // update last key
           await this.methods.push(this.checkpoints.at(-1).key, newValue);
-          expect(await this.methods.latest()).to.equal(newValue);
+          await expect(this.methods.latest()).to.eventually.equal(newValue);
 
           // check that length did not change
-          expect(await this.methods.length()).to.equal(this.checkpoints.length);
+          await expect(this.methods.length()).to.eventually.equal(this.checkpoints.length);
         });
 
         it('lower lookup', async function () {
           for (let i = 0; i < 14; ++i) {
             const value = this.checkpoints.find(x => i <= x.key)?.value || 0n;
 
-            expect(await this.methods.lowerLookup(i)).to.equal(value);
+            await expect(this.methods.lowerLookup(i)).to.eventually.equal(value);
           }
         });
 
@@ -123,8 +123,8 @@ describe('CheckpointsConfidential', function () {
           for (let i = 0; i < 14; ++i) {
             const value = this.checkpoints.findLast(x => i >= x.key)?.value || 0n;
 
-            expect(await this.methods.upperLookup(i)).to.equal(value);
-            expect(await this.methods.upperLookupRecent(i)).to.equal(value);
+            await expect(this.methods.upperLookup(i)).to.eventually.equal(value);
+            await expect(this.methods.upperLookupRecent(i)).to.eventually.equal(value);
           }
         });
 
@@ -144,8 +144,8 @@ describe('CheckpointsConfidential', function () {
 
           for (let i = 0; i < 25; ++i) {
             const value = allCheckpoints.findLast(x => i >= x.key)?.value || 0n;
-            expect(await this.methods.upperLookup(i)).to.equal(value);
-            expect(await this.methods.upperLookupRecent(i)).to.equal(value);
+            await expect(this.methods.upperLookup(i)).to.eventually.equal(value);
+            await expect(this.methods.upperLookupRecent(i)).to.eventually.equal(value);
           }
         });
       });
