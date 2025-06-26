@@ -63,11 +63,11 @@ describe('CheckpointsConfidential', function () {
       describe('with checkpoints', function () {
         beforeEach('pushing checkpoints', async function () {
           this.checkpoints = [
-            { key: 2n, value: `0x${17n.toString(16).padStart(64, '0')}` },
-            { key: 3n, value: `0x${42n.toString(16).padStart(64, '0')}` },
-            { key: 5n, value: `0x${101n.toString(16).padStart(64, '0')}` },
-            { key: 7n, value: `0x${23n.toString(16).padStart(64, '0')}` },
-            { key: 11n, value: `0x${99n.toString(16).padStart(64, '0')}` },
+            { key: 2n, value: numberToBytes32(17n) },
+            { key: 3n, value: numberToBytes32(42n) },
+            { key: 5n, value: numberToBytes32(101n) },
+            { key: 7n, value: numberToBytes32(23n) },
+            { key: 11n, value: numberToBytes32(99n) },
           ];
           for (const { key, value } of this.checkpoints) {
             await this.methods.push(key, value);
@@ -97,7 +97,7 @@ describe('CheckpointsConfidential', function () {
         });
 
         it('can update last value', async function () {
-          const newValue = `0x${42n.toString(16).padStart(64, '0')}`;
+          const newValue = numberToBytes32(42n);
 
           // check length before the update
           await expect(this.methods.length()).to.eventually.equal(this.checkpoints.length);
@@ -129,11 +129,11 @@ describe('CheckpointsConfidential', function () {
 
         it('upperLookupRecent with more than 5 checkpoints', async function () {
           const moreCheckpoints = [
-            { key: 12n, value: `0x${22n.toString(16).padStart(64, '0')}` },
-            { key: 13n, value: `0x${131n.toString(16).padStart(64, '0')}` },
-            { key: 17n, value: `0x${45n.toString(16).padStart(64, '0')}` },
-            { key: 19n, value: `0x${31452n.toString(16).padStart(64, '0')}` },
-            { key: 21n, value: `0x${0n.toString(16).padStart(64, '0')}` },
+            { key: 12n, value: numberToBytes32(22n) },
+            { key: 13n, value: numberToBytes32(131n) },
+            { key: 17n, value: numberToBytes32(45n) },
+            { key: 19n, value: numberToBytes32(31452n) },
+            { key: 21n, value: numberToBytes32(0n) },
           ];
           const allCheckpoints = [].concat(this.checkpoints, moreCheckpoints);
 
@@ -151,3 +151,5 @@ describe('CheckpointsConfidential', function () {
     });
   }
 });
+
+const numberToBytes32 = number => `0x${number.toString(16).padStart(64, '0')}`;
