@@ -4,7 +4,7 @@
 pragma solidity ^0.8.24;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {euint32, euint64} from "fhevm/lib/TFHE.sol";
+import {euint32, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Checkpoints} from "./temporary-Checkpoints.sol";
 
 /**
@@ -40,8 +40,8 @@ library CheckpointsConfidential {
         euint32 value
     ) internal returns (euint32 oldValue, euint32 newValue) {
         (uint256 oldValueAsUint256, uint256 newValueAsUint256) = self._inner.push(key, uint256(euint32.unwrap(value)));
-        oldValue = euint32.wrap(oldValueAsUint256);
-        newValue = euint32.wrap(newValueAsUint256);
+        oldValue = euint32.wrap(bytes32(oldValueAsUint256));
+        newValue = euint32.wrap(bytes32(newValueAsUint256));
     }
 
     /**
@@ -49,7 +49,7 @@ library CheckpointsConfidential {
      * there is none.
      */
     function lowerLookup(TraceEuint32 storage self, uint256 key) internal view returns (euint32) {
-        return euint32.wrap(self._inner.lowerLookup(key));
+        return euint32.wrap(bytes32(self._inner.lowerLookup(key)));
     }
 
     /**
@@ -57,7 +57,7 @@ library CheckpointsConfidential {
      * if there is none.
      */
     function upperLookup(TraceEuint32 storage self, uint256 key) internal view returns (euint32) {
-        return euint32.wrap(self._inner.upperLookup(key));
+        return euint32.wrap(bytes32(self._inner.upperLookup(key)));
     }
 
     /**
@@ -68,14 +68,14 @@ library CheckpointsConfidential {
      * keys).
      */
     function upperLookupRecent(TraceEuint32 storage self, uint256 key) internal view returns (euint32) {
-        return euint32.wrap(self._inner.upperLookupRecent(key));
+        return euint32.wrap(bytes32(self._inner.upperLookupRecent(key)));
     }
 
     /**
      * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
      */
     function latest(TraceEuint32 storage self) internal view returns (euint32) {
-        return euint32.wrap(self._inner.latest());
+        return euint32.wrap(bytes32(self._inner.latest()));
     }
 
     /**
@@ -87,7 +87,7 @@ library CheckpointsConfidential {
     ) internal view returns (bool exists, uint256 key, euint32 value) {
         uint256 valueAsUint256;
         (exists, key, valueAsUint256) = self._inner.latestCheckpoint();
-        value = euint32.wrap(valueAsUint256);
+        value = euint32.wrap(bytes32(valueAsUint256));
     }
 
     /**
@@ -103,7 +103,7 @@ library CheckpointsConfidential {
     function at(TraceEuint32 storage self, uint32 pos) internal view returns (uint256 key, euint32 value) {
         Checkpoints.Checkpoint256 memory checkpoint = self._inner.at(pos);
         key = checkpoint._key;
-        value = euint32.wrap(checkpoint._value);
+        value = euint32.wrap(bytes32(checkpoint._value));
     }
 
     struct TraceEuint64 {
@@ -124,8 +124,8 @@ library CheckpointsConfidential {
         euint64 value
     ) internal returns (euint64 oldValue, euint64 newValue) {
         (uint256 oldValueAsUint256, uint256 newValueAsUint256) = self._inner.push(key, uint256(euint64.unwrap(value)));
-        oldValue = euint64.wrap(oldValueAsUint256);
-        newValue = euint64.wrap(newValueAsUint256);
+        oldValue = euint64.wrap(bytes32(oldValueAsUint256));
+        newValue = euint64.wrap(bytes32(newValueAsUint256));
     }
 
     /**
@@ -133,7 +133,7 @@ library CheckpointsConfidential {
      * there is none.
      */
     function lowerLookup(TraceEuint64 storage self, uint256 key) internal view returns (euint64) {
-        return euint64.wrap(self._inner.lowerLookup(key));
+        return euint64.wrap(bytes32(self._inner.lowerLookup(key)));
     }
 
     /**
@@ -141,7 +141,7 @@ library CheckpointsConfidential {
      * if there is none.
      */
     function upperLookup(TraceEuint64 storage self, uint256 key) internal view returns (euint64) {
-        return euint64.wrap(self._inner.upperLookup(key));
+        return euint64.wrap(bytes32(self._inner.upperLookup(key)));
     }
 
     /**
@@ -152,14 +152,14 @@ library CheckpointsConfidential {
      * keys).
      */
     function upperLookupRecent(TraceEuint64 storage self, uint256 key) internal view returns (euint64) {
-        return euint64.wrap(self._inner.upperLookupRecent(key));
+        return euint64.wrap(bytes32(self._inner.upperLookupRecent(key)));
     }
 
     /**
      * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
      */
     function latest(TraceEuint64 storage self) internal view returns (euint64) {
-        return euint64.wrap(self._inner.latest());
+        return euint64.wrap(bytes32(self._inner.latest()));
     }
 
     /**
@@ -171,7 +171,7 @@ library CheckpointsConfidential {
     ) internal view returns (bool exists, uint256 key, euint64 value) {
         uint256 valueAsUint256;
         (exists, key, valueAsUint256) = self._inner.latestCheckpoint();
-        value = euint64.wrap(valueAsUint256);
+        value = euint64.wrap(bytes32(valueAsUint256));
     }
 
     /**
@@ -187,6 +187,6 @@ library CheckpointsConfidential {
     function at(TraceEuint64 storage self, uint32 pos) internal view returns (uint256 key, euint64 value) {
         Checkpoints.Checkpoint256 memory checkpoint = self._inner.at(pos);
         key = checkpoint._key;
-        value = euint64.wrap(checkpoint._value);
+        value = euint64.wrap(bytes32(checkpoint._value));
     }
 }

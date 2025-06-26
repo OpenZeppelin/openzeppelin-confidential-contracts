@@ -6,7 +6,7 @@ const header = `\
 pragma solidity ^0.8.24;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {${OPTS.map(opt => opt.valueTypeName).join(', ')}} from "fhevm/lib/TFHE.sol";
+import {${OPTS.map(opt => opt.valueTypeName).join(', ')}} from "@fhevm/solidity/lib/FHE.sol";
 import {Checkpoints} from "./temporary-Checkpoints.sol";
 
 /**
@@ -51,8 +51,8 @@ function push(
         key,
         uint256(${opts.valueTypeName}.unwrap(value))
     );
-    oldValue = ${opts.valueTypeName}.wrap(oldValueAsUint256);
-    newValue = ${opts.valueTypeName}.wrap(newValueAsUint256);
+    oldValue = ${opts.valueTypeName}.wrap(bytes32(oldValueAsUint256));
+    newValue = ${opts.valueTypeName}.wrap(bytes32(newValueAsUint256));
 }
 
 /**
@@ -60,7 +60,7 @@ function push(
  * there is none.
  */
 function lowerLookup(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(self._inner.lowerLookup(key));
+    return ${opts.valueTypeName}.wrap(bytes32(self._inner.lowerLookup(key)));
 }
 
 /**
@@ -68,7 +68,7 @@ function lowerLookup(${opts.historyTypeName} storage self, uint256 key) internal
  * if there is none.
  */
 function upperLookup(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(self._inner.upperLookup(key));
+    return ${opts.valueTypeName}.wrap(bytes32(self._inner.upperLookup(key)));
 }
 
 /**
@@ -79,14 +79,14 @@ function upperLookup(${opts.historyTypeName} storage self, uint256 key) internal
  * keys).
  */
 function upperLookupRecent(${opts.historyTypeName} storage self, uint256 key) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(self._inner.upperLookupRecent(key));
+    return ${opts.valueTypeName}.wrap(bytes32(self._inner.upperLookupRecent(key)));
 }
 
 /**
  * @dev Returns the value in the most recent checkpoint, or zero if there are no checkpoints.
  */
 function latest(${opts.historyTypeName} storage self) internal view returns (${opts.valueTypeName}) {
-    return ${opts.valueTypeName}.wrap(self._inner.latest());
+    return ${opts.valueTypeName}.wrap(bytes32(self._inner.latest()));
 }
 
 /**
@@ -98,7 +98,7 @@ function latestCheckpoint(
 ) internal view returns (bool exists, uint256 key, ${opts.valueTypeName} value) {
     uint256 valueAsUint256;
     (exists, key, valueAsUint256) = self._inner.latestCheckpoint();
-    value = ${opts.valueTypeName}.wrap(valueAsUint256);
+    value = ${opts.valueTypeName}.wrap(bytes32(valueAsUint256));
 }
 
 /**
@@ -114,7 +114,7 @@ function length(${opts.historyTypeName} storage self) internal view returns (uin
 function at(${opts.historyTypeName} storage self, uint32 pos) internal view returns (uint256 key, ${opts.valueTypeName} value) {
     Checkpoints.Checkpoint256 memory checkpoint = self._inner.at(pos);
     key = checkpoint._key;
-    value = ${opts.valueTypeName}.wrap(checkpoint._value);
+    value = ${opts.valueTypeName}.wrap(bytes32(checkpoint._value));
 }
 `;
 
