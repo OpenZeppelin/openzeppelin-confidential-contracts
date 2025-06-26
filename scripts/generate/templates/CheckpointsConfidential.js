@@ -51,7 +51,8 @@ function push(
         key,
         uint256(${opts.valueTypeName}.unwrap(value))
     );
-    return (${opts.valueTypeName}.wrap(oldValueAsUint256), ${opts.valueTypeName}.wrap(newValueAsUint256));
+    oldValue = ${opts.valueTypeName}.wrap(oldValueAsUint256);
+    newValue = ${opts.valueTypeName}.wrap(newValueAsUint256);
 }
 
 /**

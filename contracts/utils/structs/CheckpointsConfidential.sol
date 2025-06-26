@@ -40,7 +40,8 @@ library CheckpointsConfidential {
         euint32 value
     ) internal returns (euint32 oldValue, euint32 newValue) {
         (uint256 oldValueAsUint256, uint256 newValueAsUint256) = self._inner.push(key, uint256(euint32.unwrap(value)));
-        return (euint32.wrap(oldValueAsUint256), euint32.wrap(newValueAsUint256));
+        oldValue = euint32.wrap(oldValueAsUint256);
+        newValue = euint32.wrap(newValueAsUint256);
     }
 
     /**
@@ -123,7 +124,8 @@ library CheckpointsConfidential {
         euint64 value
     ) internal returns (euint64 oldValue, euint64 newValue) {
         (uint256 oldValueAsUint256, uint256 newValueAsUint256) = self._inner.push(key, uint256(euint64.unwrap(value)));
-        return (euint64.wrap(oldValueAsUint256), euint64.wrap(newValueAsUint256));
+        oldValue = euint64.wrap(oldValueAsUint256);
+        newValue = euint64.wrap(newValueAsUint256);
     }
 
     /**
