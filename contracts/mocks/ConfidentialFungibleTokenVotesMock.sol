@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {TFHE, euint64, einput} from "fhevm/lib/TFHE.sol";
-import {SepoliaZamaFHEVMConfig} from "fhevm/config/ZamaFHEVMConfig.sol";
+import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {ConfidentialFungibleTokenVotes, ConfidentialFungibleToken} from "../token/extensions/ConfidentialFungibleTokenVotes.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
-abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleTokenVotes, SepoliaZamaFHEVMConfig {
+abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleTokenVotes, SepoliaConfig {
     address private immutable _OWNER;
 
     uint48 private _clockOverrideVal;
@@ -22,16 +22,16 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
     // solhint-disable-next-line func-name-mixedcase
     function $_mint(
         address to,
-        einput encryptedAmount,
+        externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public returns (euint64 transferred) {
-        return _mint(to, TFHE.asEuint64(encryptedAmount, inputProof));
+        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
         transferred = super._update(from, to, amount);
 
-        TFHE.allow(getCurrentTotalSupply(), _OWNER);
+        FHE.allow(getCurrentTotalSupply(), _OWNER);
     }
 
     function _setClockOverride(uint48 val) external {

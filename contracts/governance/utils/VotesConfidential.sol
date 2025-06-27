@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {TFHE, einput, ebool, euint64} from "fhevm/lib/TFHE.sol";
+import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC6372} from "@openzeppelin/contracts/interfaces/IERC6372.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
@@ -14,7 +14,7 @@ import {CheckpointsConfidential} from "../../utils/structs/CheckpointsConfidenti
 import {TFHESafeMath} from "../../utils/TFHESafeMath.sol";
 
 abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
-    using TFHE for *;
+    using FHE for *;
     using CheckpointsConfidential for CheckpointsConfidential.TraceEuint64;
 
     bytes32 private constant DELEGATION_TYPEHASH =

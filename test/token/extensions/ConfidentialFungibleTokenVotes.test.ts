@@ -1,10 +1,9 @@
 // @ts-ignore
-import { Delegation, getDomain } from '../../../lib/openzeppelin-contracts/test/helpers/eip712';
-import { createInstance } from '../../_template/instance';
-import { reencryptEuint64 } from '../../_template/reencrypt';
+import { FhevmType } from '@fhevm/hardhat-plugin';
 import { mine } from '@nomicfoundation/hardhat-network-helpers';
+import { Delegation, getDomain } from '@openzeppelin/contracts/test/helpers/eip712';
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleTokenVotes';
 const symbol = 'CFT';
@@ -17,7 +16,6 @@ describe('ConfidentialFungibleTokenVotes', function () {
 
     const token = await ethers.deployContract('$ConfidentialFungibleTokenVotesMock', [name, symbol, uri]);
 
-    this.fhevm = await createInstance();
     this.accounts = accounts.slice(3);
     this.holder = holder;
     this.recipient = recipient;
@@ -25,7 +23,7 @@ describe('ConfidentialFungibleTokenVotes', function () {
     this.operator = operator;
     this.domain = await getDomain(this.token);
 
-    const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
+    const input = fhevm.createEncryptedInput(this.token.target, this.holder.address);
     input.add64(1000);
     this.encryptedInput = await input.encrypt();
   });
@@ -121,7 +119,9 @@ describe('ConfidentialFungibleTokenVotes', function () {
       await this.token.connect(this.holder).delegate(this.holder);
 
       const votesHandle = await this.token.getVotes(this.holder);
-      await expect(reencryptEuint64(this.holder, this.fhevm, votesHandle, this.token.target)).to.eventually.equal(1000);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, votesHandle, this.token.target, this.holder),
+      ).to.eventually.equal(1000);
     });
 
     it('for account with non-zero balance cannot reencrypt by other', async function () {
@@ -133,7 +133,8 @@ describe('ConfidentialFungibleTokenVotes', function () {
       await this.token.connect(this.holder).delegate(this.holder);
 
       const votesHandle = await this.token.getVotes(this.holder);
-      await expect(reencryptEuint64(this.operator, this.fhevm, votesHandle, this.token.target)).to.eventually.rejected;
+      await expect(fhevm.userDecryptEuint(FhevmType.euint64, votesHandle, this.token.target, this.operator)).to
+        .eventually.rejected;
     });
   });
 
@@ -159,7 +160,9 @@ describe('ConfidentialFungibleTokenVotes', function () {
       await expect(this.token.getPastVotes(this.holder, this.blockNumber)).to.eventually.eq(ethers.ZeroHash);
 
       const votesHandle = await this.token.getPastVotes(this.holder, afterVotesBlock);
-      await expect(reencryptEuint64(this.holder, this.fhevm, votesHandle, this.token.target)).to.eventually.equal(1000);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, votesHandle, this.token.target, this.holder),
+      ).to.eventually.equal(1000);
     });
 
     it('for account with complex activity', async function () {
@@ -173,7 +176,7 @@ describe('ConfidentialFungibleTokenVotes', function () {
       const afterInitialMintBlock = await ethers.provider.getBlockNumber();
 
       // Transfer 200 to other address
-      const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
+      const input = fhevm.createEncryptedInput(this.token.target, this.holder.address);
       input.add64(200);
       const encryptedInput = await input.encrypt();
       await this.token
@@ -195,17 +198,17 @@ describe('ConfidentialFungibleTokenVotes', function () {
 
       const afterInitialMintVotesHandle = await this.token.getPastVotes(this.holder, afterInitialMintBlock);
       await expect(
-        reencryptEuint64(this.holder, this.fhevm, afterInitialMintVotesHandle, this.token.target),
+        fhevm.userDecryptEuint(FhevmType.euint64, afterInitialMintVotesHandle, this.token.target, this.holder),
       ).to.eventually.equal(1000);
 
       const afterTransferVotesHandle = await this.token.getPastVotes(this.holder, afterTransferBlock);
       await expect(
-        reencryptEuint64(this.holder, this.fhevm, afterTransferVotesHandle, this.token.target),
+        fhevm.userDecryptEuint(FhevmType.euint64, afterTransferVotesHandle, this.token.target, this.holder),
       ).to.eventually.equal(800);
 
       const afterBurnVotesHandle = await this.token.getPastVotes(this.holder, afterBurnBlock);
       await expect(
-        reencryptEuint64(this.holder, this.fhevm, afterBurnVotesHandle, this.token.target),
+        fhevm.userDecryptEuint(FhevmType.euint64, afterBurnVotesHandle, this.token.target, this.holder),
       ).to.eventually.equal(0);
     });
 
@@ -236,7 +239,7 @@ describe('ConfidentialFungibleTokenVotes', function () {
       const afterFirstMintBlock = await ethers.provider.getBlockNumber();
 
       // Transfer to operator
-      const input = this.fhevm.createEncryptedInput(this.token.target, this.holder.address);
+      const input = fhevm.createEncryptedInput(this.token.target, this.holder.address);
       input.add64(200);
       const encryptedInput = await input.encrypt();
       await this.token
@@ -262,14 +265,14 @@ describe('ConfidentialFungibleTokenVotes', function () {
       // Check total supply for each block
       const afterFirstMintSupplyHandle = await this.token.getPastTotalSupply(afterFirstMintBlock);
       await expect(
-        reencryptEuint64(this.holder, this.fhevm, afterFirstMintSupplyHandle, this.token.target),
+        fhevm.userDecryptEuint(FhevmType.euint64, afterFirstMintSupplyHandle, this.token.target, this.holder),
       ).to.eventually.equal(1000);
 
       await expect(this.token.getPastTotalSupply(afterTransferBlock)).to.eventually.eq(afterFirstMintSupplyHandle);
 
       const afterSecondMintSupplyHandle = await this.token.getPastTotalSupply(afterSecondMintBlock);
       await expect(
-        reencryptEuint64(this.holder, this.fhevm, afterSecondMintSupplyHandle, this.token.target),
+        fhevm.userDecryptEuint(FhevmType.euint64, afterSecondMintSupplyHandle, this.token.target, this.holder),
       ).to.eventually.equal(2000);
     });
   });
