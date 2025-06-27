@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {TFHE, einput, euint64} from "fhevm/lib/TFHE.sol";
+import {TFHE, einput, ebool, euint64} from "fhevm/lib/TFHE.sol";
 import {IERC6372} from "@openzeppelin/contracts/interfaces/IERC6372.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
@@ -11,6 +11,7 @@ import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {CheckpointsConfidential} from "../../utils/structs/CheckpointsConfidential.sol";
+import {TFHESafeMath} from "../../utils/TFHESafeMath.sol";
 
 abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
     using TFHE for *;
@@ -96,12 +97,6 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
         return _totalCheckpoints.upperLookupRecent(_validateTimepoint(timepoint));
     }
 
-    /**
-     * @dev Returns the current total supply of votes as an encrypted uint64 (euint64). Must be implemented
-     * by the derived contract.
-     */
-    function totalSupply() public view virtual returns (euint64);
-
     /// @dev Returns the current total supply of votes.
     function getCurrentTotalSupply() public view virtual returns (euint64) {
         return _totalCheckpoints.latest();
@@ -159,8 +154,11 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
      * should be zero. Total supply of voting units will be adjusted with mints and burns.
      */
     function _transferVotingUnits(address from, address to, euint64 amount) internal virtual {
-        if (from == address(0) || to == address(0)) {
-            _push(_totalCheckpoints, totalSupply());
+        if (from == address(0)) {
+            _push(_totalCheckpoints, TFHESafeMath.tryIncrease, amount);
+        }
+        if (to == address(0)) {
+            _push(_totalCheckpoints, TFHESafeMath.tryDecrease, amount);
         }
         _moveDelegateVotes(delegates(from), delegates(to), amount);
     }
@@ -169,22 +167,23 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
      * @dev Moves delegated votes from one delegate to another.
      */
     function _moveDelegateVotes(address from, address to, euint64 amount) internal virtual {
-        CheckpointsConfidential.TraceEuint64 storage store;
         if (from != to && euint64.unwrap(amount) != 0) {
             if (from != address(0)) {
-                store = _delegateCheckpoints[from];
-                euint64 newValue = store.latest().sub(amount);
-                newValue.allowThis();
+                (euint64 oldValue, euint64 newValue) = _push(
+                    _delegateCheckpoints[from],
+                    TFHESafeMath.tryDecrease,
+                    amount
+                );
                 newValue.allow(from);
-                euint64 oldValue = _push(store, newValue);
                 emit DelegateVotesChanged(from, oldValue, newValue);
             }
             if (to != address(0)) {
-                store = _delegateCheckpoints[to];
-                euint64 newValue = store.latest().add(amount);
-                newValue.allowThis();
+                (euint64 oldValue, euint64 newValue) = _push(
+                    _delegateCheckpoints[to],
+                    TFHESafeMath.tryIncrease,
+                    amount
+                );
                 newValue.allow(to);
-                euint64 oldValue = _push(store, newValue);
                 emit DelegateVotesChanged(to, oldValue, newValue);
             }
         }
@@ -202,8 +201,14 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
      */
     function _getVotingUnits(address) internal view virtual returns (euint64);
 
-    function _push(CheckpointsConfidential.TraceEuint64 storage store, euint64 value) private returns (euint64) {
-        (euint64 oldValue, ) = store.push(clock(), value);
-        return oldValue;
+    function _push(
+        CheckpointsConfidential.TraceEuint64 storage store,
+        function(euint64, euint64) returns (ebool, euint64) op,
+        euint64 delta
+    ) private returns (euint64 oldValue, euint64 newValue) {
+        // TODO: ebool "success" is discarded. Add explanation as to why this is ok ?
+        (, euint64 value) = op(store.latest(), delta);
+        value.allowThis();
+        return store.push(clock(), value);
     }
 }
