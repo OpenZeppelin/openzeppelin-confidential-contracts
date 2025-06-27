@@ -1,9 +1,10 @@
+import constants from '../../node_modules/@fhevm/hardhat-plugin/src/constants';
 import { impersonateAccount, setBalance } from '@nomicfoundation/hardhat-network-helpers';
 import { Addressable, Signer, ethers } from 'ethers';
 import fs from 'fs';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-const ACL_ADDRESS = '0x50157CFfD6bBFA2DECe204a89ec419c23ef5755D';
+const ACL_ADDRESS = constants.ACL_CONTRACT_ADDRESS;
 
 const DEFAULT_BALANCE: bigint = 10000n * ethers.WeiPerEther;
 
