@@ -203,7 +203,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     }
 
     /**
-     * @dev Discloses an encrypted amount `encryptedAmount` publicly via an {EncryptedAmountDisclosed}
+     * @dev Discloses an encrypted amount `encryptedAmount` publicly via an {IConfidentialFungibleToken-EncryptedAmountDisclosed}
      * event. The caller and this contract must be authorized to use the encrypted amount on the ACL.
      *
      * NOTE: This is an asynchronous operation where the actual decryption happens off-chain and
