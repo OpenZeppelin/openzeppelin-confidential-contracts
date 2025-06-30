@@ -2,11 +2,11 @@
 pragma solidity ^0.8.24;
 
 import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {ConfidentialFungibleTokenVotes, ConfidentialFungibleToken} from "../token/extensions/ConfidentialFungibleTokenVotes.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {ConfidentialFungibleTokenVotes, ConfidentialFungibleToken, VotesConfidential} from "../token/extensions/ConfidentialFungibleTokenVotes.sol";
+import {ConfidentialFungibleTokenMock} from "./ConfidentialFungibleTokenMock.sol";
 
-abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleTokenVotes, SepoliaConfig {
+abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleTokenMock, ConfidentialFungibleTokenVotes {
     address private immutable _OWNER;
 
     uint48 private _clockOverrideVal;
@@ -15,27 +15,8 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
         string memory name_,
         string memory symbol_,
         string memory tokenURI_
-    ) ConfidentialFungibleToken(name_, symbol_, tokenURI_) EIP712(name_, "1.0.0") {
+    ) ConfidentialFungibleTokenMock(name_, symbol_, tokenURI_) EIP712(name_, "1.0.0") {
         _OWNER = msg.sender;
-    }
-
-    // solhint-disable-next-line func-name-mixedcase
-    function $_mint(
-        address to,
-        externalEuint64 encryptedAmount,
-        bytes calldata inputProof
-    ) public returns (euint64 transferred) {
-        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
-    }
-
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
-        transferred = super._update(from, to, amount);
-
-        FHE.allow(getCurrentTotalSupply(), _OWNER);
-    }
-
-    function _setClockOverride(uint48 val) external {
-        _clockOverrideVal = val;
     }
 
     function clock() public view virtual override returns (uint48) {
@@ -43,5 +24,27 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
             return _clockOverrideVal;
         }
         return super.clock();
+    }
+
+    function totalSupply()
+        public
+        view
+        virtual
+        override(ConfidentialFungibleToken, ConfidentialFungibleTokenVotes)
+        returns (euint64)
+    {
+        return super.totalSupply();
+    }
+
+    function _update(
+        address from,
+        address to,
+        euint64 amount
+    ) internal virtual override(ConfidentialFungibleTokenMock, ConfidentialFungibleTokenVotes) returns (euint64) {
+        return super._update(from, to, amount);
+    }
+
+    function _setClockOverride(uint48 val) external {
+        _clockOverrideVal = val;
     }
 }

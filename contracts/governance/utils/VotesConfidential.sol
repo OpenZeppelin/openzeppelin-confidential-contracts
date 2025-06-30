@@ -102,11 +102,6 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
      */
     function totalSupply() public view virtual returns (euint64);
 
-    /// @dev Returns the current total supply of votes.
-    function getCurrentTotalSupply() public view virtual returns (euint64) {
-        return _totalCheckpoints.latest();
-    }
-
     /// @dev Returns the delegate that `account` has chosen.
     function delegates(address account) public view virtual returns (address) {
         return _delegatee[account];
