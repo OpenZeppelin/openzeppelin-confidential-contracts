@@ -27,8 +27,8 @@ const config: HardhatUserConfig = {
   gasReporter: {
     currency: 'USD',
     enabled: !!process.env.REPORT_GAS,
-    excludeContracts: [],
-    src: './contracts',
+    showMethodSig: true,
+    includeBytecodeInJSON: true,
   },
   typechain: {
     outDir: 'types',
