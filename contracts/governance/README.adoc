@@ -6,7 +6,7 @@ NOTE: This document is better viewed at https://docs.openzeppelin.com/confidenti
 
 This directory includes primitives for on-chain confidential governance.
 
-- {VotesConfidential}: Implementation of safe math operations for encrypted values.
+- {VotesConfidential}: Abstract contract that keeps track of confidential voting units, enabling checkpointed voting through governance.
 
 == Utils
 {{VotesConfidential}}
