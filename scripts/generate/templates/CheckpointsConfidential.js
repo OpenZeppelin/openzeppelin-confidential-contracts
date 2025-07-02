@@ -5,8 +5,8 @@ const { OPTS } = require('./CheckpointsConfidential.opts');
 const header = `\
 pragma solidity ^0.8.24;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {${OPTS.map(opt => opt.valueTypeName).join(', ')}} from "@fhevm/solidity/lib/FHE.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Checkpoints} from "./temporary-Checkpoints.sol";
 
 /**

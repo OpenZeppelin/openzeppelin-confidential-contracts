@@ -3,8 +3,8 @@
 
 pragma solidity ^0.8.24;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {euint32, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Checkpoints} from "./temporary-Checkpoints.sol";
 
 /**
