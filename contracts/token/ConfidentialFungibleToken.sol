@@ -3,10 +3,9 @@
 pragma solidity ^0.8.26;
 
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-
-import {IConfidentialFungibleToken} from "../interfaces/IConfidentialFungibleToken.sol";
+import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
+import {TFHESafeMath} from "./../utils/TFHESafeMath.sol";
 import {ConfidentialFungibleTokenUtils} from "./utils/ConfidentialFungibleTokenUtils.sol";
-import {TFHESafeMath} from "../utils/TFHESafeMath.sol";
 
 /**
  * @dev Reference implementation for {IConfidentialFungibleToken}.
