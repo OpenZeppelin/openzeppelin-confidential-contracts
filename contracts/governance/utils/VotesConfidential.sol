@@ -116,7 +116,6 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
     function delegateBySig(
         address delegator,
         address delegatee,
-        uint256 nonce,
         uint256 expiry,
         bytes memory signature
     ) public virtual {
@@ -126,13 +125,12 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
         if (
             !SignatureChecker.isValidSignatureNow(
                 delegator,
-                _hashTypedDataV4(keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry))),
+                _hashTypedDataV4(keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, _useNonce(delegator), expiry))),
                 signature
             )
         ) {
             revert VotesInvalidSignature(delegator);
         }
-        _useCheckedNonce(delegator, nonce);
         _delegate(delegator, delegatee);
     }
 

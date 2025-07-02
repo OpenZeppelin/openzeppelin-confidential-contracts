@@ -52,12 +52,12 @@ describe('ConfidentialFungibleTokenVotes', function () {
 
           const tx = this.token
             .connect(this.operator)
-            .delegateBySig(this.holder, this.recipient.address, nonce, ethers.MaxUint256, sig);
+            .delegateBySig(this.holder, this.recipient.address, ethers.MaxUint256, sig);
 
           if (nonce == 1) {
             await expect(tx)
-              .to.be.revertedWithCustomError(this.token, 'InvalidAccountNonce')
-              .withArgs(this.holder.address, 0);
+              .to.be.revertedWithCustomError(this.token, 'VotesInvalidSignature')
+              .withArgs(this.holder.address);
           } else {
             await tx;
             await expect(this.token.delegates(this.holder)).to.eventually.eq(this.recipient);
@@ -73,9 +73,7 @@ describe('ConfidentialFungibleTokenVotes', function () {
             { delegatee: this.recipient.address, nonce: 0, expiry },
           );
 
-          const tx = this.token
-            .connect(this.operator)
-            .delegateBySig(this.holder, this.recipient.address, 0, expiry, sig);
+          const tx = this.token.connect(this.operator).delegateBySig(this.holder, this.recipient.address, expiry, sig);
 
           if (expiry == 0n) {
             await expect(tx).to.be.revertedWithCustomError(this.token, 'VotesExpiredSignature').withArgs(expiry);
@@ -97,7 +95,7 @@ describe('ConfidentialFungibleTokenVotes', function () {
         await expect(
           this.token
             .connect(this.operator)
-            .delegateBySig(this.holder, this.recipient.address, 0, expiry, sig.slice(0, -2)),
+            .delegateBySig(this.holder, this.recipient.address, expiry, sig.slice(0, -2)),
         )
           .to.be.revertedWithCustomError(this.token, 'VotesInvalidSignature')
           .withArgs(this.holder);
