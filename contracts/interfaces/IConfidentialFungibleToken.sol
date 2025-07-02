@@ -28,7 +28,7 @@ interface IConfidentialFungibleToken {
     /// @dev Returns the symbol of the token.
     function symbol() external view returns (string memory);
 
-    /// @dev Returns the number of decimals of the token. Recommended to be 9.
+    /// @dev Returns the number of decimals of the token. Recommended to be 6.
     function decimals() external view returns (uint8);
 
     /// @dev Returns the token URI.
