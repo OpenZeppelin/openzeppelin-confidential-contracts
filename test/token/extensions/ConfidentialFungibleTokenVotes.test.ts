@@ -44,20 +44,22 @@ describe('ConfidentialFungibleTokenVotes', function () {
     describe('by sig', function () {
       for (let nonce of [0, 1]) {
         it(`with ${nonce == 0 ? 'valid' : 'invalid'} nonce`, async function () {
-          const sig = await this.holder.signTypedData(
-            this.domain,
-            { Delegation },
-            { delegatee: this.recipient.address, nonce, expiry: ethers.MaxUint256 },
-          );
+          const { r, s, v } = await this.holder
+            .signTypedData(
+              this.domain,
+              { Delegation },
+              { delegatee: this.recipient.address, nonce, expiry: ethers.MaxUint256 },
+            )
+            .then(ethers.Signature.from);
 
           const tx = this.token
             .connect(this.operator)
-            .delegateBySig(this.holder, this.recipient.address, ethers.MaxUint256, sig);
+            .delegateBySig(this.recipient.address, nonce, ethers.MaxUint256, v, r, s);
 
           if (nonce == 1) {
             await expect(tx)
-              .to.be.revertedWithCustomError(this.token, 'VotesInvalidSignature')
-              .withArgs(this.holder.address);
+              .to.be.revertedWithCustomError(this.token, 'InvalidAccountNonce')
+              .withArgs(this.holder.address, 0);
           } else {
             await tx;
             await expect(this.token.delegates(this.holder)).to.eventually.eq(this.recipient);
@@ -67,13 +69,11 @@ describe('ConfidentialFungibleTokenVotes', function () {
 
       for (let expiry of [ethers.MaxUint256, 0]) {
         it(`with ${expiry == ethers.MaxUint256 ? 'valid' : 'invalid'} expiry`, async function () {
-          const sig = await this.holder.signTypedData(
-            this.domain,
-            { Delegation },
-            { delegatee: this.recipient.address, nonce: 0, expiry },
-          );
+          const { r, s, v } = await this.holder
+            .signTypedData(this.domain, { Delegation }, { delegatee: this.recipient.address, nonce: 0, expiry })
+            .then(ethers.Signature.from);
 
-          const tx = this.token.connect(this.operator).delegateBySig(this.holder, this.recipient.address, expiry, sig);
+          const tx = this.token.connect(this.operator).delegateBySig(this.recipient.address, 0, expiry, v, r, s);
 
           if (expiry == 0n) {
             await expect(tx).to.be.revertedWithCustomError(this.token, 'VotesExpiredSignature').withArgs(expiry);
@@ -86,19 +86,13 @@ describe('ConfidentialFungibleTokenVotes', function () {
 
       it('with invalid signature', async function () {
         const expiry = ethers.MaxUint256;
-        const sig = await this.holder.signTypedData(
-          this.domain,
-          { Delegation },
-          { delegatee: this.recipient.address, nonce: 0, expiry },
-        );
+        const { r, s } = await this.holder
+          .signTypedData(this.domain, { Delegation }, { delegatee: this.recipient.address, nonce: 0, expiry })
+          .then(ethers.Signature.from);
 
         await expect(
-          this.token
-            .connect(this.operator)
-            .delegateBySig(this.holder, this.recipient.address, expiry, sig.slice(0, -2)),
-        )
-          .to.be.revertedWithCustomError(this.token, 'VotesInvalidSignature')
-          .withArgs(this.holder);
+          this.token.connect(this.operator).delegateBySig(this.recipient.address, 0, expiry, 0, r, s),
+        ).to.be.revertedWithCustomError(this.token, 'ECDSAInvalidSignature');
       });
     });
   });
