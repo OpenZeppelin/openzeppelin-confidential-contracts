@@ -148,6 +148,8 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
     /**
      * @dev Transfers, mints, or burns voting units. To register a mint, `from` should be zero. To register a burn, `to`
      * should be zero. Total supply of voting units will be adjusted with mints and burns.
+     *
+     * WARNING: Must be called after {totalSupply} is updated.
      */
     function _transferVotingUnits(address from, address to, euint64 amount) internal virtual {
         if (from == address(0) || to == address(0)) {
