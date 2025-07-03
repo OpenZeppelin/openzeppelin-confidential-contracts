@@ -108,7 +108,7 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
         _delegate(msg.sender, delegatee);
     }
 
-    /// @dev Delegates votes from to `delegatee` by sig.
+    /// @dev Delegates votes from an EOA to `delegatee` via an ECDSA signature.
     function delegateBySig(
         address delegatee,
         uint256 nonce,
