@@ -65,7 +65,7 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
     }
 
     /**
-     * @dev Returns the amount of votes that `account` had at a specific moment in the past. If the `clock()` is
+     * @dev Returns the amount of votes that `account` had at a specific moment in the past. If the {clock} is
      * configured to use block numbers, this will return the value at the end of the corresponding block.
      *
      * Requirements:
