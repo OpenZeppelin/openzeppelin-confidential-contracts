@@ -77,7 +77,7 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
     }
 
     /**
-     * @dev Returns the total supply of votes available at a specific moment in the past. If the `clock()` is
+     * @dev Returns the total supply of votes available at a specific moment in the past. If the {clock} is
      * configured to use block numbers, this will return the value at the end of the corresponding block.
      *
      * NOTE: This value is the sum of all available votes, which is not necessarily the sum of all delegated votes.
