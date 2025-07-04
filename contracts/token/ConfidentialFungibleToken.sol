@@ -74,7 +74,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
     /// @inheritdoc IConfidentialFungibleToken
     function decimals() public view virtual returns (uint8) {
-        return 9;
+        return 6;
     }
 
     /// @inheritdoc IConfidentialFungibleToken

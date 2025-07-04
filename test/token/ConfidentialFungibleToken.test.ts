@@ -43,8 +43,8 @@ describe('ConfidentialFungibleToken', function () {
       await expect(this.token.tokenURI()).to.eventually.equal(uri);
     });
 
-    it('decimals are 9', async function () {
-      await expect(this.token.decimals()).to.eventually.equal(9);
+    it('decimals is 6', async function () {
+      await expect(this.token.decimals()).to.eventually.equal(6);
     });
   });
 
