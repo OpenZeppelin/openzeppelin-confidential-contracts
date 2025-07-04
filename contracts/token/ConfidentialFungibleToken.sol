@@ -24,6 +24,7 @@ import {TFHESafeMath} from "../utils/TFHESafeMath.sol";
  * - Safe overflow/underflow handling for FHE operations
  */
 abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
+    using FHE for *;
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
     mapping(uint256 requestId => euint64 encryptedAmount) private _requestHandles;
@@ -230,7 +231,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         FHE.checkSignatures(requestId, signatures);
 
         euint64 requestHandle = _requestHandles[requestId];
-        require(euint64.unwrap(requestHandle) != 0, ConfidentialFungibleTokenInvalidGatewayRequest(requestId));
+        require(requestHandle.isInitialized(), ConfidentialFungibleTokenInvalidGatewayRequest(requestId));
         emit EncryptedAmountDisclosed(requestHandle, amount);
 
         _requestHandles[requestId] = euint64.wrap(0);
@@ -287,7 +288,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
             _totalSupply = ptr;
         } else {
             euint64 fromBalance = _balances[from];
-            require(euint64.unwrap(fromBalance) != 0, ConfidentialFungibleTokenZeroBalance(from));
+            require(fromBalance.isInitialized(), ConfidentialFungibleTokenZeroBalance(from));
             (success, ptr) = TFHESafeMath.tryDecrease(fromBalance, amount);
             FHE.allowThis(ptr);
             FHE.allow(ptr, from);
