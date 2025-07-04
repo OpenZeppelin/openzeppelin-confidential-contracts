@@ -4,5 +4,11 @@
   "initialVersions": {
     "openzeppelin-confidential-contracts": "0.1.0"
   },
-  "changesets": []
+  "changesets": [
+    "better-cases-ask",
+    "fancy-bears-travel",
+    "gold-brooms-crash",
+    "quick-lights-type",
+    "real-beers-attack"
+  ]
 }
