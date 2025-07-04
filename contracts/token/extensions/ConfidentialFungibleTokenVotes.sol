@@ -2,9 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
-
-import {ConfidentialFungibleToken} from "../ConfidentialFungibleToken.sol";
-import {VotesConfidential} from "../../governance/utils/VotesConfidential.sol";
+import {VotesConfidential} from "./../../governance/utils/VotesConfidential.sol";
+import {ConfidentialFungibleToken} from "./../ConfidentialFungibleToken.sol";
 
 abstract contract ConfidentialFungibleTokenVotes is ConfidentialFungibleToken, VotesConfidential {
     function totalSupply()
