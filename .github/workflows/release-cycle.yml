@@ -28,6 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up environment
         uses: ./.github/actions/setup
       - id: state
@@ -59,6 +61,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up environment
         uses: ./.github/actions/setup
       - run: bash scripts/git-user-config.sh
@@ -82,6 +86,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up environment
         uses: ./.github/actions/setup
       - run: bash scripts/git-user-config.sh
@@ -105,6 +111,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # To get all tags
+          submodules: recursive
       - name: Set up environment
         uses: ./.github/actions/setup
       - name: Set release title
@@ -136,6 +143,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up environment
         uses: ./.github/actions/setup
       - id: pack
@@ -170,6 +179,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Download tarball artifact
         id: artifact
         uses: actions/download-artifact@v4
@@ -194,6 +205,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # All branches
+          submodules: recursive
       - name: Set up environment
         uses: ./.github/actions/setup
       - run: bash scripts/git-user-config.sh
