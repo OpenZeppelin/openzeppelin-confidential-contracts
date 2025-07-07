@@ -47,11 +47,27 @@ describe('ConfidentialFungibleTokenWrapper', function () {
           const wrappedBalanceHandle = await this.wrapper.balanceOf(this.holder.address);
           await expect(
             fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.holder),
-          ).to.eventually.equal(ethers.parseUnits('100', 9));
+          ).to.eventually.equal(ethers.parseUnits('100', 6));
+        });
+
+        it('with value less than rate', async function () {
+          const amountToWrap = ethers.parseUnits('100', 8);
+
+          if (viaCallback) {
+            await this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
+          } else {
+            await this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
+          }
+
+          await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
+          const wrappedBalanceHandle = await this.wrapper.balanceOf(this.holder.address);
+          await expect(
+            fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.holder),
+          ).to.eventually.equal(0);
         });
 
         it('with non-multiple of rate', async function () {
-          const amountToWrap = ethers.parseUnits('101', 8);
+          const amountToWrap = ethers.parseUnits('101', 11);
 
           if (viaCallback) {
             await this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
@@ -60,7 +76,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
           }
 
           await expect(this.token.balanceOf(this.holder)).to.eventually.equal(
-            ethers.parseUnits('1000', 18) - ethers.parseUnits('10', 9),
+            ethers.parseUnits('1000', 18) - ethers.parseUnits('10', 12),
           );
           const wrappedBalanceHandle = await this.wrapper.balanceOf(this.holder.address);
           await expect(
@@ -84,7 +100,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
             const wrappedBalanceHandle = await this.wrapper.balanceOf(this.recipient.address);
             await expect(
               fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.recipient),
-            ).to.eventually.equal(ethers.parseUnits('100', 9));
+            ).to.eventually.equal(ethers.parseUnits('100', 6));
           });
 
           it('from unauthorized caller', async function () {
@@ -104,10 +120,11 @@ describe('ConfidentialFungibleTokenWrapper', function () {
     });
 
     it('less than balance', async function () {
-      const withdrawalAmount = ethers.parseUnits('10', 9);
-      const input = fhevm.createEncryptedInput(this.wrapper.target, this.holder.address);
-      input.add64(withdrawalAmount);
-      const encryptedInput = await input.encrypt();
+      const withdrawalAmount = ethers.parseUnits('10', 6);
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.wrapper.target, this.holder.address)
+        .add64(withdrawalAmount)
+        .encrypt();
 
       await this.wrapper
         .connect(this.holder)
@@ -122,7 +139,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
       await fhevm.awaitDecryptionOracle();
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(
-        withdrawalAmount * 10n ** 9n + ethers.parseUnits('900', 18),
+        withdrawalAmount * 10n ** 12n + ethers.parseUnits('900', 18),
       );
     });
 
@@ -175,10 +192,11 @@ describe('ConfidentialFungibleTokenWrapper', function () {
     });
 
     it('via an approved operator', async function () {
-      const withdrawalAmount = ethers.parseUnits('100', 9);
-      const input = fhevm.createEncryptedInput(this.wrapper.target, this.operator.address);
-      input.add64(withdrawalAmount);
-      const encryptedInput = await input.encrypt();
+      const withdrawalAmount = ethers.parseUnits('100', 6);
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.wrapper.target, this.operator.address)
+        .add64(withdrawalAmount)
+        .encrypt();
 
       await this.wrapper.connect(this.holder).setOperator(this.operator.address, Math.round(Date.now() / 1000) + 1000);
 
@@ -232,8 +250,8 @@ describe('ConfidentialFungibleTokenWrapper', function () {
 
   describe('Initialization', function () {
     describe('decimals', function () {
-      it('when underlying has 9 decimals', async function () {
-        const token = await ethers.deployContract('ERC20Mock', ['Public Token', 'PT', 9]);
+      it('when underlying has 6 decimals', async function () {
+        const token = await ethers.deployContract('ERC20Mock', ['Public Token', 'PT', 6]);
         const wrapper = await ethers.deployContract('ConfidentialFungibleTokenERC20WrapperMock', [
           token,
           name,
@@ -241,7 +259,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
           uri,
         ]);
 
-        await expect(wrapper.decimals()).to.eventually.equal(9);
+        await expect(wrapper.decimals()).to.eventually.equal(6);
         await expect(wrapper.rate()).to.eventually.equal(1);
       });
 
@@ -254,12 +272,12 @@ describe('ConfidentialFungibleTokenWrapper', function () {
           uri,
         ]);
 
-        await expect(wrapper.decimals()).to.eventually.equal(9);
-        await expect(wrapper.rate()).to.eventually.equal(10n ** 9n);
+        await expect(wrapper.decimals()).to.eventually.equal(6);
+        await expect(wrapper.rate()).to.eventually.equal(10n ** 12n);
       });
 
-      it('when underlying has less than 9 decimals', async function () {
-        const token = await ethers.deployContract('ERC20Mock', ['Public Token', 'PT', 8]);
+      it('when underlying has less than 6 decimals', async function () {
+        const token = await ethers.deployContract('ERC20Mock', ['Public Token', 'PT', 4]);
         const wrapper = await ethers.deployContract('ConfidentialFungibleTokenERC20WrapperMock', [
           token,
           name,
@@ -267,7 +285,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
           uri,
         ]);
 
-        await expect(wrapper.decimals()).to.eventually.equal(8);
+        await expect(wrapper.decimals()).to.eventually.equal(4);
         await expect(wrapper.rate()).to.eventually.equal(1);
       });
 
@@ -280,8 +298,8 @@ describe('ConfidentialFungibleTokenWrapper', function () {
           uri,
         ]);
 
-        await expect(wrapper.decimals()).to.eventually.equal(9);
-        await expect(wrapper.rate()).to.eventually.equal(10n ** 9n);
+        await expect(wrapper.decimals()).to.eventually.equal(6);
+        await expect(wrapper.rate()).to.eventually.equal(10n ** 12n);
       });
 
       it('when decimals are over `type(uint8).max`', async function () {
