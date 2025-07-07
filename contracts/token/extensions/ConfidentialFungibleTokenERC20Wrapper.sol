@@ -28,9 +28,10 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         _underlying = underlying_;
 
         uint8 tokenDecimals = _tryGetAssetDecimals(underlying_);
-        if (tokenDecimals > 9) {
-            _decimals = 9;
-            _rate = 10 ** (tokenDecimals - 9);
+        uint8 maxDecimals = _maxDecimals();
+        if (tokenDecimals > maxDecimals) {
+            _decimals = maxDecimals;
+            _rate = 10 ** (tokenDecimals - maxDecimals);
         } else {
             _decimals = tokenDecimals;
             _rate = 1;
@@ -153,6 +154,13 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
 
         // register who is getting the tokens
         _receivers[requestID] = to;
+    }
+
+    /**
+     * @dev Returns the maximum number that will be used for {decimals} by the wrapper.
+     */
+    function _maxDecimals() internal pure virtual returns (uint8) {
+        return 6;
     }
 
     function _tryGetAssetDecimals(IERC20 asset_) private view returns (uint8 assetDecimals) {
