@@ -8,14 +8,13 @@ import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
  * to handle potential overflows in FHE operations.
  */
 library TFHESafeMath {
-    using FHE for *;
     /**
      * @dev Try to increase the encrypted value `oldValue` by `delta`. If the operation is successful,
      * `success` will be true and `updated` will be the new value. Otherwise, `success` will be false
      * and `updated` will be the original value.
      */
     function tryIncrease(euint64 oldValue, euint64 delta) internal returns (ebool success, euint64 updated) {
-        if (!oldValue.isInitialized()) {
+        if (!FHE.isInitialized(oldValue)) {
             success = FHE.asEbool(true);
             updated = delta;
         } else {
