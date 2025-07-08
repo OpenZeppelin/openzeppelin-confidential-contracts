@@ -26,6 +26,8 @@ for (const useInitializable of [false, true]) {
       const schedule = [currentTime + 60, currentTime + 60 * 121];
 
       let vesting;
+      let factory;
+      let impl;
 
       if (!useInitializable) {
         vesting = await ethers.deployContract('$VestingWalletCliffConfidentialMock', [
@@ -36,8 +38,8 @@ for (const useInitializable of [false, true]) {
           60 * 60 /* 1 hour */,
         ]);
       } else {
-        const impl = await ethers.deployContract('$VestingWalletCliffConfidentialInitializableMock');
-        const factory = await ethers.deployContract('Create2Factory');
+        impl = await ethers.deployContract('$VestingWalletCliffConfidentialInitializableMock');
+        factory = await ethers.deployContract('Create2Factory');
 
         const callData = await impl.initialize.populateTransaction(
           operator,
@@ -56,7 +58,18 @@ for (const useInitializable of [false, true]) {
         .connect(holder)
         ['$_mint(address,bytes32,bytes)'](vesting.target, encryptedInput.handles[0], encryptedInput.inputProof);
 
-      Object.assign(this, { accounts, holder, recipient, operator, token, vesting, schedule, vestingAmount: 1000 });
+      Object.assign(this, {
+        accounts,
+        holder,
+        recipient,
+        operator,
+        token,
+        vesting,
+        schedule,
+        vestingAmount: 1000,
+        factory,
+        impl,
+      });
     });
 
     it('should release nothing before cliff', async function () {
@@ -70,16 +83,44 @@ for (const useInitializable of [false, true]) {
     });
 
     it('should fail construction if cliff is longer than duration', async function () {
-      await expect(
-        ethers.deployContract('$VestingWalletCliffConfidentialMock', [
+      if (!useInitializable) {
+        await expect(
+          ethers.deployContract('$VestingWalletCliffConfidentialMock', [
+            this.operator,
+            this.recipient,
+            (await time.latest()) + 60,
+            60 * 10,
+            60 * 60,
+          ]),
+        ).to.be.revertedWithCustomError(this.vesting, 'InvalidCliffDuration');
+      } else {
+        const callData = await this.impl.initialize.populateTransaction(
           this.operator,
           this.recipient,
           (await time.latest()) + 60,
           60 * 10,
           60 * 60,
-        ]),
-      ).to.be.revertedWithCustomError(this.vesting, 'InvalidCliffDuration');
+        );
+        await expect(this.factory.create2(this.impl.target, callData.data)).to.be.revertedWithCustomError(
+          this.vesting,
+          'InvalidCliffDuration',
+        );
+      }
     });
+
+    if (useInitializable) {
+      it('cannot reinitialize', async function () {
+        await expect(
+          this.vesting.initialize(
+            this.operator,
+            this.recipient,
+            (await time.latest()) + 60,
+            60 * 60 * 2 /* 2 hours */,
+            60 * 60 /* 1 hour */,
+          ),
+        ).to.be.revertedWithCustomError(this.vesting, 'InvalidInitialization');
+      });
+    }
 
     shouldBehaveLikeVestingConfidential();
   });
