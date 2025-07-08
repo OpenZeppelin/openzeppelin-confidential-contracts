@@ -26,14 +26,14 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
         return super.clock();
     }
 
-    function totalSupply()
+    function confidentialTotalSupply()
         public
         view
         virtual
         override(ConfidentialFungibleToken, ConfidentialFungibleTokenVotes)
         returns (euint64)
     {
-        return super.totalSupply();
+        return super.confidentialTotalSupply();
     }
 
     function _update(

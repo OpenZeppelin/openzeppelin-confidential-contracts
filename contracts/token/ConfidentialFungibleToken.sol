@@ -84,12 +84,12 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     }
 
     /// @inheritdoc IConfidentialFungibleToken
-    function totalSupply() public view virtual returns (euint64) {
+    function confidentialTotalSupply() public view virtual returns (euint64) {
         return _totalSupply;
     }
 
     /// @inheritdoc IConfidentialFungibleToken
-    function balanceOf(address account) public view virtual returns (euint64) {
+    function confidentialBalanceOf(address account) public view virtual returns (euint64) {
         return _balances[account];
     }
 
@@ -203,7 +203,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     }
 
     /**
-     * @dev Discloses an encrypted amount `encryptedAmount` publicly via an {IConfidentialFungibleToken-EncryptedAmountDisclosed}
+     * @dev Discloses an encrypted amount `encryptedAmount` publicly via an {IConfidentialFungibleToken-AmountDisclosed}
      * event. The caller and this contract must be authorized to use the encrypted amount on the ACL.
      *
      * NOTE: This is an asynchronous operation where the actual decryption happens off-chain and
@@ -231,7 +231,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
         euint64 requestHandle = _requestHandles[requestId];
         require(FHE.isInitialized(requestHandle), ConfidentialFungibleTokenInvalidGatewayRequest(requestId));
-        emit EncryptedAmountDisclosed(requestHandle, amount);
+        emit AmountDisclosed(requestHandle, amount);
 
         _requestHandles[requestId] = euint64.wrap(0);
     }

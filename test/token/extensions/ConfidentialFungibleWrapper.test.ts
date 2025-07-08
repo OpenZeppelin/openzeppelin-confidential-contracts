@@ -44,7 +44,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
           }
 
           await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
-          const wrappedBalanceHandle = await this.wrapper.balanceOf(this.holder.address);
+          const wrappedBalanceHandle = await this.wrapper.confidentialBalanceOf(this.holder.address);
           await expect(
             fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.holder),
           ).to.eventually.equal(ethers.parseUnits('100', 9));
@@ -62,7 +62,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
           await expect(this.token.balanceOf(this.holder)).to.eventually.equal(
             ethers.parseUnits('1000', 18) - ethers.parseUnits('10', 9),
           );
-          const wrappedBalanceHandle = await this.wrapper.balanceOf(this.holder.address);
+          const wrappedBalanceHandle = await this.wrapper.confidentialBalanceOf(this.holder.address);
           await expect(
             fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.holder),
           ).to.eventually.equal(10);
@@ -81,7 +81,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
               );
 
             await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
-            const wrappedBalanceHandle = await this.wrapper.balanceOf(this.recipient.address);
+            const wrappedBalanceHandle = await this.wrapper.confidentialBalanceOf(this.recipient.address);
             await expect(
               fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.recipient),
             ).to.eventually.equal(ethers.parseUnits('100', 9));
@@ -129,7 +129,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
     it('unwrap full balance', async function () {
       await this.wrapper
         .connect(this.holder)
-        .unwrap(this.holder, this.holder, await this.wrapper.balanceOf(this.holder.address));
+        .unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
       await fhevm.awaitDecryptionOracle();
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
@@ -218,7 +218,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
     });
 
     it('with a value not allowed to sender', async function () {
-      const totalSupplyHandle = await this.wrapper.totalSupply();
+      const totalSupplyHandle = await this.wrapper.confidentialTotalSupply();
 
       await expect(this.wrapper.connect(this.holder).unwrap(this.holder, this.holder, totalSupplyHandle))
         .to.be.revertedWithCustomError(this.wrapper, 'ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount')

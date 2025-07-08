@@ -19,7 +19,7 @@ contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaConf
 
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
         transferred = super._update(from, to, amount);
-        FHE.allow(totalSupply(), _OWNER);
+        FHE.allow(confidentialTotalSupply(), _OWNER);
     }
 
     function $_mint(

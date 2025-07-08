@@ -7,14 +7,14 @@ import {ConfidentialFungibleToken} from "../ConfidentialFungibleToken.sol";
 import {VotesConfidential} from "../../governance/utils/VotesConfidential.sol";
 
 abstract contract ConfidentialFungibleTokenVotes is ConfidentialFungibleToken, VotesConfidential {
-    function totalSupply()
+    function confidentialTotalSupply()
         public
         view
         virtual
         override(VotesConfidential, ConfidentialFungibleToken)
         returns (euint64)
     {
-        return super.totalSupply();
+        return super.confidentialTotalSupply();
     }
 
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
@@ -24,6 +24,6 @@ abstract contract ConfidentialFungibleTokenVotes is ConfidentialFungibleToken, V
     }
 
     function _getVotingUnits(address account) internal view virtual override returns (euint64) {
-        return balanceOf(account);
+        return confidentialBalanceOf(account);
     }
 }

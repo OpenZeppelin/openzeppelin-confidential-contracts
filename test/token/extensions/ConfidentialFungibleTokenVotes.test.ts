@@ -181,7 +181,7 @@ describe('ConfidentialFungibleTokenVotes', function () {
       const afterTransferBlock = await ethers.provider.getBlockNumber();
 
       // Burn total balance
-      const amountToBurn = await this.token.balanceOf(this.holder);
+      const amountToBurn = await this.token.confidentialBalanceOf(this.holder);
       await this.token.$_burn(this.holder, amountToBurn);
       const afterBurnBlock = await ethers.provider.getBlockNumber();
       await mine();

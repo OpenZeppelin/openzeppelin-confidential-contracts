@@ -48,16 +48,16 @@ describe('ConfidentialFungibleToken', function () {
     });
   });
 
-  describe('balanceOf', function () {
+  describe('confidentialBalanceOf', function () {
     it('handle can be reencryped by owner', async function () {
-      const balanceOfHandleHolder = await this.token.balanceOf(this.holder);
+      const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, this.token.target, this.holder),
       ).to.eventually.equal(1000);
     });
 
     it('handle cannot be reencryped by non-owner', async function () {
-      const balanceOfHandleHolder = await this.token.balanceOf(this.holder);
+      const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, this.token.target, this.accounts[0]),
       ).to.be.rejectedWith(generateReencryptionErrorMessage(balanceOfHandleHolder, this.accounts[0].address));
@@ -78,13 +78,13 @@ describe('ConfidentialFungibleToken', function () {
             ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
         }
 
-        const balanceOfHandleHolder = await this.token.balanceOf(this.holder);
+        const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, this.token.target, this.holder),
         ).to.eventually.equal(existingUser ? 2000 : 1000);
 
         // Check total supply
-        const totalSupplyHandle = await this.token.totalSupply();
+        const totalSupplyHandle = await this.token.confidentialTotalSupply();
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, totalSupplyHandle, this.token.target, this.holder),
         ).to.eventually.equal(existingUser ? 2000 : 1000);
@@ -121,13 +121,13 @@ describe('ConfidentialFungibleToken', function () {
           .connect(this.holder)
           ['$_burn(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
 
-        const balanceOfHandleHolder = await this.token.balanceOf(this.holder);
+        const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, this.token.target, this.holder),
         ).to.eventually.equal(sufficientBalance ? 600 : 1000);
 
         // Check total supply
-        const totalSupplyHandle = await this.token.totalSupply();
+        const totalSupplyHandle = await this.token.confidentialTotalSupply();
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, totalSupplyHandle, this.token.target, this.holder),
         ).to.eventually.equal(sufficientBalance ? 600 : 1000);
@@ -286,8 +286,8 @@ describe('ConfidentialFungibleToken', function () {
             expect(transferEvent.args[1]).to.equal(this.recipient.address);
 
             const transferAmountHandle = transferEvent.args[2];
-            const holderBalanceHandle = await this.token.balanceOf(this.holder);
-            const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
+            const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
+            const recipientBalanceHandle = await this.token.confidentialBalanceOf(this.recipient);
 
             await expect(
               fhevm.userDecryptEuint(FhevmType.euint64, transferAmountHandle, this.token.target, this.holder),
@@ -341,14 +341,14 @@ describe('ConfidentialFungibleToken', function () {
           }
 
           it('full balance', async function () {
-            const fullBalanceHandle = await this.token.balanceOf(this.holder);
+            const fullBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
 
             await callTransfer(this.token, this.holder, this.recipient, fullBalanceHandle);
 
             await expect(
               fhevm.userDecryptEuint(
                 FhevmType.euint64,
-                await this.token.balanceOf(this.recipient),
+                await this.token.confidentialBalanceOf(this.recipient),
                 this.token.target,
                 this.recipient,
               ),
@@ -365,7 +365,7 @@ describe('ConfidentialFungibleToken', function () {
               .connect(this.holder)
               ['$_mint(address,bytes32,bytes)'](this.recipient, encryptedInput.handles[0], encryptedInput.inputProof);
 
-            const recipientBalanceHandle = await this.token.balanceOf(this.recipient);
+            const recipientBalanceHandle = await this.token.confidentialBalanceOf(this.recipient);
             await expect(callTransfer(this.token, this.holder, this.recipient, recipientBalanceHandle))
               .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount')
               .withArgs(recipientBalanceHandle, this.holder);
@@ -375,7 +375,7 @@ describe('ConfidentialFungibleToken', function () {
             describe('without operator approval', function () {
               beforeEach(async function () {
                 await this.token.connect(this.holder).setOperator(this.operator.address, 0);
-                await allowHandle(hre, this.holder, this.operator, await this.token.balanceOf(this.holder));
+                await allowHandle(hre, this.holder, this.operator, await this.token.confidentialBalanceOf(this.holder));
               });
 
               it('should revert', async function () {
@@ -384,7 +384,7 @@ describe('ConfidentialFungibleToken', function () {
                     this.token,
                     this.holder,
                     this.recipient,
-                    await this.token.balanceOf(this.holder),
+                    await this.token.confidentialBalanceOf(this.holder),
                     this.operator,
                   ),
                 )
@@ -442,7 +442,7 @@ describe('ConfidentialFungibleToken', function () {
         await expect(
           fhevm.userDecryptEuint(
             FhevmType.euint64,
-            await this.token.balanceOf(this.holder),
+            await this.token.confidentialBalanceOf(this.holder),
             this.token.target,
             this.holder,
           ),
@@ -509,7 +509,7 @@ describe('ConfidentialFungibleToken', function () {
           '0x',
         );
 
-      const balanceOfHandle = await this.token.balanceOf(this.recipient);
+      const balanceOfHandle = await this.token.confidentialBalanceOf(this.recipient);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandle, this.token.target, this.recipient),
       ).to.eventually.equal(1000);
@@ -526,7 +526,7 @@ describe('ConfidentialFungibleToken', function () {
     });
 
     it('user balance', async function () {
-      const holderBalanceHandle = await this.token.balanceOf(this.holder);
+      const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
 
       await this.token.connect(this.holder).discloseEncryptedAmount(holderBalanceHandle);
 
@@ -556,7 +556,7 @@ describe('ConfidentialFungibleToken', function () {
     });
 
     it("other user's balance", async function () {
-      const holderBalanceHandle = await this.token.balanceOf(this.holder);
+      const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
 
       await expect(this.token.connect(this.recipient).discloseEncryptedAmount(holderBalanceHandle))
         .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount')
@@ -564,7 +564,7 @@ describe('ConfidentialFungibleToken', function () {
     });
 
     it('invalid signature reverts', async function () {
-      const holderBalanceHandle = await this.token.balanceOf(this.holder);
+      const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
       await this.token.connect(this.holder).discloseEncryptedAmount(holderBalanceHandle);
 
       await expect(this.token.connect(this.holder).finalizeDiscloseEncryptedAmount(0, 0, [])).to.be.reverted;
@@ -576,7 +576,7 @@ describe('ConfidentialFungibleToken', function () {
       await fhevm.awaitDecryptionOracle();
 
       // Check that event was correctly emitted
-      const eventFilter = this.token.filters.EncryptedAmountDisclosed();
+      const eventFilter = this.token.filters.AmountDisclosed();
       const discloseEvent = (await this.token.queryFilter(eventFilter))[0];
       expect(discloseEvent.args[0]).to.equal(expectedHandle);
       expect(discloseEvent.args[1]).to.equal(expectedAmount);

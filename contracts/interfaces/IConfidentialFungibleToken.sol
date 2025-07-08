@@ -20,7 +20,7 @@ interface IConfidentialFungibleToken {
      * Accounts with access to the encrypted amount `encryptedAmount` that is also accessible to this contract
      * should be able to disclose the amount. This functionality is implementation specific.
      */
-    event EncryptedAmountDisclosed(euint64 indexed encryptedAmount, uint64 amount);
+    event AmountDisclosed(euint64 indexed encryptedAmount, uint64 amount);
 
     /// @dev Returns the name of the token.
     function name() external view returns (string memory);
@@ -34,11 +34,11 @@ interface IConfidentialFungibleToken {
     /// @dev Returns the token URI.
     function tokenURI() external view returns (string memory);
 
-    /// @dev Returns the encrypted total supply of the token.
-    function totalSupply() external view returns (euint64);
+    /// @dev Returns the confidential total supply of the token.
+    function confidentialTotalSupply() external view returns (euint64);
 
-    /// @dev Returns the encrypted balance of the account `account`.
-    function balanceOf(address account) external view returns (euint64);
+    /// @dev Returns the confidential balance of the account `account`.
+    function confidentialBalanceOf(address account) external view returns (euint64);
 
     /// @dev Returns true if `spender` is currently an operator for `holder`.
     function isOperator(address holder, address spender) external view returns (bool);

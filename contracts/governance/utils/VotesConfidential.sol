@@ -96,7 +96,7 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
      * @dev Returns the current total supply of votes as an encrypted uint64 (euint64). Must be implemented
      * by the derived contract.
      */
-    function totalSupply() public view virtual returns (euint64);
+    function confidentialTotalSupply() public view virtual returns (euint64);
 
     /// @dev Returns the delegate that `account` has chosen.
     function delegates(address account) public view virtual returns (address) {
@@ -149,11 +149,11 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
      * @dev Transfers, mints, or burns voting units. To register a mint, `from` should be zero. To register a burn, `to`
      * should be zero. Total supply of voting units will be adjusted with mints and burns.
      *
-     * WARNING: Must be called after {totalSupply} is updated.
+     * WARNING: Must be called after {confidentialTotalSupply} is updated.
      */
     function _transferVotingUnits(address from, address to, euint64 amount) internal virtual {
         if (from == address(0) || to == address(0)) {
-            _push(_totalCheckpoints, totalSupply());
+            _push(_totalCheckpoints, confidentialTotalSupply());
         }
         _moveDelegateVotes(delegates(from), delegates(to), amount);
     }
