@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 
-contract VestingWalletCliffConfidential is VestingWalletConfidential {
-    uint64 private _cliff;
+abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
+    uint64 private immutable _cliff;
 
     /// @dev The specified cliff duration is larger than the vesting duration.
     error InvalidCliffDuration(uint64 cliffSeconds, uint64 durationSeconds);
@@ -14,18 +14,7 @@ contract VestingWalletCliffConfidential is VestingWalletConfidential {
      * @dev Set the duration of the cliff, in seconds. The cliff starts at the vesting
      * start timestamp (see {VestingWalletConfidential}) and ends `cliffSeconds` later.
      */
-    constructor() {
-        _disableInitializers();
-    }
-
-    function initialize(
-        address executor_,
-        address beneficiary,
-        uint64 startTimestamp,
-        uint64 durationSeconds,
-        uint64 cliffSeconds
-    ) public virtual initializer {
-        VestingWalletConfidential.initialize(executor_, beneficiary, startTimestamp, durationSeconds);
+    constructor(uint64 cliffSeconds) {
         if (cliffSeconds > duration()) {
             revert InvalidCliffDuration(cliffSeconds, duration());
         }

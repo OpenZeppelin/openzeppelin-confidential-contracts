@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 
 import {IConfidentialFungibleToken} from "../interfaces/IConfidentialFungibleToken.sol";
@@ -24,11 +24,11 @@ import {TFHESafeMath} from "../utils/TFHESafeMath.sol";
  * NOTE: When using this contract with any token whose balance is adjusted automatically (i.e. a rebase token), make
  * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
  */
-contract VestingWalletConfidential is OwnableUpgradeable {
+abstract contract VestingWalletConfidential is Ownable {
     mapping(address token => euint64) private _tokenReleased;
-    uint64 private _start;
-    uint64 private _duration;
-    address private _executor;
+    uint64 private immutable _start;
+    uint64 private immutable _duration;
+    address private immutable _executor;
 
     event VestingWalletConfidentialTokenReleased(address indexed token, euint64 amount);
     event VestingWalletCallExecuted(address indexed target, uint256 value, bytes data);
@@ -36,17 +36,12 @@ contract VestingWalletConfidential is OwnableUpgradeable {
     error VestingWalletConfidentialInvalidDuration();
     error VestingWalletConfidentialOnlyExecutor();
 
-    constructor() {
-        _disableInitializers();
-    }
-
-    function initialize(
+    constructor(
         address executor_,
         address beneficiary,
         uint64 startTimestamp,
         uint64 durationSeconds
-    ) public virtual initializer {
-        __Ownable_init(beneficiary);
+    ) Ownable(beneficiary) {
         _start = startTimestamp;
         _duration = durationSeconds;
         _executor = executor_;
