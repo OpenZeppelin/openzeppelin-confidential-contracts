@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 
 import {IConfidentialFungibleToken} from "../interfaces/IConfidentialFungibleToken.sol";
@@ -24,27 +24,28 @@ import {TFHESafeMath} from "../utils/TFHESafeMath.sol";
  * NOTE: When using this contract with any token whose balance is adjusted automatically (i.e. a rebase token), make
  * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
  */
-contract VestingWalletConfidential is Ownable {
+contract VestingWalletConfidential is OwnableUpgradeable {
     error VestingWalletConfidentialInvalidDuration();
     error VestingWalletConfidentialOnlyExecutor();
 
     event ConfidentialFungibleTokenReleased(address indexed token, euint64 amount);
 
     mapping(address token => euint64) private _confidentialFungibleTokenReleased;
-    uint64 private immutable _start;
-    uint64 private immutable _duration;
-    address private immutable _executor;
+    uint64 private _start;
+    uint64 private _duration;
+    address private _executor;
 
-    /**
-     * @dev Sets the beneficiary (owner), the start timestamp and the vesting duration (in seconds) of the vesting
-     * wallet.
-     */
-    constructor(
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         address executor_,
         address beneficiary,
         uint64 startTimestamp,
         uint64 durationSeconds
-    ) Ownable(beneficiary) {
+    ) public virtual initializer {
+        __Ownable_init(beneficiary);
         _start = startTimestamp;
         _duration = durationSeconds;
         _executor = executor_;

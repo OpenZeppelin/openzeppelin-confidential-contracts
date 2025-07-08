@@ -52,6 +52,7 @@
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.6",
     "@nomicfoundation/hardhat-ethers": "^3.0.4",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.3",
+    "@openzeppelin/contracts-upgradeable": "^5.3.0",
     "@openzeppelin/docs-utils": "^0.1.5",
     "@trivago/prettier-plugin-sort-imports": "^4.0.0",
     "@typechain/ethers-v6": "^0.5.1",
