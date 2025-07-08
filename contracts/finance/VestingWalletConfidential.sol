@@ -25,15 +25,16 @@ import {TFHESafeMath} from "../utils/TFHESafeMath.sol";
  * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
  */
 contract VestingWalletConfidential is OwnableUpgradeable {
-    error VestingWalletConfidentialInvalidDuration();
-    error VestingWalletConfidentialOnlyExecutor();
-
-    event ConfidentialFungibleTokenReleased(address indexed token, euint64 amount);
-
     mapping(address token => euint64) private _tokenReleased;
     uint64 private _start;
     uint64 private _duration;
     address private _executor;
+
+    event VestingWalletConfidentialTokenReleased(address indexed token, euint64 amount);
+    event VestingWalletCallExecuted(address indexed target, uint256 value, bytes data);
+
+    error VestingWalletConfidentialInvalidDuration();
+    error VestingWalletConfidentialOnlyExecutor();
 
     constructor() {
         _disableInitializers();
@@ -80,7 +81,7 @@ contract VestingWalletConfidential is OwnableUpgradeable {
      * @dev Amount of token already released
      */
     function released(address token) public view virtual returns (euint64) {
-        return _confidentialFungibleTokenReleased[token];
+        return _tokenReleased[token];
     }
 
     /**
@@ -106,8 +107,8 @@ contract VestingWalletConfidential is OwnableUpgradeable {
         euint64 newReleasedAmount = FHE.add(released(token), amountSent);
         FHE.allow(newReleasedAmount, owner());
         FHE.allowThis(newReleasedAmount);
-        _confidentialFungibleTokenReleased[token] = newReleasedAmount;
-        emit ConfidentialFungibleTokenReleased(token, amountSent);
+        _tokenReleased[token] = newReleasedAmount;
+        emit VestingWalletConfidentialTokenReleased(token, amountSent);
     }
 
     /**
@@ -130,6 +131,8 @@ contract VestingWalletConfidential is OwnableUpgradeable {
     function _call(address target, uint256 value, bytes memory data) internal virtual {
         (bool success, bytes memory res) = target.call{value: value}(data);
         Address.verifyCallResult(success, res);
+
+        emit VestingWalletCallExecuted(target, value, data);
     }
 
     /**
