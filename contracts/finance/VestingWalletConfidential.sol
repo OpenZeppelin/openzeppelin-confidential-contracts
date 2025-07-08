@@ -30,7 +30,7 @@ contract VestingWalletConfidential is OwnableUpgradeable {
 
     event ConfidentialFungibleTokenReleased(address indexed token, euint64 amount);
 
-    mapping(address token => euint64) private _confidentialFungibleTokenReleased;
+    mapping(address token => euint64) private _tokenReleased;
     uint64 private _start;
     uint64 private _duration;
     address private _executor;
