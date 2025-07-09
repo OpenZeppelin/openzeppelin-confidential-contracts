@@ -15,6 +15,7 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWalletCliffConfidential")) - 1)) & ~bytes32(uint256(0xff))
+    // solhint-disable-next-line const-name-snakecase
     bytes32 private constant VestingWalletCliffStorageLocation =
         0x3c715f77db997bdb68403fafb54820cd57dedce553ed6315028656b0d601c700;
 
@@ -33,19 +34,17 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
      */
     // solhint-disable-next-line func-name-mixedcase
     function __VestingWalletCliffConfidential_init(uint64 cliffSeconds) internal onlyInitializing {
-        VestingWalletCliffStorage storage $ = _getVestingWalletCliffStorage();
         if (cliffSeconds > duration()) {
             revert InvalidCliffDuration(cliffSeconds, duration());
         }
-        $._cliff = start() + cliffSeconds;
+        _getVestingWalletCliffStorage()._cliff = start() + cliffSeconds;
     }
 
     /**
      * @dev Getter for the cliff timestamp.
      */
     function cliff() public view virtual returns (uint64) {
-        VestingWalletCliffStorage storage $ = _getVestingWalletCliffStorage();
-        return $._cliff;
+        return _getVestingWalletCliffStorage()._cliff;
     }
 
     /**

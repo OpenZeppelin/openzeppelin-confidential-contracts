@@ -33,6 +33,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWalletConfidential")) - 1)) & ~bytes32(uint256(0xff))
+    // solhint-disable-next-line const-name-snakecase
     bytes32 private constant VestingWalletStorageLocation =
         0x78ce9ee9eb65fa0cf5bf10e861c3a95cb7c3c713c96ab1e5323a21e846796800;
 
@@ -60,14 +61,12 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
 
     /// @dev Timestamp at which the vesting starts.
     function start() public view virtual returns (uint64) {
-        VestingWalletStorage storage $ = _getVestingWalletStorage();
-        return $._start;
+        return _getVestingWalletStorage()._start;
     }
 
     /// @dev Duration of the vesting in seconds.
     function duration() public view virtual returns (uint64) {
-        VestingWalletStorage storage $ = _getVestingWalletStorage();
-        return $._duration;
+        return _getVestingWalletStorage()._duration;
     }
 
     /// @dev Timestamp at which the vesting ends.
@@ -77,8 +76,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
 
     /// @dev Amount of token already released
     function released(address token) public view virtual returns (euint64) {
-        VestingWalletStorage storage $ = _getVestingWalletStorage();
-        return $._tokenReleased[token];
+        return _getVestingWalletStorage()._tokenReleased[token];
     }
 
     /**
@@ -96,7 +94,6 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      * Emits a {ConfidentialFungibleTokenReleased} event.
      */
     function release(address token) public virtual nonReentrant {
-        VestingWalletStorage storage $ = _getVestingWalletStorage();
         euint64 amount = releasable(token);
         FHE.allowTransient(amount, token);
         euint64 amountSent = IConfidentialFungibleToken(token).confidentialTransfer(owner(), amount);
@@ -105,7 +102,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         euint64 newReleasedAmount = FHE.add(released(token), amountSent);
         FHE.allow(newReleasedAmount, owner());
         FHE.allowThis(newReleasedAmount);
-        $._tokenReleased[token] = newReleasedAmount;
+        _getVestingWalletStorage()._tokenReleased[token] = newReleasedAmount;
         emit VestingWalletConfidentialTokenReleased(token, amountSent);
     }
 

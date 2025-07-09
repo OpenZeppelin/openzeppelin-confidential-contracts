@@ -15,6 +15,7 @@ abstract contract VestingWalletExecutorConfidential is VestingWalletConfidential
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWalletExecutorConfidential")) - 1)) & ~bytes32(uint256(0xff))
+    // solhint-disable-next-line const-name-snakecase
     bytes32 private constant VestingWalletExecutorStorageLocation =
         0x165c39f99e134d4ac22afe0db4de9fbb73791548e71f117f46b120e313690700;
 
