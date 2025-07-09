@@ -9,8 +9,20 @@ import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
  * calls on behalf of the vesting wallet (e.g. to vote, stake, or perform other management operations).
  */
 abstract contract VestingWalletExecutorConfidential is VestingWalletConfidential {
-    /// @dev Address that is able to execute arbitrary calls from the vesting wallet via {call}.
-    address private _executor;
+    /// @custom:storage-location erc7201:openzeppelin.storage.VestingWalletExecutorConfidential
+    struct VestingWalletExecutorStorage {
+        address _executor;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWalletExecutorConfidential")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant VestingWalletExecutorStorageLocation =
+        0x165c39f99e134d4ac22afe0db4de9fbb73791548e71f117f46b120e313690700;
+
+    function _getVestingWalletExecutorStorage() private pure returns (VestingWalletExecutorStorage storage $) {
+        assembly {
+            $.slot := VestingWalletExecutorStorageLocation
+        }
+    }
 
     event VestingWalletExecutorConfidentialCallExecuted(address indexed target, uint256 value, bytes data);
 
@@ -19,12 +31,13 @@ abstract contract VestingWalletExecutorConfidential is VestingWalletConfidential
 
     // solhint-disable-next-line func-name-mixedcase
     function __VestingWalletExecutorConfidential_init(address executor_) internal onlyInitializing {
-        _executor = executor_;
+        VestingWalletExecutorStorage storage $ = _getVestingWalletExecutorStorage();
+        $._executor = executor_;
     }
 
     /// @dev Address that is able to execute arbitrary calls from the vesting wallet via {call}.
     function executor() public view virtual returns (address) {
-        return _executor;
+        return _getVestingWalletExecutorStorage()._executor;
     }
 
     /**

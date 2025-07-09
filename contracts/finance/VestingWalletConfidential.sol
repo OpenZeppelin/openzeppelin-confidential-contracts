@@ -25,10 +25,6 @@ import {TFHESafeMath} from "./../utils/TFHESafeMath.sol";
  * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
  */
 abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGuardTransient {
-    event VestingWalletConfidentialTokenReleased(address indexed token, euint64 amount);
-
-    error VestingWalletConfidentialInvalidDuration();
-
     /// @custom:storage-location erc7201:openzeppelin.storage.VestingWalletConfidential
     struct VestingWalletStorage {
         mapping(address token => euint64) _tokenReleased;
@@ -45,6 +41,10 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
             $.slot := VestingWalletStorageLocation
         }
     }
+
+    event VestingWalletConfidentialTokenReleased(address indexed token, euint64 amount);
+
+    error VestingWalletConfidentialInvalidDuration();
 
     // solhint-disable-next-line func-name-mixedcase
     function __VestingWalletConfidential_init(

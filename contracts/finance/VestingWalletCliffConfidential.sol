@@ -9,9 +9,6 @@ import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
  * starts at the vesting start timestamp (see {VestingWalletConfidential}).
  */
 abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
-    /// @dev The specified cliff duration is larger than the vesting duration.
-    error InvalidCliffDuration(uint64 cliffSeconds, uint64 durationSeconds);
-
     /// @custom:storage-location erc7201:openzeppelin.storage.VestingWalletCliffConfidential
     struct VestingWalletCliffStorage {
         uint64 _cliff;
@@ -26,6 +23,9 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
             $.slot := VestingWalletCliffStorageLocation
         }
     }
+
+    /// @dev The specified cliff duration is larger than the vesting duration.
+    error InvalidCliffDuration(uint64 cliffSeconds, uint64 durationSeconds);
 
     /**
      * @dev Set the duration of the cliff, in seconds. The cliff starts at the vesting
