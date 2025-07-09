@@ -25,13 +25,26 @@ import {TFHESafeMath} from "./../utils/TFHESafeMath.sol";
  * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
  */
 abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGuardTransient {
-    mapping(address token => euint64) private _tokenReleased;
-    uint48 private _start;
-    uint48 private _duration;
-
     event VestingWalletConfidentialTokenReleased(address indexed token, euint64 amount);
 
     error VestingWalletConfidentialInvalidDuration();
+
+    /// @custom:storage-location erc7201:openzeppelin.storage.VestingWalletConfidential
+    struct VestingWalletStorage {
+        mapping(address token => euint64) _tokenReleased;
+        uint64 _start;
+        uint64 _duration;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWalletConfidential")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant VestingWalletStorageLocation =
+        0x78ce9ee9eb65fa0cf5bf10e861c3a95cb7c3c713c96ab1e5323a21e846796800;
+
+    function _getVestingWalletStorage() private pure returns (VestingWalletStorage storage $) {
+        assembly {
+            $.slot := VestingWalletStorageLocation
+        }
+    }
 
     // solhint-disable-next-line func-name-mixedcase
     function __VestingWalletConfidential_init(
@@ -40,18 +53,21 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         uint48 durationSeconds
     ) internal onlyInitializing {
         __Ownable_init(beneficiary);
-        _start = startTimestamp;
-        _duration = durationSeconds;
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        $._start = startTimestamp;
+        $._duration = durationSeconds;
     }
 
     /// @dev Timestamp at which the vesting starts.
     function start() public view virtual returns (uint64) {
-        return _start;
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        return $._start;
     }
 
     /// @dev Duration of the vesting in seconds.
     function duration() public view virtual returns (uint64) {
-        return _duration;
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        return $._duration;
     }
 
     /// @dev Timestamp at which the vesting ends.
@@ -61,7 +77,8 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
 
     /// @dev Amount of token already released
     function released(address token) public view virtual returns (euint64) {
-        return _tokenReleased[token];
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        return $._tokenReleased[token];
     }
 
     /**
@@ -79,6 +96,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      * Emits a {ConfidentialFungibleTokenReleased} event.
      */
     function release(address token) public virtual nonReentrant {
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
         euint64 amount = releasable(token);
         FHE.allowTransient(amount, token);
         euint64 amountSent = IConfidentialFungibleToken(token).confidentialTransfer(owner(), amount);
@@ -87,7 +105,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         euint64 newReleasedAmount = FHE.add(released(token), amountSent);
         FHE.allow(newReleasedAmount, owner());
         FHE.allowThis(newReleasedAmount);
-        _tokenReleased[token] = newReleasedAmount;
+        $._tokenReleased[token] = newReleasedAmount;
         emit VestingWalletConfidentialTokenReleased(token, amountSent);
     }
 
