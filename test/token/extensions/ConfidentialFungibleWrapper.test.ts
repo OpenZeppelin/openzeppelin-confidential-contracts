@@ -60,7 +60,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
           }
 
           await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
-          const wrappedBalanceHandle = await this.wrapper.balanceOf(this.holder.address);
+          const wrappedBalanceHandle = await this.wrapper.confidentialBalanceOf(this.holder.address);
           await expect(
             fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.holder),
           ).to.eventually.equal(0);
