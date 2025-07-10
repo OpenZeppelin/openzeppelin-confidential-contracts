@@ -23,6 +23,9 @@ import {TFHESafeMath} from "./../utils/TFHESafeMath.sol";
  *
  * NOTE: When using this contract with any token whose balance is adjusted automatically (i.e. a rebase token), make
  * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
+ *
+ * WARNING: The aggregate value of a single token sent to the vesting wallet must not exceed `type(uint64).max`. Sending
+ * in excess of this value will result in unexpected behavior and may result in loss of funds.
  */
 abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGuardTransient {
     /// @custom:storage-location erc7201:openzeppelin.storage.VestingWalletConfidential
@@ -102,7 +105,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         FHE.allowTransient(amount, token);
         euint64 amountSent = IConfidentialFungibleToken(token).confidentialTransfer(owner(), amount);
 
-        // TODO: Could theoretically overflow
+        // May overflow if aggregate value of a single token sent to the vesting wallet exceeds `type(uint64).max`.
         euint64 newReleasedAmount = FHE.add(released(token), amountSent);
         FHE.allow(newReleasedAmount, owner());
         FHE.allowThis(newReleasedAmount);
