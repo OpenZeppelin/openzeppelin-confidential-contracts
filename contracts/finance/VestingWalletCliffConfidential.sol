@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
+import {euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
 
 /**
