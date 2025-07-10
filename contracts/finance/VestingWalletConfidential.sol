@@ -112,7 +112,6 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     function vestedAmount(address token, uint64 timestamp) public virtual returns (euint128) {
         return
             _vestingSchedule(
-                // Will overflow if the aggregate value of a single token sent to the vesting wallet exceeds `type(uint64).max`.
                 FHE.add(
                     FHE.asEuint128(IConfidentialFungibleToken(token).confidentialBalanceOf(address(this))),
                     released(token)
