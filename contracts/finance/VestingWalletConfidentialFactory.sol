@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {FHE, euint64, externalEuint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64, externalEuint64, euint128, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IConfidentialFungibleToken} from "../interfaces/IConfidentialFungibleToken.sol";
 import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.sol";
@@ -167,9 +167,9 @@ contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidentia
     }
 
     function _vestingSchedule(
-        euint64 totalAllocation,
+        euint128 totalAllocation,
         uint64 timestamp
-    ) internal override(VestingWalletCliffConfidential, VestingWalletConfidential) returns (euint64) {
+    ) internal override(VestingWalletCliffConfidential, VestingWalletConfidential) returns (euint128) {
         return super._vestingSchedule(totalAllocation, timestamp);
     }
 }
