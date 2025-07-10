@@ -91,7 +91,6 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      * {IConfidentialFungibleToken} contract.
      */
     function releasable(address token) public virtual returns (euint64) {
-        // vestedAmount >= released so this cannot overflow. released & vestedAmount can be 0 but are handled gracefully.
         return FHE.sub(vestedAmount(token, uint64(block.timestamp)), released(token));
     }
 
@@ -105,7 +104,6 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         FHE.allowTransient(amount, token);
         euint64 amountSent = IConfidentialFungibleToken(token).confidentialTransfer(owner(), amount);
 
-        // May overflow if aggregate value of a single token sent to the vesting wallet exceeds `type(uint64).max`.
         euint64 newReleasedAmount = FHE.add(released(token), amountSent);
         FHE.allow(newReleasedAmount, owner());
         FHE.allowThis(newReleasedAmount);
@@ -117,7 +115,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     function vestedAmount(address token, uint64 timestamp) public virtual returns (euint64) {
         return
             _vestingSchedule(
-                // TODO: Could theoretically overflow
+                // Will overflow if the aggregate value of a single token sent to the vesting wallet exceeds `type(uint64).max`.
                 FHE.add(IConfidentialFungibleToken(token).confidentialBalanceOf(address(this)), released(token)),
                 timestamp
             );
