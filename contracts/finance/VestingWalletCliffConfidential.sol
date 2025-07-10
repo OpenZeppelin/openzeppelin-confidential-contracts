@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
 
 /**
@@ -53,7 +53,7 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
      * effect from calling the inherited implementation (i.e. `super._vestingSchedule`). Carefully consider
      * this caveat if the overridden implementation of this function has any (e.g. writing to memory or reverting).
      */
-    function _vestingSchedule(euint64 totalAllocation, uint64 timestamp) internal virtual override returns (euint64) {
-        return timestamp < cliff() ? euint64.wrap(0) : super._vestingSchedule(totalAllocation, timestamp);
+    function _vestingSchedule(euint128 totalAllocation, uint64 timestamp) internal virtual override returns (euint128) {
+        return timestamp < cliff() ? euint128.wrap(0) : super._vestingSchedule(totalAllocation, timestamp);
     }
 }

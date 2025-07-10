@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, ebool, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
@@ -23,9 +23,6 @@ import {TFHESafeMath} from "./../utils/TFHESafeMath.sol";
  *
  * NOTE: When using this contract with any token whose balance is adjusted automatically (i.e. a rebase token), make
  * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
- *
- * WARNING: The aggregate value of a single token sent to the vesting wallet must not exceed `type(uint64).max`. Sending
- * in excess of this value will result in unexpected behavior and may result in loss of funds.
  */
 abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGuardTransient {
     /// @custom:storage-location erc7201:openzeppelin.storage.VestingWalletConfidential
@@ -91,7 +88,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      * {IConfidentialFungibleToken} contract.
      */
     function releasable(address token) public virtual returns (euint64) {
-        return FHE.sub(vestedAmount(token, uint64(block.timestamp)), released(token));
+        return FHE.asEuint64(FHE.sub(vestedAmount(token, uint64(block.timestamp)), released(token)));
     }
 
     /**
@@ -112,19 +109,22 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     }
 
     /// @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
-    function vestedAmount(address token, uint64 timestamp) public virtual returns (euint64) {
+    function vestedAmount(address token, uint64 timestamp) public virtual returns (euint128) {
         return
             _vestingSchedule(
                 // Will overflow if the aggregate value of a single token sent to the vesting wallet exceeds `type(uint64).max`.
-                FHE.add(IConfidentialFungibleToken(token).confidentialBalanceOf(address(this)), released(token)),
+                FHE.add(
+                    FHE.asEuint128(IConfidentialFungibleToken(token).confidentialBalanceOf(address(this))),
+                    released(token)
+                ),
                 timestamp
             );
     }
 
     /// @dev This returns the amount vested, as a function of time, for an asset given its total historical allocation.
-    function _vestingSchedule(euint64 totalAllocation, uint64 timestamp) internal virtual returns (euint64) {
+    function _vestingSchedule(euint128 totalAllocation, uint64 timestamp) internal virtual returns (euint128) {
         if (timestamp < start()) {
-            return euint64.wrap(0);
+            return euint128.wrap(0);
         } else if (timestamp >= end()) {
             return totalAllocation;
         } else {
