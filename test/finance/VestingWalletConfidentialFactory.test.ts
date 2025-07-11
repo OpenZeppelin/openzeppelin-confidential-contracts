@@ -149,24 +149,19 @@ describe('VestingWalletConfidentialFactory', function () {
             beneficiary: this.recipient,
             encryptedAmount: encryptedInput.handles[0],
             start: startTimestamp,
-            cliff: cliff,
-            executor: this.executor,
           },
           {
             beneficiary: this.recipient2,
             encryptedAmount: encryptedInput.handles[1],
             start: startTimestamp,
-            cliff: cliff,
-            executor: this.executor,
           },
         ],
         duration,
+        cliff,
+        this.executor,
         encryptedInput.inputProof,
       ),
     )
-      .to.emit(factory, 'VestingWalletConfidentialBatchFunded')
-      .withArgs(this.holder)
-      //TODO: Check returned value from function & event params
       .to.emit(factory, 'VestingWalletConfidentialFunded')
       .withArgs(
         vestingWalletAddress1,
@@ -196,7 +191,7 @@ describe('VestingWalletConfidentialFactory', function () {
     // TODO: Check balances
   });
 
-  it('should batch with invalid cliff', async function () {
+  it('should not batch with invalid cliff', async function () {
     const encryptedInput = await fhevm
       .createEncryptedInput(await factory.getAddress(), this.holder.address)
       .add64(amount1)
@@ -210,13 +205,37 @@ describe('VestingWalletConfidentialFactory', function () {
             beneficiary: this.recipient,
             encryptedAmount: encryptedInput.handles[0],
             start: startTimestamp,
-            cliff: duration + 1,
-            executor: this.executor,
           },
         ],
         duration,
+        duration + 1, // cliff
+        this.executor,
         encryptedInput.inputProof,
       ),
     ).to.be.revertedWithCustomError(factory, 'InvalidCliffDuration');
+  });
+
+  it('should not batch with invalid beneficiary', async function () {
+    const encryptedInput = await fhevm
+      .createEncryptedInput(await factory.getAddress(), this.holder.address)
+      .add64(amount1)
+      .encrypt();
+
+    await expect(
+      factory.connect(this.holder).batchFundVestingWalletConfidential(
+        await this.token.getAddress(),
+        [
+          {
+            beneficiary: ethers.ZeroAddress,
+            encryptedAmount: encryptedInput.handles[0],
+            start: startTimestamp,
+          },
+        ],
+        duration,
+        cliff,
+        this.executor,
+        encryptedInput.inputProof,
+      ),
+    ).to.be.revertedWithCustomError(factory, 'InvalidVestingBeneficiary');
   });
 });

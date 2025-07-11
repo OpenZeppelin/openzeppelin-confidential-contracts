@@ -18,7 +18,8 @@ contract VestingWalletConfidentialFactory {
     address private immutable _vestingImplementation;
 
     /// @dev The specified cliff duration is larger than the vesting duration.
-    error InvalidCliffDuration(address beneficiary, uint64 cliffSeconds, uint64 durationSeconds);
+    error InvalidCliffDuration(uint64 cliffSeconds, uint64 durationSeconds);
+    error InvalidVestingBeneficiary(uint256 i);
 
     event VestingWalletConfidentialFunded(
         address indexed vestingWalletConfidential,
@@ -44,8 +45,6 @@ contract VestingWalletConfidentialFactory {
         address beneficiary;
         externalEuint64 encryptedAmount;
         uint48 start;
-        uint48 cliff;
-        address executor;
     }
 
     constructor() {
@@ -65,28 +64,32 @@ contract VestingWalletConfidentialFactory {
         address confidentialFungibleToken,
         VestingPlan[] calldata vestingPlans,
         uint48 durationSeconds,
+        uint48 cliffSeconds,
+        address executor,
         bytes calldata inputProof
     ) public virtual returns (bool) {
+        require(cliffSeconds <= durationSeconds, InvalidCliffDuration(cliffSeconds, durationSeconds));
         for (uint256 i = 0; i < vestingPlans.length; i++) {
             VestingPlan memory vestingPlan = vestingPlans[i];
-            euint64 encryptedAmount = FHE.fromExternal(vestingPlan.encryptedAmount, inputProof);
-            require(
-                vestingPlan.cliff <= durationSeconds,
-                InvalidCliffDuration(vestingPlan.beneficiary, vestingPlan.cliff, durationSeconds)
-            );
+            require(vestingPlan.beneficiary != address(0), InvalidVestingBeneficiary(i));
             address vestingWalletConfidential = predictVestingWalletConfidential(
                 vestingPlan.beneficiary,
                 vestingPlan.start,
                 durationSeconds,
-                vestingPlan.cliff,
-                vestingPlan.executor
+                cliffSeconds,
+                executor
             );
-            FHE.allowTransient(encryptedAmount, confidentialFungibleToken);
-            euint64 transferredAmount = IConfidentialFungibleToken(confidentialFungibleToken).confidentialTransferFrom(
-                msg.sender,
-                vestingWalletConfidential,
-                encryptedAmount
-            );
+            euint64 transferredAmount;
+            {
+                // avoiding stack too deep with scope
+                euint64 encryptedAmount = FHE.fromExternal(vestingPlan.encryptedAmount, inputProof);
+                FHE.allowTransient(encryptedAmount, confidentialFungibleToken);
+                transferredAmount = IConfidentialFungibleToken(confidentialFungibleToken).confidentialTransferFrom(
+                    msg.sender,
+                    vestingWalletConfidential,
+                    encryptedAmount
+                );
+            }
             emit VestingWalletConfidentialFunded(
                 vestingWalletConfidential,
                 vestingPlan.beneficiary,
@@ -94,11 +97,10 @@ contract VestingWalletConfidentialFactory {
                 transferredAmount,
                 vestingPlan.start,
                 durationSeconds,
-                vestingPlan.cliff,
-                vestingPlan.executor
+                cliffSeconds,
+                executor
             );
         }
-        emit VestingWalletConfidentialBatchFunded(msg.sender);
         return true;
     }
 
