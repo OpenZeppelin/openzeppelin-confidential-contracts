@@ -3,13 +3,12 @@ pragma solidity ^0.8.24;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {ERC7821} from "@openzeppelin/contracts/account/extensions/draft-ERC7821.sol";
-import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
 
 /**
  * @dev Extension of {VestingWalletConfidential} that adds an {executor} role able to perform arbitrary
  * calls on behalf of the vesting wallet (e.g. to vote, stake, or perform other management operations).
  */
-abstract contract ERC7821WithExecutor is Initializable, VestingWalletConfidential, ERC7821 {
+abstract contract ERC7821WithExecutor is Initializable, ERC7821 {
     /// @custom:storage-location erc7201:openzeppelin.storage.ERC7821WithExecutor
     struct ERC7821WithExecutorStorage {
         address _executor;

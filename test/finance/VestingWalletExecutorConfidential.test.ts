@@ -1,6 +1,5 @@
-import { VestingWalletExecutorConfidentialMock } from '../../types';
+import { ERC7821WithExecutor } from '../../types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
@@ -11,69 +10,60 @@ const mode = ethers.solidityPacked(
   ['bytes1', 'bytes1', 'bytes4', 'bytes4', 'bytes22'],
   ['0x01', '0x00', '0x00000000', '0x00000000', '0x00000000000000000000000000000000000000000000'],
 );
-let vesting: VestingWalletExecutorConfidentialMock;
 
 //TODO: Rename file/name to WithExecutor
-describe('VestingWalletExecutorConfidential', function () {
+describe.only('ERC7821WithExecutor', function () {
   beforeEach(async function () {
-    const accounts = (await ethers.getSigners()).slice(3);
-    const [holder, recipient, executor] = accounts;
+    const accounts = (await ethers.getSigners()).slice(2);
+    const [recipient, executor] = await ethers.getSigners();
 
     const token = await ethers.deployContract('$ConfidentialFungibleTokenMock', [name, symbol, uri]);
 
     const encryptedInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), holder.address)
+      .createEncryptedInput(await token.getAddress(), recipient.address)
       .add64(1000)
       .encrypt();
 
-    const currentTime = await time.latest();
-    const schedule = [currentTime + 60, currentTime + 60 * 61];
-    vesting = (await ethers.deployContract('$VestingWalletExecutorConfidentialMock', [
-      recipient,
-      currentTime + 60,
-      60 * 60 /* 1 hour */,
+    const executorWallet = (await ethers.deployContract('$ERC7821WithExecutor', [
       executor,
-    ])) as any as VestingWalletExecutorConfidentialMock;
+    ])) as unknown as ERC7821WithExecutor;
 
     await (token as any)
-      .connect(holder)
-      ['$_mint(address,bytes32,bytes)'](vesting.target, encryptedInput.handles[0], encryptedInput.inputProof);
+      .connect(recipient)
+      ['$_mint(address,bytes32,bytes)'](executorWallet.target, encryptedInput.handles[0], encryptedInput.inputProof);
 
-    Object.assign(this, { accounts, holder, recipient, executor, token, schedule, vestingAmount: 1000 });
+    Object.assign(this, { accounts, recipient, executor, executorWallet, token });
   });
 
   describe('call', async function () {
     it('should fail if not called by executor', async function () {
-      await expect(vesting.execute(mode, '0x')).to.be.revertedWithCustomError(vesting, 'AccountUnauthorized');
+      await expect(this.executorWallet.execute(mode, '0x')).to.be.revertedWithCustomError(
+        this.executorWallet,
+        'AccountUnauthorized',
+      );
     });
 
     it('should call if called by executor', async function () {
-      await expect(
-        vesting
-          .connect(this.executor)
-          .execute(
-            mode,
-            ethers.AbiCoder.defaultAbiCoder().encode(
-              ['(address,uint256,bytes)[]'],
-              [
-                [
-                  [
-                    this.token.target,
-                    0,
-                    (
-                      await this.token.confidentialTransfer.populateTransaction(
-                        this.recipient,
-                        await this.token.confidentialBalanceOf(vesting),
-                      )
-                    ).data,
-                  ],
-                ],
-              ],
-            ),
-          ),
-      )
+      const executionCalls = ethers.AbiCoder.defaultAbiCoder().encode(
+        ['(address,uint256,bytes)[]'],
+        [
+          [
+            [
+              this.token,
+              0,
+              (
+                await this.token.confidentialTransfer.populateTransaction(
+                  this.recipient,
+                  await this.token.confidentialBalanceOf(this.executorWallet),
+                )
+              ).data,
+            ],
+          ],
+        ],
+      );
+      await expect(this.executorWallet.connect(this.executor).execute(mode, executionCalls))
         .to.emit(this.token, 'ConfidentialTransfer')
-        .withArgs(vesting, this.recipient, anyValue);
+        .withArgs(this.executorWallet, this.recipient, anyValue);
     });
   });
 });

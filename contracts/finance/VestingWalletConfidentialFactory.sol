@@ -6,7 +6,7 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IConfidentialFungibleToken} from "../interfaces/IConfidentialFungibleToken.sol";
 import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.sol";
 import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
-import {VestingWalletExecutorConfidential} from "./VestingWalletExecutorConfidential.sol";
+import {ERC7821WithExecutor} from "./ERC7821WithExecutor.sol";
 
 /**
  * @dev This factory enables creating {VestingWalletCliffExecutorConfidential} in batch.
@@ -187,7 +187,7 @@ abstract contract VestingWalletConfidentialFactory {
     }
 }
 
-contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidential, VestingWalletExecutorConfidential {
+contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidential, ERC7821WithExecutor {
     constructor() {
         _disableInitializers();
     }
@@ -201,14 +201,6 @@ contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidentia
     ) public initializer {
         __VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds);
         __VestingWalletCliffConfidential_init(cliffSeconds);
-        __VestingWalletExecutorConfidential_init(executor);
-    }
-
-    //TODO: Remove
-    function _vestingSchedule(
-        euint128 totalAllocation,
-        uint64 timestamp
-    ) internal override(VestingWalletCliffConfidential, VestingWalletConfidential) returns (euint128) {
-        return super._vestingSchedule(totalAllocation, timestamp);
+        __ERC7821WithExecutor_init(executor);
     }
 }
