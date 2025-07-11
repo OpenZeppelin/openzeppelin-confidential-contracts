@@ -15,7 +15,7 @@ import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
  * Confidential vesting wallets created inherit both {VestingWalletCliffConfidential} for vesting cliffs
  * and {ERC7821WithExecutor} to allow for arbitrary calls to be executed from the vesting wallet.
  */
-contract VestingWalletConfidentialFactory {
+contract VestingWalletCliffExecutorConfidentialFactory {
     struct VestingPlan {
         address beneficiary;
         externalEuint64 encryptedAmount;
