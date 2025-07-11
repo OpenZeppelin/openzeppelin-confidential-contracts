@@ -94,11 +94,11 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
       .to.emit(this.factory, 'VestingWalletConfidentialCreated')
       .withArgs(this.recipient, vestingWalletAddress, startTimestamp, duration, cliff, this.executor);
     const vestingWallet = await ethers.getContractAt('VestingWalletCliffExecutorConfidential', vestingWalletAddress);
-    expect(await vestingWallet.owner()).to.be.equal(this.recipient);
-    expect(await vestingWallet.start()).to.be.equal(startTimestamp);
-    expect(await vestingWallet.duration()).to.be.equal(duration);
-    expect(await vestingWallet.cliff()).to.be.equal(startTimestamp + cliff);
-    expect(await vestingWallet.executor()).to.be.equal(this.executor);
+    await expect(vestingWallet.owner()).to.eventually.equal(this.recipient);
+    await expect(vestingWallet.start()).to.eventually.equal(startTimestamp);
+    await expect(vestingWallet.duration()).to.eventually.equal(duration);
+    await expect(vestingWallet.cliff()).to.eventually.equal(startTimestamp + cliff);
+    await expect(vestingWallet.executor()).to.eventually.equal(this.executor);
   });
 
   it('should not create vesting wallet twice', async function () {
@@ -143,16 +143,18 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
         {
           beneficiary: this.recipient,
           encryptedAmount: encryptedInput.handles[0],
-          start: startTimestamp,
+          startTimestamp,
+          durationSeconds: duration,
+          cliffSeconds: cliff,
         },
         {
           beneficiary: this.recipient2,
           encryptedAmount: encryptedInput.handles[1],
-          start: startTimestamp,
+          startTimestamp,
+          durationSeconds: duration,
+          cliffSeconds: cliff,
         },
       ],
-      duration,
-      cliff,
       this.executor,
       encryptedInput.inputProof,
     );
@@ -212,11 +214,11 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
           {
             beneficiary: this.recipient,
             encryptedAmount: encryptedInput.handles[0],
-            start: startTimestamp,
+            startTimestamp,
+            durationSeconds: duration,
+            cliffSeconds: duration + 1,
           },
         ],
-        duration,
-        duration + 1, // cliff
         this.executor,
         encryptedInput.inputProof,
       ),
@@ -236,11 +238,11 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
           {
             beneficiary: ethers.ZeroAddress,
             encryptedAmount: encryptedInput.handles[0],
-            start: startTimestamp,
+            startTimestamp,
+            durationSeconds: duration,
+            cliffSeconds: cliff,
           },
         ],
-        duration,
-        cliff,
         this.executor,
         encryptedInput.inputProof,
       ),
