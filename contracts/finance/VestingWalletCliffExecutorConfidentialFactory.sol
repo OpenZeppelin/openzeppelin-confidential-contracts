@@ -51,8 +51,7 @@ contract VestingWalletCliffExecutorConfidentialFactory {
      * Funds are sent to deterministic wallet addresses. Wallets can be created either
      * before or after this operation.
      *
-     * Emits a single {VestingWalletConfidentialBatchFunded} event in addition to multiple
-     * {VestingWalletConfidentialFunded} events related to funded vesting plans.
+     * Emits a {VestingWalletConfidentialFunded} event for each funded vesting plan.
      */
     function batchFundVestingWalletConfidential(
         address confidentialFungibleToken,
