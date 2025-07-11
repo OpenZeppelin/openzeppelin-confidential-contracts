@@ -3,10 +3,8 @@ pragma solidity ^0.8.24;
 
 import {FHE, ebool, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
-import {TFHESafeMath} from "./../utils/TFHESafeMath.sol";
 
 /**
  * @dev A vesting wallet is an ownable contract that can receive ConfidentialFungibleTokens, and release these
@@ -44,8 +42,6 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     }
 
     event VestingWalletConfidentialTokenReleased(address indexed token, euint64 amount);
-
-    error VestingWalletConfidentialInvalidDuration();
 
     /**
      * @dev Initializes the vesting wallet for a given `beneficiary` with a start time of `startTimestamp`

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {FHE, euint64, externalEuint64, euint128, ebool} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64, externalEuint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
 import {ERC7821WithExecutor} from "./ERC7821WithExecutor.sol";
 import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.sol";
 import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
  * @dev This factory enables creating {VestingWalletCliffExecutorConfidential} in batch.
@@ -36,10 +37,6 @@ contract VestingWalletConfidentialFactory {
         address executor
     );
 
-    /// @dev The specified cliff duration is larger than the vesting duration.
-    error InvalidCliffDuration(uint64 cliffSeconds, uint64 durationSeconds);
-    error InvalidVestingBeneficiary(address account);
-
     struct VestingPlan {
         address beneficiary;
         externalEuint64 encryptedAmount;
@@ -67,10 +64,16 @@ contract VestingWalletConfidentialFactory {
         address executor,
         bytes calldata inputProof
     ) public virtual {
-        require(cliffSeconds <= durationSeconds, InvalidCliffDuration(cliffSeconds, durationSeconds));
+        require(
+            cliffSeconds <= durationSeconds,
+            VestingWalletCliffConfidential.VestingWalletCliffConfidentialInvalidCliffDuration(
+                cliffSeconds,
+                durationSeconds
+            )
+        );
         for (uint256 i = 0; i < vestingPlans.length; i++) {
             VestingPlan memory vestingPlan = vestingPlans[i];
-            require(vestingPlan.beneficiary != address(0), InvalidVestingBeneficiary(address(0)));
+            require(vestingPlan.beneficiary != address(0), OwnableUpgradeable.OwnableInvalidOwner(address(0)));
             address vestingWalletConfidential = predictVestingWalletConfidential(
                 vestingPlan.beneficiary,
                 vestingPlan.start,

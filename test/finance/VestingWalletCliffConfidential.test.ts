@@ -2,7 +2,6 @@ import { shouldBehaveLikeVestingConfidential } from './VestingWalletConfidential
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import { EventLog } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
@@ -64,7 +63,7 @@ describe(`VestingWalletCliffConfidential`, function () {
         60 * 10,
         60 * 60,
       ]),
-    ).to.be.revertedWithCustomError(this.vesting, 'InvalidCliffDuration');
+    ).to.be.revertedWithCustomError(this.vesting, 'VestingWalletCliffConfidentialInvalidCliffDuration');
   });
 
   shouldBehaveLikeVestingConfidential();

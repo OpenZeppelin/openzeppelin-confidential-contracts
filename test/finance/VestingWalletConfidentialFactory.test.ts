@@ -220,7 +220,7 @@ describe('VestingWalletConfidentialFactory', function () {
         this.executor,
         encryptedInput.inputProof,
       ),
-    ).to.be.revertedWithCustomError(this.factory, 'InvalidCliffDuration');
+    ).to.be.revertedWithCustomError(this.factory, 'VestingWalletCliffConfidentialInvalidCliffDuration');
   });
 
   it('should not batch with invalid beneficiary', async function () {
@@ -244,6 +244,6 @@ describe('VestingWalletConfidentialFactory', function () {
         this.executor,
         encryptedInput.inputProof,
       ),
-    ).to.be.revertedWithCustomError(this.factory, 'InvalidVestingBeneficiary');
+    ).to.be.revertedWithCustomError(this.factory, 'OwnableInvalidOwner');
   });
 });

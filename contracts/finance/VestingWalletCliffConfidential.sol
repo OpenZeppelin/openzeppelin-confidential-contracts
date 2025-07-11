@@ -26,7 +26,7 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
     }
 
     /// @dev The specified cliff duration is larger than the vesting duration.
-    error InvalidCliffDuration(uint64 cliffSeconds, uint64 durationSeconds);
+    error VestingWalletCliffConfidentialInvalidCliffDuration(uint64 cliffSeconds, uint64 durationSeconds);
 
     /**
      * @dev Set the duration of the cliff, in seconds. The cliff starts at the vesting
@@ -35,7 +35,7 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
     // solhint-disable-next-line func-name-mixedcase
     function __VestingWalletCliffConfidential_init(uint48 cliffSeconds) internal onlyInitializing {
         if (cliffSeconds > duration()) {
-            revert InvalidCliffDuration(cliffSeconds, duration());
+            revert VestingWalletCliffConfidentialInvalidCliffDuration(cliffSeconds, duration());
         }
         _getVestingWalletCliffStorage()._cliff = start() + cliffSeconds;
     }
