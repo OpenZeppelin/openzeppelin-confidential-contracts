@@ -21,12 +21,12 @@ contract VestingWalletConfidentialFactory {
     event VestingWalletConfidentialFunded(
         address indexed vestingWalletConfidential,
         address indexed beneficiary,
-        address confidentialFungibleToken,
+        address indexed confidentialFungibleToken,
         euint64 encryptedAmount,
         uint48 startTimestamp,
         uint48 durationSeconds,
         uint48 cliffSeconds,
-        address executor
+        address indexed executor
     );
     event VestingWalletConfidentialCreated(
         address indexed vestingWalletConfidential,
@@ -34,7 +34,7 @@ contract VestingWalletConfidentialFactory {
         uint48 startTimestamp,
         uint48 durationSeconds,
         uint48 cliffSeconds,
-        address executor
+        address indexed executor
     );
 
     struct VestingPlan {
