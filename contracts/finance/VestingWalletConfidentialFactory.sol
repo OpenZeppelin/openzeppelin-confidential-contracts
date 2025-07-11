@@ -187,6 +187,7 @@ abstract contract VestingWalletConfidentialFactory {
     }
 }
 
+// slither-disable-next-line locked-ether
 contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidential, ERC7821WithExecutor {
     constructor() {
         _disableInitializers();
