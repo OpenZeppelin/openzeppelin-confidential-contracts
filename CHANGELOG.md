@@ -8,7 +8,7 @@
 - `VestingWalletCliffExecutorConfidentialFactory`: Fund multiple `VestingWalletCliffExecutorConfidential` in batch. ([#102](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/102))
 - `ERC7821WithExecutor`: Add an abstract contract that inherits from `ERC7821` and adds an `executor` role. ([#102](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/102))
 - `IConfidentialFungibleToken`: Prefix `totalSupply` and `balanceOf` functions with confidential and change `EncryptedAmountDisclosed` event to `AmountDisclosed`. ([#93](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/93))
-- `ConfidentialFungibleToken`: Update `totalSupply`, `balanceOf`, and `EncryptedAmountDisclosed` as required by interface changes.
+- `ConfidentialFungibleToken`: Update `totalSupply`, `balanceOf`, and `EncryptedAmountDisclosed` as required by interface changes. ([#93](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/93))
 - `ConfidentialFungibleTokenERC20Wrapper`: Add an internal function to allow overriding the maximum decimals value. ([#89](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/89))
 
 ## 0.2.0-rc.0 (2025-07-04)
