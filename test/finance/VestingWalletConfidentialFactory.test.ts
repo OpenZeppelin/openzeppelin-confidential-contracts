@@ -13,6 +13,8 @@ const uri = 'https://example.com/metadata';
 const startTimestamp = 9876543210;
 const duration = 1234;
 const cliff = 10;
+const amount1 = 101;
+const amount2 = 102;
 let factory: $VestingWalletConfidentialFactory;
 
 describe('VestingWalletConfidentialFactory', function () {
@@ -119,8 +121,6 @@ describe('VestingWalletConfidentialFactory', function () {
   });
 
   it('should batch funding of vesting wallets', async function () {
-    const amount1 = 101;
-    const amount2 = 102;
     const encryptedInput = await fhevm
       .createEncryptedInput(await factory.getAddress(), this.holder.address)
       .add64(amount1)
@@ -194,5 +194,29 @@ describe('VestingWalletConfidentialFactory', function () {
       .to.emit(this.token, 'ConfidentialTransfer')
       .withArgs(this.holder, vestingWalletAddress2, anyValue);
     // TODO: Check balances
+  });
+
+  it('should batch with invalid cliff', async function () {
+    const encryptedInput = await fhevm
+      .createEncryptedInput(await factory.getAddress(), this.holder.address)
+      .add64(amount1)
+      .encrypt();
+
+    await expect(
+      factory.connect(this.holder).batchFundVestingWalletConfidential(
+        await this.token.getAddress(),
+        [
+          {
+            beneficiary: this.recipient,
+            encryptedAmount: encryptedInput.handles[0],
+            start: startTimestamp,
+            cliff: duration + 1,
+            executor: this.executor,
+          },
+        ],
+        duration,
+        encryptedInput.inputProof,
+      ),
+    ).to.be.revertedWithCustomError(factory, 'InvalidCliffDuration');
   });
 });

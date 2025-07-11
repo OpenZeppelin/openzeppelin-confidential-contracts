@@ -17,8 +17,8 @@ import {VestingWalletExecutorConfidential} from "./VestingWalletExecutorConfiden
 abstract contract VestingWalletConfidentialFactory {
     address private immutable _vestingImplementation;
 
-    error VestingWalletConfidentialInvalidDuration();
-    error VestingWalletConfidentialInvalidStartTimestamp(address beneficiary, uint64 startTimestamp);
+    /// @dev The specified cliff duration is larger than the vesting duration.
+    error InvalidCliffDuration(address beneficiary, uint64 cliffSeconds, uint64 durationSeconds);
 
     event VestingWalletConfidentialFunded(
         address indexed vestingWalletConfidential,
@@ -67,14 +67,13 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 durationSeconds,
         bytes calldata inputProof
     ) public virtual returns (euint64 totalTransferedAmount) {
-        require(durationSeconds > 0, VestingWalletConfidentialInvalidDuration());
         totalTransferedAmount = euint64.wrap(0);
         for (uint256 i = 0; i < vestingPlans.length; i++) {
             VestingPlan memory vestingPlan = vestingPlans[i];
             euint64 encryptedAmount = FHE.fromExternal(vestingPlan.encryptedAmount, inputProof);
             require(
-                vestingPlan.start >= block.timestamp,
-                VestingWalletConfidentialInvalidStartTimestamp(vestingPlan.beneficiary, vestingPlan.start)
+                vestingPlan.cliff <= durationSeconds,
+                InvalidCliffDuration(vestingPlan.beneficiary, vestingPlan.cliff, durationSeconds)
             );
             address vestingWalletConfidential = predictVestingWalletConfidential(
                 vestingPlan.beneficiary,
