@@ -11,8 +11,7 @@ const mode = ethers.solidityPacked(
   ['0x01', '0x00', '0x00000000', '0x00000000', '0x00000000000000000000000000000000000000000000'],
 );
 
-//TODO: Rename file/name to WithExecutor
-describe.only('ERC7821WithExecutor', function () {
+describe('ERC7821WithExecutor', function () {
   beforeEach(async function () {
     const accounts = (await ethers.getSigners()).slice(2);
     const [recipient, executor] = await ethers.getSigners();
@@ -49,7 +48,7 @@ describe.only('ERC7821WithExecutor', function () {
         [
           [
             [
-              this.token,
+              this.token.target,
               0,
               (
                 await this.token.confidentialTransfer.populateTransaction(
