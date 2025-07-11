@@ -165,7 +165,7 @@ describe('VestingWalletConfidentialFactory', function () {
       ),
     )
       .to.emit(factory, 'VestingWalletConfidentialBatchFunded')
-      .withArgs(this.holder, anyValue)
+      .withArgs(this.holder)
       //TODO: Check returned value from function & event params
       .to.emit(factory, 'VestingWalletConfidentialFunded')
       .withArgs(

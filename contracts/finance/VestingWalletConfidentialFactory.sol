@@ -30,7 +30,7 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 cliffSeconds,
         address executor
     );
-    event VestingWalletConfidentialBatchFunded(address indexed from, euint64 totalTransferedAmount);
+    event VestingWalletConfidentialBatchFunded(address indexed from);
     event VestingWalletConfidentialCreated(
         address indexed vestingWalletConfidential,
         address indexed beneficiary,
@@ -66,8 +66,7 @@ abstract contract VestingWalletConfidentialFactory {
         VestingPlan[] calldata vestingPlans,
         uint48 durationSeconds,
         bytes calldata inputProof
-    ) public virtual returns (euint64 totalTransferedAmount) {
-        totalTransferedAmount = euint64.wrap(0);
+    ) public virtual returns (bool) {
         for (uint256 i = 0; i < vestingPlans.length; i++) {
             VestingPlan memory vestingPlan = vestingPlans[i];
             euint64 encryptedAmount = FHE.fromExternal(vestingPlan.encryptedAmount, inputProof);
@@ -88,11 +87,6 @@ abstract contract VestingWalletConfidentialFactory {
                 vestingWalletConfidential,
                 encryptedAmount
             );
-            totalTransferedAmount = FHE.select(
-                FHE.eq(encryptedAmount, transferredAmount),
-                FHE.add(totalTransferedAmount, transferredAmount),
-                FHE.asEuint64(0)
-            );
             emit VestingWalletConfidentialFunded(
                 vestingWalletConfidential,
                 vestingPlan.beneficiary,
@@ -104,8 +98,8 @@ abstract contract VestingWalletConfidentialFactory {
                 vestingPlan.executor
             );
         }
-        FHE.allow(totalTransferedAmount, msg.sender);
-        emit VestingWalletConfidentialBatchFunded(msg.sender, totalTransferedAmount);
+        emit VestingWalletConfidentialBatchFunded(msg.sender);
+        return true;
     }
 
     /**
