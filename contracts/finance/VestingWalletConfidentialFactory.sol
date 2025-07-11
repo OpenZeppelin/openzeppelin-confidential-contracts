@@ -17,10 +17,6 @@ import {VestingWalletExecutorConfidential} from "./VestingWalletExecutorConfiden
 contract VestingWalletConfidentialFactory {
     address private immutable _vestingImplementation;
 
-    /// @dev The specified cliff duration is larger than the vesting duration.
-    error InvalidCliffDuration(uint64 cliffSeconds, uint64 durationSeconds);
-    error InvalidVestingBeneficiary(uint256 i);
-
     event VestingWalletConfidentialFunded(
         address indexed vestingWalletConfidential,
         address indexed beneficiary,
@@ -31,7 +27,6 @@ contract VestingWalletConfidentialFactory {
         uint48 cliffSeconds,
         address executor
     );
-    event VestingWalletConfidentialBatchFunded(address indexed from);
     event VestingWalletConfidentialCreated(
         address indexed vestingWalletConfidential,
         address indexed beneficiary,
@@ -40,6 +35,10 @@ contract VestingWalletConfidentialFactory {
         uint48 cliffSeconds,
         address executor
     );
+
+    /// @dev The specified cliff duration is larger than the vesting duration.
+    error InvalidCliffDuration(uint64 cliffSeconds, uint64 durationSeconds);
+    error InvalidVestingBeneficiary(address account);
 
     struct VestingPlan {
         address beneficiary;
@@ -67,11 +66,11 @@ contract VestingWalletConfidentialFactory {
         uint48 cliffSeconds,
         address executor,
         bytes calldata inputProof
-    ) public virtual returns (bool) {
+    ) public virtual {
         require(cliffSeconds <= durationSeconds, InvalidCliffDuration(cliffSeconds, durationSeconds));
         for (uint256 i = 0; i < vestingPlans.length; i++) {
             VestingPlan memory vestingPlan = vestingPlans[i];
-            require(vestingPlan.beneficiary != address(0), InvalidVestingBeneficiary(i));
+            require(vestingPlan.beneficiary != address(0), InvalidVestingBeneficiary(address(0)));
             address vestingWalletConfidential = predictVestingWalletConfidential(
                 vestingPlan.beneficiary,
                 vestingPlan.start,
@@ -101,7 +100,6 @@ contract VestingWalletConfidentialFactory {
                 executor
             );
         }
-        return true;
     }
 
     /**

@@ -1,6 +1,6 @@
-import { VestingWalletCliffExecutorConfidential__factory } from '../../types';
 import { $VestingWalletConfidentialFactory } from '../../types/contracts-exposed/finance/VestingWalletConfidentialFactory.sol/$VestingWalletConfidentialFactory';
 import { $ConfidentialFungibleTokenMock } from '../../types/contracts-exposed/mocks/token/ConfidentialFungibleTokenMock.sol/$ConfidentialFungibleTokenMock';
+import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { days } from '@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time/duration';
@@ -15,12 +15,10 @@ const duration = 1234;
 const cliff = 10;
 const amount1 = 101;
 const amount2 = 102;
-let factory: $VestingWalletConfidentialFactory;
 
 describe('VestingWalletConfidentialFactory', function () {
   beforeEach(async function () {
-    const accounts = (await ethers.getSigners()).slice(5);
-    const [holder, recipient, recipient2, operator, executor] = accounts;
+    const [holder, recipient, recipient2, operator, executor, ...accounts] = await ethers.getSigners();
 
     const token = (await ethers.deployContract('$ConfidentialFungibleTokenMock', [
       name,
@@ -33,24 +31,15 @@ describe('VestingWalletConfidentialFactory', function () {
       .add64(1000)
       .encrypt();
 
-    const currentTime = await time.latest();
-    const schedule = [currentTime + 60, currentTime + 60 * 121];
-    factory = (await ethers.deployContract(
+    const factory = (await ethers.deployContract(
       '$VestingWalletConfidentialFactoryMock',
-      [],
     )) as unknown as $VestingWalletConfidentialFactory;
 
     await token
       .connect(holder)
-      ['$_mint(address,bytes32,bytes)'](holder.address, encryptedInput.handles[0], encryptedInput.inputProof)
-      .then(tx => tx.wait());
+      ['$_mint(address,bytes32,bytes)'](holder.address, encryptedInput.handles[0], encryptedInput.inputProof);
     const until = (await time.latest()) + days(1);
-    await expect(
-      await token
-        .connect(holder)
-        .setOperator(await factory.getAddress(), until)
-        .then(tx => tx.wait()),
-    )
+    await expect(await token.connect(holder).setOperator(await factory.getAddress(), until))
       .to.emit(token, 'OperatorSet')
       .withArgs(holder, await factory.getAddress(), until);
 
@@ -63,20 +52,18 @@ describe('VestingWalletConfidentialFactory', function () {
       executor,
       token,
       factory,
-      schedule,
-      vestingAmount: 1000,
     });
   });
 
-  it('should create vesting wallet with predeterministic address', async function () {
-    const predictedVestingWalletAddress = await factory.predictVestingWalletConfidential(
+  it('should create vesting wallet with deterministic address', async function () {
+    const predictedVestingWalletAddress = await this.factory.predictVestingWalletConfidential(
       this.recipient,
       startTimestamp,
       duration,
       cliff,
       this.executor,
     );
-    const vestingWalletAddress = await factory.createVestingWalletConfidential.staticCall(
+    const vestingWalletAddress = await this.factory.createVestingWalletConfidential.staticCall(
       this.recipient,
       startTimestamp,
       duration,
@@ -87,7 +74,7 @@ describe('VestingWalletConfidentialFactory', function () {
   });
 
   it('should create vesting wallet', async function () {
-    const vestingWalletAddress = await factory.predictVestingWalletConfidential(
+    const vestingWalletAddress = await this.factory.predictVestingWalletConfidential(
       this.recipient,
       startTimestamp,
       duration,
@@ -96,14 +83,17 @@ describe('VestingWalletConfidentialFactory', function () {
     );
 
     await expect(
-      await factory.createVestingWalletConfidential(this.recipient, startTimestamp, duration, cliff, this.executor),
+      await this.factory.createVestingWalletConfidential(
+        this.recipient,
+        startTimestamp,
+        duration,
+        cliff,
+        this.executor,
+      ),
     )
-      .to.emit(factory, 'VestingWalletConfidentialCreated')
+      .to.emit(this.factory, 'VestingWalletConfidentialCreated')
       .withArgs(this.recipient, vestingWalletAddress, startTimestamp, duration, cliff, this.executor);
-    const vestingWallet = VestingWalletCliffExecutorConfidential__factory.connect(
-      vestingWalletAddress,
-      ethers.provider,
-    );
+    const vestingWallet = await ethers.getContractAt('VestingWalletCliffExecutorConfidential', vestingWalletAddress);
     expect(await vestingWallet.owner()).to.be.equal(this.recipient);
     expect(await vestingWallet.start()).to.be.equal(startTimestamp);
     expect(await vestingWallet.duration()).to.be.equal(duration);
@@ -113,27 +103,33 @@ describe('VestingWalletConfidentialFactory', function () {
 
   it('should not create vesting wallet twice', async function () {
     await expect(
-      await factory.createVestingWalletConfidential(this.recipient, startTimestamp, duration, cliff, this.executor),
-    ).to.emit(factory, 'VestingWalletConfidentialCreated');
+      await this.factory.createVestingWalletConfidential(
+        this.recipient,
+        startTimestamp,
+        duration,
+        cliff,
+        this.executor,
+      ),
+    ).to.emit(this.factory, 'VestingWalletConfidentialCreated');
     await expect(
-      factory.createVestingWalletConfidential(this.recipient, startTimestamp, duration, cliff, this.executor),
-    ).to.be.revertedWithCustomError(factory, 'FailedDeployment');
+      this.factory.createVestingWalletConfidential(this.recipient, startTimestamp, duration, cliff, this.executor),
+    ).to.be.revertedWithCustomError(this.factory, 'FailedDeployment');
   });
 
-  it('should batch funding of vesting wallets', async function () {
+  it('should batch fund vesting wallets', async function () {
     const encryptedInput = await fhevm
-      .createEncryptedInput(await factory.getAddress(), this.holder.address)
+      .createEncryptedInput(await this.factory.getAddress(), this.holder.address)
       .add64(amount1)
       .add64(amount2)
       .encrypt();
-    const vestingWalletAddress1 = await factory.predictVestingWalletConfidential(
+    const vestingWalletAddress1 = await this.factory.predictVestingWalletConfidential(
       this.recipient,
       startTimestamp,
       duration,
       cliff,
       this.executor,
     );
-    const vestingWalletAddress2 = await factory.predictVestingWalletConfidential(
+    const vestingWalletAddress2 = await this.factory.predictVestingWalletConfidential(
       this.recipient2,
       startTimestamp,
       duration,
@@ -141,32 +137,32 @@ describe('VestingWalletConfidentialFactory', function () {
       this.executor,
     );
 
-    await expect(
-      await factory.connect(this.holder).batchFundVestingWalletConfidential(
-        await this.token.getAddress(),
-        [
-          {
-            beneficiary: this.recipient,
-            encryptedAmount: encryptedInput.handles[0],
-            start: startTimestamp,
-          },
-          {
-            beneficiary: this.recipient2,
-            encryptedAmount: encryptedInput.handles[1],
-            start: startTimestamp,
-          },
-        ],
-        duration,
-        cliff,
-        this.executor,
-        encryptedInput.inputProof,
-      ),
-    )
-      .to.emit(factory, 'VestingWalletConfidentialFunded')
+    const vestingCreationTx = await this.factory.connect(this.holder).batchFundVestingWalletConfidential(
+      this.token.target,
+      [
+        {
+          beneficiary: this.recipient,
+          encryptedAmount: encryptedInput.handles[0],
+          start: startTimestamp,
+        },
+        {
+          beneficiary: this.recipient2,
+          encryptedAmount: encryptedInput.handles[1],
+          start: startTimestamp,
+        },
+      ],
+      duration,
+      cliff,
+      this.executor,
+      encryptedInput.inputProof,
+    );
+
+    expect(vestingCreationTx)
+      .to.emit(this.factory, 'VestingWalletConfidentialFunded')
       .withArgs(
         vestingWalletAddress1,
         this.recipient,
-        await this.token.getAddress(),
+        this.token.target,
         anyValue,
         startTimestamp,
         duration,
@@ -175,11 +171,11 @@ describe('VestingWalletConfidentialFactory', function () {
       )
       .to.emit(this.token, 'ConfidentialTransfer')
       .withArgs(this.holder, vestingWalletAddress2, anyValue)
-      .to.emit(factory, 'VestingWalletConfidentialFunded')
+      .to.emit(this.factory, 'VestingWalletConfidentialFunded')
       .withArgs(
         vestingWalletAddress2,
         this.recipient2,
-        await this.token.getAddress(),
+        this.token.target,
         anyValue,
         startTimestamp,
         duration,
@@ -188,18 +184,30 @@ describe('VestingWalletConfidentialFactory', function () {
       )
       .to.emit(this.token, 'ConfidentialTransfer')
       .withArgs(this.holder, vestingWalletAddress2, anyValue);
-    // TODO: Check balances
+
+    const transferEvents = await vestingCreationTx
+      .wait()
+      .then(tx => tx!.logs.filter(log => log.address === this.token.target));
+
+    const vestingWallet1TransferAmount = transferEvents[0].topics[3];
+    const vestingWallet2TransferAmount = transferEvents[1].topics[3];
+    expect(
+      await fhevm.userDecryptEuint(FhevmType.euint64, vestingWallet1TransferAmount, this.token.target, this.holder),
+    ).to.equal(amount1);
+    expect(
+      await fhevm.userDecryptEuint(FhevmType.euint64, vestingWallet2TransferAmount, this.token.target, this.holder),
+    ).to.equal(amount2);
   });
 
   it('should not batch with invalid cliff', async function () {
     const encryptedInput = await fhevm
-      .createEncryptedInput(await factory.getAddress(), this.holder.address)
+      .createEncryptedInput(await this.factory.getAddress(), this.holder.address)
       .add64(amount1)
       .encrypt();
 
     await expect(
-      factory.connect(this.holder).batchFundVestingWalletConfidential(
-        await this.token.getAddress(),
+      this.factory.connect(this.holder).batchFundVestingWalletConfidential(
+        this.token.target,
         [
           {
             beneficiary: this.recipient,
@@ -212,18 +220,18 @@ describe('VestingWalletConfidentialFactory', function () {
         this.executor,
         encryptedInput.inputProof,
       ),
-    ).to.be.revertedWithCustomError(factory, 'InvalidCliffDuration');
+    ).to.be.revertedWithCustomError(this.factory, 'InvalidCliffDuration');
   });
 
   it('should not batch with invalid beneficiary', async function () {
     const encryptedInput = await fhevm
-      .createEncryptedInput(await factory.getAddress(), this.holder.address)
+      .createEncryptedInput(this.factory.target, this.holder.address)
       .add64(amount1)
       .encrypt();
 
     await expect(
-      factory.connect(this.holder).batchFundVestingWalletConfidential(
-        await this.token.getAddress(),
+      this.factory.connect(this.holder).batchFundVestingWalletConfidential(
+        this.token.target,
         [
           {
             beneficiary: ethers.ZeroAddress,
@@ -236,6 +244,6 @@ describe('VestingWalletConfidentialFactory', function () {
         this.executor,
         encryptedInput.inputProof,
       ),
-    ).to.be.revertedWithCustomError(factory, 'InvalidVestingBeneficiary');
+    ).to.be.revertedWithCustomError(this.factory, 'InvalidVestingBeneficiary');
   });
 });
