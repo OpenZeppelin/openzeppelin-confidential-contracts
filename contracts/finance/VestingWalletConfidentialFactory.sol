@@ -9,22 +9,35 @@ import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
 import {VestingWalletExecutorConfidential} from "./VestingWalletExecutorConfidential.sol";
 
 abstract contract VestingWalletConfidentialFactory {
-    address private immutable _vestingWalletConfidentialImplementation;
+    address private immutable _vestingImplementation;
 
     error VestingWalletConfidentialInvalidDuration();
     error VestingWalletConfidentialInvalidStartTimestamp(address beneficiary, uint64 startTimestamp);
 
+    event VestingWalletConfidentialFunded(
+        address indexed vestingWalletConfidential,
+        address indexed beneficiary,
+        address confidentialFungibleToken,
+        euint64 encryptedAmount,
+        uint48 startTimestamp,
+        uint48 durationSeconds,
+        uint48 cliffSeconds,
+        address executor
+    );
     /**
      * @dev
      */
-    event VestingWalletConfidentialBatchFunded(ebool success);
+    event VestingWalletConfidentialBatchFunded(address indexed from, euint64 totalTransferedAmount);
     /**
      * @dev
      */
     event VestingWalletConfidentialCreated(
-        address indexed beneficiary,
         address indexed vestingWalletConfidential,
-        uint48 startTimestamp
+        address indexed beneficiary,
+        uint48 startTimestamp,
+        uint48 durationSeconds,
+        uint48 cliffSeconds,
+        address executor
     );
 
     /**
@@ -33,7 +46,7 @@ abstract contract VestingWalletConfidentialFactory {
     struct VestingPlan {
         address beneficiary;
         externalEuint64 encryptedAmount;
-        uint48 startTimestamp;
+        uint48 start;
         uint48 cliff;
         address executor;
     }
@@ -42,39 +55,38 @@ abstract contract VestingWalletConfidentialFactory {
      * @dev
      */
     constructor() {
-        _vestingWalletConfidentialImplementation = address(new VestingWalletCliffExecutorConfidential());
+        _vestingImplementation = address(new VestingWalletCliffExecutorConfidential());
     }
 
     /**
      * @dev Batches the funding of multiple confidential vesting wallets.
      *
-     * Funds are sent to predeterministic wallet addresses. Wallets can be created later.
+     * Funds are sent to predeterministic wallet addresses. Wallets can be created either
+     * before or after this operation.
      */
     function batchFundVestingWalletConfidential(
         address confidentialFungibleToken,
-        externalEuint64 totalEncryptedAmount,
-        bytes calldata inputProof,
         VestingPlan[] calldata vestingPlans,
-        uint48 durationSeconds
-    ) external returns (ebool) {
+        uint48 durationSeconds,
+        bytes calldata inputProof
+    ) public virtual returns (euint64 totalTransferedAmount) {
         require(durationSeconds > 0, VestingWalletConfidentialInvalidDuration());
-        euint64 totalTransferedAmount = euint64.wrap(0);
-        uint256 vestingPlansLength = vestingPlans.length;
-        for (uint256 i = 0; i < vestingPlansLength; i++) {
+        totalTransferedAmount = euint64.wrap(0);
+        for (uint256 i = 0; i < vestingPlans.length; i++) {
             VestingPlan memory vestingPlan = vestingPlans[i];
             euint64 encryptedAmount = FHE.fromExternal(vestingPlan.encryptedAmount, inputProof);
             require(
-                vestingPlan.startTimestamp >= block.timestamp,
-                VestingWalletConfidentialInvalidStartTimestamp(vestingPlan.beneficiary, vestingPlan.startTimestamp)
+                vestingPlan.start >= block.timestamp,
+                VestingWalletConfidentialInvalidStartTimestamp(vestingPlan.beneficiary, vestingPlan.start)
             );
             address vestingWalletConfidential = predictVestingWalletConfidential(
                 vestingPlan.beneficiary,
-                vestingPlan.startTimestamp,
+                vestingPlan.start,
                 durationSeconds,
                 vestingPlan.cliff,
                 vestingPlan.executor
             );
-            FHE.allow(encryptedAmount, confidentialFungibleToken);
+            FHE.allowTransient(encryptedAmount, confidentialFungibleToken);
             euint64 transferredAmount = IConfidentialFungibleToken(confidentialFungibleToken).confidentialTransferFrom(
                 msg.sender,
                 vestingWalletConfidential,
@@ -85,10 +97,19 @@ abstract contract VestingWalletConfidentialFactory {
                 FHE.add(totalTransferedAmount, transferredAmount),
                 FHE.asEuint64(0)
             );
+            emit VestingWalletConfidentialFunded(
+                vestingWalletConfidential,
+                vestingPlan.beneficiary,
+                confidentialFungibleToken,
+                transferredAmount,
+                vestingPlan.start,
+                durationSeconds,
+                vestingPlan.cliff,
+                vestingPlan.executor
+            );
         }
-        // Revert batch if one failed?
-        ebool success = FHE.eq(totalTransferedAmount, FHE.fromExternal(totalEncryptedAmount, inputProof));
-        emit VestingWalletConfidentialBatchFunded(success);
+        FHE.allow(totalTransferedAmount, msg.sender);
+        emit VestingWalletConfidentialBatchFunded(msg.sender, totalTransferedAmount);
     }
 
     /**
@@ -100,13 +121,17 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 durationSeconds,
         uint48 cliffSeconds,
         address executor
-    ) external returns (address) {
-        // TODO: Check params are authorized
+    ) public virtual returns (address) {
         // Will revert if clone already created
-        address vestingWalletConfidentialAddress = Clones.cloneDeterministicWithImmutableArgs(
-            _vestingWalletConfidentialImplementation,
-            abi.encodePacked(beneficiary, startTimestamp, durationSeconds, cliffSeconds, executor),
-            _getCreate2VestingWalletConfidentialSalt(beneficiary, startTimestamp)
+        address vestingWalletConfidentialAddress = Clones.cloneDeterministic(
+            _vestingImplementation,
+            _getCreate2VestingWalletConfidentialSalt(
+                beneficiary,
+                startTimestamp,
+                durationSeconds,
+                cliffSeconds,
+                executor
+            )
         );
         VestingWalletCliffExecutorConfidential(vestingWalletConfidentialAddress).initialize(
             beneficiary,
@@ -115,7 +140,14 @@ abstract contract VestingWalletConfidentialFactory {
             cliffSeconds,
             executor
         );
-        emit VestingWalletConfidentialCreated(beneficiary, vestingWalletConfidentialAddress, startTimestamp);
+        emit VestingWalletConfidentialCreated(
+            beneficiary,
+            vestingWalletConfidentialAddress,
+            startTimestamp,
+            durationSeconds,
+            cliffSeconds,
+            executor
+        );
         return vestingWalletConfidentialAddress;
     }
 
@@ -126,15 +158,19 @@ abstract contract VestingWalletConfidentialFactory {
         address beneficiary,
         uint48 startTimestamp,
         uint48 durationSeconds,
-        uint48 cliff,
+        uint48 cliffSeconds,
         address executor
-    ) public view returns (address) {
+    ) public view virtual returns (address) {
         return
-            Clones.predictDeterministicAddressWithImmutableArgs(
-                _vestingWalletConfidentialImplementation,
-                abi.encodePacked(beneficiary, startTimestamp, durationSeconds, cliff, executor),
-                _getCreate2VestingWalletConfidentialSalt(beneficiary, startTimestamp),
-                address(this)
+            Clones.predictDeterministicAddress(
+                _vestingImplementation,
+                _getCreate2VestingWalletConfidentialSalt(
+                    beneficiary,
+                    startTimestamp,
+                    durationSeconds,
+                    cliffSeconds,
+                    executor
+                )
             );
     }
 
@@ -143,9 +179,12 @@ abstract contract VestingWalletConfidentialFactory {
      */
     function _getCreate2VestingWalletConfidentialSalt(
         address beneficiary,
-        uint48 startTimestamp
+        uint48 startTimestamp,
+        uint48 durationSeconds,
+        uint48 cliffSeconds,
+        address executor
     ) internal pure virtual returns (bytes32) {
-        return keccak256(abi.encodePacked(beneficiary, startTimestamp));
+        return keccak256(abi.encodePacked(beneficiary, startTimestamp, durationSeconds, cliffSeconds, executor));
     }
 }
 

@@ -97,7 +97,7 @@ describe('VestingWalletConfidentialFactory', function () {
       await factory.createVestingWalletConfidential(this.recipient, startTimestamp, duration, cliff, this.executor),
     )
       .to.emit(factory, 'VestingWalletConfidentialCreated')
-      .withArgs(this.recipient, vestingWalletAddress, startTimestamp);
+      .withArgs(this.recipient, vestingWalletAddress, startTimestamp, duration, cliff, this.executor);
     const vestingWallet = VestingWalletCliffExecutorConfidential__factory.connect(
       vestingWalletAddress,
       ethers.provider,
@@ -123,7 +123,6 @@ describe('VestingWalletConfidentialFactory', function () {
     const amount2 = 102;
     const encryptedInput = await fhevm
       .createEncryptedInput(await factory.getAddress(), this.holder.address)
-      .add64(amount1 + amount2)
       .add64(amount1)
       .add64(amount2)
       .encrypt();
@@ -145,31 +144,53 @@ describe('VestingWalletConfidentialFactory', function () {
     await expect(
       await factory.connect(this.holder).batchFundVestingWalletConfidential(
         await this.token.getAddress(),
-        encryptedInput.handles[0],
-        encryptedInput.inputProof,
         [
           {
             beneficiary: this.recipient,
-            encryptedAmount: encryptedInput.handles[1],
-            startTimestamp: startTimestamp,
+            encryptedAmount: encryptedInput.handles[0],
+            start: startTimestamp,
             cliff: cliff,
             executor: this.executor,
           },
           {
             beneficiary: this.recipient2,
-            encryptedAmount: encryptedInput.handles[2],
-            startTimestamp: startTimestamp,
+            encryptedAmount: encryptedInput.handles[1],
+            start: startTimestamp,
             cliff: cliff,
             executor: this.executor,
           },
         ],
         duration,
+        encryptedInput.inputProof,
       ),
     )
       .to.emit(factory, 'VestingWalletConfidentialBatchFunded')
+      .withArgs(this.holder, anyValue)
       //TODO: Check returned value from function & event params
+      .to.emit(factory, 'VestingWalletConfidentialFunded')
+      .withArgs(
+        vestingWalletAddress1,
+        this.recipient,
+        await this.token.getAddress(),
+        anyValue,
+        startTimestamp,
+        duration,
+        cliff,
+        this.executor,
+      )
       .to.emit(this.token, 'ConfidentialTransfer')
-      .withArgs(this.holder, vestingWalletAddress1, anyValue)
+      .withArgs(this.holder, vestingWalletAddress2, anyValue)
+      .to.emit(factory, 'VestingWalletConfidentialFunded')
+      .withArgs(
+        vestingWalletAddress2,
+        this.recipient2,
+        await this.token.getAddress(),
+        anyValue,
+        startTimestamp,
+        duration,
+        cliff,
+        this.executor,
+      )
       .to.emit(this.token, 'ConfidentialTransfer')
       .withArgs(this.holder, vestingWalletAddress2, anyValue);
     // TODO: Check balances
