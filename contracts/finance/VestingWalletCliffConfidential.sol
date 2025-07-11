@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.27;
 
 import {euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
@@ -33,9 +33,11 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
      */
     // solhint-disable-next-line func-name-mixedcase
     function __VestingWalletCliffConfidential_init(uint48 cliffSeconds) internal onlyInitializing {
-        if (cliffSeconds > duration()) {
-            revert VestingWalletCliffConfidentialInvalidCliffDuration(cliffSeconds, duration());
-        }
+        require(
+            cliffSeconds <= duration(),
+            VestingWalletCliffConfidentialInvalidCliffDuration(cliffSeconds, duration())
+        );
+
         _getVestingWalletCliffStorage()._cliff = start() + cliffSeconds;
     }
 
