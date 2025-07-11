@@ -11,6 +11,7 @@ This directory includes primitives for on-chain confidential financial systems:
 - {VestingWalletExecutorConfidential}: Extension of {VestingWalletConfidential} that adds an executor role able to perform arbitrary calls on behalf of the vesting wallet (e.g. to vote, stake, or perform other management operations).
 
 For convenience, this directory also includes:
+
 - {VestingWalletCliffExecutorConfidential}: A Default implementation of {VestingWalletConfidential} which supports both "cliff" ({VestingWalletCliffConfidential}) and "executor" ({VestingWalletExecutorConfidential}) extensions.
 - {VestingWalletConfidentialFactory}: A factory which allows creating {VestingWalletCliffExecutorConfidential} in batch.
 
@@ -19,5 +20,5 @@ For convenience, this directory also includes:
 {{VestingWalletConfidential}}
 {{VestingWalletCliffConfidential}}
 {{VestingWalletExecutorConfidential}}
-{{VestingWalletCliffExecutorConfidential}}
 {{VestingWalletConfidentialFactory}}
+{{VestingWalletCliffExecutorConfidential}}
