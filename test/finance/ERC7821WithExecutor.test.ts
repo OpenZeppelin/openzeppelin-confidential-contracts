@@ -1,20 +1,16 @@
 import { ERC7821WithExecutor } from '../../types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { encodeMode, encodeBatch, CALL_TYPE_BATCH } from '@openzeppelin/contracts/test/helpers/erc7579';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
-const mode = ethers.solidityPacked(
-  ['bytes1', 'bytes1', 'bytes4', 'bytes4', 'bytes22'],
-  ['0x01', '0x00', '0x00000000', '0x00000000', '0x00000000000000000000000000000000000000000000'],
-);
 
 describe('ERC7821WithExecutor', function () {
   beforeEach(async function () {
-    const accounts = (await ethers.getSigners()).slice(2);
-    const [recipient, executor] = await ethers.getSigners();
+    const [recipient, executor, ...accounts] = await ethers.getSigners();
 
     const token = await ethers.deployContract('$ConfidentialFungibleTokenMock', [name, symbol, uri]);
 
@@ -36,31 +32,27 @@ describe('ERC7821WithExecutor', function () {
 
   describe('call', async function () {
     it('should fail if not called by executor', async function () {
-      await expect(this.executorWallet.execute(mode, '0x')).to.be.revertedWithCustomError(
-        this.executorWallet,
-        'AccountUnauthorized',
-      );
+      await expect(this.executorWallet.connect(this.recipient).execute(ethers.ZeroHash, '0x'))
+        .to.be.revertedWithCustomError(this.executorWallet, 'AccountUnauthorized')
+        .withArgs(this.recipient);
     });
 
     it('should call if called by executor', async function () {
-      const executionCalls = ethers.AbiCoder.defaultAbiCoder().encode(
-        ['(address,uint256,bytes)[]'],
-        [
-          [
-            [
-              this.token.target,
-              0,
-              (
-                await this.token.confidentialTransfer.populateTransaction(
-                  this.recipient,
-                  await this.token.confidentialBalanceOf(this.executorWallet),
-                )
-              ).data,
-            ],
-          ],
-        ],
-      );
-      await expect(this.executorWallet.connect(this.executor).execute(mode, executionCalls))
+      const balance = await this.token.confidentialBalanceOf(this.executorWallet);
+
+      await expect(
+        this.executorWallet.connect(this.executor).execute(
+          encodeMode({ callType: CALL_TYPE_BATCH }),
+          encodeBatch({
+            target: this.token,
+            value: 0n,
+            data: this.token.interface.encodeFunctionData('confidentialTransfer(address,bytes32)', [
+              this.recipient.address,
+              balance,
+            ]),
+          }),
+        ),
+      )
         .to.emit(this.token, 'ConfidentialTransfer')
         .withArgs(this.executorWallet, this.recipient, anyValue);
     });

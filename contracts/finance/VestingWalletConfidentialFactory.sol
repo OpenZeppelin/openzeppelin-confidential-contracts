@@ -3,10 +3,10 @@ pragma solidity ^0.8.24;
 
 import {FHE, euint64, externalEuint64, euint128, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {IConfidentialFungibleToken} from "../interfaces/IConfidentialFungibleToken.sol";
+import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
+import {ERC7821WithExecutor} from "./ERC7821WithExecutor.sol";
 import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.sol";
 import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
-import {ERC7821WithExecutor} from "./ERC7821WithExecutor.sol";
 
 /**
  * @dev This factory enables creating {VestingWalletCliffExecutorConfidential} in batch.
