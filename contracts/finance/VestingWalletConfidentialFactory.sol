@@ -204,6 +204,7 @@ contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidentia
         __VestingWalletExecutorConfidential_init(executor);
     }
 
+    //TODO: Remove
     function _vestingSchedule(
         euint128 totalAllocation,
         uint64 timestamp
