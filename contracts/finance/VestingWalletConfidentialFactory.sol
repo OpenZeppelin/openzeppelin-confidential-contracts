@@ -26,7 +26,7 @@ contract VestingWalletConfidentialFactory {
         uint48 startTimestamp,
         uint48 durationSeconds,
         uint48 cliffSeconds,
-        address indexed executor
+        address executor
     );
     event VestingWalletConfidentialCreated(
         address indexed vestingWalletConfidential,
@@ -50,7 +50,7 @@ contract VestingWalletConfidentialFactory {
     /**
      * @dev Batches the funding of multiple confidential vesting wallets.
      *
-     * Funds are sent to predeterministic wallet addresses. Wallets can be created either
+     * Funds are sent to deterministic wallet addresses. Wallets can be created either
      * before or after this operation.
      *
      * Emits a single {VestingWalletConfidentialBatchFunded} event in addition to multiple
@@ -71,7 +71,8 @@ contract VestingWalletConfidentialFactory {
                 durationSeconds
             )
         );
-        for (uint256 i = 0; i < vestingPlans.length; i++) {
+        uint256 vestingPlansLength = vestingPlans.length;
+        for (uint256 i = 0; i < vestingPlansLength; i++) {
             VestingPlan memory vestingPlan = vestingPlans[i];
             require(vestingPlan.beneficiary != address(0), OwnableUpgradeable.OwnableInvalidOwner(address(0)));
             address vestingWalletConfidential = predictVestingWalletConfidential(
