@@ -8,6 +8,12 @@ import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.s
 import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
 import {VestingWalletExecutorConfidential} from "./VestingWalletExecutorConfidential.sol";
 
+/**
+ * @dev This factory enables creating {VestingWalletCliffExecutorConfidential} in batch.
+ *
+ * All confidential vesting wallets created support both "cliff" ({VestingWalletCliffConfidential})
+ * and "executor" ({VestingWalletExecutorConfidential}) extensions.
+ */
 abstract contract VestingWalletConfidentialFactory {
     address private immutable _vestingImplementation;
 
@@ -24,13 +30,7 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 cliffSeconds,
         address executor
     );
-    /**
-     * @dev
-     */
     event VestingWalletConfidentialBatchFunded(address indexed from, euint64 totalTransferedAmount);
-    /**
-     * @dev
-     */
     event VestingWalletConfidentialCreated(
         address indexed vestingWalletConfidential,
         address indexed beneficiary,
@@ -40,9 +40,6 @@ abstract contract VestingWalletConfidentialFactory {
         address executor
     );
 
-    /**
-     * @dev
-     */
     struct VestingPlan {
         address beneficiary;
         externalEuint64 encryptedAmount;
@@ -51,9 +48,6 @@ abstract contract VestingWalletConfidentialFactory {
         address executor;
     }
 
-    /**
-     * @dev
-     */
     constructor() {
         _vestingImplementation = address(new VestingWalletCliffExecutorConfidential());
     }
@@ -63,6 +57,9 @@ abstract contract VestingWalletConfidentialFactory {
      *
      * Funds are sent to predeterministic wallet addresses. Wallets can be created either
      * before or after this operation.
+     *
+     * Emits a single {VestingWalletConfidentialBatchFunded} event in addition to multiple
+     * {VestingWalletConfidentialFunded} events related to funded vesting plans.
      */
     function batchFundVestingWalletConfidential(
         address confidentialFungibleToken,
@@ -114,6 +111,8 @@ abstract contract VestingWalletConfidentialFactory {
 
     /**
      * @dev Creates a confidential vesting wallet.
+     *
+     * Emits a {VestingWalletConfidentialCreated}.
      */
     function createVestingWalletConfidential(
         address beneficiary,
@@ -152,7 +151,7 @@ abstract contract VestingWalletConfidentialFactory {
     }
 
     /**
-     * @dev
+     * @dev Predicts deterministic address for a confidential vesting wallet.
      */
     function predictVestingWalletConfidential(
         address beneficiary,
@@ -175,7 +174,7 @@ abstract contract VestingWalletConfidentialFactory {
     }
 
     /**
-     * @dev Gets create2 VestingWalletConfidential salt.
+     * @dev Gets create2 salt for a confidential vesting wallet.
      */
     function _getCreate2VestingWalletConfidentialSalt(
         address beneficiary,
