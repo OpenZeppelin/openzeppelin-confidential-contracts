@@ -35,29 +35,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     bytes32 private constant VestingWalletStorageLocation =
         0x78ce9ee9eb65fa0cf5bf10e861c3a95cb7c3c713c96ab1e5323a21e846796800;
 
-    function _getVestingWalletStorage() private pure returns (VestingWalletStorage storage $) {
-        assembly {
-            $.slot := VestingWalletStorageLocation
-        }
-    }
-
     event VestingWalletConfidentialTokenReleased(address indexed token, euint64 amount);
-
-    /**
-     * @dev Initializes the vesting wallet for a given `beneficiary` with a start time of `startTimestamp`
-     * and an end time of `startTimestamp + durationSeconds`.
-     */
-    // solhint-disable-next-line func-name-mixedcase
-    function __VestingWalletConfidential_init(
-        address beneficiary,
-        uint48 startTimestamp,
-        uint48 durationSeconds
-    ) internal onlyInitializing {
-        __Ownable_init(beneficiary);
-        VestingWalletStorage storage $ = _getVestingWalletStorage();
-        $._start = startTimestamp;
-        $._duration = durationSeconds;
-    }
 
     /// @dev Timestamp at which the vesting starts.
     function start() public view virtual returns (uint64) {
@@ -116,6 +94,22 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
             );
     }
 
+    /**
+     * @dev Initializes the vesting wallet for a given `beneficiary` with a start time of `startTimestamp`
+     * and an end time of `startTimestamp + durationSeconds`.
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function __VestingWalletConfidential_init(
+        address beneficiary,
+        uint48 startTimestamp,
+        uint48 durationSeconds
+    ) internal onlyInitializing {
+        __Ownable_init(beneficiary);
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        $._start = startTimestamp;
+        $._duration = durationSeconds;
+    }
+
     /// @dev This returns the amount vested, as a function of time, for an asset given its total historical allocation.
     function _vestingSchedule(euint128 totalAllocation, uint64 timestamp) internal virtual returns (euint128) {
         if (timestamp < start()) {
@@ -124,6 +118,12 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
             return totalAllocation;
         } else {
             return FHE.div(FHE.mul(totalAllocation, (timestamp - start())), duration());
+        }
+    }
+
+    function _getVestingWalletStorage() private pure returns (VestingWalletStorage storage $) {
+        assembly {
+            $.slot := VestingWalletStorageLocation
         }
     }
 }

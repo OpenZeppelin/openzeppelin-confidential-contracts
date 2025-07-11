@@ -16,6 +16,12 @@ import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
  * and {ERC7821WithExecutor} to allow for arbitrary calls to be executed from the vesting wallet.
  */
 contract VestingWalletConfidentialFactory {
+    struct VestingPlan {
+        address beneficiary;
+        externalEuint64 encryptedAmount;
+        uint48 start;
+    }
+
     address private immutable _vestingImplementation = address(new VestingWalletCliffExecutorConfidential());
 
     event VestingWalletConfidentialFunded(
@@ -36,12 +42,6 @@ contract VestingWalletConfidentialFactory {
         uint48 cliffSeconds,
         address indexed executor
     );
-
-    struct VestingPlan {
-        address beneficiary;
-        externalEuint64 encryptedAmount;
-        uint48 start;
-    }
 
     /**
      * @dev Batches the funding of multiple confidential vesting wallets.

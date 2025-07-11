@@ -18,20 +18,14 @@ abstract contract ERC7821WithExecutor is Initializable, ERC7821 {
     bytes32 private constant ERC7821WithExecutorStorageLocation =
         0x246106ffca67a7d3806ba14f6748826b9c39c9fa594b14f83fe454e8e9d0dc00;
 
-    function _getERC7821WithExecutorStorage() private pure returns (ERC7821WithExecutorStorage storage $) {
-        assembly {
-            $.slot := ERC7821WithExecutorStorageLocation
-        }
+    /// @dev Trusted address that is able to execute arbitrary calls from the vesting wallet via `ERC7821.execute`.
+    function executor() public view virtual returns (address) {
+        return _getERC7821WithExecutorStorage()._executor;
     }
 
     // solhint-disable-next-line func-name-mixedcase
     function __ERC7821WithExecutor_init(address executor_) internal onlyInitializing {
         _getERC7821WithExecutorStorage()._executor = executor_;
-    }
-
-    /// @dev Trusted address that is able to execute arbitrary calls from the vesting wallet via `ERC7821.execute`.
-    function executor() public view virtual returns (address) {
-        return _getERC7821WithExecutorStorage()._executor;
     }
 
     /// @inheritdoc ERC7821
@@ -41,5 +35,11 @@ abstract contract ERC7821WithExecutor is Initializable, ERC7821 {
         bytes calldata executionData
     ) internal view virtual override returns (bool) {
         return caller == executor() || super._erc7821AuthorizedExecutor(caller, mode, executionData);
+    }
+
+    function _getERC7821WithExecutorStorage() private pure returns (ERC7821WithExecutorStorage storage $) {
+        assembly {
+            $.slot := ERC7821WithExecutorStorageLocation
+        }
     }
 }

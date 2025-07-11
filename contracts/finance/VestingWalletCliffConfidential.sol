@@ -19,14 +19,13 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
     bytes32 private constant VestingWalletCliffStorageLocation =
         0x3c715f77db997bdb68403fafb54820cd57dedce553ed6315028656b0d601c700;
 
-    function _getVestingWalletCliffStorage() private pure returns (VestingWalletCliffStorage storage $) {
-        assembly {
-            $.slot := VestingWalletCliffStorageLocation
-        }
-    }
-
     /// @dev The specified cliff duration is larger than the vesting duration.
     error VestingWalletCliffConfidentialInvalidCliffDuration(uint64 cliffSeconds, uint64 durationSeconds);
+
+    /// @dev The timestamp at which the cliff ends.
+    function cliff() public view virtual returns (uint64) {
+        return _getVestingWalletCliffStorage()._cliff;
+    }
 
     /**
      * @dev Set the duration of the cliff, in seconds. The cliff starts at the vesting
@@ -40,11 +39,6 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
         _getVestingWalletCliffStorage()._cliff = start() + cliffSeconds;
     }
 
-    /// @dev The timestamp at which the cliff ends.
-    function cliff() public view virtual returns (uint64) {
-        return _getVestingWalletCliffStorage()._cliff;
-    }
-
     /**
      * @dev This function returns the amount vested, as a function of time, for
      * an asset given its total historical allocation. Returns 0 if the {cliff} timestamp is not met.
@@ -55,5 +49,11 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
      */
     function _vestingSchedule(euint128 totalAllocation, uint64 timestamp) internal virtual override returns (euint128) {
         return timestamp < cliff() ? euint128.wrap(0) : super._vestingSchedule(totalAllocation, timestamp);
+    }
+
+    function _getVestingWalletCliffStorage() private pure returns (VestingWalletCliffStorage storage $) {
+        assembly {
+            $.slot := VestingWalletCliffStorageLocation
+        }
     }
 }
