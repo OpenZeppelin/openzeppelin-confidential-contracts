@@ -2,4 +2,4 @@
 'openzeppelin-confidential-contracts': minor
 ---
 
-Fund multiple `VestingWalletConfidential` in batch.
+`VestingWalletConfidentialFactory`: Fund multiple `VestingWalletConfidential` in batch.
