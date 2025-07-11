@@ -12,8 +12,8 @@ import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
 /**
  * @dev This factory enables creating {VestingWalletCliffExecutorConfidential} in batch.
  *
- * All confidential vesting wallets created support both "cliff" ({VestingWalletCliffConfidential})
- * and "executor" ({VestingWalletExecutorConfidential}) extensions.
+ * Confidential vesting wallets created inherit both {VestingWalletCliffConfidential} for vesting cliffs
+ * and {ERC7821WithExecutor} to allow for arbitrary calls to be executed from the vesting wallet.
  */
 contract VestingWalletConfidentialFactory {
     address private immutable _vestingImplementation;

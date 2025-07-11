@@ -29,7 +29,7 @@ abstract contract ERC7821WithExecutor is Initializable, ERC7821 {
         _getERC7821WithExecutorStorage()._executor = executor_;
     }
 
-    /// @dev Trusted address that is able to execute arbitrary calls from the vesting wallet via `ERC7821`.
+    /// @dev Trusted address that is able to execute arbitrary calls from the vesting wallet via `ERC7821.execute`.
     function executor() public view virtual returns (address) {
         return _getERC7821WithExecutorStorage()._executor;
     }
