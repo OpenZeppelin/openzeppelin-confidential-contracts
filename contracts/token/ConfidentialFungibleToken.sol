@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
