@@ -3,10 +3,10 @@ pragma solidity ^0.8.24;
 
 import {FHE, euint64, externalEuint64, euint128, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {IConfidentialFungibleToken} from "../interfaces/IConfidentialFungibleToken.sol";
+import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
+import {ERC7821WithExecutor} from "./ERC7821WithExecutor.sol";
 import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.sol";
 import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
-import {VestingWalletExecutorConfidential} from "./VestingWalletExecutorConfidential.sol";
 
 /**
  * @dev This factory enables creating {VestingWalletCliffExecutorConfidential} in batch.
@@ -180,7 +180,8 @@ contract VestingWalletConfidentialFactory {
     }
 }
 
-contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidential, VestingWalletExecutorConfidential {
+// slither-disable-next-line locked-ether
+contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidential, ERC7821WithExecutor {
     constructor() {
         _disableInitializers();
     }
@@ -194,13 +195,6 @@ contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidentia
     ) public initializer {
         __VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds);
         __VestingWalletCliffConfidential_init(cliffSeconds);
-        __VestingWalletExecutorConfidential_init(executor);
-    }
-
-    function _vestingSchedule(
-        euint128 totalAllocation,
-        uint64 timestamp
-    ) internal override(VestingWalletCliffConfidential, VestingWalletConfidential) returns (euint128) {
-        return super._vestingSchedule(totalAllocation, timestamp);
+        __ERC7821WithExecutor_init(executor);
     }
 }
