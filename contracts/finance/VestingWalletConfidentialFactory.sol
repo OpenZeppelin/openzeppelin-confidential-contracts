@@ -14,7 +14,7 @@ import {VestingWalletExecutorConfidential} from "./VestingWalletExecutorConfiden
  * All confidential vesting wallets created support both "cliff" ({VestingWalletCliffConfidential})
  * and "executor" ({VestingWalletExecutorConfidential}) extensions.
  */
-abstract contract VestingWalletConfidentialFactory {
+contract VestingWalletConfidentialFactory {
     address private immutable _vestingImplementation;
 
     /// @dev The specified cliff duration is larger than the vesting duration.
