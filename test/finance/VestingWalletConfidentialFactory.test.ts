@@ -248,4 +248,47 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
       ),
     ).to.be.revertedWithCustomError(this.factory, 'OwnableInvalidOwner');
   });
+
+  it('should be able to claim tokens after creating wallet', async function () {
+    const encryptedInput = await fhevm
+      .createEncryptedInput(await this.factory.getAddress(), this.holder.address)
+      .add64(amount1)
+      .encrypt();
+
+    const vestingWalletParams = [this.recipient, startTimestamp, duration, cliff, this.executor];
+
+    const vestingWallet = await ethers.getContractAt(
+      'VestingWalletCliffExecutorConfidential',
+      await this.factory.predictVestingWalletConfidential(...vestingWalletParams),
+    );
+
+    await this.factory.connect(this.holder).batchFundVestingWalletConfidential(
+      this.token.target,
+      [
+        {
+          beneficiary: this.recipient,
+          encryptedAmount: encryptedInput.handles[0],
+          startTimestamp,
+          durationSeconds: duration,
+          cliffSeconds: cliff,
+        },
+      ],
+      this.executor,
+      encryptedInput.inputProof,
+    );
+
+    await this.factory.createVestingWalletConfidential(...vestingWalletParams);
+
+    await time.increaseTo(startTimestamp + duration / 2);
+    await vestingWallet.release(this.token);
+
+    await expect(
+      fhevm.userDecryptEuint(
+        FhevmType.euint64,
+        await this.token.confidentialBalanceOf(this.recipient),
+        this.token.target,
+        this.recipient,
+      ),
+    ).to.eventually.eq(50);
+  });
 });

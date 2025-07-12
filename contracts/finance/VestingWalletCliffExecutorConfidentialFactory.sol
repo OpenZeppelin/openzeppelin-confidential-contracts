@@ -5,9 +5,7 @@ import {FHE, euint64, externalEuint64, euint128} from "@fhevm/solidity/lib/FHE.s
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
-import {ERC7821WithExecutor} from "./ERC7821WithExecutor.sol";
 import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.sol";
-import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
 
 /**
  * @dev This factory enables creating {VestingWalletCliffExecutorConfidential} in batch.
@@ -15,7 +13,7 @@ import {VestingWalletConfidential} from "./VestingWalletConfidential.sol";
  * Confidential vesting wallets created inherit both {VestingWalletCliffConfidential} for vesting cliffs
  * and {ERC7821WithExecutor} to allow for arbitrary calls to be executed from the vesting wallet.
  */
-contract VestingWalletCliffExecutorConfidentialFactory {
+abstract contract VestingWalletCliffExecutorConfidentialFactory {
     struct VestingPlan {
         address beneficiary;
         externalEuint64 encryptedAmount;
@@ -24,7 +22,7 @@ contract VestingWalletCliffExecutorConfidentialFactory {
         uint48 cliffSeconds;
     }
 
-    address private immutable _vestingImplementation = address(new VestingWalletCliffExecutorConfidential());
+    address private immutable _vestingImplementation;
 
     event VestingWalletConfidentialFunded(
         address indexed vestingWalletConfidential,
@@ -44,6 +42,10 @@ contract VestingWalletCliffExecutorConfidentialFactory {
         uint48 cliffSeconds,
         address indexed executor
     );
+
+    constructor() {
+        _vestingImplementation = _deployVestingWalletImplementation();
+    }
 
     /**
      * @dev Batches the funding of multiple confidential vesting wallets.
@@ -127,7 +129,8 @@ contract VestingWalletCliffExecutorConfidentialFactory {
                 executor
             )
         );
-        VestingWalletCliffExecutorConfidential(vestingWalletConfidentialAddress).initialize(
+        _initializeVestingWallet(
+            vestingWalletConfidentialAddress,
             beneficiary,
             startTimestamp,
             durationSeconds,
@@ -168,6 +171,17 @@ contract VestingWalletCliffExecutorConfidentialFactory {
             );
     }
 
+    function _initializeVestingWallet(
+        address vestingWalletAddress,
+        address beneficiary,
+        uint48 startTimestamp,
+        uint48 durationSeconds,
+        uint48 cliffSeconds,
+        address executor
+    ) internal virtual;
+
+    function _deployVestingWalletImplementation() internal virtual returns (address);
+
     /**
      * @dev Gets create2 salt for a confidential vesting wallet.
      */
@@ -179,24 +193,5 @@ contract VestingWalletCliffExecutorConfidentialFactory {
         address executor
     ) internal pure virtual returns (bytes32) {
         return keccak256(abi.encodePacked(beneficiary, startTimestamp, durationSeconds, cliffSeconds, executor));
-    }
-}
-
-// slither-disable-next-line locked-ether
-contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidential, ERC7821WithExecutor {
-    constructor() {
-        _disableInitializers();
-    }
-
-    function initialize(
-        address beneficiary,
-        uint48 startTimestamp,
-        uint48 durationSeconds,
-        uint48 cliffSeconds,
-        address executor
-    ) public initializer {
-        __VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds);
-        __VestingWalletCliffConfidential_init(cliffSeconds);
-        __ERC7821WithExecutor_init(executor);
     }
 }
