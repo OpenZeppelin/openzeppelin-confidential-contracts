@@ -136,6 +136,8 @@ jobs:
     needs: state
     name: Publish to npm
     environment: npm
+    env:
+      NPM_CONFIG_ACCESS: public
     permissions:
       contents: write
       id-token: write
