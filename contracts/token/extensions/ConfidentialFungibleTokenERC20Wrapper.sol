@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0-rc.1) (token/extensions/ConfidentialFungibleTokenERC20Wrapper.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.2.0-rc.2) (token/extensions/ConfidentialFungibleTokenERC20Wrapper.sol)
 
 pragma solidity ^0.8.27;
 

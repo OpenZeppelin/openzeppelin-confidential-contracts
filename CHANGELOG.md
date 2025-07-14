@@ -1,6 +1,10 @@
 # openzeppelin-confidential-contracts
 
 
+## 0.2.0-rc.2 (2025-07-14)
+
+- `VestingWalletCliffExecutorConfidentialFactory`: Renamed to `VestingWalletConfidentialFactory` and default implementation removed in favor of a user-defined vesting wallet implementation.
+
 ## 0.2.0-rc.1 (2025-07-12)
 
 - `VestingWalletConfidential`: A vesting wallet that releases confidential tokens owned by it according to a defined vesting schedule. ([#91](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/91))
