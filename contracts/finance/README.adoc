@@ -11,13 +11,10 @@ This directory includes primitives for on-chain confidential financial systems:
 
 For convenience, this directory also includes:
 
-- {VestingWalletCliffExecutorConfidential}: A Default implementation of `VestingWalletConfidential` which implements both `VestingWalletCliffConfidential` and execution via {ERC7821WithExecutor}.
-- {VestingWalletCliffExecutorConfidentialFactory}: A factory which allows creating `VestingWalletCliffExecutorConfidential` in batch.
+- {VestingWalletConfidentialFactory}: A factory which enables batch funding of vesting wallets.
 
 
 == Contracts
 {{VestingWalletConfidential}}
 {{VestingWalletCliffConfidential}}
-{{VestingWalletCliffExecutorConfidentialFactory}}
-{{VestingWalletCliffExecutorConfidential}}
-{{ERC7821WithExecutor}}
+{{VestingWalletConfidentialFactory}}

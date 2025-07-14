@@ -8,12 +8,12 @@ import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleT
 import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.sol";
 
 /**
- * @dev This factory enables creating {VestingWalletCliffExecutorConfidential} in batch.
+ * @dev A factory which enables batch funding of vesting wallets.
  *
- * Confidential vesting wallets created inherit both {VestingWalletCliffConfidential} for vesting cliffs
- * and {ERC7821WithExecutor} to allow for arbitrary calls to be executed from the vesting wallet.
+ * The {_deployVestingWalletImplementation} and {_initializeVestingWallet} functions remain unimplemented
+ * to allow for custom implementations of the vesting wallet to be used.
  */
-abstract contract VestingWalletCliffExecutorConfidentialFactory {
+abstract contract VestingWalletConfidentialFactory {
     struct VestingPlan {
         address beneficiary;
         externalEuint64 encryptedAmount;
@@ -149,7 +149,7 @@ abstract contract VestingWalletCliffExecutorConfidentialFactory {
     }
 
     /**
-     * @dev Predicts deterministic address for a confidential vesting wallet.
+     * @dev Predicts the deterministic address for a confidential vesting wallet.
      */
     function predictVestingWalletConfidential(
         address beneficiary,
@@ -171,6 +171,7 @@ abstract contract VestingWalletCliffExecutorConfidentialFactory {
             );
     }
 
+    /// @dev Virtual function that must be implemented to initialize the vesting wallet at `vestingWalletAddress`.
     function _initializeVestingWallet(
         address vestingWalletAddress,
         address beneficiary,
@@ -180,6 +181,11 @@ abstract contract VestingWalletCliffExecutorConfidentialFactory {
         address executor
     ) internal virtual;
 
+    /**
+     * @dev Internal function that is called once to deploy the vesting wallet implementation.
+     *
+     * Vesting wallet clones will be initialized by calls to the {_initializeVestingWallet} function.
+     */
     function _deployVestingWalletImplementation() internal virtual returns (address);
 
     /**

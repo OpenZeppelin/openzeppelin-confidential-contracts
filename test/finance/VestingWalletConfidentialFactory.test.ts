@@ -1,4 +1,4 @@
-import { $VestingWalletCliffExecutorConfidentialFactory } from '../../types/contracts-exposed/finance/VestingWalletCliffExecutorConfidentialFactory.sol/$VestingWalletCliffExecutorConfidentialFactory';
+import { $VestingWalletConfidentialFactoryMock } from '../../types/contracts-exposed/mocks/finance/VestingWalletConfidentialFactoryMock.sol/$VestingWalletConfidentialFactoryMock';
 import { $ConfidentialFungibleTokenMock } from '../../types/contracts-exposed/mocks/token/ConfidentialFungibleTokenMock.sol/$ConfidentialFungibleTokenMock';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
@@ -32,8 +32,8 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
       .encrypt();
 
     const factory = (await ethers.deployContract(
-      '$VestingWalletCliffExecutorConfidentialFactoryMock',
-    )) as unknown as $VestingWalletCliffExecutorConfidentialFactory;
+      '$VestingWalletConfidentialFactoryMock',
+    )) as unknown as $VestingWalletConfidentialFactoryMock;
 
     await token
       .connect(holder)

@@ -82,7 +82,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         emit VestingWalletConfidentialTokenReleased(token, amountSent);
     }
 
-    /// @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
+    /// @dev Calculates the amount of tokens that have already vested. Default implementation is a linear vesting curve.
     function vestedAmount(address token, uint64 timestamp) public virtual returns (euint128) {
         return
             _vestingSchedule(
