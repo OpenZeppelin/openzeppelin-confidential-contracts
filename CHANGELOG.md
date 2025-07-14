@@ -3,7 +3,7 @@
 
 ## 0.2.0-rc.2 (2025-07-14)
 
-- `VestingWalletCliffExecutorConfidentialFactory`: Renamed to `VestingWalletConfidentialFactory` and default implementation removed in favor of a user-defined vesting wallet implementation.
+- `VestingWalletCliffExecutorConfidentialFactory`: Renamed to `VestingWalletConfidentialFactory` and default implementation removed in favor of a user-defined vesting wallet implementation. ([#109](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/109))
 
 ## 0.2.0-rc.1 (2025-07-12)
 
