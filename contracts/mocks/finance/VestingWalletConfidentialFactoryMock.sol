@@ -5,7 +5,7 @@ import {SepoliaConfig, ZamaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7821WithExecutor} from "./../../finance/ERC7821WithExecutor.sol";
 import {VestingWalletCliffConfidential} from "./../../finance/VestingWalletCliffConfidential.sol";
-import {VestingWalletConfidentialFactory} from "./../../finance/VestingWalletCliffExecutorConfidentialFactory.sol";
+import {VestingWalletConfidentialFactory} from "./../../finance/VestingWalletConfidentialFactory.sol";
 
 abstract contract VestingWalletConfidentialFactoryMock is VestingWalletConfidentialFactory, SepoliaConfig {
     function _deployVestingWalletImplementation() internal virtual override returns (address) {
