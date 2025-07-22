@@ -1,4 +1,4 @@
-import { ERC7821WithExecutor } from '../../types';
+import { $ERC7821WithExecutor } from '../../types/contracts-exposed/finance/ERC7821WithExecutor.sol/$ERC7821WithExecutor';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { encodeMode, encodeBatch, CALL_TYPE_BATCH } from '@openzeppelin/contracts/test/helpers/erc7579';
 import { expect } from 'chai';
@@ -21,7 +21,7 @@ describe('ERC7821WithExecutor', function () {
 
     const executorWallet = (await ethers.deployContract('$ERC7821WithExecutor', [
       executor,
-    ])) as unknown as ERC7821WithExecutor;
+    ])) as unknown as $ERC7821WithExecutor;
 
     await (token as any)
       .connect(recipient)
@@ -56,5 +56,41 @@ describe('ERC7821WithExecutor', function () {
         .to.emit(this.token, 'ConfidentialTransfer')
         .withArgs(this.executorWallet, this.recipient, anyValue);
     });
+
+    it('should call if called by itself', async function () {
+      const balance = await this.token.confidentialBalanceOf(this.executorWallet);
+
+      await expect(
+        // caller is executor account
+        this.executorWallet.connect(this.executor).execute(
+          encodeMode({ callType: CALL_TYPE_BATCH }),
+          encodeBatch({
+            target: this.executorWallet.target,
+            value: 0n,
+            // then caller is `ERC7821WithExecutor` contract
+            data: this.executorWallet.interface.encodeFunctionData('execute(bytes32,bytes)', [
+              encodeMode({ callType: CALL_TYPE_BATCH }),
+              encodeBatch({
+                target: this.token,
+                value: 0n,
+                data: this.token.interface.encodeFunctionData('confidentialTransfer(address,bytes32)', [
+                  this.recipient.address,
+                  balance,
+                ]),
+              }),
+            ]),
+          }),
+        ),
+      )
+        .to.emit(this.token, 'ConfidentialTransfer')
+        .withArgs(this.executorWallet, this.recipient, anyValue);
+    });
+  });
+
+  it('should fail to init if not initializing', async function () {
+    await expect(this.executorWallet.$__ERC7821WithExecutor_init(this.executor)).to.be.revertedWithCustomError(
+      this.executorWallet,
+      'NotInitializing',
+    );
   });
 });
