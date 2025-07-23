@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, externalEuint64, ebool, euint64, Impl} from "@fhevm/solidity/lib/FHE.sol";
 import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
 import {TFHESafeMath} from "./../utils/TFHESafeMath.sol";
 import {ConfidentialFungibleTokenUtils} from "./utils/ConfidentialFungibleTokenUtils.sol";
@@ -24,7 +24,6 @@ import {ConfidentialFungibleTokenUtils} from "./utils/ConfidentialFungibleTokenU
 abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
-    mapping(uint256 requestId => euint64 encryptedAmount) private _requestHandles;
     euint64 private _totalSupply;
     string private _name;
     string private _symbol;
@@ -215,8 +214,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
         bytes32[] memory cts = new bytes32[](1);
         cts[0] = euint64.unwrap(encryptedAmount);
-        uint256 requestID = FHE.requestDecryption(cts, this.finalizeDiscloseEncryptedAmount.selector);
-        _requestHandles[requestID] = encryptedAmount;
+        FHE.requestDecryption(cts, this.finalizeDiscloseEncryptedAmount.selector);
     }
 
     /// @dev May only be called by the gateway contract. Finalizes a disclose encrypted amount request.
@@ -227,11 +225,11 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     ) public virtual {
         FHE.checkSignatures(requestId, signatures);
 
-        euint64 requestHandle = _requestHandles[requestId];
+        euint64 requestHandle = euint64.wrap(FHE.loadRequestedHandles(requestId)[0]);
         require(FHE.isInitialized(requestHandle), ConfidentialFungibleTokenInvalidGatewayRequest(requestId));
         emit AmountDisclosed(requestHandle, amount);
 
-        _requestHandles[requestId] = euint64.wrap(0);
+        Impl.getDecryptionRequests().requestedHandles[requestId] = new bytes32[](0);
     }
 
     function _setOperator(address holder, address operator, uint48 until) internal virtual {
