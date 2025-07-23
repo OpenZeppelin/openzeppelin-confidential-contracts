@@ -226,7 +226,6 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         FHE.checkSignatures(requestId, signatures);
 
         euint64 requestHandle = euint64.wrap(FHE.loadRequestedHandles(requestId)[0]);
-        require(FHE.isInitialized(requestHandle), ConfidentialFungibleTokenInvalidGatewayRequest(requestId));
         emit AmountDisclosed(requestHandle, amount);
 
         Impl.getDecryptionRequests().requestedHandles[requestId] = new bytes32[](0);
