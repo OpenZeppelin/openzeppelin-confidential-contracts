@@ -209,7 +209,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
      */
     function discloseEncryptedAmount(euint64 encryptedAmount) public virtual {
         require(
-            FHE.isAllowed(encryptedAmount, msg.sender) && FHE.isAllowed(encryptedAmount, address(this)),
+            FHE.isAllowed(encryptedAmount, msg.sender),
             ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
 
