@@ -264,15 +264,11 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         // Try to transfer amount + replace input with actually transferred amount.
         euint64 sent = _transfer(from, to, amount);
 
-        // Perform callback
-        transferred = FHE.select(
-            ConfidentialFungibleTokenUtils.checkOnTransferReceived(msg.sender, from, to, sent, data),
-            sent,
-            FHE.asEuint64(0)
-        );
+        ebool success = ConfidentialFungibleTokenUtils.checkOnTransferReceived(msg.sender, from, to, sent, data);
+        euint64 returned = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent));
 
-        // Refund if success fails. refund should never fail
-        _update(to, from, FHE.sub(sent, transferred));
+        // Perform callback
+        transferred = FHE.sub(sent, returned);
     }
 
     function _update(address from, address to, euint64 amount) internal virtual returns (euint64 transferred) {
