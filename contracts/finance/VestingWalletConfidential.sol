@@ -110,6 +110,15 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         $._duration = durationSeconds;
     }
 
+    function __VestingWalletConfidential_init_unchained(
+        uint48 startTimestamp,
+        uint48 durationSeconds
+    ) internal onlyInitializing {
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        $._start = startTimestamp;
+        $._duration = durationSeconds;
+    }
+
     /// @dev This returns the amount vested, as a function of time, for an asset given its total historical allocation.
     function _vestingSchedule(euint128 totalAllocation, uint64 timestamp) internal virtual returns (euint128) {
         if (timestamp < start()) {

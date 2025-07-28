@@ -43,8 +43,7 @@ contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidentia
         uint48 cliffSeconds,
         address executor
     ) public initializer {
-        __VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds);
-        __VestingWalletCliffConfidential_init(cliffSeconds);
+        __VestingWalletCliffConfidential_init(beneficiary, startTimestamp, durationSeconds, cliffSeconds);
         __ERC7821WithExecutor_init(executor);
 
         FHE.setCoprocessor(ZamaConfig.getSepoliaConfig());

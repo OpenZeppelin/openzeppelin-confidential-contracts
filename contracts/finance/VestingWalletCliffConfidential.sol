@@ -32,7 +32,22 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
      * start timestamp (see {VestingWalletConfidential-start}) and ends `cliffSeconds` later.
      */
     // solhint-disable-next-line func-name-mixedcase
-    function __VestingWalletCliffConfidential_init(uint48 cliffSeconds) internal onlyInitializing {
+    function __VestingWalletCliffConfidential_init(
+        address beneficiary,
+        uint48 startTimestamp,
+        uint48 durationSeconds,
+        uint48 cliffSeconds
+    ) internal onlyInitializing {
+        __VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds);
+        require(
+            cliffSeconds <= duration(),
+            VestingWalletCliffConfidentialInvalidCliffDuration(cliffSeconds, duration())
+        );
+        _getVestingWalletCliffStorage()._cliff = start() + cliffSeconds;
+    }
+
+    // solhint-disable-next-line func-name-mixedcase
+    function __VestingWalletCliffConfidential_init_unchained(uint48 cliffSeconds) internal onlyInitializing {
         require(
             cliffSeconds <= duration(),
             VestingWalletCliffConfidentialInvalidCliffDuration(cliffSeconds, duration())

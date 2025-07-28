@@ -67,10 +67,9 @@ describe(`VestingWalletCliffConfidential`, function () {
   });
 
   it('should fail to init if not initializing', async function () {
-    await expect(this.vesting.$__VestingWalletCliffConfidential_init(60 * 10 - 1)).to.be.revertedWithCustomError(
-      this.vesting,
-      'NotInitializing',
-    );
+    await expect(
+      this.vesting.$__VestingWalletCliffConfidential_init_unchained(60 * 10 - 1),
+    ).to.be.revertedWithCustomError(this.vesting, 'NotInitializing');
   });
 
   shouldBehaveLikeVestingConfidential();
