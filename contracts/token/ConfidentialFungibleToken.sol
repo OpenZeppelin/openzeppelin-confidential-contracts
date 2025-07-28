@@ -227,8 +227,6 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
 
         euint64 requestHandle = euint64.wrap(FHE.loadRequestedHandles(requestId)[0]);
         emit AmountDisclosed(requestHandle, amount);
-
-        Impl.getDecryptionRequests().requestedHandles[requestId] = new bytes32[](0);
     }
 
     function _setOperator(address holder, address operator, uint48 until) internal virtual {
