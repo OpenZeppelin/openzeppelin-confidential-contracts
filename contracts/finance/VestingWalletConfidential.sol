@@ -110,6 +110,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         $._duration = durationSeconds;
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __VestingWalletConfidential_init_unchained(
         uint48 startTimestamp,
         uint48 durationSeconds
