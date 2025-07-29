@@ -138,8 +138,8 @@ abstract contract VestingWalletConfidentialFactory {
             executor
         );
         emit VestingWalletConfidentialCreated(
-            beneficiary,
             vestingWalletConfidentialAddress,
+            beneficiary,
             startTimestamp,
             durationSeconds,
             cliffSeconds,
