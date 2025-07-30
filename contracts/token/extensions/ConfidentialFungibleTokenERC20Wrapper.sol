@@ -69,13 +69,13 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         // check caller is the token contract
         require(address(underlying()) == msg.sender, ConfidentialFungibleTokenUnauthorizedCaller(msg.sender));
 
-        // transfer excess back to the sender
-        uint256 excess = amount % rate();
-        if (excess > 0) SafeERC20.safeTransfer(underlying(), from, excess);
-
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
         _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+
+        // transfer excess back to the sender
+        uint256 excess = amount % rate();
+        if (excess > 0) SafeERC20.safeTransfer(underlying(), from, excess);
 
         // return magic value
         return IERC1363Receiver.onTransferReceived.selector;
