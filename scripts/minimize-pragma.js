@@ -125,7 +125,9 @@ Object.keys(metadata).forEach(file => updatePragma(file, '>=0.0.0'));
         const pragmaPrefix = metadata[file].interface ? '>=' : '^';
 
         process.stdout.write(
-          `[${Object.keys(pragmas).length + 1}/${Object.keys(metadata).length}] Searching minimal version for ${file} ... `,
+          `[${Object.keys(pragmas).length + 1}/${
+            Object.keys(metadata).length
+          }] Searching minimal version for ${file} ... `,
         );
         const pragma = await setMinimalApplicablePragma(file, candidates, pragmaPrefix);
         console.log(pragma);
