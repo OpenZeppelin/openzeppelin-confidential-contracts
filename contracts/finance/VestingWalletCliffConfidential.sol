@@ -39,11 +39,7 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
         uint48 cliffSeconds
     ) internal onlyInitializing {
         __VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds);
-        require(
-            cliffSeconds <= duration(),
-            VestingWalletCliffConfidentialInvalidCliffDuration(cliffSeconds, duration())
-        );
-        _getVestingWalletCliffStorage()._cliff = start() + cliffSeconds;
+        __VestingWalletCliffConfidential_init_unchained(cliffSeconds);
     }
 
     // solhint-disable-next-line func-name-mixedcase
