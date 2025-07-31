@@ -105,9 +105,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         uint48 durationSeconds
     ) internal onlyInitializing {
         __Ownable_init(beneficiary);
-        VestingWalletStorage storage $ = _getVestingWalletStorage();
-        $._start = startTimestamp;
-        $._duration = durationSeconds;
+        __VestingWalletConfidential_init_unchained(startTimestamp, durationSeconds);
     }
 
     // solhint-disable-next-line func-name-mixedcase
