@@ -52,6 +52,15 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         return start() + duration();
     }
 
+    /**
+     * @dev Getter to retrieve the token balance of this vesting wallet.
+     * It allows the owner of this vesting wallet to see the confidential balance.
+     */
+    function confidentialBalance(address token) public virtual returns (euint64 balance) {
+        balance = IConfidentialFungibleToken(token).confidentialBalanceOf(address(this));
+        FHE.allow(balance, owner());
+    }
+
     /// @dev Amount of token already released
     function released(address token) public view virtual returns (euint128) {
         return _getVestingWalletStorage()._tokenReleased[token];

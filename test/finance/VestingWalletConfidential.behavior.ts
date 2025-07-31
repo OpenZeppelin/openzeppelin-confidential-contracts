@@ -6,6 +6,14 @@ import { ethers, fhevm } from 'hardhat';
 
 function shouldBehaveLikeVestingConfidential() {
   describe('vesting', async function () {
+    it('should get token balance of vesting wallet', async function () {
+      const vestingBalanceHandle = await this.vesting.confidentialBalance.staticCall(this.token);
+      await this.vesting.confidentialBalance(this.token);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, vestingBalanceHandle, this.token.target, this.recipient),
+      ).to.eventually.equal(1000);
+    });
+
     it('should release nothing before vesting start', async function () {
       await this.vesting.release(this.token);
 
@@ -33,6 +41,11 @@ function shouldBehaveLikeVestingConfidential() {
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandle, this.token.target, this.recipient),
       ).to.eventually.equal(this.vestingAmount / 2);
+      const vestingBalanceHandle = await this.vesting.confidentialBalance.staticCall(this.token);
+      await this.vesting.confidentialBalance(this.token);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, vestingBalanceHandle, this.token.target, this.recipient),
+      ).to.eventually.equal(this.vestingAmount / 2);
     });
 
     it('should release entire amount after end', async function () {
@@ -43,6 +56,11 @@ function shouldBehaveLikeVestingConfidential() {
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandle, this.token.target, this.recipient),
       ).to.eventually.equal(this.vestingAmount);
+      const vestingBalanceHandle = await this.vesting.confidentialBalance.staticCall(this.token);
+      await this.vesting.confidentialBalance(this.token);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, vestingBalanceHandle, this.token.target, this.recipient),
+      ).to.eventually.equal(0);
     });
 
     it('should not release if reentrancy', async function () {
