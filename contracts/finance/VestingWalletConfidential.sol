@@ -62,7 +62,10 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      * {IConfidentialFungibleToken} contract.
      */
     function releasable(address token) public virtual returns (euint64) {
-        return FHE.asEuint64(FHE.sub(vestedAmount(token, uint64(block.timestamp)), released(token)));
+        euint128 vestedAmount_ = vestedAmount(token, uint64(block.timestamp));
+        euint128 releasedAmount = released(token);
+        ebool success = FHE.ge(vestedAmount_, releasedAmount);
+        return FHE.select(success, FHE.asEuint64(FHE.sub(vestedAmount_, releasedAmount)), FHE.asEuint64(0));
     }
 
     /**
@@ -75,6 +78,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         FHE.allowTransient(amount, token);
         euint64 amountSent = IConfidentialFungibleToken(token).confidentialTransfer(owner(), amount);
 
+        // This could overflow if the total supply is resent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
         euint128 newReleasedAmount = FHE.add(released(token), amountSent);
         FHE.allow(newReleasedAmount, owner());
         FHE.allowThis(newReleasedAmount);
