@@ -156,6 +156,15 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
     }
 
     /**
+     * @dev Returns the default number of decimals of the underlying ERC-20 token that is being wrapped.
+     * Used as a default fallback when {_tryGetAssetDecimals} fails to fetch decimals of the underlying
+     * ERC-20 token.
+     */
+    function _defaultUnderlyingDecimals() internal pure virtual returns (uint8) {
+        return 18;
+    }
+
+    /**
      * @dev Returns the maximum number that will be used for {decimals} by the wrapper.
      */
     function _maxDecimals() internal pure virtual returns (uint8) {
@@ -169,6 +178,6 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
         if (success && encodedDecimals.length == 32) {
             return abi.decode(encodedDecimals, (uint8));
         }
-        return 18;
+        return _defaultUnderlyingDecimals();
     }
 }
