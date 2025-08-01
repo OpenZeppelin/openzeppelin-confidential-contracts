@@ -20,6 +20,7 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 startTimestamp;
         uint48 durationSeconds;
         uint48 cliffSeconds;
+        bytes extraData;
     }
 
     address private immutable _vestingImplementation;
@@ -32,7 +33,8 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 startTimestamp,
         uint48 durationSeconds,
         uint48 cliffSeconds,
-        address executor
+        address executor,
+        bytes extraData
     );
     event VestingWalletConfidentialCreated(
         address indexed vestingWalletConfidential,
@@ -40,7 +42,8 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 startTimestamp,
         uint48 durationSeconds,
         uint48 cliffSeconds,
-        address indexed executor
+        address indexed executor,
+        bytes extraData
     );
 
     constructor() {
@@ -78,7 +81,8 @@ abstract contract VestingWalletConfidentialFactory {
                 vestingPlan.startTimestamp,
                 vestingPlan.durationSeconds,
                 vestingPlan.cliffSeconds,
-                executor
+                executor,
+                vestingPlan.extraData
             );
 
             euint64 transferredAmount;
@@ -101,14 +105,14 @@ abstract contract VestingWalletConfidentialFactory {
                 vestingPlan.startTimestamp,
                 vestingPlan.durationSeconds,
                 vestingPlan.cliffSeconds,
-                executor
+                executor,
+                vestingPlan.extraData
             );
         }
     }
 
     /**
      * @dev Creates a confidential vesting wallet.
-     *
      * Emits a {VestingWalletConfidentialCreated}.
      */
     function createVestingWalletConfidential(
@@ -116,7 +120,8 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 startTimestamp,
         uint48 durationSeconds,
         uint48 cliffSeconds,
-        address executor
+        address executor,
+        bytes memory extraData
     ) public virtual returns (address) {
         // Will revert if clone already created
         address vestingWalletConfidentialAddress = Clones.cloneDeterministic(
@@ -126,7 +131,8 @@ abstract contract VestingWalletConfidentialFactory {
                 startTimestamp,
                 durationSeconds,
                 cliffSeconds,
-                executor
+                executor,
+                extraData
             )
         );
         _initializeVestingWallet(
@@ -135,7 +141,8 @@ abstract contract VestingWalletConfidentialFactory {
             startTimestamp,
             durationSeconds,
             cliffSeconds,
-            executor
+            executor,
+            extraData
         );
         emit VestingWalletConfidentialCreated(
             vestingWalletConfidentialAddress,
@@ -143,7 +150,8 @@ abstract contract VestingWalletConfidentialFactory {
             startTimestamp,
             durationSeconds,
             cliffSeconds,
-            executor
+            executor,
+            extraData
         );
         return vestingWalletConfidentialAddress;
     }
@@ -156,7 +164,8 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 startTimestamp,
         uint48 durationSeconds,
         uint48 cliffSeconds,
-        address executor
+        address executor,
+        bytes memory extraData
     ) public view virtual returns (address) {
         return
             Clones.predictDeterministicAddress(
@@ -166,19 +175,24 @@ abstract contract VestingWalletConfidentialFactory {
                     startTimestamp,
                     durationSeconds,
                     cliffSeconds,
-                    executor
+                    executor,
+                    extraData
                 )
             );
     }
 
-    /// @dev Virtual function that must be implemented to initialize the vesting wallet at `vestingWalletAddress`.
+    /**
+     * @dev Virtual function that must be implemented to initialize the vesting wallet at `vestingWalletAddress`.
+     * Custom vesting wallet implementations can be initialized thanks to the `extraData` argument.
+     */
     function _initializeVestingWallet(
         address vestingWalletAddress,
         address beneficiary,
         uint48 startTimestamp,
         uint48 durationSeconds,
         uint48 cliffSeconds,
-        address executor
+        address executor,
+        bytes memory extraData
     ) internal virtual;
 
     /**
@@ -196,8 +210,12 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 startTimestamp,
         uint48 durationSeconds,
         uint48 cliffSeconds,
-        address executor
+        address executor,
+        bytes memory extraData
     ) internal pure virtual returns (bytes32) {
-        return keccak256(abi.encodePacked(beneficiary, startTimestamp, durationSeconds, cliffSeconds, executor));
+        return
+            keccak256(
+                abi.encodePacked(beneficiary, startTimestamp, durationSeconds, cliffSeconds, executor, extraData)
+            );
     }
 }
