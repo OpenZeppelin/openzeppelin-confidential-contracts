@@ -35,6 +35,8 @@ jobs:
       - run: npm run test
       - name: Check procedurally generated contracts are up-to-date
         run: npm run test:generation
+      - name: Check pragma validity
+        run: npm run test:pragma -- --concurrency 1
 
   coverage:
     runs-on: ubuntu-latest
