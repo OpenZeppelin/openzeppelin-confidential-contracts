@@ -130,7 +130,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     }
 
     function _getVestingWalletStorage() private pure returns (VestingWalletStorage storage $) {
-        assembly {
+        assembly ("memory-safe") {
             $.slot := VestingWalletStorageLocation
         }
     }

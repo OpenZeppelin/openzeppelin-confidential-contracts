@@ -38,7 +38,7 @@ abstract contract ERC7821WithExecutor is Initializable, ERC7821 {
     }
 
     function _getERC7821WithExecutorStorage() private pure returns (ERC7821WithExecutorStorage storage $) {
-        assembly {
+        assembly ("memory-safe") {
             $.slot := ERC7821WithExecutorStorageLocation
         }
     }
