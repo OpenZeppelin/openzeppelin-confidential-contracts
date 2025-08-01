@@ -85,6 +85,8 @@ abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleT
      * @dev Wraps amount `amount` of the underlying token into a confidential token and sends it to
      * `to`. Tokens are exchanged at a fixed rate specified by {rate} such that `amount / rate()` confidential
      * tokens are sent. Amount transferred in is rounded down to the nearest multiple of {rate}.
+     * The minting part assumes the full amount of the underlying token transfer has been received, hence non-standard
+     * tokens such as fee-on-transfer or other deflationary-type tokens are not supported by this wrapper.
      */
     function wrap(address to, uint256 amount) public virtual {
         // take ownership of the tokens
