@@ -78,7 +78,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         FHE.allowTransient(amount, token);
         euint64 amountSent = IConfidentialFungibleToken(token).confidentialTransfer(owner(), amount);
 
-        // This could overflow if the total supply is resent `type(uint128).max/types(uint64).max` times. This is an accepted risk.
+        // This could overflow if the total supply is resent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
         euint128 newReleasedAmount = FHE.add(released(token), amountSent);
         FHE.allow(newReleasedAmount, owner());
         FHE.allowThis(newReleasedAmount);
