@@ -17,11 +17,6 @@ import {Checkpoints} from "./temporary-Checkpoints.sol";
 library CheckpointsConfidential {
     using Checkpoints for Checkpoints.Trace256;
 
-    /**
-     * @dev A value was attempted to be inserted on a past checkpoint.
-     */
-    error CheckpointUnorderedInsertion();
-
     struct TraceEuint32 {
         Checkpoints.Trace256 _inner;
     }

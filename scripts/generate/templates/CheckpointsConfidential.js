@@ -22,13 +22,6 @@ const libraryUsage = `\
 using Checkpoints for Checkpoints.Trace256;
 `;
 
-const errors = `\
-/**
- * @dev A value was attempted to be inserted on a past checkpoint.
- */
-error CheckpointUnorderedInsertion();
-`;
-
 const template = opts => `\
 struct ${opts.historyTypeName} {
     Checkpoints.Trace256 _inner;
@@ -125,7 +118,6 @@ module.exports = format(
   format(
     [].concat(
       libraryUsage,
-      errors,
       OPTS.map(opts => template(opts)),
     ),
   ).trimEnd(),
