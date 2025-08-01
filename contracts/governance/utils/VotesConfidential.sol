@@ -167,7 +167,7 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
                 store = _delegateCheckpoints[from];
                 euint64 newValue = store.latest().sub(amount);
                 newValue.allowThis();
-                newValue.allow(from);
+                // not allowing value for delegatee to avoid delegator balance deduction
                 euint64 oldValue = _push(store, newValue);
                 emit DelegateVotesChanged(from, oldValue, newValue);
             }
@@ -175,7 +175,7 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
                 store = _delegateCheckpoints[to];
                 euint64 newValue = store.latest().add(amount);
                 newValue.allowThis();
-                newValue.allow(to);
+                // not allowing value for delegatee
                 euint64 oldValue = _push(store, newValue);
                 emit DelegateVotesChanged(to, oldValue, newValue);
             }

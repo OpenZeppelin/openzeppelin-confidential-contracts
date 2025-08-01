@@ -47,4 +47,17 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
     function _setClockOverride(uint48 val) external {
         _clockOverrideVal = val;
     }
+
+    /**
+     * @dev Decision of how delegatees can see their votes without revaling balance
+     * of their delegators is up to the final contract.
+     * Choosing a simple approach here for mocking purposes.
+     */
+    function _allowVotes(address account) internal {
+        FHE.allow(super.getVotes(account), account);
+    }
+
+    function _allowPastVotes(address account, uint256 timepoint) internal {
+        FHE.allow(super.getPastVotes(account, timepoint), account);
+    }
 }
