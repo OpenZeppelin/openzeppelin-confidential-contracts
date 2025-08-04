@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 
-/// @dev Draft interface for a confidential fungible token standard utilizing the Zama TFHE library.
+/// @dev Draft interface for a confidential fungible token standard utilizing the Zama FHE library.
 interface IConfidentialFungibleToken {
     /**
      * @dev Emitted when the expiration timestamp for an operator `operator` is updated for a given `holder`.

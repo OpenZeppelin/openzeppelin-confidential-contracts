@@ -5,7 +5,15 @@ import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {VotesConfidential} from "./../../governance/utils/VotesConfidential.sol";
 import {ConfidentialFungibleToken} from "./../ConfidentialFungibleToken.sol";
 
+/**
+ * @dev Extension of {ConfidentialFungibleToken} supporting confidential votes tracking and delegation.
+ *
+ * The amount of confidential voting units an account has is equal to the confidential token balance of
+ * that account. Voing power is taken into account when an account delegates votes to itself or to another
+ * account.
+ */
 abstract contract ConfidentialFungibleTokenVotes is ConfidentialFungibleToken, VotesConfidential {
+    /// @inheritdoc ConfidentialFungibleToken
     function confidentialTotalSupply()
         public
         view

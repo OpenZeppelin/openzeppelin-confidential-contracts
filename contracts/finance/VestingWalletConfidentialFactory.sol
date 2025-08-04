@@ -24,6 +24,7 @@ abstract contract VestingWalletConfidentialFactory {
 
     address private immutable _vestingImplementation;
 
+    /// @dev Emitted for each vesting wallet funded within a batch.
     event VestingWalletConfidentialFunded(
         address indexed vestingWalletConfidential,
         address indexed beneficiary,
@@ -34,6 +35,7 @@ abstract contract VestingWalletConfidentialFactory {
         uint48 cliffSeconds,
         address executor
     );
+    /// @dev Emitted when a vesting wallet is deployed.
     event VestingWalletConfidentialCreated(
         address indexed vestingWalletConfidential,
         address indexed beneficiary,

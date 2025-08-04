@@ -6,12 +6,12 @@ NOTE: This document is better viewed at https://docs.openzeppelin.com/confidenti
 
 Miscellaneous contracts and libraries containing utility functions you can use to improve security, and ease integrations when working with confidential contracts.
 
-- {TFHESafeMath}: Implementation of safe math operations for encrypted values.
+- {FHESafeMath}: Implementation of safe math operations for encrypted values.
 - {CheckpointsConfidential}: Implementation of checkpoints for encrypted values.
 
 == Math
 
-{{TFHESafeMath}}
+{{FHESafeMath}}
 
 == Structs
 

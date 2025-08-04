@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
-import {TFHESafeMath} from "./../utils/TFHESafeMath.sol";
+import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 import {ConfidentialFungibleTokenUtils} from "./utils/ConfidentialFungibleTokenUtils.sol";
 
 /**
@@ -219,7 +219,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         _requestHandles[requestID] = encryptedAmount;
     }
 
-    /// @dev May only be called by the gateway contract. Finalizes a disclose encrypted amount request.
+    /// @dev Finalizes a disclose encrypted amount request.
     function finalizeDiscloseEncryptedAmount(
         uint256 requestId,
         uint64 amount,
@@ -277,13 +277,13 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         euint64 ptr;
 
         if (from == address(0)) {
-            (success, ptr) = TFHESafeMath.tryIncrease(_totalSupply, amount);
+            (success, ptr) = FHESafeMath.tryIncrease(_totalSupply, amount);
             FHE.allowThis(ptr);
             _totalSupply = ptr;
         } else {
             euint64 fromBalance = _balances[from];
             require(FHE.isInitialized(fromBalance), ConfidentialFungibleTokenZeroBalance(from));
-            (success, ptr) = TFHESafeMath.tryDecrease(fromBalance, amount);
+            (success, ptr) = FHESafeMath.tryDecrease(fromBalance, amount);
             FHE.allowThis(ptr);
             FHE.allow(ptr, from);
             _balances[from] = ptr;
