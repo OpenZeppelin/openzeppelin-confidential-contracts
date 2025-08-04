@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {ACLAllowance} from "../../utils/ACLAllowance.sol";
+import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {ACLAllowance} from "./../../utils/ACLAllowance.sol";
 
 contract ACLAllowanceMock is ACLAllowance, SepoliaConfig {
     event HandleCreated(euint64 handle);
