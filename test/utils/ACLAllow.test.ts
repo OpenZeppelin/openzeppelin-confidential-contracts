@@ -2,7 +2,7 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
-describe.only('ACLAllowance', function () {
+describe('ACLAllowance', function () {
   before(async function () {
     const accounts = await ethers.getSigners();
     const mock = await ethers.deployContract('ACLAllowanceMock');
