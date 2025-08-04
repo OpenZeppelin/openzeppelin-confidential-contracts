@@ -22,7 +22,6 @@ abstract contract VestingWalletConfidentialFactoryMock is VestingWalletConfident
         ) = abi.decode(initialization, (address, uint48, uint48, uint48, address));
 
         require(cliffSeconds <= durationSeconds);
-
         require(beneficiary != address(0));
     }
 

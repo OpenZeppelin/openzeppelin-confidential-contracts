@@ -16,7 +16,7 @@ const cliff = 10;
 const amount1 = 101;
 const amount2 = 102;
 
-describe.only('VestingWalletCliffExecutorConfidentialFactory', function () {
+describe('VestingWalletCliffExecutorConfidentialFactory', function () {
   beforeEach(async function () {
     const [holder, recipient, recipient2, operator, executor, ...accounts] = await ethers.getSigners();
 
