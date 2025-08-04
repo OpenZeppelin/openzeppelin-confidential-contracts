@@ -1,6 +1,6 @@
 = Confidential Fungible Token
 
-The xref:api:token.adoc#ConfidentialFungibleToken[Confidential Fungible Token] is a standard fungible token implementation that is similar to `ERC20`, but built from the ground up with confidentiality in mind. All balance and transfer amounts are represented as cypher-text handles, ensuring that no data is leaked to the public. 
+The xref:api:token.adoc#ConfidentialFungibleToken[Confidential Fungible Token] is a standard fungible token implementation that is similar to `ERC20`, but built from the ground up with confidentiality in mind. All balance and transfer amounts are represented as ciphertext handles, ensuring that no data is leaked to the public. 
 
 While the standard is built with inspiration from ERC-20, it is not ERC-20 compliant--the standard takes learning from all tokens built over the past 10 years (ERC-20, ERC-721, ERC-1155, ERC-6909 etc) and provides a functional interface for maximal functionality.
 
@@ -13,10 +13,10 @@ While the standard is built with inspiration from ERC-20, it is not ERC-20 compl
 The token standard exposes eight different transfer functions. They are all permutations of the following options:
 
 * `transfer` and `transferFrom`: `transfer` moves tokens from the sender while `transferFrom` moves tokens from a specified `from` address. See xref:#operator[operator].
-* With and without `inputProof`: An `inputProof` can be provided to prove that the sender knows the value of the cypher-text `amount` provided.
+* With and without `inputProof`: An `inputProof` can be provided to prove that the sender knows the value of the ciphertext `amount` provided.
 * With and without an `ERC1363` style callback: The standard implements callbacks, see the xref:#callback[callback] section for more details.
 
-Select the appropriate transfer function and generate a cypher-text using https://github.com/zama-ai/fhevm-js[fhevm-js]. If the cypher-text is a new value, or the sender does not have permission to access the cypher text, an input-proof must be provided to show that the sender knows the value of the cypher-text.
+Select the appropriate transfer function and generate a ciphertext using https://github.com/zama-ai/fhevm-js[fhevm-js]. If the ciphertext is a new value, or the sender does not have permission to access the ciphertext, an input-proof must be provided to show that the sender knows the value of the ciphertext.
 
 [[operator]]
 === Operator
