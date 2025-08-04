@@ -196,6 +196,31 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
     ).to.be.reverted;
   });
 
+  it('should revert on creation with invalid init', async function () {
+    const encryptedInput = await fhevm
+      .createEncryptedInput(await this.factory.getAddress(), this.holder.address)
+      .add64(amount1)
+      .encrypt();
+    const invalidInitialization = ethers.AbiCoder.defaultAbiCoder().encode(
+      ['address', 'uint48', 'uint48', 'uint48'],
+      [this.recipient.address, startTimestamp, duration, cliff],
+    );
+
+    await expect(
+      this.factory.connect(this.holder).batchFundVestingWalletConfidential(
+        this.token.target,
+        [
+          {
+            beneficiary: this.recipient,
+            encryptedAmount: encryptedInput.handles[0],
+            initialization: invalidInitialization,
+          },
+        ],
+        encryptedInput.inputProof,
+      ),
+    ).to.be.reverted;
+  });
+
   it('should not batch with invalid beneficiary', async function () {
     const encryptedInput = await fhevm
       .createEncryptedInput(this.factory.target, this.holder.address)

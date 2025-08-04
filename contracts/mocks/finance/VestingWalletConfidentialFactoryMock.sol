@@ -13,6 +13,7 @@ abstract contract VestingWalletConfidentialFactoryMock is VestingWalletConfident
     }
 
     function _validateVestingWalletInitialization(bytes memory initialization) internal virtual override {
+        // solhint-disable no-unused-vars
         (
             address beneficiary,
             uint48 startTimestamp,
