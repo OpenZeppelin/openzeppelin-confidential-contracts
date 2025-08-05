@@ -15,7 +15,7 @@ import {CheckpointsConfidential} from "./../../utils/structs/CheckpointsConfiden
  * It features vote delegation to delegators.
 
  * This contract keeps a history (checkpoints) of each account's confidential vote power. Confidential
- * vote power can be delegated either by calling the {delegate} function directly, or by providing
+ * voting power can be delegated either by calling the {delegate} function directly, or by providing
  * a signature to be used with {delegateBySig}. Confidential voting power handles can be queried
  * through the public accessors {getVotes} and {getPastVotes} but can only be decrypted by accounts
  * allowed to access them. Ensure that `_validateACLAllowance` is implemented properly, allowing all necessary addresses to access voting power handles.
