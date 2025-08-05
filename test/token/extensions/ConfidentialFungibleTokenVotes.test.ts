@@ -111,6 +111,8 @@ describe('ConfidentialFungibleTokenVotes', function () {
       await this.token.connect(this.holder).delegate(this.holder);
 
       const votesHandle = await this.token.getVotes(this.holder);
+      await this.token.getACLAllowance(votesHandle, this.holder, true);
+
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, votesHandle, this.token.target, this.holder),
       ).to.eventually.equal(1000);
@@ -189,16 +191,19 @@ describe('ConfidentialFungibleTokenVotes', function () {
       await expect(this.token.getPastVotes(this.holder, this.blockNumber)).to.eventually.eq(ethers.ZeroHash);
 
       const afterInitialMintVotesHandle = await this.token.getPastVotes(this.holder, afterInitialMintBlock);
+      await this.token.getACLAllowance(afterInitialMintVotesHandle, this.holder, true);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, afterInitialMintVotesHandle, this.token.target, this.holder),
       ).to.eventually.equal(1000);
 
       const afterTransferVotesHandle = await this.token.getPastVotes(this.holder, afterTransferBlock);
+      await this.token.getACLAllowance(afterTransferVotesHandle, this.holder, true);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, afterTransferVotesHandle, this.token.target, this.holder),
       ).to.eventually.equal(800);
 
       const afterBurnVotesHandle = await this.token.getPastVotes(this.holder, afterBurnBlock);
+      await this.token.getACLAllowance(afterBurnVotesHandle, this.holder, true);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, afterBurnVotesHandle, this.token.target, this.holder),
       ).to.eventually.equal(0);
