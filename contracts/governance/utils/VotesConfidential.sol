@@ -18,7 +18,7 @@ import {CheckpointsConfidential} from "./../../utils/structs/CheckpointsConfiden
  * vote power can be delegated either by calling the {delegate} function directly, or by providing
  * a signature to be used with {delegateBySig}. Confidential voting power handles can be queried
  * through the public accessors {getVotes} and {getPastVotes} but can only be decrypted by accounts
- * allowed to access them.
+ * allowed to access them. Ensure that `_validateACLAllowance` is implemented properly, allowing all necessary addresses to access voting power handles.
  *
  * By default, voting units does not account for voting power. This makes transfers of underlying
  * voting units cheaper. The downside is that it requires users to delegate to themselves in order
