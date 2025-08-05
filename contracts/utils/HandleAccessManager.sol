@@ -11,7 +11,7 @@ abstract contract HandleAccessManager {
      * NOTE: This function call is gated by `msg.sender` and validated by the
      * {_validateHandleAllowance} function.
      */
-    function getHandleAllowance(bytes32 handle, address account, bool persistent) public {
+    function getHandleAllowance(bytes32 handle, address account, bool persistent) public virtual {
         _validateHandleAllowance(handle);
         if (persistent) {
             Impl.allow(handle, account);
