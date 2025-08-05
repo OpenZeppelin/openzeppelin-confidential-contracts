@@ -16,7 +16,7 @@ import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.s
 abstract contract VestingWalletConfidentialFactory {
     struct VestingPlan {
         externalEuint64 encryptedAmount;
-        bytes initialization;
+        bytes initArgs;
     }
 
     address private immutable _vestingImplementation;
@@ -25,9 +25,9 @@ abstract contract VestingWalletConfidentialFactory {
         address indexed vestingWalletConfidential,
         address indexed confidentialFungibleToken,
         euint64 transferredAmount,
-        bytes initialization
+        bytes initArgs
     );
-    event VestingWalletConfidentialCreated(address indexed vestingWalletConfidential, bytes initialization);
+    event VestingWalletConfidentialCreated(address indexed vestingWalletConfidential, bytes initArgs);
 
     constructor() {
         _vestingImplementation = _deployVestingWalletImplementation();
@@ -49,9 +49,9 @@ abstract contract VestingWalletConfidentialFactory {
         uint256 vestingPlansLength = vestingPlans.length;
         for (uint256 i = 0; i < vestingPlansLength; i++) {
             VestingPlan memory vestingPlan = vestingPlans[i];
-            _validateVestingWalletInitialization(vestingPlan.initialization);
+            _validateVestingWalletInitArgs(vestingPlan.initArgs);
 
-            address vestingWalletAddress = predictVestingWalletConfidential(vestingPlan.initialization);
+            address vestingWalletAddress = predictVestingWalletConfidential(vestingPlan.initArgs);
 
             euint64 encryptedAmount = FHE.fromExternal(vestingPlan.encryptedAmount, inputProof);
             FHE.allowTransient(encryptedAmount, confidentialFungibleToken);
@@ -65,7 +65,7 @@ abstract contract VestingWalletConfidentialFactory {
                 vestingWalletAddress,
                 confidentialFungibleToken,
                 transferredAmount,
-                vestingPlan.initialization
+                vestingPlan.initArgs
             );
         }
     }
@@ -75,33 +75,33 @@ abstract contract VestingWalletConfidentialFactory {
      *
      * Emits a {VestingWalletConfidentialCreated}.
      */
-    function createVestingWalletConfidential(bytes calldata initialization) public virtual returns (address) {
+    function createVestingWalletConfidential(bytes calldata initArgs) public virtual returns (address) {
         // Will revert if clone already created
         address vestingWalletConfidentialAddress = Clones.cloneDeterministic(
             _vestingImplementation,
-            _getCreate2VestingWalletConfidentialSalt(initialization)
+            _getCreate2VestingWalletConfidentialSalt(initArgs)
         );
-        _initializeVestingWallet(vestingWalletConfidentialAddress, initialization);
-        emit VestingWalletConfidentialCreated(vestingWalletConfidentialAddress, initialization);
+        _initializeVestingWallet(vestingWalletConfidentialAddress, initArgs);
+        emit VestingWalletConfidentialCreated(vestingWalletConfidentialAddress, initArgs);
         return vestingWalletConfidentialAddress;
     }
 
     /**
      * @dev Predicts the deterministic address for a confidential vesting wallet.
      */
-    function predictVestingWalletConfidential(bytes memory initialization) public view virtual returns (address) {
+    function predictVestingWalletConfidential(bytes memory initArgs) public view virtual returns (address) {
         return
             Clones.predictDeterministicAddress(
                 _vestingImplementation,
-                _getCreate2VestingWalletConfidentialSalt(initialization)
+                _getCreate2VestingWalletConfidentialSalt(initArgs)
             );
     }
 
-    /// @dev Virtual function that must be implemented to validate the initialization bytes.
-    function _validateVestingWalletInitialization(bytes memory initialization) internal virtual;
+    /// @dev Virtual function that must be implemented to validate the initArgs bytes.
+    function _validateVestingWalletInitArgs(bytes memory initArgs) internal virtual;
 
     /// @dev Virtual function that must be implemented to initialize the vesting wallet at `vestingWalletAddress`.
-    function _initializeVestingWallet(address vestingWalletAddress, bytes calldata initialization) internal virtual;
+    function _initializeVestingWallet(address vestingWalletAddress, bytes calldata initArgs) internal virtual;
 
     /**
      * @dev Internal function that is called once to deploy the vesting wallet implementation.
@@ -113,9 +113,7 @@ abstract contract VestingWalletConfidentialFactory {
     /**
      * @dev Gets create2 salt for a confidential vesting wallet.
      */
-    function _getCreate2VestingWalletConfidentialSalt(
-        bytes memory initialization
-    ) internal pure virtual returns (bytes32) {
-        return keccak256(initialization);
+    function _getCreate2VestingWalletConfidentialSalt(bytes memory initArgs) internal pure virtual returns (bytes32) {
+        return keccak256(initArgs);
     }
 }
