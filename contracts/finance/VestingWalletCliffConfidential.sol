@@ -60,7 +60,7 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
      * effect from calling the inherited implementation (i.e. `super._vestingSchedule`). Carefully consider
      * this caveat if the overridden implementation of this function has any (e.g. writing to memory or reverting).
      */
-    function _vestingSchedule(euint128 totalAllocation, uint64 timestamp) internal virtual override returns (euint128) {
+    function _vestingSchedule(euint128 totalAllocation, uint48 timestamp) internal virtual override returns (euint128) {
         return timestamp < cliff() ? euint128.wrap(0) : super._vestingSchedule(totalAllocation, timestamp);
     }
 

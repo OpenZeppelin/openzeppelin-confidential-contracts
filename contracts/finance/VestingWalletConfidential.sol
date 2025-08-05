@@ -65,7 +65,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      * {IConfidentialFungibleToken} contract.
      */
     function releasable(address token) public virtual returns (euint64) {
-        euint128 vestedAmount_ = vestedAmount(token, uint64(block.timestamp));
+        euint128 vestedAmount_ = vestedAmount(token, uint48(block.timestamp));
         euint128 releasedAmount = released(token);
         ebool success = FHE.ge(vestedAmount_, releasedAmount);
         return FHE.select(success, FHE.asEuint64(FHE.sub(vestedAmount_, releasedAmount)), FHE.asEuint64(0));
@@ -93,7 +93,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      * @dev Calculates the amount of tokens that have been vested at the given timestamp.
      * Default implementation is a linear vesting curve.
      */
-    function vestedAmount(address token, uint64 timestamp) public virtual returns (euint128) {
+    function vestedAmount(address token, uint48 timestamp) public virtual returns (euint128) {
         return
             _vestingSchedule(
                 FHE.add(
@@ -129,7 +129,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     }
 
     /// @dev This returns the amount vested, as a function of time, for an asset given its total historical allocation.
-    function _vestingSchedule(euint128 totalAllocation, uint64 timestamp) internal virtual returns (euint128) {
+    function _vestingSchedule(euint128 totalAllocation, uint48 timestamp) internal virtual returns (euint128) {
         if (timestamp < start()) {
             return euint128.wrap(0);
         } else if (timestamp >= end()) {
