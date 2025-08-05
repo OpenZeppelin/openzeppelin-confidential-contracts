@@ -8,10 +8,10 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
-import {ACLAllowance} from "./../../utils/ACLAllowance.sol";
+import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
 import {CheckpointsConfidential} from "./../../utils/structs/CheckpointsConfidential.sol";
 
-abstract contract VotesConfidential is Nonces, EIP712, IERC6372, ACLAllowance {
+abstract contract VotesConfidential is Nonces, EIP712, IERC6372, HandleAccessManager {
     using FHE for *;
     using CheckpointsConfidential for CheckpointsConfidential.TraceEuint64;
 

@@ -3,12 +3,12 @@ pragma solidity ^0.8.24;
 
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ACLAllowance} from "./../../utils/ACLAllowance.sol";
+import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
 
-contract ACLAllowanceMock is ACLAllowance, SepoliaConfig {
+contract HandleAccessManagerMock is HandleAccessManager, SepoliaConfig {
     event HandleCreated(euint64 handle);
 
-    function _validateACLAllowance(bytes32 handle) internal view override {}
+    function _validateHandleAccess(bytes32 handle) internal view override {}
 
     function createHandle(uint64 amount) public returns (euint64) {
         euint64 handle = FHE.asEuint64(amount);

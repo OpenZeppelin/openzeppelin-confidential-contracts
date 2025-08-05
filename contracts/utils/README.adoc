@@ -8,7 +8,7 @@ Miscellaneous contracts and libraries containing utility functions you can use t
 
 - {TFHESafeMath}: Implementation of safe math operations for encrypted values.
 - {CheckpointsConfidential}: Implementation of checkpoints for encrypted values.
-- {ACLAllowance}: Minimal contract that adds a function to give ACL allowance to callers for a given ciphertext handle.
+- {HandleAccessManager}: Minimal contract that adds a function to give ACL allowance to callers for a given ciphertext handle.
 
 == Math
 
@@ -19,4 +19,4 @@ Miscellaneous contracts and libraries containing utility functions you can use t
 {{CheckpointsConfidential}}
 
 == Other
-{{ACLAllowance}}
+{{HandleAccessManager}}

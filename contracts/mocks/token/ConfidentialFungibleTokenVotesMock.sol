@@ -48,5 +48,5 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
         _clockOverrideVal = val;
     }
 
-    function _validateACLAllowance(bytes32 handle) internal view override {}
+    function _validateHandleAccess(bytes32 handle) internal view override {}
 }
