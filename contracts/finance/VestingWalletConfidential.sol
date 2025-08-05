@@ -21,6 +21,8 @@ import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleT
  *
  * NOTE: When using this contract with any token whose balance is adjusted automatically (i.e. a rebase token), make
  * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
+ *
+ * Confidential vesting wallet contracts can be deployed (as clones) using the {VestingWalletConfidentialFactory}.
  */
 abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGuardTransient {
     /// @custom:storage-location erc7201:openzeppelin.storage.VestingWalletConfidential
@@ -35,6 +37,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     bytes32 private constant VestingWalletStorageLocation =
         0x78ce9ee9eb65fa0cf5bf10e861c3a95cb7c3c713c96ab1e5323a21e846796800;
 
+    /// @dev Emitted when releasable vested tokens are released.
     event VestingWalletConfidentialTokenReleased(address indexed token, euint64 amount);
 
     /// @dev Timestamp at which the vesting starts.
@@ -86,7 +89,10 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         emit VestingWalletConfidentialTokenReleased(token, amountSent);
     }
 
-    /// @dev Calculates the amount of tokens that have already vested. Default implementation is a linear vesting curve.
+    /**
+     * @dev Calculates the amount of tokens that have been vested at the given timestamp.
+     * Default implementation is a linear vesting curve.
+     */
     function vestedAmount(address token, uint64 timestamp) public virtual returns (euint128) {
         return
             _vestingSchedule(

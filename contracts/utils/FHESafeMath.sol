@@ -7,7 +7,7 @@ import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
  * @dev Library providing safe arithmetic operations for encrypted values
  * to handle potential overflows in FHE operations.
  */
-library TFHESafeMath {
+library FHESafeMath {
     /**
      * @dev Try to increase the encrypted value `oldValue` by `delta`. If the operation is successful,
      * `success` will be true and `updated` will be the new value. Otherwise, `success` will be false

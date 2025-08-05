@@ -12,14 +12,29 @@ abstract contract VestingWalletConfidentialFactoryMock is VestingWalletConfident
         return address(new VestingWalletCliffExecutorConfidential());
     }
 
-    function _initializeVestingWallet(
-        address vestingWalletAddress,
-        address beneficiary,
-        uint48 startTimestamp,
-        uint48 durationSeconds,
-        uint48 cliffSeconds,
-        address executor
-    ) internal virtual override {
+    function _validateVestingWalletInitArgs(bytes memory initArgs) internal virtual override {
+        // solhint-disable no-unused-vars
+        (
+            address beneficiary,
+            uint48 startTimestamp,
+            uint48 durationSeconds,
+            uint48 cliffSeconds,
+            address executor
+        ) = abi.decode(initArgs, (address, uint48, uint48, uint48, address));
+
+        require(cliffSeconds <= durationSeconds);
+        require(beneficiary != address(0));
+    }
+
+    function _initializeVestingWallet(address vestingWalletAddress, bytes calldata initArgs) internal virtual override {
+        (
+            address beneficiary,
+            uint48 startTimestamp,
+            uint48 durationSeconds,
+            uint48 cliffSeconds,
+            address executor
+        ) = abi.decode(initArgs, (address, uint48, uint48, uint48, address));
+
         VestingWalletCliffExecutorConfidential(vestingWalletAddress).initialize(
             beneficiary,
             startTimestamp,

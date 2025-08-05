@@ -11,6 +11,20 @@ import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
 import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
 import {CheckpointsConfidential} from "./../../utils/structs/CheckpointsConfidential.sol";
 
+/**
+ * @dev A confidential votes contract tracking confidential voting power of accounts over time.
+ * It features vote delegation to delegators.
+
+ * This contract keeps a history (checkpoints) of each account's confidential vote power. Confidential
+ * voting power can be delegated either by calling the {delegate} function directly, or by providing
+ * a signature to be used with {delegateBySig}. Confidential voting power handles can be queried
+ * through the public accessors {getVotes} and {getPastVotes} but can only be decrypted by accounts
+ * allowed to access them. Ensure that `_validateACLAllowance` is implemented properly, allowing all necessary addresses to access voting power handles.
+ *
+ * By default, voting units does not account for voting power. This makes transfers of underlying
+ * voting units cheaper. The downside is that it requires users to delegate to themselves in order
+ * to activate checkpoints and have their voting power tracked.
+ */
 abstract contract VotesConfidential is Nonces, EIP712, IERC6372, HandleAccessManager {
     using FHE for *;
     using CheckpointsConfidential for CheckpointsConfidential.TraceEuint64;
