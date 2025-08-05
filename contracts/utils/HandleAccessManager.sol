@@ -9,10 +9,10 @@ abstract contract HandleAccessManager {
      * account `account` with the given persistence flag.
      *
      * NOTE: This function call is gated by `msg.sender` and validated by the
-     * {_validateHandleAccess} function.
+     * {_validateHandleAllowance} function.
      */
     function getHandleAllowance(bytes32 handle, address account, bool persistent) public {
-        _validateHandleAccess(handle);
+        _validateHandleAllowance(handle);
         if (persistent) {
             Impl.allow(handle, account);
         } else {
@@ -24,5 +24,5 @@ abstract contract HandleAccessManager {
      * @dev Unimplemented function that must revert if the message sender is not allowed to call
      * {getHandleAllowance} for the given handle.
      */
-    function _validateHandleAccess(bytes32 handle) internal view virtual;
+    function _validateHandleAllowance(bytes32 handle) internal view virtual;
 }

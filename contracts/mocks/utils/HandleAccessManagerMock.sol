@@ -8,7 +8,7 @@ import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
 contract HandleAccessManagerMock is HandleAccessManager, SepoliaConfig {
     event HandleCreated(euint64 handle);
 
-    function _validateHandleAccess(bytes32 handle) internal view override {}
+    function _validateHandleAllowance(bytes32 handle) internal view override {}
 
     function createHandle(uint64 amount) public returns (euint64) {
         euint64 handle = FHE.asEuint64(amount);
