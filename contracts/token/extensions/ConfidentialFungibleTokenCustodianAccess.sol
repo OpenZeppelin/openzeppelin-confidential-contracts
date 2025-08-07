@@ -53,7 +53,7 @@ abstract contract ConfidentialFungibleTokenCustodianAccess is ConfidentialFungib
         if (fromCustodian != address(0)) {
             FHE.allow(transferred, fromCustodian);
         }
-        if (toCustodian != address(0)) {
+        if (toCustodian != address(0) && toCustodian != fromCustodian) {
             FHE.allow(transferred, toCustodian);
         }
     }
