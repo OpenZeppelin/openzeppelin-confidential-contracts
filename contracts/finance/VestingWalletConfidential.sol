@@ -96,10 +96,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     function vestedAmount(address token, uint48 timestamp) public virtual returns (euint128) {
         return
             _vestingSchedule(
-                FHE.add(
-                    FHE.asEuint128(IConfidentialFungibleToken(token).confidentialBalanceOf(address(this))),
-                    released(token)
-                ),
+                FHE.add(released(token), IConfidentialFungibleToken(token).confidentialBalanceOf(address(this))),
                 timestamp
             );
     }
