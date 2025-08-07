@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {FHE, euint64, externalEuint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
-import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.sol";
 
 /**
  * @dev A factory which enables batch funding of vesting wallets.
  *
- * The {_deployVestingWalletImplementation} and {_initializeVestingWallet} functions remain unimplemented
- * to allow for custom implementations of the vesting wallet to be used.
+ * The {_deployVestingWalletImplementation}, {_initializeVestingWallet}, and {_validateVestingWalletInitArgs}
+ * functions remain unimplemented to allow for custom implementations of the vesting wallet to be used.
  */
 abstract contract VestingWalletConfidentialFactory {
     struct VestingPlan {
