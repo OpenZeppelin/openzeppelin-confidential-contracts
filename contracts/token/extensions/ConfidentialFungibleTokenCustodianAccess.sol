@@ -1,0 +1,60 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.27;
+
+import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {IERC1363Receiver} from "@openzeppelin/contracts/interfaces/IERC1363Receiver.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {ConfidentialFungibleToken} from "./../ConfidentialFungibleToken.sol";
+
+/**
+ * @dev Extension of {ConfidentialFungibleToken} that allows accounts to add custodians who are given
+ * permanent ACL access to their transfer amounts. Custodians can be added or removed at any point in time.
+ */
+abstract contract ConfidentialFungibleTokenCustodianAccess is ConfidentialFungibleToken {
+    mapping(address => address) private _custodians;
+
+    event ConfidentialFungibleTokenCustodianAccessCustodianSet(
+        address account,
+        address oldCustodian,
+        address newCustodian
+    );
+
+    error Unauthorized();
+
+    function setCustodian(address account, address newCustodian) public virtual {
+        require(
+            msg.sender == account || (msg.sender == custodian(account) && newCustodian == address(0)),
+            Unauthorized()
+        );
+
+        address oldCustodian = custodian(account);
+
+        emit ConfidentialFungibleTokenCustodianAccessCustodianSet(
+            account,
+            oldCustodian,
+            _custodians[account] = newCustodian
+        );
+    }
+
+    function custodian(address account) public view virtual returns (address) {
+        return _custodians[account];
+    }
+
+    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
+        transferred = super._update(from, to, amount);
+
+        address fromCustodian = custodian(from);
+        address toCustodian = custodian(to);
+
+        if (fromCustodian != address(0)) {
+            FHE.allow(transferred, fromCustodian);
+        }
+        if (toCustodian != address(0)) {
+            FHE.allow(transferred, toCustodian);
+        }
+    }
+}
