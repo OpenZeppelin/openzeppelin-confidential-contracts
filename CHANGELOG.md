@@ -1,6 +1,10 @@
 # openzeppelin-confidential-contracts
 
 
+## 0.2.0-rc.3 (2025-08-08)
+
+- `HandleAccessManager`: Minimal contract that adds a function to give allowance to callers for a given ciphertext handle. ([#145](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/145))
+
 ## 0.2.0-rc.2 (2025-07-14)
 
 - `VestingWalletCliffExecutorConfidentialFactory`: Renamed to `VestingWalletConfidentialFactory` and default implementation removed in favor of a user-defined vesting wallet implementation. ([#109](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/109))
