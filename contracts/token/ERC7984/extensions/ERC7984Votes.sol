@@ -2,23 +2,23 @@
 pragma solidity ^0.8.27;
 
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {VotesConfidential} from "./../../governance/utils/VotesConfidential.sol";
-import {ConfidentialFungibleToken} from "./../ConfidentialFungibleToken.sol";
+import {VotesConfidential} from "../../../governance/utils/VotesConfidential.sol";
+import {ERC7984} from "./../ERC7984.sol";
 
 /**
- * @dev Extension of {ConfidentialFungibleToken} supporting confidential votes tracking and delegation.
+ * @dev Extension of {ERC7984} supporting confidential votes tracking and delegation.
  *
  * The amount of confidential voting units an account has is equal to the confidential token balance of
  * that account. Voing power is taken into account when an account delegates votes to itself or to another
  * account.
  */
-abstract contract ConfidentialFungibleTokenVotes is ConfidentialFungibleToken, VotesConfidential {
-    /// @inheritdoc ConfidentialFungibleToken
+abstract contract ERC7984Votes is ERC7984, VotesConfidential {
+    /// @inheritdoc ERC7984
     function confidentialTotalSupply()
         public
         view
         virtual
-        override(VotesConfidential, ConfidentialFungibleToken)
+        override(VotesConfidential, ERC7984)
         returns (euint64)
     {
         return super.confidentialTotalSupply();

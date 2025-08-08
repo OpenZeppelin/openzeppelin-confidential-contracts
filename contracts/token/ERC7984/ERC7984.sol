@@ -2,9 +2,9 @@
 pragma solidity ^0.8.27;
 
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
-import {FHESafeMath} from "./../utils/FHESafeMath.sol";
-import {ConfidentialFungibleTokenUtils} from "./utils/ConfidentialFungibleTokenUtils.sol";
+import {IConfidentialFungibleToken} from "./../../interfaces/IConfidentialFungibleToken.sol";
+import {FHESafeMath} from "./../../utils/FHESafeMath.sol";
+import {ConfidentialFungibleTokenUtils} from "../utils/ConfidentialFungibleTokenUtils.sol";
 
 /**
  * @dev Reference implementation for {IConfidentialFungibleToken}.
@@ -21,7 +21,7 @@ import {ConfidentialFungibleTokenUtils} from "./utils/ConfidentialFungibleTokenU
  * - Transfer and call pattern
  * - Safe overflow/underflow handling for FHE operations
  */
-abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
+abstract contract ERC7984 is IConfidentialFungibleToken {
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
     mapping(uint256 requestId => euint64 encryptedAmount) private _requestHandles;
