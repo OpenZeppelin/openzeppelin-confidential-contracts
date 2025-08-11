@@ -2,12 +2,12 @@
 pragma solidity ^0.8.27;
 
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IConfidentialFungibleToken} from "./../../interfaces/IConfidentialFungibleToken.sol";
+import {IERC7984} from "./../../interfaces/IERC7984.sol";
 import {FHESafeMath} from "./../../utils/FHESafeMath.sol";
 import {ConfidentialFungibleTokenUtils} from "../utils/ConfidentialFungibleTokenUtils.sol";
 
 /**
- * @dev Reference implementation for {IConfidentialFungibleToken}.
+ * @dev Reference implementation for {IERC7984}.
  *
  * This contract implements a fungible token where balances and transfers are encrypted using the Zama fhEVM,
  * providing confidentiality to users. Token amounts are stored as encrypted, unsigned integers (`euint64`)

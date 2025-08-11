@@ -8,17 +8,17 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {ConfidentialFungibleToken} from "./../ConfidentialFungibleToken.sol";
+import {ERC7984} from "./../ERC7984.sol";
 
 /**
- * @dev A wrapper contract built on top of {ConfidentialFungibleToken} that allows wrapping an `ERC20` token
+ * @dev A wrapper contract built on top of {ERC7984} that allows wrapping an `ERC20` token
  * into a confidential fungible token. The wrapper contract implements the `IERC1363Receiver` interface
  * which allows users to transfer `ERC1363` tokens directly to the wrapper with a callback to wrap the tokens.
  *
  * WARNING: Minting assumes the full amount of the underlying token transfer has been received, hence some non-standard
  * tokens such as fee-on-transfer or other deflationary-type tokens are not supported by this wrapper.
  */
-abstract contract ConfidentialFungibleTokenERC20Wrapper is ConfidentialFungibleToken, IERC1363Receiver {
+abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     IERC20 private immutable _underlying;
     uint8 private immutable _decimals;
     uint256 private immutable _rate;
