@@ -3,11 +3,11 @@ pragma solidity ^0.8.24;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 
-import {IConfidentialFungibleTokenReceiver} from "../../interfaces/IConfidentialFungibleTokenReceiver.sol";
+import {IERC7984Receiver} from "../../interfaces/IERC7984Receiver.sol";
 import {ConfidentialFungibleToken} from "../ConfidentialFungibleToken.sol";
 
 /// @dev Library that provides common {ConfidentialFungibleToken} utility functions.
-library ConfidentialFungibleTokenUtils {
+library ERC7984Utils {
     /**
      * @dev Performs a transfer callback to the recipient of the transfer `to`. Should be invoked
      * after all transfers "withCallback" on a {ConfidentialFungibleToken}.
@@ -26,7 +26,7 @@ library ConfidentialFungibleTokenUtils {
     ) internal returns (ebool) {
         if (to.code.length > 0) {
             try
-                IConfidentialFungibleTokenReceiver(to).onConfidentialTransferReceived(operator, from, amount, data)
+                IERC7984Receiver(to).onConfidentialTransferReceived(operator, from, amount, data)
             returns (ebool retval) {
                 return retval;
             } catch (bytes memory reason) {
