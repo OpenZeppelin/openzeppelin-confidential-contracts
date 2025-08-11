@@ -5,7 +5,7 @@ import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {IConfidentialFungibleToken} from "../../interfaces/IConfidentialFungibleToken.sol";
+import {IERC7984} from "../../interfaces/IERC7984.sol";
 
 contract SwapConfidentialToERC20 {
     using FHE for *;
@@ -13,10 +13,10 @@ contract SwapConfidentialToERC20 {
     error SwapConfidentialToERC20InvalidGatewayRequest(uint256 requestId);
 
     mapping(uint256 requestId => address) private _receivers;
-    IConfidentialFungibleToken private _fromToken;
+    IERC7984 private _fromToken;
     IERC20 private _toToken;
 
-    constructor(IConfidentialFungibleToken fromToken, IERC20 toToken) {
+    constructor(IERC7984 fromToken, IERC20 toToken) {
         _fromToken = fromToken;
         _toToken = toToken;
     }

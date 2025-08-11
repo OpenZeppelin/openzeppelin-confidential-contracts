@@ -3,9 +3,9 @@ pragma solidity ^0.8.24;
 
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IConfidentialFungibleTokenReceiver} from "../../interfaces/IConfidentialFungibleTokenReceiver.sol";
+import {IERC7984Receiver} from "../../interfaces/IERC7984Receiver.sol";
 
-contract ConfidentialFungibleTokenReceiverMock is IConfidentialFungibleTokenReceiver, SepoliaConfig {
+contract ConfidentialFungibleTokenReceiverMock is IERC7984Receiver, SepoliaConfig {
     event ConfidentialTransferCallback(bool success);
 
     error InvalidInput(uint8 input);

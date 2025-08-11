@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {FHE, ebool, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
-import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
+import {IERC7984} from "./../interfaces/IERC7984.sol";
 
 /**
  * @dev A vesting wallet is an ownable contract that can receive ConfidentialFungibleTokens, and release these
@@ -79,7 +79,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     function release(address token) public virtual nonReentrant {
         euint64 amount = releasable(token);
         FHE.allowTransient(amount, token);
-        euint64 amountSent = IConfidentialFungibleToken(token).confidentialTransfer(owner(), amount);
+        euint64 amountSent = IERC7984(token).confidentialTransfer(owner(), amount);
 
         // This could overflow if the total supply is resent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
         euint128 newReleasedAmount = FHE.add(released(token), amountSent);
@@ -95,10 +95,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      */
     function vestedAmount(address token, uint48 timestamp) public virtual returns (euint128) {
         return
-            _vestingSchedule(
-                FHE.add(released(token), IConfidentialFungibleToken(token).confidentialBalanceOf(address(this))),
-                timestamp
-            );
+            _vestingSchedule(FHE.add(released(token), IERC7984(token).confidentialBalanceOf(address(this))), timestamp);
     }
 
     /**

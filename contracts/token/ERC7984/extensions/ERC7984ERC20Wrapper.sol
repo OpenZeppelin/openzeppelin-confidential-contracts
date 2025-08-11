@@ -40,7 +40,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         }
     }
 
-    /// @inheritdoc ConfidentialFungibleToken
+    /// @inheritdoc ERC7984
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }

@@ -4,16 +4,16 @@ pragma solidity ^0.8.24;
 
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ConfidentialFungibleToken} from "../../token/ConfidentialFungibleToken.sol";
+import {ERC7984} from "../../token/ERC7984/ERC7984.sol";
 // solhint-disable func-name-mixedcase
-contract ConfidentialFungibleTokenMock is ConfidentialFungibleToken, SepoliaConfig {
+contract ERC7984Mock is ERC7984, SepoliaConfig {
     address private immutable _OWNER;
 
     constructor(
         string memory name_,
         string memory symbol_,
         string memory tokenURI_
-    ) ConfidentialFungibleToken(name_, symbol_, tokenURI_) {
+    ) ERC7984(name_, symbol_, tokenURI_) {
         _OWNER = msg.sender;
     }
 

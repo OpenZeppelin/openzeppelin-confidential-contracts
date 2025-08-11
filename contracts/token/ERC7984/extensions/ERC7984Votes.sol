@@ -14,13 +14,7 @@ import {ERC7984} from "./../ERC7984.sol";
  */
 abstract contract ERC7984Votes is ERC7984, VotesConfidential {
     /// @inheritdoc ERC7984
-    function confidentialTotalSupply()
-        public
-        view
-        virtual
-        override(VotesConfidential, ERC7984)
-        returns (euint64)
-    {
+    function confidentialTotalSupply() public view virtual override(VotesConfidential, ERC7984) returns (euint64) {
         return super.confidentialTotalSupply();
     }
 

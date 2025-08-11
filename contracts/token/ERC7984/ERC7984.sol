@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC7984} from "./../../interfaces/IERC7984.sol";
 import {FHESafeMath} from "./../../utils/FHESafeMath.sol";
-import {ConfidentialFungibleTokenUtils} from "../utils/ConfidentialFungibleTokenUtils.sol";
+import {ERC7984Utils} from "./utils/ERC7984Utils.sol";
 
 /**
  * @dev Reference implementation for {IERC7984}.
@@ -21,7 +21,7 @@ import {ConfidentialFungibleTokenUtils} from "../utils/ConfidentialFungibleToken
  * - Transfer and call pattern
  * - Safe overflow/underflow handling for FHE operations
  */
-abstract contract ERC7984 is IConfidentialFungibleToken {
+abstract contract ERC7984 is IERC7984 {
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
     mapping(uint256 requestId => euint64 encryptedAmount) private _requestHandles;
@@ -61,47 +61,47 @@ abstract contract ERC7984 is IConfidentialFungibleToken {
         _tokenURI = tokenURI_;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function name() public view virtual returns (string memory) {
         return _name;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function symbol() public view virtual returns (string memory) {
         return _symbol;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function decimals() public view virtual returns (uint8) {
         return 6;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function tokenURI() public view virtual returns (string memory) {
         return _tokenURI;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTotalSupply() public view virtual returns (euint64) {
         return _totalSupply;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialBalanceOf(address account) public view virtual returns (euint64) {
         return _balances[account];
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function isOperator(address holder, address spender) public view virtual returns (bool) {
         return holder == spender || block.timestamp <= _operators[holder][spender];
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function setOperator(address operator, uint48 until) public virtual {
         _setOperator(msg.sender, operator, until);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransfer(
         address to,
         externalEuint64 encryptedAmount,
@@ -110,7 +110,7 @@ abstract contract ERC7984 is IConfidentialFungibleToken {
         return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransfer(address to, euint64 amount) public virtual returns (euint64) {
         require(
             FHE.isAllowed(amount, msg.sender),
@@ -119,7 +119,7 @@ abstract contract ERC7984 is IConfidentialFungibleToken {
         return _transfer(msg.sender, to, amount);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferFrom(
         address from,
         address to,
@@ -131,7 +131,7 @@ abstract contract ERC7984 is IConfidentialFungibleToken {
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferFrom(
         address from,
         address to,
@@ -146,7 +146,7 @@ abstract contract ERC7984 is IConfidentialFungibleToken {
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferAndCall(
         address to,
         externalEuint64 encryptedAmount,
@@ -157,7 +157,7 @@ abstract contract ERC7984 is IConfidentialFungibleToken {
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferAndCall(
         address to,
         euint64 amount,
@@ -171,7 +171,7 @@ abstract contract ERC7984 is IConfidentialFungibleToken {
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferFromAndCall(
         address from,
         address to,
@@ -184,7 +184,7 @@ abstract contract ERC7984 is IConfidentialFungibleToken {
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferFromAndCall(
         address from,
         address to,
@@ -265,7 +265,7 @@ abstract contract ERC7984 is IConfidentialFungibleToken {
         euint64 sent = _transfer(from, to, amount);
 
         // Perform callback
-        ebool success = ConfidentialFungibleTokenUtils.checkOnTransferReceived(msg.sender, from, to, sent, data);
+        ebool success = ERC7984Utils.checkOnTransferReceived(msg.sender, from, to, sent, data);
 
         // Try to refund if callback fails
         euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent));

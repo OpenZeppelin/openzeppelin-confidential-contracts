@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
+import {IERC7984} from "./../interfaces/IERC7984.sol";
 
 /**
  * @dev A factory which enables batch funding of vesting wallets.
@@ -55,7 +55,7 @@ abstract contract VestingWalletConfidentialFactory {
 
             euint64 encryptedAmount = FHE.fromExternal(vestingPlan.encryptedAmount, inputProof);
             FHE.allowTransient(encryptedAmount, confidentialFungibleToken);
-            euint64 transferredAmount = IConfidentialFungibleToken(confidentialFungibleToken).confidentialTransferFrom(
+            euint64 transferredAmount = IERC7984(confidentialFungibleToken).confidentialTransferFrom(
                 msg.sender,
                 vestingWalletAddress,
                 encryptedAmount

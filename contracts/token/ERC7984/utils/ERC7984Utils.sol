@@ -3,8 +3,8 @@ pragma solidity ^0.8.24;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 
-import {IERC7984Receiver} from "../../interfaces/IERC7984Receiver.sol";
-import {ConfidentialFungibleToken} from "../ConfidentialFungibleToken.sol";
+import {IERC7984Receiver} from "../../../interfaces/IERC7984Receiver.sol";
+import {ERC7984} from "../ERC7984.sol";
 
 /// @dev Library that provides common {ConfidentialFungibleToken} utility functions.
 library ERC7984Utils {
@@ -25,13 +25,13 @@ library ERC7984Utils {
         bytes calldata data
     ) internal returns (ebool) {
         if (to.code.length > 0) {
-            try
-                IERC7984Receiver(to).onConfidentialTransferReceived(operator, from, amount, data)
-            returns (ebool retval) {
+            try IERC7984Receiver(to).onConfidentialTransferReceived(operator, from, amount, data) returns (
+                ebool retval
+            ) {
                 return retval;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
-                    revert ConfidentialFungibleToken.ConfidentialFungibleTokenInvalidReceiver(to);
+                    revert ERC7984.ConfidentialFungibleTokenInvalidReceiver(to);
                 } else {
                     assembly ("memory-safe") {
                         revert(add(32, reason), mload(reason))
