@@ -3,10 +3,9 @@
 pragma solidity ^0.8.24;
 
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ERC7984Mock} from "./ConfidentialFungibleTokenMock.sol";
+import {ERC7984Mock} from "./ERC7984Mock.sol";
 
-// solhint-disable func-name-mixedcase
-contract ConfidentialFungibleTokenReentrantMock is ERC7984Mock {
+contract ERC7984ReentrantMock is ERC7984Mock {
     constructor(
         string memory name_,
         string memory symbol_,

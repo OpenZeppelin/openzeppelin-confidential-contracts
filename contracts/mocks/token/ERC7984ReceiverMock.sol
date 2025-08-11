@@ -5,7 +5,7 @@ import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC7984Receiver} from "../../interfaces/IERC7984Receiver.sol";
 
-contract ConfidentialFungibleTokenReceiverMock is IERC7984Receiver, SepoliaConfig {
+contract ERC7984ReceiverMock is IERC7984Receiver, SepoliaConfig {
     event ConfidentialTransferCallback(bool success);
 
     error InvalidInput(uint8 input);
