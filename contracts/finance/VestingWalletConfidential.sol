@@ -62,7 +62,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
 
     /**
      * @dev Getter for the amount of releasable `token` tokens. `token` should be the address of an
-     * {IConfidentialFungibleToken} contract.
+     * {IERC7984} contract.
      */
     function releasable(address token) public virtual returns (euint64) {
         euint128 vestedAmount_ = vestedAmount(token, uint48(block.timestamp));

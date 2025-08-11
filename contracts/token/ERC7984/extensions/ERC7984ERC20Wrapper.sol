@@ -70,7 +70,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         bytes calldata data
     ) public virtual returns (bytes4) {
         // check caller is the token contract
-        require(address(underlying()) == msg.sender, ConfidentialFungibleTokenUnauthorizedCaller(msg.sender));
+        require(address(underlying()) == msg.sender, ERC7984UnauthorizedCaller(msg.sender));
 
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
@@ -106,10 +106,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
      * NOTE: The caller *must* already be approved by ACL for the given `amount`.
      */
     function unwrap(address from, address to, euint64 amount) public virtual {
-        require(
-            FHE.isAllowed(amount, msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
-        );
+        require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         _unwrap(from, to, amount);
     }
 
@@ -132,18 +129,15 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     function finalizeUnwrap(uint256 requestID, uint64 amount, bytes[] memory signatures) public virtual {
         FHE.checkSignatures(requestID, signatures);
         address to = _receivers[requestID];
-        require(to != address(0), ConfidentialFungibleTokenInvalidGatewayRequest(requestID));
+        require(to != address(0), ERC7984InvalidGatewayRequest(requestID));
         delete _receivers[requestID];
 
         SafeERC20.safeTransfer(underlying(), to, amount * rate());
     }
 
     function _unwrap(address from, address to, euint64 amount) internal virtual {
-        require(to != address(0), ConfidentialFungibleTokenInvalidReceiver(to));
-        require(
-            from == msg.sender || isOperator(from, msg.sender),
-            ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender)
-        );
+        require(to != address(0), ERC7984InvalidReceiver(to));
+        require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
         // try to burn, see how much we actually got
         euint64 burntAmount = _burn(from, amount);

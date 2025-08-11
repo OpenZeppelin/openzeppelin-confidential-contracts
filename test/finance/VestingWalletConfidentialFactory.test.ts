@@ -1,5 +1,5 @@
 import { $VestingWalletConfidentialFactoryMock } from '../../types/contracts-exposed/mocks/finance/VestingWalletConfidentialFactoryMock.sol/$VestingWalletConfidentialFactoryMock';
-import { $ConfidentialFungibleTokenMock } from '../../types/contracts-exposed/mocks/token/ConfidentialFungibleTokenMock.sol/$ConfidentialFungibleTokenMock';
+import { $ERC7984Mock } from '../../types/contracts-exposed/mocks/token/ERC7984Mock.sol/$ERC7984Mock';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
@@ -20,11 +20,7 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
   beforeEach(async function () {
     const [holder, recipient, recipient2, operator, executor, ...accounts] = await ethers.getSigners();
 
-    const token = (await ethers.deployContract('$ConfidentialFungibleTokenMock', [
-      name,
-      symbol,
-      uri,
-    ])) as any as $ConfidentialFungibleTokenMock;
+    const token = (await ethers.deployContract('$ERC7984Mock', [name, symbol, uri])) as any as $ERC7984Mock;
 
     const encryptedInput = await fhevm
       .createEncryptedInput(await token.getAddress(), holder.address)

@@ -90,7 +90,7 @@ interface IERC7984 {
      * @dev Similar to {confidentialTransfer-address-externalEuint64-bytes} but with a callback to `to` after
      * the transfer.
      *
-     * The callback is made to the {IConfidentialFungibleTokenReceiver-onConfidentialTransferReceived} function on the
+     * The callback is made to the {IERC7984Receiver-onConfidentialTransferReceived} function on the
      * to address with the actual transferred amount (may differ from the given `encryptedAmount`) and the given
      * data `data`.
      */

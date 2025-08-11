@@ -9,12 +9,12 @@ const name = 'ConfidentialFungibleTokenVotes';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
 
-describe('ConfidentialFungibleTokenVotes', function () {
+describe('ERC7984Votes', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract('$ConfidentialFungibleTokenVotesMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984VotesMock', [name, symbol, uri]);
 
     this.accounts = accounts.slice(3);
     this.holder = holder;

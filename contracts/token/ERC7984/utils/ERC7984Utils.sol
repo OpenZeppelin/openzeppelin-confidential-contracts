@@ -6,15 +6,15 @@ import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC7984Receiver} from "../../../interfaces/IERC7984Receiver.sol";
 import {ERC7984} from "../ERC7984.sol";
 
-/// @dev Library that provides common {ConfidentialFungibleToken} utility functions.
+/// @dev Library that provides common {ERC7984} utility functions.
 library ERC7984Utils {
     /**
      * @dev Performs a transfer callback to the recipient of the transfer `to`. Should be invoked
-     * after all transfers "withCallback" on a {ConfidentialFungibleToken}.
+     * after all transfers "withCallback" on a {ERC7984}.
      *
      * The transfer callback is not invoked on the recipient if the recipient has no code (i.e. is an EOA). If the
      * recipient has non-zero code, it must implement
-     * {IConfidentialFungibleTokenReceiver-onConfidentialTransferReceived} and return an `ebool` indicating
+     * {IERC7984Receiver-onConfidentialTransferReceived} and return an `ebool` indicating
      * whether the transfer was accepted or not. If the `ebool` is `false`, the transfer will be reversed.
      */
     function checkOnTransferReceived(
@@ -31,7 +31,7 @@ library ERC7984Utils {
                 return retval;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
-                    revert ERC7984.ConfidentialFungibleTokenInvalidReceiver(to);
+                    revert ERC7984.ERC7984InvalidReceiver(to);
                 } else {
                     assembly ("memory-safe") {
                         revert(add(32, reason), mload(reason))
