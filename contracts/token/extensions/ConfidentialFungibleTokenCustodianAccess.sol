@@ -25,6 +25,10 @@ abstract contract ConfidentialFungibleTokenCustodianAccess is ConfidentialFungib
 
     error Unauthorized();
 
+    /**
+     * @dev Sets the custodian for the given account `account` to `newCustodian`. Can be called by the
+     * account or the existing custodian to abdicate the custodian role (may only set to `address(0)`).
+     */
     function setCustodian(address account, address newCustodian) public virtual {
         address oldCustodian = custodian(account);
         require(msg.sender == account || (msg.sender == oldCustodian && newCustodian == address(0)), Unauthorized());
@@ -36,6 +40,7 @@ abstract contract ConfidentialFungibleTokenCustodianAccess is ConfidentialFungib
         );
     }
 
+    /// @dev Returns the custodian for the given account `account`.
     function custodian(address account) public view virtual returns (address) {
         return _custodians[account];
     }
