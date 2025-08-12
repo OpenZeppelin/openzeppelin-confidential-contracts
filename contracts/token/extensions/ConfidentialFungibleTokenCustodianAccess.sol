@@ -26,12 +26,11 @@ abstract contract ConfidentialFungibleTokenCustodianAccess is ConfidentialFungib
     error Unauthorized();
 
     function setCustodian(address account, address newCustodian) public virtual {
+        address oldCustodian = custodian(account);
         require(
-            msg.sender == account || (msg.sender == custodian(account) && newCustodian == address(0)),
+            msg.sender == account || (msg.sender == oldCustodian && newCustodian == address(0)),
             Unauthorized()
         );
-
-        address oldCustodian = custodian(account);
 
         emit ConfidentialFungibleTokenCustodianAccessCustodianSet(
             account,
