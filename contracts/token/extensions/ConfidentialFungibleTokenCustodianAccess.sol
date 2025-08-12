@@ -27,10 +27,7 @@ abstract contract ConfidentialFungibleTokenCustodianAccess is ConfidentialFungib
 
     function setCustodian(address account, address newCustodian) public virtual {
         address oldCustodian = custodian(account);
-        require(
-            msg.sender == account || (msg.sender == oldCustodian && newCustodian == address(0)),
-            Unauthorized()
-        );
+        require(msg.sender == account || (msg.sender == oldCustodian && newCustodian == address(0)), Unauthorized());
 
         emit ConfidentialFungibleTokenCustodianAccessCustodianSet(
             account,
