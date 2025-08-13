@@ -1,3 +1,4 @@
+// TODO: Replace file content with symlink to lib/openzeppelin-contracts when available.
 const fs = require('fs');
 const glob = require('glob');
 const match = require('micromatch');

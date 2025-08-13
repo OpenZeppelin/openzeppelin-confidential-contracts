@@ -1,3 +1,4 @@
+// TODO: Replace file content with symlink to lib/openzeppelin-contracts when available.
 const { exec } = require('child_process');
 const semver = require('semver');
 const { range } = require('./helpers');
