@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+// TODO: Replace file content with symlink to lib/openzeppelin-contracts when available.
 const semver = require('semver');
 const pLimit = require('p-limit').default;
 
