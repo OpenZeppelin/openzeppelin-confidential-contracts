@@ -9,7 +9,7 @@
 - `IConfidentialFungibleToken`: Prefix `totalSupply` and `balanceOf` functions with confidential. ([#93](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/93))
 - `IConfidentialFungibleToken`: Rename `EncryptedAmountDisclosed` event to `AmountDisclosed`.
 - `ConfidentialFungibleToken`: Change the default decimals from 9 to 6. ([#74](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/74))
-- `ConfidentialFungibleTokenERC20Wrapper`: Add an internal function to allow overriding the maximum decimals value. ([#133](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/133))
+- `ConfidentialFungibleTokenERC20Wrapper`: Add an internal function to allow overriding the underlying decimals fallback value. ([#133](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/133))
 
 ### Governance
 - `VotesConfidential`: Add votes governance utility for keeping track of FHE vote delegations. ([#40](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/40))
