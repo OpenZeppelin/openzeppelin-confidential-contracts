@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.2.0) (utils/structs/CheckpointsConfidential.sol)
 // This file was procedurally generated from scripts/generate/templates/CheckpointsConfidential.js.
 
 pragma solidity ^0.8.24;
