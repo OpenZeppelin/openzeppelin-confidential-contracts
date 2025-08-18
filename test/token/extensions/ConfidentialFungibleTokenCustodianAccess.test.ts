@@ -13,7 +13,6 @@ describe('ConfidentialFungibleTokenCustodianAccess', function () {
     const [holder, recipient, operator] = accounts;
 
     const token = await ethers.deployContract('$ConfidentialFungibleTokenCustodianAccessMock', [name, symbol, uri]);
-    this.accounts = accounts.slice(3);
     this.holder = holder;
     this.recipient = recipient;
     this.token = token;
