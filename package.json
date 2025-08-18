@@ -26,6 +26,7 @@
     "test": "hardhat test",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:generation": "scripts/checks/generation.sh",
+    "test:pragma": "npm run compile && scripts/checks/pragma-validity.js artifacts/build-info/*",
     "coverage": "SOLIDITY_COVERAGE=true hardhat coverage",
     "generate": "scripts/generate/run.js"
   },
