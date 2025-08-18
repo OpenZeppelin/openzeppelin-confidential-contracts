@@ -12,7 +12,7 @@ import {ERC7984} from "./../ERC7984.sol";
 
 /**
  * @dev A wrapper contract built on top of {ERC7984} that allows wrapping an `ERC20` token
- * into a confidential fungible token. The wrapper contract implements the `IERC1363Receiver` interface
+ * into an `ERC7984` token. The wrapper contract implements the `IERC1363Receiver` interface
  * which allows users to transfer `ERC1363` tokens directly to the wrapper with a callback to wrap the tokens.
  *
  * WARNING: Minting assumes the full amount of the underlying token transfer has been received, hence some non-standard

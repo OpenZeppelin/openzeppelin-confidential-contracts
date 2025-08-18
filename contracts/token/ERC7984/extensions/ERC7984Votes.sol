@@ -8,7 +8,7 @@ import {ERC7984} from "./../ERC7984.sol";
 /**
  * @dev Extension of {ERC7984} supporting confidential votes tracking and delegation.
  *
- * The amount of confidential voting units an account has is equal to the confidential token balance of
+ * The amount of confidential voting units an account has is equal to the balance of
  * that account. Voing power is taken into account when an account delegates votes to itself or to another
  * account.
  */

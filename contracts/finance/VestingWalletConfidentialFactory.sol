@@ -22,7 +22,7 @@ abstract contract VestingWalletConfidentialFactory {
     /// @dev Emitted for each vesting wallet funded within a batch.
     event VestingWalletConfidentialFunded(
         address indexed vestingWalletConfidential,
-        address indexed confidentialFungibleToken,
+        address indexed token,
         euint64 transferredAmount,
         bytes initArgs
     );
@@ -42,7 +42,7 @@ abstract contract VestingWalletConfidentialFactory {
      * Emits a {VestingWalletConfidentialFunded} event for each funded vesting plan.
      */
     function batchFundVestingWalletConfidential(
-        address confidentialFungibleToken,
+        address token,
         VestingPlan[] calldata vestingPlans,
         bytes calldata inputProof
     ) public virtual {
@@ -54,19 +54,14 @@ abstract contract VestingWalletConfidentialFactory {
             address vestingWalletAddress = predictVestingWalletConfidential(vestingPlan.initArgs);
 
             euint64 encryptedAmount = FHE.fromExternal(vestingPlan.encryptedAmount, inputProof);
-            FHE.allowTransient(encryptedAmount, confidentialFungibleToken);
-            euint64 transferredAmount = IERC7984(confidentialFungibleToken).confidentialTransferFrom(
+            FHE.allowTransient(encryptedAmount, token);
+            euint64 transferredAmount = IERC7984(token).confidentialTransferFrom(
                 msg.sender,
                 vestingWalletAddress,
                 encryptedAmount
             );
 
-            emit VestingWalletConfidentialFunded(
-                vestingWalletAddress,
-                confidentialFungibleToken,
-                transferredAmount,
-                vestingPlan.initArgs
-            );
+            emit VestingWalletConfidentialFunded(vestingWalletAddress, token, transferredAmount, vestingPlan.initArgs);
         }
     }
 

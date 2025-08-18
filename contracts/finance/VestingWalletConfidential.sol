@@ -7,7 +7,7 @@ import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/Reentrancy
 import {IERC7984} from "./../interfaces/IERC7984.sol";
 
 /**
- * @dev A vesting wallet is an ownable contract that can receive ConfidentialFungibleTokens, and release these
+ * @dev A vesting wallet is an ownable contract that can receive ERC7984 tokens, and release these
  * assets to the wallet owner, also referred to as "beneficiary", according to a vesting schedule.
  *
  * Any assets transferred to this contract will follow the vesting schedule as if they were locked from the beginning.
