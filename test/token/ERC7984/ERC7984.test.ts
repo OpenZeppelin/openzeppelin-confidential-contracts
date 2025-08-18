@@ -1,4 +1,4 @@
-import { allowHandle } from '../helpers/accounts';
+import { allowHandle } from '../../helpers/accounts';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import hre, { ethers, fhevm } from 'hardhat';
