@@ -11,8 +11,8 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ConfidentialFungibleToken} from "./../ConfidentialFungibleToken.sol";
 
 /**
- * @dev Extension of {ConfidentialFungibleToken} that allows accounts to add custodians who are given
- * permanent ACL access to their transfer amounts. Custodians can be added or removed at any point in time.
+ * @dev Extension of {ConfidentialFungibleToken} that allows each account to add a custodian who is given
+ * permanent ACL access to its transfer amounts. A custodian can be added or removed at any point in time.
  */
 abstract contract ConfidentialFungibleTokenCustodianAccess is ConfidentialFungibleToken {
     mapping(address => address) private _custodians;
