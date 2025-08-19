@@ -3,16 +3,16 @@ import { mine } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
-const name = 'ConfidentialFungibleTokenVotes';
-const symbol = 'CFT';
+const name = 'Custodian Access Token';
+const symbol = 'CAT';
 const uri = 'https://example.com/metadata';
 
-describe('ConfidentialFungibleTokenCustodianAccess', function () {
+describe('ERC7984CustodianAccess', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract('$ConfidentialFungibleTokenCustodianAccessMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984CustodianAccessMock', [name, symbol, uri]);
     this.holder = holder;
     this.recipient = recipient;
     this.token = token;
@@ -32,7 +32,7 @@ describe('ConfidentialFungibleTokenCustodianAccess', function () {
     const custodian = this.operator;
 
     await expect(this.token.connect(this.holder).setCustodian(this.holder, custodian))
-      .to.emit(this.token, 'ConfidentialFungibleTokenCustodianAccessCustodianSet')
+      .to.emit(this.token, 'ERC7984CustodianAccessCustodianSet')
       .withArgs(this.holder.address, ethers.ZeroAddress, custodian.address);
     await expect(this.token.custodian(this.holder)).to.eventually.equal(custodian.address);
   });
@@ -43,7 +43,7 @@ describe('ConfidentialFungibleTokenCustodianAccess', function () {
 
     await expect(this.token.connect(this.holder).setCustodian(this.holder, custodian)).to.not.emit(
       this.token,
-      'ConfidentialFungibleTokenCustodianAccessCustodianSet',
+      'ERC7984CustodianAccessCustodianSet',
     );
   });
 
@@ -59,7 +59,7 @@ describe('ConfidentialFungibleTokenCustodianAccess', function () {
 
     await expect(this.token.connect(this.holder).setCustodian(this.holder, custodian));
     await expect(this.token.connect(custodian).setCustodian(this.holder, ethers.ZeroAddress))
-      .to.emit(this.token, 'ConfidentialFungibleTokenCustodianAccessCustodianSet')
+      .to.emit(this.token, 'ERC7984CustodianAccessCustodianSet')
       .withArgs(this.holder.address, custodian.address, ethers.ZeroAddress);
     await expect(this.token.custodian(this.holder)).to.eventually.equal(ethers.ZeroAddress);
   });
@@ -70,7 +70,7 @@ describe('ConfidentialFungibleTokenCustodianAccess', function () {
 
       const custodianFor = sender ? this.holder : this.recipient;
       await expect(this.token.connect(custodianFor).setCustodian(custodianFor, custodian))
-        .to.emit(this.token, 'ConfidentialFungibleTokenCustodianAccessCustodianSet')
+        .to.emit(this.token, 'ERC7984CustodianAccessCustodianSet')
         .withArgs(custodianFor.address, ethers.ZeroAddress, custodian.address);
 
       const encryptedInput = await fhevm

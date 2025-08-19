@@ -8,20 +8,16 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {ConfidentialFungibleToken} from "./../ConfidentialFungibleToken.sol";
+import {ERC7984} from "../ERC7984.sol";
 
 /**
- * @dev Extension of {ConfidentialFungibleToken} that allows each account to add a custodian who is given
+ * @dev Extension of {ERC7984} that allows each account to add a custodian who is given
  * permanent ACL access to its transfer amounts. A custodian can be added or removed at any point in time.
  */
-abstract contract ConfidentialFungibleTokenCustodianAccess is ConfidentialFungibleToken {
+abstract contract ERC7984CustodianAccess is ERC7984 {
     mapping(address => address) private _custodians;
 
-    event ConfidentialFungibleTokenCustodianAccessCustodianSet(
-        address account,
-        address oldCustodian,
-        address newCustodian
-    );
+    event ERC7984CustodianAccessCustodianSet(address account, address oldCustodian, address newCustodian);
 
     error Unauthorized();
 
@@ -40,11 +36,7 @@ abstract contract ConfidentialFungibleTokenCustodianAccess is ConfidentialFungib
                 }
             }
 
-            emit ConfidentialFungibleTokenCustodianAccessCustodianSet(
-                account,
-                oldCustodian,
-                _custodians[account] = newCustodian
-            );
+            emit ERC7984CustodianAccessCustodianSet(account, oldCustodian, _custodians[account] = newCustodian);
         }
     }
 
