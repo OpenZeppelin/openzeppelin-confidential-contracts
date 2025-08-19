@@ -37,6 +37,16 @@ describe('ConfidentialFungibleTokenCustodianAccess', function () {
     await expect(this.token.custodian(this.holder)).to.eventually.equal(custodian.address);
   });
 
+  it('setting custodian to existing custodian should be a noop', async function () {
+    const custodian = this.operator;
+    await this.token.connect(this.holder).setCustodian(this.holder, custodian);
+
+    await expect(this.token.connect(this.holder).setCustodian(this.holder, custodian)).to.not.emit(
+      this.token,
+      'ConfidentialFungibleTokenCustodianAccessCustodianSet',
+    );
+  });
+
   it('should not be able to set a custodian from non-holder', async function () {
     const custodian = this.operator;
     await expect(this.token.connect(this.recipient).setCustodian(this.holder, custodian))

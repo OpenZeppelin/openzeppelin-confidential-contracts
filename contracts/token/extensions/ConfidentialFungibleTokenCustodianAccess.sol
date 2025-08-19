@@ -32,12 +32,20 @@ abstract contract ConfidentialFungibleTokenCustodianAccess is ConfidentialFungib
     function setCustodian(address account, address newCustodian) public virtual {
         address oldCustodian = custodian(account);
         require(msg.sender == account || (msg.sender == oldCustodian && newCustodian == address(0)), Unauthorized());
+        if (oldCustodian != newCustodian) {
+            if (newCustodian != address(0)) {
+                euint64 balanceHandle = confidentialBalanceOf(account);
+                if (FHE.isInitialized(balanceHandle)) {
+                    FHE.allow(balanceHandle, newCustodian);
+                }
+            }
 
-        emit ConfidentialFungibleTokenCustodianAccessCustodianSet(
-            account,
-            oldCustodian,
-            _custodians[account] = newCustodian
-        );
+            emit ConfidentialFungibleTokenCustodianAccessCustodianSet(
+                account,
+                oldCustodian,
+                _custodians[account] = newCustodian
+            );
+        }
     }
 
     /// @dev Returns the custodian for the given account `account`.
