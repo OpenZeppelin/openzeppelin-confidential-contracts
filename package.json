@@ -1,7 +1,7 @@
 {
   "name": "openzeppelin-confidential-contracts",
   "description": "",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "OpenZeppelin Community <maintainers@openzeppelin.org>",
   "license": "MIT",
   "files": [
