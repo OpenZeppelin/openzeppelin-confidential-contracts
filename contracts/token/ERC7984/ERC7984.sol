@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.2.0) (token/ConfidentialFungibleToken.sol)
 pragma solidity ^0.8.27;
 
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
-import {FHESafeMath} from "./../utils/FHESafeMath.sol";
-import {ConfidentialFungibleTokenUtils} from "./utils/ConfidentialFungibleTokenUtils.sol";
+import {IERC7984} from "./../../interfaces/IERC7984.sol";
+import {FHESafeMath} from "./../../utils/FHESafeMath.sol";
+import {ERC7984Utils} from "./utils/ERC7984Utils.sol";
 
 /**
- * @dev Reference implementation for {IConfidentialFungibleToken}.
+ * @dev Reference implementation for {IERC7984}.
  *
  * This contract implements a fungible token where balances and transfers are encrypted using the Zama fhEVM,
  * providing confidentiality to users. Token amounts are stored as encrypted, unsigned integers (`euint64`)
@@ -21,7 +22,7 @@ import {ConfidentialFungibleTokenUtils} from "./utils/ConfidentialFungibleTokenU
  * - Transfer and call pattern
  * - Safe overflow/underflow handling for FHE operations
  */
-abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
+abstract contract ERC7984 is IERC7984 {
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
     mapping(uint256 requestId => euint64 encryptedAmount) private _requestHandles;
@@ -31,29 +32,29 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     string private _tokenURI;
 
     /// @dev The given receiver `receiver` is invalid for transfers.
-    error ConfidentialFungibleTokenInvalidReceiver(address receiver);
+    error ERC7984InvalidReceiver(address receiver);
 
     /// @dev The given sender `sender` is invalid for transfers.
-    error ConfidentialFungibleTokenInvalidSender(address sender);
+    error ERC7984InvalidSender(address sender);
 
     /// @dev The given holder `holder` is not authorized to spend on behalf of `spender`.
-    error ConfidentialFungibleTokenUnauthorizedSpender(address holder, address spender);
+    error ERC7984UnauthorizedSpender(address holder, address spender);
 
     /// @dev The holder `holder` is trying to send tokens but has a balance of 0.
-    error ConfidentialFungibleTokenZeroBalance(address holder);
+    error ERC7984ZeroBalance(address holder);
 
     /**
      * @dev The caller `user` does not have access to the encrypted amount `amount`.
      *
      * NOTE: Try using the equivalent transfer function with an input proof.
      */
-    error ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(euint64 amount, address user);
+    error ERC7984UnauthorizedUseOfEncryptedAmount(euint64 amount, address user);
 
     /// @dev The given caller `caller` is not authorized for the current operation.
-    error ConfidentialFungibleTokenUnauthorizedCaller(address caller);
+    error ERC7984UnauthorizedCaller(address caller);
 
     /// @dev The given gateway request ID `requestId` is invalid.
-    error ConfidentialFungibleTokenInvalidGatewayRequest(uint256 requestId);
+    error ERC7984InvalidGatewayRequest(uint256 requestId);
 
     constructor(string memory name_, string memory symbol_, string memory tokenURI_) {
         _name = name_;
@@ -61,47 +62,47 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         _tokenURI = tokenURI_;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function name() public view virtual returns (string memory) {
         return _name;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function symbol() public view virtual returns (string memory) {
         return _symbol;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function decimals() public view virtual returns (uint8) {
         return 6;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function tokenURI() public view virtual returns (string memory) {
         return _tokenURI;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTotalSupply() public view virtual returns (euint64) {
         return _totalSupply;
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialBalanceOf(address account) public view virtual returns (euint64) {
         return _balances[account];
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function isOperator(address holder, address spender) public view virtual returns (bool) {
         return holder == spender || block.timestamp <= _operators[holder][spender];
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function setOperator(address operator, uint48 until) public virtual {
         _setOperator(msg.sender, operator, until);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransfer(
         address to,
         externalEuint64 encryptedAmount,
@@ -110,43 +111,37 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransfer(address to, euint64 amount) public virtual returns (euint64) {
-        require(
-            FHE.isAllowed(amount, msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
-        );
+        require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         return _transfer(msg.sender, to, amount);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferFrom(
         address from,
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64 transferred) {
-        require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
+        require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
         transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferFrom(
         address from,
         address to,
         euint64 amount
     ) public virtual returns (euint64 transferred) {
-        require(
-            FHE.isAllowed(amount, msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
-        );
-        require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
+        require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
+        require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
         transferred = _transfer(from, to, amount);
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferAndCall(
         address to,
         externalEuint64 encryptedAmount,
@@ -157,21 +152,18 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferAndCall(
         address to,
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
-        require(
-            FHE.isAllowed(amount, msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
-        );
+        require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         transferred = _transferAndCall(msg.sender, to, amount, data);
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferFromAndCall(
         address from,
         address to,
@@ -179,29 +171,26 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
-        require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
+        require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
         transferred = _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data);
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /// @inheritdoc IConfidentialFungibleToken
+    /// @inheritdoc IERC7984
     function confidentialTransferFromAndCall(
         address from,
         address to,
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64 transferred) {
-        require(
-            FHE.isAllowed(amount, msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(amount, msg.sender)
-        );
-        require(isOperator(from, msg.sender), ConfidentialFungibleTokenUnauthorizedSpender(from, msg.sender));
+        require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
+        require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
         transferred = _transferAndCall(from, to, amount, data);
         FHE.allowTransient(transferred, msg.sender);
     }
 
     /**
-     * @dev Discloses an encrypted amount `encryptedAmount` publicly via an {IConfidentialFungibleToken-AmountDisclosed}
+     * @dev Discloses an encrypted amount `encryptedAmount` publicly via an {IERC7984-AmountDisclosed}
      * event. The caller and this contract must be authorized to use the encrypted amount on the ACL.
      *
      * NOTE: This is an asynchronous operation where the actual decryption happens off-chain and
@@ -210,7 +199,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     function discloseEncryptedAmount(euint64 encryptedAmount) public virtual {
         require(
             FHE.isAllowed(encryptedAmount, msg.sender),
-            ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
 
         bytes32[] memory cts = new bytes32[](1);
@@ -228,7 +217,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         FHE.checkSignatures(requestId, signatures);
 
         euint64 requestHandle = _requestHandles[requestId];
-        require(FHE.isInitialized(requestHandle), ConfidentialFungibleTokenInvalidGatewayRequest(requestId));
+        require(FHE.isInitialized(requestHandle), ERC7984InvalidGatewayRequest(requestId));
         emit AmountDisclosed(requestHandle, amount);
 
         _requestHandles[requestId] = euint64.wrap(0);
@@ -240,18 +229,18 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     }
 
     function _mint(address to, euint64 amount) internal returns (euint64 transferred) {
-        require(to != address(0), ConfidentialFungibleTokenInvalidReceiver(address(0)));
+        require(to != address(0), ERC7984InvalidReceiver(address(0)));
         return _update(address(0), to, amount);
     }
 
     function _burn(address from, euint64 amount) internal returns (euint64 transferred) {
-        require(from != address(0), ConfidentialFungibleTokenInvalidSender(address(0)));
+        require(from != address(0), ERC7984InvalidSender(address(0)));
         return _update(from, address(0), amount);
     }
 
     function _transfer(address from, address to, euint64 amount) internal returns (euint64 transferred) {
-        require(from != address(0), ConfidentialFungibleTokenInvalidSender(address(0)));
-        require(to != address(0), ConfidentialFungibleTokenInvalidReceiver(address(0)));
+        require(from != address(0), ERC7984InvalidSender(address(0)));
+        require(to != address(0), ERC7984InvalidReceiver(address(0)));
         return _update(from, to, amount);
     }
 
@@ -265,7 +254,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
         euint64 sent = _transfer(from, to, amount);
 
         // Perform callback
-        ebool success = ConfidentialFungibleTokenUtils.checkOnTransferReceived(msg.sender, from, to, sent, data);
+        ebool success = ERC7984Utils.checkOnTransferReceived(msg.sender, from, to, sent, data);
 
         // Try to refund if callback fails
         euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent));
@@ -282,7 +271,7 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
             _totalSupply = ptr;
         } else {
             euint64 fromBalance = _balances[from];
-            require(FHE.isInitialized(fromBalance), ConfidentialFungibleTokenZeroBalance(from));
+            require(FHE.isInitialized(fromBalance), ERC7984ZeroBalance(from));
             (success, ptr) = FHESafeMath.tryDecrease(fromBalance, amount);
             FHE.allowThis(ptr);
             FHE.allow(ptr, from);

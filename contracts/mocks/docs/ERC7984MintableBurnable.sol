@@ -3,9 +3,9 @@ pragma solidity ^0.8.24;
 
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ConfidentialFungibleToken} from "../../token/ConfidentialFungibleToken.sol";
+import {ERC7984} from "../../token/ERC7984/ERC7984.sol";
 
-contract ConfidentialFungibleTokenMintableBurnable is ConfidentialFungibleToken, Ownable {
+contract ERC7984MintableBurnable is ERC7984, Ownable {
     using FHE for *;
 
     constructor(
@@ -13,7 +13,7 @@ contract ConfidentialFungibleTokenMintableBurnable is ConfidentialFungibleToken,
         string memory name,
         string memory symbol,
         string memory uri
-    ) ConfidentialFungibleToken(name, symbol, uri) Ownable(owner) {}
+    ) ERC7984(name, symbol, uri) Ownable(owner) {}
 
     function mint(address to, externalEuint64 amount, bytes memory inputProof) public onlyOwner {
         _mint(to, amount.fromExternal(inputProof));

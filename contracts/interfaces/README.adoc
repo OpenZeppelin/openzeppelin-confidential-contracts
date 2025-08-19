@@ -5,9 +5,9 @@ NOTE: This document is better viewed at https://docs.openzeppelin.com/confidenti
 
 These interfaces are available as `.sol` files and are useful to interact with third party contracts that implement them.
 
-- {IConfidentialFungibleToken}
-- {IConfidentialFungibleTokenReceiver}
+- {IERC7984}
+- {IERC7984Receiver}
 
 == Core
-{{IConfidentialFungibleToken}}
-{{IConfidentialFungibleTokenReceiver}}
+{{IERC7984}}
+{{IERC7984Receiver}}

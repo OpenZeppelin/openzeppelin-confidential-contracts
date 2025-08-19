@@ -35,6 +35,8 @@ jobs:
       - run: npm run test
       - name: Check procedurally generated contracts are up-to-date
         run: npm run test:generation
+      - name: Check pragma validity
+        run: npm run test:pragma -- --concurrency 1
 
   coverage:
     runs-on: ubuntu-latest
@@ -68,4 +70,4 @@ jobs:
         uses: codespell-project/actions-codespell@94259cd8be02ad2903ba34a22d9c13de21a74461 # v2.0
         with:
           check_filenames: true
-          skip: package-lock.json
+          skip: "package-lock.json,*.pdf"

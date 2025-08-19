@@ -13,7 +13,7 @@ describe(`VestingWalletCliffConfidential`, function () {
     const accounts = (await ethers.getSigners()).slice(3);
     const [holder, recipient] = accounts;
 
-    const token = await ethers.deployContract('$ConfidentialFungibleTokenMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol, uri]);
 
     const encryptedInput = await fhevm
       .createEncryptedInput(await token.getAddress(), holder.address)

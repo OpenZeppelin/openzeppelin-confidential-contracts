@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.2.0) (interfaces/IConfidentialFungibleToken.sol)
 pragma solidity ^0.8.24;
 
 import {euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 
 /// @dev Draft interface for a confidential fungible token standard utilizing the Zama FHE library.
-interface IConfidentialFungibleToken {
+interface IERC7984 {
     /**
      * @dev Emitted when the expiration timestamp for an operator `operator` is updated for a given `holder`.
      * The operator may move any amount of tokens on behalf of the holder until the timestamp `until`.
@@ -90,7 +91,7 @@ interface IConfidentialFungibleToken {
      * @dev Similar to {confidentialTransfer-address-externalEuint64-bytes} but with a callback to `to` after
      * the transfer.
      *
-     * The callback is made to the {IConfidentialFungibleTokenReceiver-onConfidentialTransferReceived} function on the
+     * The callback is made to the {IERC7984Receiver-onConfidentialTransferReceived} function on the
      * to address with the actual transferred amount (may differ from the given `encryptedAmount`) and the given
      * data `data`.
      */

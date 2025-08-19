@@ -2,6 +2,8 @@
 
 A library of smart contracts that use ciphertext for amount, allowing for a wide variety of confidential use-cases, such as confidential tokens, auctions, vesting, voting etc. While the contracts are not written in an opinionated method (other than using the standard encrypted values published by Zama), for testing and examples in the documentation, the https://github.com/zama-ai/fhevm-solidity[Zama fhEVM] will be used to operate on and decrypt https://www.zama.ai/introduction-to-homomorphic-encryption[FHE] ciphertext.
 
+NOTE: All contracts must set their respective co-processor configuration during construction (or initialization). This can be done automatically by inheriting contracts in https://github.com/zama-ai/fhevm/blob/v0.7.12/library-solidity/config/ZamaConfig.sol#L47-L73[`ZamaConfig`].
+
 [[security]]
 == Security
 

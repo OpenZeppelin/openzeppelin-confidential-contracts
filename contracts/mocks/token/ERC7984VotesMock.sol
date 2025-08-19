@@ -3,10 +3,10 @@ pragma solidity ^0.8.27;
 
 import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import {ConfidentialFungibleTokenVotes, ConfidentialFungibleToken, VotesConfidential} from "../../token/extensions/ConfidentialFungibleTokenVotes.sol";
-import {ConfidentialFungibleTokenMock} from "./ConfidentialFungibleTokenMock.sol";
+import {ERC7984, ERC7984Votes, VotesConfidential} from "../../token/ERC7984/extensions/ERC7984Votes.sol";
+import {ERC7984Mock} from "./ERC7984Mock.sol";
 
-abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleTokenMock, ConfidentialFungibleTokenVotes {
+abstract contract ERC7984VotesMock is ERC7984Mock, ERC7984Votes {
     address private immutable _OWNER;
 
     uint48 private _clockOverrideVal;
@@ -15,7 +15,7 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
         string memory name_,
         string memory symbol_,
         string memory tokenURI_
-    ) ConfidentialFungibleTokenMock(name_, symbol_, tokenURI_) EIP712(name_, "1.0.0") {
+    ) ERC7984Mock(name_, symbol_, tokenURI_) EIP712(name_, "1.0.0") {
         _OWNER = msg.sender;
     }
 
@@ -26,13 +26,7 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
         return super.clock();
     }
 
-    function confidentialTotalSupply()
-        public
-        view
-        virtual
-        override(ConfidentialFungibleToken, ConfidentialFungibleTokenVotes)
-        returns (euint64)
-    {
+    function confidentialTotalSupply() public view virtual override(ERC7984, ERC7984Votes) returns (euint64) {
         return super.confidentialTotalSupply();
     }
 
@@ -40,7 +34,7 @@ abstract contract ConfidentialFungibleTokenVotesMock is ConfidentialFungibleToke
         address from,
         address to,
         euint64 amount
-    ) internal virtual override(ConfidentialFungibleTokenMock, ConfidentialFungibleTokenVotes) returns (euint64) {
+    ) internal virtual override(ERC7984Mock, ERC7984Votes) returns (euint64) {
         return super._update(from, to, amount);
     }
 

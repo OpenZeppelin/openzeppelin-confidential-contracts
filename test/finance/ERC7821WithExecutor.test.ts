@@ -12,7 +12,7 @@ describe('ERC7821WithExecutor', function () {
   beforeEach(async function () {
     const [recipient, executor, ...accounts] = await ethers.getSigners();
 
-    const token = await ethers.deployContract('$ConfidentialFungibleTokenMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol, uri]);
 
     const encryptedInput = await fhevm
       .createEncryptedInput(await token.getAddress(), recipient.address)

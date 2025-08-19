@@ -1,4 +1,4 @@
-import { $ConfidentialFungibleTokenMock } from '../../types/contracts-exposed/mocks/token/ConfidentialFungibleTokenMock.sol/$ConfidentialFungibleTokenMock';
+import { $ERC7984Mock } from '../../types/contracts-exposed/mocks/token/ERC7984Mock.sol/$ERC7984Mock';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
@@ -46,16 +46,12 @@ function shouldBehaveLikeVestingConfidential() {
     });
 
     it('should not release if reentrancy', async function () {
-      const reentrantToken = await ethers.deployContract('$ConfidentialFungibleTokenReentrantMock', [
-        'name',
-        'symbol',
-        'uri',
-      ]);
+      const reentrantToken = await ethers.deployContract('$ERC7984ReentrantMock', ['name', 'symbol', 'uri']);
       const encryptedInput = await fhevm
         .createEncryptedInput(await reentrantToken.getAddress(), this.holder.address)
         .add64(1000)
         .encrypt();
-      await (reentrantToken as any as $ConfidentialFungibleTokenMock)
+      await (reentrantToken as any as $ERC7984Mock)
         .connect(this.holder)
         ['$_mint(address,bytes32,bytes)'](this.vesting.target, encryptedInput.handles[0], encryptedInput.inputProof);
 

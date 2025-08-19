@@ -1,4 +1,4 @@
-import { allowHandle } from '../helpers/accounts';
+import { allowHandle } from '../../helpers/accounts';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import hre, { ethers, fhevm } from 'hardhat';
@@ -8,12 +8,12 @@ const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
 
 /* eslint-disable no-unexpected-multiline */
-describe('ConfidentialFungibleToken', function () {
+describe('ERC7984', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract('$ConfidentialFungibleTokenMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol, uri]);
     this.accounts = accounts.slice(3);
     this.holder = holder;
     this.recipient = recipient;
@@ -102,7 +102,7 @@ describe('ConfidentialFungibleToken', function () {
           .connect(this.holder)
           ['$_mint(address,bytes32,bytes)'](ethers.ZeroAddress, encryptedInput.handles[0], encryptedInput.inputProof),
       )
-        .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenInvalidReceiver')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidReceiver')
         .withArgs(ethers.ZeroAddress);
     });
   });
@@ -145,7 +145,7 @@ describe('ConfidentialFungibleToken', function () {
           .connect(this.holder)
           ['$_burn(address,bytes32,bytes)'](ethers.ZeroAddress, encryptedInput.handles[0], encryptedInput.inputProof),
       )
-        .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenInvalidSender')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidSender')
         .withArgs(ethers.ZeroAddress);
     });
   });
@@ -195,7 +195,7 @@ describe('ConfidentialFungibleToken', function () {
                         : 'confidentialTransferFrom(address,address,bytes32,bytes)'
                     ](...params),
                 )
-                  .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenUnauthorizedSpender')
+                  .to.be.revertedWithCustomError(this.token, 'ERC7984UnauthorizedSpender')
                   .withArgs(this.holder.address, this.operator.address);
               });
 
@@ -229,7 +229,7 @@ describe('ConfidentialFungibleToken', function () {
                   encryptedInput.inputProof,
                 ),
             )
-              .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenZeroBalance')
+              .to.be.revertedWithCustomError(this.token, 'ERC7984ZeroBalance')
               .withArgs(this.recipient.address);
           });
 
@@ -248,7 +248,7 @@ describe('ConfidentialFungibleToken', function () {
                   encryptedInput.inputProof,
                 ),
             )
-              .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenInvalidReceiver')
+              .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidReceiver')
               .withArgs(ethers.ZeroAddress);
           });
         }
@@ -367,7 +367,7 @@ describe('ConfidentialFungibleToken', function () {
 
             const recipientBalanceHandle = await this.token.confidentialBalanceOf(this.recipient);
             await expect(callTransfer(this.token, this.holder, this.recipient, recipientBalanceHandle))
-              .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount')
+              .to.be.revertedWithCustomError(this.token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
               .withArgs(recipientBalanceHandle, this.holder);
           });
 
@@ -388,7 +388,7 @@ describe('ConfidentialFungibleToken', function () {
                     this.operator,
                   ),
                 )
-                  .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenUnauthorizedSpender')
+                  .to.be.revertedWithCustomError(this.token, 'ERC7984UnauthorizedSpender')
                   .withArgs(this.holder.address, this.operator.address);
               });
             });
@@ -413,14 +413,14 @@ describe('ConfidentialFungibleToken', function () {
             encryptedInput.inputProof,
           ),
       )
-        .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenInvalidSender')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidSender')
         .withArgs(ethers.ZeroAddress);
     });
   });
 
   describe('transfer with callback', function () {
     beforeEach(async function () {
-      this.recipientContract = await ethers.deployContract('ConfidentialFungibleTokenReceiverMock');
+      this.recipientContract = await ethers.deployContract('ERC7984ReceiverMock');
 
       this.encryptedInput = await fhevm
         .createEncryptedInput(this.token.target, this.holder.address)
@@ -480,7 +480,7 @@ describe('ConfidentialFungibleToken', function () {
             '0x',
           ),
       )
-        .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenInvalidReceiver')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidReceiver')
         .withArgs(this.recipientContract.target);
     });
 
@@ -559,7 +559,7 @@ describe('ConfidentialFungibleToken', function () {
       const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
 
       await expect(this.token.connect(this.recipient).discloseEncryptedAmount(holderBalanceHandle))
-        .to.be.revertedWithCustomError(this.token, 'ConfidentialFungibleTokenUnauthorizedUseOfEncryptedAmount')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
         .withArgs(holderBalanceHandle, this.recipient);
     });
 
