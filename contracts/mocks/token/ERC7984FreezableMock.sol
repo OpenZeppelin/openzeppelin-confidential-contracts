@@ -29,9 +29,7 @@ contract ERC7984FreezableMock is ERC7984Freezable, AccessControl, HandleAccessMa
         getHandleAllowance(euint64.unwrap(confidentialAvailable(account)), account, true);
     }
 
-    function _validateHandleAllowance(bytes32 handle, address account) internal view override {
-        require(msg.sender == account, UnallowedHandleAccess(handle, account));
-    }
+    function _validateHandleAllowance(bytes32 handle) internal view override {}
 
     function $_mint(address to, uint64 amount) public returns (euint64 transferred) {
         return _mint(to, FHE.asEuint64(amount));
