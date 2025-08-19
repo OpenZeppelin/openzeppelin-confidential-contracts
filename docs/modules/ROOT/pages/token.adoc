@@ -76,7 +76,7 @@ The `ERC20` token is simply transferred in, which would revert on failure. We th
 
 ==== Swap `ERC7984` to `ERC7984`
 
-Swapping from a confidential `ERC7984` to another confidential `ERC7984` is a bit more complex although quite simple given the usage of the `TFHE` library. For the sake of the example, we will swap from `fromToken` to `toToken` with a 1:1 exchange rate.
+Swapping from a confidential `ERC7984` to another confidential `ERC7984` is a bit more complex although quite simple given the usage of the `FHE` library. For the sake of the example, we will swap from `fromToken` to `toToken` with a 1:1 exchange rate.
 
 [source,solidity]
 ----
