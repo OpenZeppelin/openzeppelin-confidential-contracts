@@ -7,6 +7,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 
 - {ERC7984}: Implementation of {IERC7984}.
 - {ERC7984ERC20Wrapper}: Extension of {ERC7984} which wraps an `ERC20` into a confidential token. The wrapper allows for free conversion in both directions at a fixed rate.
+- {ERC7984Restricted}: An extension of {ERC7984} that implements user account transfer restrictions
 - {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}. 
 
 == Core
@@ -14,6 +15,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 
 == Extensions
 {{ERC7984ERC20Wrapper}}
+{{ERC7984Restricted}}
 
 == Utilities
 {{ERC7984Utils}}
