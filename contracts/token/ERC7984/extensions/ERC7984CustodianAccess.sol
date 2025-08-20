@@ -52,10 +52,14 @@ abstract contract ERC7984CustodianAccess is ERC7984 {
         address toCustodian = custodian(to);
 
         if (fromCustodian != address(0)) {
+            FHE.allow(confidentialBalanceOf(from), fromCustodian);
             FHE.allow(transferred, fromCustodian);
         }
-        if (toCustodian != address(0) && toCustodian != fromCustodian) {
-            FHE.allow(transferred, toCustodian);
+        if (toCustodian != address(0)) {
+            FHE.allow(confidentialBalanceOf(to), toCustodian);
+            if (toCustodian != fromCustodian) {
+                FHE.allow(transferred, toCustodian);
+            }
         }
     }
 }

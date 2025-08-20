@@ -64,21 +64,64 @@ describe('ERC7984CustodianAccess', function () {
     await expect(this.token.custodian(this.holder)).to.eventually.equal(ethers.ZeroAddress);
   });
 
-  for (const sender of [true, false]) {
-    it(`${sender ? 'sender' : 'recipient'} custodian should be able to reencrypt transfer amounts`, async function () {
-      const custodian = this.operator;
+  describe('reencrypt', function () {
+    for (const sender of [true, false]) {
+      it(`${
+        sender ? 'sender' : 'recipient'
+      } custodian should be able to reencrypt transfer amounts`, async function () {
+        const custodian = this.operator;
 
-      const custodianFor = sender ? this.holder : this.recipient;
-      await expect(this.token.connect(custodianFor).setCustodian(custodianFor, custodian))
-        .to.emit(this.token, 'ERC7984CustodianAccessCustodianSet')
-        .withArgs(custodianFor.address, ethers.ZeroAddress, custodian.address);
+        const custodianFor = sender ? this.holder : this.recipient;
+        await expect(this.token.connect(custodianFor).setCustodian(custodianFor, custodian))
+          .to.emit(this.token, 'ERC7984CustodianAccessCustodianSet')
+          .withArgs(custodianFor.address, ethers.ZeroAddress, custodian.address);
+
+        const encryptedInput = await fhevm
+          .createEncryptedInput(this.token.target, this.holder.address)
+          .add64(100)
+          .encrypt();
+
+        const tx = await this.token
+          .connect(this.holder)
+          ['confidentialTransfer(address,bytes32,bytes)'](
+            this.recipient,
+            encryptedInput.handles[0],
+            encryptedInput.inputProof,
+          );
+
+        const transferredHandle = await tx
+          .wait()
+          .then((receipt: any) => receipt.logs.filter((log: any) => log.address === this.token.target)[0].args[2]);
+
+        await mine(1);
+
+        await expect(
+          fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, this.token.target, custodian),
+        ).to.eventually.equal(100);
+      });
+    }
+
+    it('custodian should be able to reencrypt balance', async function () {
+      await this.token.connect(this.holder).setCustodian(this.holder, this.operator);
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.token.confidentialBalanceOf(this.holder),
+          this.token.target,
+          this.operator,
+        ),
+      ).to.eventually.equal(1000);
+    });
+
+    it('custodian should be able to reencrypt future balance', async function () {
+      await this.token.connect(this.holder).setCustodian(this.holder, this.operator);
 
       const encryptedInput = await fhevm
         .createEncryptedInput(this.token.target, this.holder.address)
         .add64(100)
         .encrypt();
 
-      const tx = await this.token
+      await this.token
         .connect(this.holder)
         ['confidentialTransfer(address,bytes32,bytes)'](
           this.recipient,
@@ -86,15 +129,14 @@ describe('ERC7984CustodianAccess', function () {
           encryptedInput.inputProof,
         );
 
-      const transferredHandle = await tx
-        .wait()
-        .then((receipt: any) => receipt.logs.filter((log: any) => log.address === this.token.target)[0].args[2]);
-
-      await mine(1);
-
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, this.token.target, custodian),
-      ).to.eventually.equal(100);
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.token.confidentialBalanceOf(this.holder),
+          this.token.target,
+          this.operator,
+        ),
+      ).to.eventually.equal(900);
     });
-  }
+  });
 });
