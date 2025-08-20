@@ -12,7 +12,7 @@ import {ERC7984} from "../ERC7984.sol";
 
 /**
  * @dev Extension of {ERC7984} that allows each account to add a custodian who is given
- * permanent ACL access to its transfer amounts. A custodian can be added or removed at any point in time.
+ * permanent ACL access to its transfer and balance amounts. A custodian can be added or removed at any point in time.
  */
 abstract contract ERC7984CustodianAccess is ERC7984 {
     mapping(address => address) private _custodians;
