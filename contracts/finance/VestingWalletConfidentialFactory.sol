@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.2.0) (finance/VestingWalletConfidentialFactory.sol)
 pragma solidity ^0.8.27;
 
-import {FHE, euint64, externalEuint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {IConfidentialFungibleToken} from "./../interfaces/IConfidentialFungibleToken.sol";
-import {VestingWalletCliffConfidential} from "./VestingWalletCliffConfidential.sol";
+import {IERC7984} from "./../interfaces/IERC7984.sol";
 
 /**
  * @dev A factory which enables batch funding of vesting wallets.
  *
- * The {_deployVestingWalletImplementation} and {_initializeVestingWallet} functions remain unimplemented
- * to allow for custom implementations of the vesting wallet to be used.
+ * The {_deployVestingWalletImplementation}, {_initializeVestingWallet}, and {_validateVestingWalletInitArgs}
+ * functions remain unimplemented to allow for custom implementations of the vesting wallet to be used.
  */
 abstract contract VestingWalletConfidentialFactory {
     struct VestingPlan {
@@ -24,7 +23,7 @@ abstract contract VestingWalletConfidentialFactory {
     /// @dev Emitted for each vesting wallet funded within a batch.
     event VestingWalletConfidentialFunded(
         address indexed vestingWalletConfidential,
-        address indexed confidentialFungibleToken,
+        address indexed token,
         euint64 transferredAmount,
         bytes initArgs
     );
@@ -44,7 +43,7 @@ abstract contract VestingWalletConfidentialFactory {
      * Emits a {VestingWalletConfidentialFunded} event for each funded vesting plan.
      */
     function batchFundVestingWalletConfidential(
-        address confidentialFungibleToken,
+        address token,
         VestingPlan[] calldata vestingPlans,
         bytes calldata inputProof
     ) public virtual {
@@ -56,19 +55,14 @@ abstract contract VestingWalletConfidentialFactory {
             address vestingWalletAddress = predictVestingWalletConfidential(vestingPlan.initArgs);
 
             euint64 encryptedAmount = FHE.fromExternal(vestingPlan.encryptedAmount, inputProof);
-            FHE.allowTransient(encryptedAmount, confidentialFungibleToken);
-            euint64 transferredAmount = IConfidentialFungibleToken(confidentialFungibleToken).confidentialTransferFrom(
+            FHE.allowTransient(encryptedAmount, token);
+            euint64 transferredAmount = IERC7984(token).confidentialTransferFrom(
                 msg.sender,
                 vestingWalletAddress,
                 encryptedAmount
             );
 
-            emit VestingWalletConfidentialFunded(
-                vestingWalletAddress,
-                confidentialFungibleToken,
-                transferredAmount,
-                vestingPlan.initArgs
-            );
+            emit VestingWalletConfidentialFunded(vestingWalletAddress, token, transferredAmount, vestingPlan.initArgs);
         }
     }
 

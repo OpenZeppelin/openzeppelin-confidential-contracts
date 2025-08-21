@@ -2,4 +2,4 @@
 'openzeppelin-confidential-contracts': minor
 ---
 
-Add `ERC7984Freezable` extension.
+`ERC7984Freezable`: Add an extension to `ERC7984`, which allows accounts granted the "freezer" role to freeze and unfreeze tokens.

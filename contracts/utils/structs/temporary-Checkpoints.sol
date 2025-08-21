@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.2.0) (utils/structs/temporary-Checkpoints.sol)
 // OpenZeppelin Contracts (last updated v5.4.0) (utils/structs/Checkpoints.sol)
 // This file was procedurally generated from scripts/generate/templates/Checkpoints.js.
 // WARNING: This file is temporary and will be deleted once the latest version of the file is released in v5.5.0 of @openzeppelin/contracts.

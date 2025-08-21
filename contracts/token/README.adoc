@@ -3,17 +3,17 @@
 [.readme-notice]
 NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api/token
 
-This set of interfaces, contracts, and utilities are all related to the evolving Confidential Token Standard. The standard utilizes the Zama fhEVM co-processor for manipulating FHE values. All amounts are stored on-chain as ciphertext handles (or pointers) to values stored on the co-processor.
+This set of interfaces, contracts, and utilities are all related to `ERC7984`, an evolving confidential token standard. The standard utilizes the Zama fhEVM co-processor for manipulating FHE values. All amounts are stored on-chain as ciphertext handles (or pointers) to values stored on the co-processor.
 
-- {ConfidentialFungibleToken}: Implementation of {IConfidentialFungibleToken}.
-- {ConfidentialFungibleTokenERC20Wrapper}: Extension of {ConfidentialFungibleToken} which wraps an `ERC20` into a confidential token. The wrapper allows for free conversion in both directions at a fixed rate.
-- {ConfidentialFungibleTokenUtils}: A library that provides the on-transfer callback check used by {ConfidentialFungibleToken}. 
+- {ERC7984}: Implementation of {IERC7984}.
+- {ERC7984ERC20Wrapper}: Extension of {ERC7984} which wraps an `ERC20` into a confidential token. The wrapper allows for free conversion in both directions at a fixed rate.
+- {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}. 
 
 == Core
-{{ConfidentialFungibleToken}}
+{{ERC7984}}
 
 == Extensions
-{{ConfidentialFungibleTokenERC20Wrapper}}
+{{ERC7984ERC20Wrapper}}
 
 == Utilities
-{{ConfidentialFungibleTokenUtils}}
+{{ERC7984Utils}}

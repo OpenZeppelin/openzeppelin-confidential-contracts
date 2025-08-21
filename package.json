@@ -1,7 +1,7 @@
 {
   "name": "openzeppelin-confidential-contracts",
   "description": "",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "OpenZeppelin Community <maintainers@openzeppelin.org>",
   "license": "MIT",
   "files": [
@@ -26,6 +26,7 @@
     "test": "hardhat test",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:generation": "scripts/checks/generation.sh",
+    "test:pragma": "npm run compile && scripts/checks/pragma-validity.js artifacts/build-info/*",
     "coverage": "SOLIDITY_COVERAGE=true hardhat coverage",
     "generate": "scripts/generate/run.js"
   },

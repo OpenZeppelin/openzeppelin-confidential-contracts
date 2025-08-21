@@ -1,8 +1,8 @@
-= Confidential Fungible Token
+= ERC7984
 
-The xref:api:token.adoc#ConfidentialFungibleToken[Confidential Fungible Token] is a standard fungible token implementation that is similar to `ERC20`, but built from the ground up with confidentiality in mind. All balance and transfer amounts are represented as ciphertext handles, ensuring that no data is leaked to the public. 
+xref:api:token.adoc#ERC7984[`ERC7984`] is a standard fungible token implementation that is similar to ERC-20, but built from the ground up with confidentiality in mind. All balance and transfer amounts are represented as ciphertext handles, ensuring that no data is leaked to the public. 
 
-While the standard is built with inspiration from ERC-20, it is not ERC-20 compliant--the standard takes learning from all tokens built over the past 10 years (ERC-20, ERC-721, ERC-1155, ERC-6909 etc) and provides a functional interface for maximal functionality.
+While the standard is built with inspiration from ERC-20, it is not ERC-20 compliant--the standard takes learning from all tokens built over the past 10 years (ERC-20, ERC-721, ERC-1155, ERC-6909 etc) and provides an interface for maximal functionality.
 
 [[usage]]
 == Usage
@@ -39,7 +39,7 @@ WARNING: Setting an operator for any amount of time allows the operator to _**ta
 
 The token standard exposes transfer functions with and without callbacks. It is up to the caller to decide if a callback is necessary for the transfer. For smart contracts that support it, callbacks allow the operator approval step to be skipped and directly invoke the receiver contract via a callback.
 
-Smart contracts that are the target of a callback must implement xref:api:interfaces.adoc#IConfidentialFungibleTokenReceiver[`++IConfidentialFungibleTokenReceiver++`]. After balances are updated for a transfer, the callback is triggered by calling the xref:api:interfaces.adoc#IConfidentialFungibleTokenReceiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`++onConfidentialTransferReceived++`] function. The function must either revert or return an `ebool` indicating success. If the callback returns false, the token transfer is reversed.
+Smart contracts that are the target of a callback must implement xref:api:interfaces.adoc#IERC7984Receiver[`++IERC7984Receiver++`]. After balances are updated for a transfer, the callback is triggered by calling the xref:api:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`++onConfidentialTransferReceived++`] function. The function must either revert or return an `ebool` indicating success. If the callback returns false, the token transfer is reversed.
 
 [[examples]]
 == Examples
@@ -50,16 +50,16 @@ Here is an example of a contract for a confidential fungible token with a privil
 
 [source,solidity]
 ----
-include::api:example$ConfidentialFungibleTokenMintableBurnable.sol[]
+include::api:example$ERC7984MintableBurnable.sol[]
 ----
 
 === Swaps
 
 Swapping is one of the most primitive use-cases for fungible tokens. Below are examples for swapping between confidential and non-confidential tokens.
 
-==== Swap `ERC20` to `ConfidentialFungibleToken`
+==== Swap `ERC20` to `ERC7984`
 
-Swapping from a non-confidential `ERC20` to a confidential `ConfidentialFungibleToken` is simple and actually done within the `ConfidentialFungibleTokenERC20Wrapper`. See the excerpt from the `wrap` function below.
+Swapping from a non-confidential `ERC20` to a confidential `ERC7984` is simple and actually done within the `ERC7984ERC20Wrapper`. See the excerpt from the `wrap` function below.
 
 [source,solidity]
 ----
@@ -72,15 +72,15 @@ function wrap(address to, uint256 amount) public virtual {
 }
 ----
 
-The `ERC20` token is simply transferred in, which would revert on failure. We then transfer out the correct amount of the `ConfidentialFungibleToken` using the internal `_mint` function, which is guaranteed to succeed.
+The `ERC20` token is simply transferred in, which would revert on failure. We then transfer out the correct amount of the `ERC7984` using the internal `_mint` function, which is guaranteed to succeed.
 
-==== Swap `ConfidentialFungibleToken` to `ConfidentialFungibleToken`
+==== Swap `ERC7984` to `ERC7984`
 
-Swapping from a confidential `ConfidentialFungibleToken` to another confidential `ConfidentialFungibleToken` is a bit more complex although quite simple given the usage of the `TFHE` library. For the sake of the example, we will swap from `fromToken` to `toToken` with a 1:1 exchange rate.
+Swapping from a confidential `ERC7984` to another confidential `ERC7984` is a bit more complex although quite simple given the usage of the `FHE` library. For the sake of the example, we will swap from `fromToken` to `toToken` with a 1:1 exchange rate.
 
 [source,solidity]
 ----
-include::api:example$SwapConfidentialFungibleTokenToConfidentialFungibleToken.sol[lines=8..24]
+include::api:example$SwapERC7984ToERC7984.sol[lines=8..24]
 ----
 
 The steps are as follows:
@@ -91,7 +91,7 @@ The steps are as follows:
 . Allow the `toToken` to access `amountTransferred`
 . Transfer `amountTransferred` to `msg.sender`
 
-==== Swap `ConfidentialFungibleToken` to `ERC20`
+==== Swap `ERC7984` to `ERC20`
 
 Swapping from a confidential token to a non-confidential token is the most complex since the decrypted data must be accessed to accurately complete the request. Decryption in our example will be done off-chain and relayed back using Zama's Gateway. Below is an example of a contract doing a 1:1 swap from a confidential token to an ERC20 token.
 
