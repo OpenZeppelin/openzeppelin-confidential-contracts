@@ -12,8 +12,10 @@ import {ERC7984} from "../ERC7984.sol";
 abstract contract ERC7984CustodianAccess is ERC7984 {
     mapping(address => address) private _custodians;
 
+    /// @dev Emitted when the custodian is changed for the given account `account`.
     event ERC7984CustodianAccessCustodianSet(address account, address oldCustodian, address newCustodian);
 
+    /// @dev Thrown when an account tries to set a `newCustodian` for a given `account` without proper authority.
     error Unauthorized();
 
     /**
