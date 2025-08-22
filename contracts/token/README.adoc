@@ -8,7 +8,8 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 - {ERC7984}: Implementation of {IERC7984}.
 - {ERC7984ERC20Wrapper}: Extension of {ERC7984} which wraps an `ERC20` into a confidential token. The wrapper allows for free conversion in both directions at a fixed rate.
 - {ERC7984Freezable}: An extension for {ERC7984}, which allows an account granted the "freezer" role to freeze and unfreeze a confidential amount of tokens for holders.
-- {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}. 
+- {ERC7984ObserverAccess}: An extension for {ERC7984}, which allows each account to add an observer who is given access to their transfer and balance amounts.
+- {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}.
 
 == Core
 {{ERC7984}}
@@ -16,6 +17,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 == Extensions
 {{ERC7984ERC20Wrapper}}
 {{ERC7984Freezable}}
+{{ERC7984ObserverAccess}}
 
 == Utilities
 {{ERC7984Utils}}

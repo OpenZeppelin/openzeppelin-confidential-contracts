@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.27;
 
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
