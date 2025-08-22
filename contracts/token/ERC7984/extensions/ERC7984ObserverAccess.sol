@@ -6,56 +6,56 @@ import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984} from "../ERC7984.sol";
 
 /**
- * @dev Extension of {ERC7984} that allows each account to add a custodian who is given
- * permanent ACL access to its transfer and balance amounts. A custodian can be added or removed at any point in time.
+ * @dev Extension of {ERC7984} that allows each account to add a observer who is given
+ * permanent ACL access to its transfer and balance amounts. A observer can be added or removed at any point in time.
  */
-abstract contract ERC7984CustodianAccess is ERC7984 {
-    mapping(address => address) private _custodians;
+abstract contract ERC7984ObserverAccess is ERC7984 {
+    mapping(address => address) private _observers;
 
-    /// @dev Emitted when the custodian is changed for the given account `account`.
-    event ERC7984CustodianAccessCustodianSet(address account, address oldCustodian, address newCustodian);
+    /// @dev Emitted when the observer is changed for the given account `account`.
+    event ERC7984ObserverAccessObserverSet(address account, address oldObserver, address newObserver);
 
-    /// @dev Thrown when an account tries to set a `newCustodian` for a given `account` without proper authority.
+    /// @dev Thrown when an account tries to set a `newObserver` for a given `account` without proper authority.
     error Unauthorized();
 
     /**
-     * @dev Sets the custodian for the given account `account` to `newCustodian`. Can be called by the
-     * account or the existing custodian to abdicate the custodian role (may only set to `address(0)`).
+     * @dev Sets the observer for the given account `account` to `newObserver`. Can be called by the
+     * account or the existing observer to abdicate the observer role (may only set to `address(0)`).
      */
-    function setCustodian(address account, address newCustodian) public virtual {
-        address oldCustodian = custodian(account);
-        require(msg.sender == account || (msg.sender == oldCustodian && newCustodian == address(0)), Unauthorized());
-        if (oldCustodian != newCustodian) {
-            if (newCustodian != address(0)) {
+    function setObserver(address account, address newObserver) public virtual {
+        address oldObserver = observer(account);
+        require(msg.sender == account || (msg.sender == oldObserver && newObserver == address(0)), Unauthorized());
+        if (oldObserver != newObserver) {
+            if (newObserver != address(0)) {
                 euint64 balanceHandle = confidentialBalanceOf(account);
                 if (FHE.isInitialized(balanceHandle)) {
-                    FHE.allow(balanceHandle, newCustodian);
+                    FHE.allow(balanceHandle, newObserver);
                 }
             }
 
-            emit ERC7984CustodianAccessCustodianSet(account, oldCustodian, _custodians[account] = newCustodian);
+            emit ERC7984ObserverAccessObserverSet(account, oldObserver, _observers[account] = newObserver);
         }
     }
 
-    /// @dev Returns the custodian for the given account `account`.
-    function custodian(address account) public view virtual returns (address) {
-        return _custodians[account];
+    /// @dev Returns the observer for the given account `account`.
+    function observer(address account) public view virtual returns (address) {
+        return _observers[account];
     }
 
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
         transferred = super._update(from, to, amount);
 
-        address fromCustodian = custodian(from);
-        address toCustodian = custodian(to);
+        address fromObserver = observer(from);
+        address toObserver = observer(to);
 
-        if (fromCustodian != address(0)) {
-            FHE.allow(confidentialBalanceOf(from), fromCustodian);
-            FHE.allow(transferred, fromCustodian);
+        if (fromObserver != address(0)) {
+            FHE.allow(confidentialBalanceOf(from), fromObserver);
+            FHE.allow(transferred, fromObserver);
         }
-        if (toCustodian != address(0)) {
-            FHE.allow(confidentialBalanceOf(to), toCustodian);
-            if (toCustodian != fromCustodian) {
-                FHE.allow(transferred, toCustodian);
+        if (toObserver != address(0)) {
+            FHE.allow(confidentialBalanceOf(to), toObserver);
+            if (toObserver != fromObserver) {
+                FHE.allow(transferred, toObserver);
             }
         }
     }

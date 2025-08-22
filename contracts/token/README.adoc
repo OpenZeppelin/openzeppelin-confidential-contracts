@@ -7,7 +7,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 
 - {ERC7984}: Implementation of {IERC7984}.
 - {ERC7984ERC20Wrapper}: Extension of {ERC7984} which wraps an `ERC20` into a confidential token. The wrapper allows for free conversion in both directions at a fixed rate.
-- {ERC7984CustodianAccess}: An extension for ERC7984, which allows each account to add a custodian who is given access to their transfer and balance amounts.
+- {ERC7984ObserverAccess}: An extension for ERC7984, which allows each account to add an observer who is given access to their transfer and balance amounts.
 - {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}.
 
 == Core
@@ -15,7 +15,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 
 == Extensions
 {{ERC7984ERC20Wrapper}}
-{{ERC7984CustodianAccess}}
+{{ERC7984ObserverAccess}}
 
 == Utilities
 {{ERC7984Utils}}

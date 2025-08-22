@@ -3,16 +3,16 @@ import { mine } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
-const name = 'Custodian Access Token';
+const name = 'Observer Access Token';
 const symbol = 'CAT';
 const uri = 'https://example.com/metadata';
 
-describe('ERC7984CustodianAccess', function () {
+describe.only('ERC7984ObserverAccess', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract('$ERC7984CustodianAccessMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984ObserverAccessMock', [name, symbol, uri]);
     this.holder = holder;
     this.recipient = recipient;
     this.token = token;
@@ -28,53 +28,51 @@ describe('ERC7984CustodianAccess', function () {
       ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
   });
 
-  it('should be able to set a custodian from holder', async function () {
-    const custodian = this.operator;
+  it('should be able to set an observer from holder', async function () {
+    const observer = this.operator;
 
-    await expect(this.token.connect(this.holder).setCustodian(this.holder, custodian))
-      .to.emit(this.token, 'ERC7984CustodianAccessCustodianSet')
-      .withArgs(this.holder.address, ethers.ZeroAddress, custodian.address);
-    await expect(this.token.custodian(this.holder)).to.eventually.equal(custodian.address);
+    await expect(this.token.connect(this.holder).setObserver(this.holder, observer))
+      .to.emit(this.token, 'ERC7984ObserverAccessObserverSet')
+      .withArgs(this.holder.address, ethers.ZeroAddress, observer.address);
+    await expect(this.token.observer(this.holder)).to.eventually.equal(observer.address);
   });
 
-  it('setting custodian to existing custodian should be a noop', async function () {
-    const custodian = this.operator;
-    await this.token.connect(this.holder).setCustodian(this.holder, custodian);
+  it('setting observer to existing observer should be a noop', async function () {
+    const observer = this.operator;
+    await this.token.connect(this.holder).setObserver(this.holder, observer);
 
-    await expect(this.token.connect(this.holder).setCustodian(this.holder, custodian)).to.not.emit(
+    await expect(this.token.connect(this.holder).setObserver(this.holder, observer)).to.not.emit(
       this.token,
-      'ERC7984CustodianAccessCustodianSet',
+      'ERC7984ObserverAccessObserverSet',
     );
   });
 
-  it('should not be able to set a custodian from non-holder', async function () {
-    const custodian = this.operator;
-    await expect(this.token.connect(this.recipient).setCustodian(this.holder, custodian))
+  it('should not be able to set a observer from non-holder', async function () {
+    const observer = this.operator;
+    await expect(this.token.connect(this.recipient).setObserver(this.holder, observer))
       .to.be.revertedWithCustomError(this.token, 'Unauthorized')
       .withArgs();
   });
 
-  it('custodian should be able to set a custodian to zero address', async function () {
-    const custodian = this.operator;
+  it('observer should be able to set an observer to zero address', async function () {
+    const observer = this.operator;
 
-    await expect(this.token.connect(this.holder).setCustodian(this.holder, custodian));
-    await expect(this.token.connect(custodian).setCustodian(this.holder, ethers.ZeroAddress))
-      .to.emit(this.token, 'ERC7984CustodianAccessCustodianSet')
-      .withArgs(this.holder.address, custodian.address, ethers.ZeroAddress);
-    await expect(this.token.custodian(this.holder)).to.eventually.equal(ethers.ZeroAddress);
+    await expect(this.token.connect(this.holder).setObserver(this.holder, observer));
+    await expect(this.token.connect(observer).setObserver(this.holder, ethers.ZeroAddress))
+      .to.emit(this.token, 'ERC7984ObserverAccessObserverSet')
+      .withArgs(this.holder.address, observer.address, ethers.ZeroAddress);
+    await expect(this.token.observer(this.holder)).to.eventually.equal(ethers.ZeroAddress);
   });
 
   describe('reencrypt', function () {
     for (const sender of [true, false]) {
-      it(`${
-        sender ? 'sender' : 'recipient'
-      } custodian should be able to reencrypt transfer amounts`, async function () {
-        const custodian = this.operator;
+      it(`${sender ? 'sender' : 'recipient'} observer should be able to reencrypt transfer amounts`, async function () {
+        const observer = this.operator;
 
-        const custodianFor = sender ? this.holder : this.recipient;
-        await expect(this.token.connect(custodianFor).setCustodian(custodianFor, custodian))
-          .to.emit(this.token, 'ERC7984CustodianAccessCustodianSet')
-          .withArgs(custodianFor.address, ethers.ZeroAddress, custodian.address);
+        const observerFor = sender ? this.holder : this.recipient;
+        await expect(this.token.connect(observerFor).setObserver(observerFor, observer))
+          .to.emit(this.token, 'ERC7984ObserverAccessObserverSet')
+          .withArgs(observerFor.address, ethers.ZeroAddress, observer.address);
 
         const encryptedInput = await fhevm
           .createEncryptedInput(this.token.target, this.holder.address)
@@ -96,13 +94,13 @@ describe('ERC7984CustodianAccess', function () {
         await mine(1);
 
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, this.token.target, custodian),
+          fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, this.token.target, observer),
         ).to.eventually.equal(100);
       });
     }
 
-    it('custodian should be able to reencrypt balance', async function () {
-      await this.token.connect(this.holder).setCustodian(this.holder, this.operator);
+    it('observer should be able to reencrypt balance', async function () {
+      await this.token.connect(this.holder).setObserver(this.holder, this.operator);
       await expect(
         fhevm.userDecryptEuint(
           FhevmType.euint64,
@@ -113,8 +111,8 @@ describe('ERC7984CustodianAccess', function () {
       ).to.eventually.equal(1000);
     });
 
-    it('custodian should be able to reencrypt future balance', async function () {
-      await this.token.connect(this.holder).setCustodian(this.holder, this.operator);
+    it('observer should be able to reencrypt future balance', async function () {
+      await this.token.connect(this.holder).setObserver(this.holder, this.operator);
 
       const encryptedInput = await fhevm
         .createEncryptedInput(this.token.target, this.holder.address)
