@@ -69,10 +69,10 @@ describe('ERC7984ObserverAccess', function () {
       it(`${sender ? 'sender' : 'recipient'} observer should be able to reencrypt transfer amounts`, async function () {
         const observer = this.operator;
 
-        const observerFor = sender ? this.holder : this.recipient;
-        await expect(this.token.connect(observerFor).setObserver(observerFor, observer))
+        const observed = sender ? this.holder : this.recipient;
+        await expect(this.token.connect(observed).setObserver(observed, observer))
           .to.emit(this.token, 'ERC7984ObserverAccessObserverSet')
-          .withArgs(observerFor.address, ethers.ZeroAddress, observer.address);
+          .withArgs(observed.address, ethers.ZeroAddress, observer.address);
 
         const encryptedInput = await fhevm
           .createEncryptedInput(this.token.target, this.holder.address)
