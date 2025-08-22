@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
 const name = 'Observer Access Token';
-const symbol = 'CAT';
+const symbol = 'OAT';
 const uri = 'https://example.com/metadata';
 
 describe('ERC7984ObserverAccess', function () {
