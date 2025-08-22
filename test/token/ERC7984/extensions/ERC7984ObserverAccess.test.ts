@@ -7,7 +7,7 @@ const name = 'Observer Access Token';
 const symbol = 'CAT';
 const uri = 'https://example.com/metadata';
 
-describe.only('ERC7984ObserverAccess', function () {
+describe('ERC7984ObserverAccess', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
