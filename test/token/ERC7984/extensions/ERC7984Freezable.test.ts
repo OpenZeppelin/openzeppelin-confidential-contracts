@@ -1,6 +1,8 @@
 import { IACL__factory } from '../../../../types';
 import { $ERC7984FreezableMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984FreezableMock.sol/$ERC7984FreezableMock';
+import { $ERC7984Mock } from '../../../../types/contracts-exposed/mocks/token/ERC7984Mock.sol/$ERC7984Mock';
 import { ACL_ADDRESS } from '../../../helpers/accounts';
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behaviour';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { AddressLike, BytesLike } from 'ethers';
@@ -19,6 +21,13 @@ describe('ERC7984Freezable', function () {
       uri,
       freezer.address,
     ])) as any as $ERC7984FreezableMock;
+    const encryptedInput = await fhevm
+      .createEncryptedInput(await token.getAddress(), holder.address)
+      .add64(1000)
+      .encrypt();
+    await token
+      .connect(holder)
+      ['$_mint(address,bytes32,bytes)'](holder, encryptedInput.handles[0], encryptedInput.inputProof);
     const acl = IACL__factory.connect(ACL_ADDRESS, ethers.provider);
     return { token, acl, holder, recipient, freezer, operator, anyone };
   }
@@ -218,5 +227,10 @@ describe('ERC7984Freezable', function () {
     )
       .to.be.revertedWithCustomError(token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
       .withArgs(encryptedInput.handles[0], anyone);
+  });
+
+  shouldBehaveLikeERC7984(async () => {
+    const { token, holder, recipient, operator, anyone } = await deployFixture();
+    return { token: token as any as $ERC7984Mock, holder, recipient, operator, anyone };
   });
 });

@@ -28,7 +28,7 @@ contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, AccessControl, H
         address from,
         address to,
         euint64 amount
-    ) internal virtual override(ERC7984Mock, ERC7984Freezable) returns (euint64) {
+    ) internal virtual override(ERC7984, ERC7984Freezable) returns (euint64) {
         return super._update(from, to, amount);
     }
 
