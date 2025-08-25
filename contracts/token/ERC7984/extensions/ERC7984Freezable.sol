@@ -7,7 +7,7 @@ import {FHESafeMath} from "../../../utils/FHESafeMath.sol";
 import {ERC7984} from "../ERC7984.sol";
 
 /**
- * @dev Extension of {ERC7984} that allows to implement a confidential
+ * @dev Extension of {ERC7984} that implements a confidential
  * freezing mechanism that can be managed by an authorized account with
  * {setConfidentialFrozen} functions.
  *

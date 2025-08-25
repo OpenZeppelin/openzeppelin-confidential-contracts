@@ -10,7 +10,6 @@ import {ERC7984Freezable} from "../../token/ERC7984/extensions/ERC7984Freezable.
 import {HandleAccessManager} from "../../utils/HandleAccessManager.sol";
 import {ERC7984Mock} from "./ERC7984Mock.sol";
 
-// solhint-disable func-name-mixedcase
 contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, AccessControl, HandleAccessManager {
     bytes32 public constant FREEZER_ROLE = keccak256("FREEZER_ROLE");
 
