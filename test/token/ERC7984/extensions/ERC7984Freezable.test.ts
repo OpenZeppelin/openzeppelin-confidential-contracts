@@ -3,7 +3,7 @@ import { $ERC7984FreezableMock } from '../../../../types/contracts-exposed/mocks
 import { ACL_ADDRESS } from '../../../helpers/accounts';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
-import { AddressLike, BytesLike } from 'ethers';
+import { AddressLike, BytesLike, EventLog } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
@@ -190,13 +190,23 @@ describe('ERC7984Freezable', function () {
       .createEncryptedInput(await token.getAddress(), recipient.address)
       .add64(501)
       .encrypt();
-    await token
+    const tx = await token
       .connect(recipient)
       ['confidentialTransfer(address,bytes32,bytes)'](
         anyone.address,
         encryptedInput2.handles[0],
         encryptedInput2.inputProof,
       );
+    await expect(tx).to.emit(token, 'ConfidentialTransfer');
+    const transferEvent = (await tx
+      .wait()
+      .then(receipt => receipt!.logs.filter((log: any) => log.address === token.target)[0])) as EventLog;
+    expect(transferEvent.args[0]).to.equal(recipient.address);
+    expect(transferEvent.args[1]).to.equal(anyone.address);
+    await expect(
+      fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], await token.getAddress(), recipient),
+    ).to.eventually.equal(0);
+    // recipient balance is unchanged
     await expect(
       fhevm.userDecryptEuint(
         FhevmType.euint64,
