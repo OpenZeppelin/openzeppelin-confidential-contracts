@@ -16,11 +16,13 @@ library FHESafeMath {
      */
     function tryIncrease(euint64 oldValue, euint64 delta) internal returns (ebool success, euint64 updated) {
         if (!FHE.isInitialized(oldValue)) {
-            oldValue = FHE.asEuint64(0);
+            success = FHE.asEbool(true);
+            updated = delta;
+        } else {
+            euint64 newValue = FHE.add(oldValue, delta);
+            success = FHE.ge(newValue, oldValue);
+            updated = FHE.select(success, newValue, oldValue);
         }
-        euint64 newValue = FHE.add(oldValue, delta);
-        success = FHE.ge(newValue, oldValue);
-        updated = FHE.select(success, newValue, oldValue);
     }
 
     /**

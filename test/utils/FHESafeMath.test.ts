@@ -20,7 +20,7 @@ describe('FHESafeMath', function () {
   describe('try increase', function () {
     for (const args of [
       // a + b = c & success
-      [undefined, undefined, 0, true],
+      [undefined, undefined, undefined, true],
       [undefined, 0, 0, true],
       [undefined, 1, 1, true],
       [0, undefined, 0, true],
@@ -32,20 +32,26 @@ describe('FHESafeMath', function () {
     ]) {
       it(`${args[0]} + ${args[1]} = ${args[2]} & ${args[3] ? 'success' : 'failure'}`, async function () {
         const [a, b, c, expected] = args as [number, number, number, boolean];
-        const [handleA] = a
-          ? await callAndGetResult(fheSafeMath.createHandle(a), handleCreatedSignature)
-          : [ethers.ZeroHash];
-        const [handleB] = b
-          ? await callAndGetResult(fheSafeMath.createHandle(b), handleCreatedSignature)
-          : [ethers.ZeroHash];
+        const [handleA] =
+          a !== undefined
+            ? await callAndGetResult(fheSafeMath.createHandle(a), handleCreatedSignature)
+            : [ethers.ZeroHash];
+        const [handleB] =
+          b != undefined
+            ? await callAndGetResult(fheSafeMath.createHandle(b), handleCreatedSignature)
+            : [ethers.ZeroHash];
         const [success, updated] = await callAndGetResult(
           fheSafeMath.tryIncrease(handleA, handleB),
           resultComputedSignature,
         );
-        await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, updated, fheSafeMath.target, account),
-        ).to.eventually.equal(c);
         await expect(fhevm.userDecryptEbool(success, fheSafeMath.target, account)).to.eventually.equal(expected);
+        if (c != undefined) {
+          await expect(
+            fhevm.userDecryptEuint(FhevmType.euint64, updated, fheSafeMath.target, account),
+          ).to.eventually.equal(c);
+        } else {
+          expect(updated).to.eq(ethers.ZeroHash);
+        }
       });
     }
   });
@@ -62,12 +68,14 @@ describe('FHESafeMath', function () {
     ]) {
       it(`${args[0]} - ${args[1]} = ${args[2]} & ${args[3] ? 'success' : 'failure'}`, async function () {
         const [a, b, c, expected] = args as [number, number, number, boolean];
-        const [handleA] = a
-          ? await callAndGetResult(fheSafeMath.createHandle(a), handleCreatedSignature)
-          : [ethers.ZeroHash];
-        const [handleB] = b
-          ? await callAndGetResult(fheSafeMath.createHandle(b), handleCreatedSignature)
-          : [ethers.ZeroHash];
+        const [handleA] =
+          a !== undefined
+            ? await callAndGetResult(fheSafeMath.createHandle(a), handleCreatedSignature)
+            : [ethers.ZeroHash];
+        const [handleB] =
+          b != undefined
+            ? await callAndGetResult(fheSafeMath.createHandle(b), handleCreatedSignature)
+            : [ethers.ZeroHash];
         const [success, updated] = await callAndGetResult(
           fheSafeMath.tryDecrease(handleA, handleB),
           resultComputedSignature,

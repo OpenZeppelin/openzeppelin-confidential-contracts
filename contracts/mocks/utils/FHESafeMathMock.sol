@@ -19,18 +19,26 @@ contract FHESafeMathMock is SepoliaConfig {
     function tryIncrease(euint64 a, euint64 b) public returns (ebool success, euint64 updated) {
         (success, updated) = FHESafeMath.tryIncrease(a, b);
         FHE.allowThis(success);
-        FHE.allowThis(updated);
         FHE.allow(success, msg.sender);
-        FHE.allow(updated, msg.sender);
+
+        if (FHE.isInitialized(updated)) {
+            FHE.allowThis(updated);
+            FHE.allow(updated, msg.sender);
+        }
+
         emit ResultComputed(success, updated);
     }
 
     function tryDecrease(euint64 a, euint64 b) public returns (ebool success, euint64 updated) {
         (success, updated) = FHESafeMath.tryDecrease(a, b);
         FHE.allowThis(success);
-        FHE.allowThis(updated);
         FHE.allow(success, msg.sender);
-        FHE.allow(updated, msg.sender);
+
+        if (FHE.isInitialized(updated)) {
+            FHE.allowThis(updated);
+            FHE.allow(updated, msg.sender);
+        }
+
         emit ResultComputed(success, updated);
     }
 }
