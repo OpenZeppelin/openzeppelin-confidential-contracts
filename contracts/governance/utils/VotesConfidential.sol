@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.2.0) (governance/utils/VotesConfidential.sol)
 pragma solidity ^0.8.24;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
@@ -8,9 +9,25 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
+import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
 import {CheckpointsConfidential} from "./../../utils/structs/CheckpointsConfidential.sol";
 
-abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
+/**
+ * @dev A confidential votes contract tracking confidential voting power of accounts over time.
+ * It features vote delegation to delegators.
+
+ * This contract keeps a history (checkpoints) of each account's confidential vote power. Confidential
+ * voting power can be delegated either by calling the {delegate} function directly, or by providing
+ * a signature to be used with {delegateBySig}. Confidential voting power handles can be queried
+ * through the public accessors {getVotes} and {getPastVotes} but can only be decrypted by accounts
+ * allowed to access them. Ensure that {HandleAccessManager-_validateHandleAllowance} is implemented properly, allowing all 
+ * necessary addresses to access voting power handles.
+ *
+ * By default, voting units does not account for voting power. This makes transfers of underlying
+ * voting units cheaper. The downside is that it requires users to delegate to themselves in order
+ * to activate checkpoints and have their voting power tracked.
+ */
+abstract contract VotesConfidential is Nonces, EIP712, IERC6372, HandleAccessManager {
     using FHE for *;
     using CheckpointsConfidential for CheckpointsConfidential.TraceEuint64;
 
@@ -167,7 +184,6 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
                 store = _delegateCheckpoints[from];
                 euint64 newValue = store.latest().sub(amount);
                 newValue.allowThis();
-                newValue.allow(from);
                 euint64 oldValue = _push(store, newValue);
                 emit DelegateVotesChanged(from, oldValue, newValue);
             }
@@ -175,7 +191,6 @@ abstract contract VotesConfidential is Nonces, EIP712, IERC6372 {
                 store = _delegateCheckpoints[to];
                 euint64 newValue = store.latest().add(amount);
                 newValue.allowThis();
-                newValue.allow(to);
                 euint64 oldValue = _push(store, newValue);
                 emit DelegateVotesChanged(to, oldValue, newValue);
             }

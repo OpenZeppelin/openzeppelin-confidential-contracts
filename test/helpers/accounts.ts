@@ -4,7 +4,7 @@ import { Addressable, Signer, ethers } from 'ethers';
 import fs from 'fs';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-const ACL_ADDRESS = constants.ACL_CONTRACT_ADDRESS;
+export const ACL_ADDRESS = constants.ACL_CONTRACT_ADDRESS;
 
 const DEFAULT_BALANCE: bigint = 10000n * ethers.WeiPerEther;
 

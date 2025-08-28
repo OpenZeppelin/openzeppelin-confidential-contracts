@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.2.0) (finance/ERC7821WithExecutor.sol)
 pragma solidity ^0.8.20;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -38,7 +39,7 @@ abstract contract ERC7821WithExecutor is Initializable, ERC7821 {
     }
 
     function _getERC7821WithExecutorStorage() private pure returns (ERC7821WithExecutorStorage storage $) {
-        assembly {
+        assembly ("memory-safe") {
             $.slot := ERC7821WithExecutorStorageLocation
         }
     }

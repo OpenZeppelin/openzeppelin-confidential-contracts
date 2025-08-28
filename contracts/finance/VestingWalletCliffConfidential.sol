@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.2.0) (finance/VestingWalletCliffConfidential.sol)
 pragma solidity ^0.8.27;
 
 import {euint128} from "@fhevm/solidity/lib/FHE.sol";
@@ -32,7 +33,18 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
      * start timestamp (see {VestingWalletConfidential-start}) and ends `cliffSeconds` later.
      */
     // solhint-disable-next-line func-name-mixedcase
-    function __VestingWalletCliffConfidential_init(uint48 cliffSeconds) internal onlyInitializing {
+    function __VestingWalletCliffConfidential_init(
+        address beneficiary,
+        uint48 startTimestamp,
+        uint48 durationSeconds,
+        uint48 cliffSeconds
+    ) internal onlyInitializing {
+        __VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds);
+        __VestingWalletCliffConfidential_init_unchained(cliffSeconds);
+    }
+
+    // solhint-disable-next-line func-name-mixedcase
+    function __VestingWalletCliffConfidential_init_unchained(uint48 cliffSeconds) internal onlyInitializing {
         require(
             cliffSeconds <= duration(),
             VestingWalletCliffConfidentialInvalidCliffDuration(cliffSeconds, duration())
@@ -49,12 +61,12 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
      * effect from calling the inherited implementation (i.e. `super._vestingSchedule`). Carefully consider
      * this caveat if the overridden implementation of this function has any (e.g. writing to memory or reverting).
      */
-    function _vestingSchedule(euint128 totalAllocation, uint64 timestamp) internal virtual override returns (euint128) {
+    function _vestingSchedule(euint128 totalAllocation, uint48 timestamp) internal virtual override returns (euint128) {
         return timestamp < cliff() ? euint128.wrap(0) : super._vestingSchedule(totalAllocation, timestamp);
     }
 
     function _getVestingWalletCliffStorage() private pure returns (VestingWalletCliffStorage storage $) {
-        assembly {
+        assembly ("memory-safe") {
             $.slot := VestingWalletCliffStorageLocation
         }
     }

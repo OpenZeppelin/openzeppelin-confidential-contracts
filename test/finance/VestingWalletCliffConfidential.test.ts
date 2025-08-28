@@ -13,7 +13,7 @@ describe(`VestingWalletCliffConfidential`, function () {
     const accounts = (await ethers.getSigners()).slice(3);
     const [holder, recipient] = accounts;
 
-    const token = await ethers.deployContract('$ConfidentialFungibleTokenMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol, uri]);
 
     const encryptedInput = await fhevm
       .createEncryptedInput(await token.getAddress(), holder.address)
@@ -64,6 +64,12 @@ describe(`VestingWalletCliffConfidential`, function () {
         60 * 60,
       ]),
     ).to.be.revertedWithCustomError(this.vesting, 'VestingWalletCliffConfidentialInvalidCliffDuration');
+  });
+
+  it('should fail to init if not initializing', async function () {
+    await expect(
+      this.vesting.$__VestingWalletCliffConfidential_init_unchained(60 * 10 - 1),
+    ).to.be.revertedWithCustomError(this.vesting, 'NotInitializing');
   });
 
   shouldBehaveLikeVestingConfidential();

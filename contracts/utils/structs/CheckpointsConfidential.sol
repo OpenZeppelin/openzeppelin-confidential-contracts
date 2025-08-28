@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.2.0) (utils/structs/CheckpointsConfidential.sol)
 // This file was procedurally generated from scripts/generate/templates/CheckpointsConfidential.js.
 
 pragma solidity ^0.8.24;
@@ -16,11 +17,6 @@ import {Checkpoints} from "./temporary-Checkpoints.sol";
  */
 library CheckpointsConfidential {
     using Checkpoints for Checkpoints.Trace256;
-
-    /**
-     * @dev A value was attempted to be inserted on a past checkpoint.
-     */
-    error CheckpointUnorderedInsertion();
 
     struct TraceEuint32 {
         Checkpoints.Trace256 _inner;

@@ -1,7 +1,8 @@
+import { $ERC7984Mock } from '../../types/contracts-exposed/mocks/token/ERC7984Mock.sol/$ERC7984Mock';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import { fhevm } from 'hardhat';
+import { ethers, fhevm } from 'hardhat';
 
 function shouldBehaveLikeVestingConfidential() {
   describe('vesting', async function () {
@@ -43,6 +44,28 @@ function shouldBehaveLikeVestingConfidential() {
         fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandle, this.token.target, this.recipient),
       ).to.eventually.equal(this.vestingAmount);
     });
+
+    it('should not release if reentrancy', async function () {
+      const reentrantToken = await ethers.deployContract('$ERC7984ReentrantMock', ['name', 'symbol', 'uri']);
+      const encryptedInput = await fhevm
+        .createEncryptedInput(await reentrantToken.getAddress(), this.holder.address)
+        .add64(1000)
+        .encrypt();
+      await (reentrantToken as any as $ERC7984Mock)
+        .connect(this.holder)
+        ['$_mint(address,bytes32,bytes)'](this.vesting.target, encryptedInput.handles[0], encryptedInput.inputProof);
+
+      await expect(this.vesting.release(reentrantToken)).to.be.revertedWithCustomError(
+        this.vesting,
+        'ReentrancyGuardReentrantCall',
+      );
+    });
+  });
+
+  it('should fail to init if not initializing', async function () {
+    await expect(
+      this.vesting.$__VestingWalletConfidential_init(this.recipient, await time.latest(), 60 * 60),
+    ).to.be.revertedWithCustomError(this.vesting, 'NotInitializing');
   });
 }
 
