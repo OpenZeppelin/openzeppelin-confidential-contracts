@@ -206,7 +206,17 @@ abstract contract ERC7984 is IERC7984 {
         FHE.requestDecryption(cts, this.finalizeDiscloseEncryptedAmount.selector);
     }
 
-    /// @dev Finalizes a disclose encrypted amount request.
+    /**
+     * @dev Finalizes a disclose encrypted amount request.
+     * For gas saving purposes, the `requestId` might not be related to the expected
+     * {discloseEncryptedAmount} request. As a result, the current {finalizeDiscloseEncryptedAmount}
+     * function might emit a disclosed amount related to another decryption request context.
+     * In this case it wouldn't reveal private information, but would only display public information
+     * since the handle would have already been allowed for public decryption anyway through a previous
+     * `FHE.requestDecryption` call.
+     * The downside of this behaviour is that a {finalizeDiscloseEncryptedAmount} watcher might observe
+     * unrelated decrypted amounts.
+     */
     function finalizeDiscloseEncryptedAmount(
         uint256 requestId,
         uint64 amount,
