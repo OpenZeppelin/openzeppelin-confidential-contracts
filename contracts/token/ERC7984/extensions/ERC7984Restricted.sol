@@ -68,7 +68,7 @@ abstract contract ERC7984Restricted is ERC7984 {
     function _setRestriction(address account, Restriction restriction) internal virtual {
         if (getRestriction(account) != restriction) {
             _restrictions[account] = restriction;
-            emit UserRestrictionsUpdated(account, restriction);
+            emit UserRestrictionUpdated(account, restriction);
         } // no-op if restriction is unchanged
     }
 

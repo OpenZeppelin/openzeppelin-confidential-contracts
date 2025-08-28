@@ -46,23 +46,23 @@ describe('ERC7984Restricted', function () {
       await expect(this.token.isUserAllowed(this.holder)).to.eventually.equal(true);
     });
 
-    it('emits UserRestrictionsUpdated event when restriction changes', async function () {
+    it('emits UserRestrictionUpdated event when restriction changes', async function () {
       await expect(this.token.$_blockUser(this.holder))
-        .to.emit(this.token, 'UserRestrictionsUpdated')
+        .to.emit(this.token, 'UserRestrictionUpdated')
         .withArgs(this.holder, 1); // BLOCKED
 
       await expect(this.token.$_allowUser(this.holder))
-        .to.emit(this.token, 'UserRestrictionsUpdated')
+        .to.emit(this.token, 'UserRestrictionUpdated')
         .withArgs(this.holder, 2); // ALLOWED
 
       await expect(this.token.$_resetUser(this.holder))
-        .to.emit(this.token, 'UserRestrictionsUpdated')
+        .to.emit(this.token, 'UserRestrictionUpdated')
         .withArgs(this.holder, 0); // DEFAULT
     });
 
     it('does not emit event when restriction is unchanged', async function () {
       await this.token.$_blockUser(this.holder); // Sets to BLOCKED
-      await expect(this.token.$_blockUser(this.holder)).to.not.emit(this.token, 'UserRestrictionsUpdated');
+      await expect(this.token.$_blockUser(this.holder)).to.not.emit(this.token, 'UserRestrictionUpdated');
     });
   });
 
