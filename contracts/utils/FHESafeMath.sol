@@ -32,9 +32,8 @@ library FHESafeMath {
         if (!FHE.isInitialized(oldValue)) {
             if (!FHE.isInitialized(delta)) {
                 return (FHE.asEbool(true), oldValue);
-            } else {
-                return (FHE.eq(oldValue, delta), oldValue);
             }
+            return (FHE.eq(oldValue, delta), oldValue);
         }
         success = FHE.ge(oldValue, delta);
         updated = FHE.select(success, FHE.sub(oldValue, delta), oldValue);
