@@ -7,7 +7,7 @@ import {FHESafeMath} from "../../../utils/FHESafeMath.sol";
 import {ERC7984} from "../ERC7984.sol";
 
 /**
- * @dev Extension of {ERC7984} that implements a confidential
+ * @dev Extension of {ERC7984} that allows to implement a confidential
  * freezing mechanism that can be managed by an authorized account with
  * {setConfidentialFrozen} functions.
  *
@@ -31,12 +31,8 @@ abstract contract ERC7984Freezable is ERC7984 {
     }
 
     /// @dev Returns the confidential available (unfrozen) balance of an account. Up to {confidentialBalanceOf}.
-    function confidentialAvailable(address account) public virtual returns (euint64) {
-        (ebool success, euint64 unfrozen) = FHESafeMath.tryDecrease(
-            confidentialBalanceOf(account),
-            confidentialFrozen(account)
-        );
-        return FHE.select(success, unfrozen, FHE.asEuint64(0));
+    function confidentialAvailable(address account) public virtual returns (euint64 unfrozen) {
+        (, unfrozen) = FHESafeMath.tryDecrease(confidentialBalanceOf(account), confidentialFrozen(account));
     }
 
     /// @dev Freezes a confidential amount of tokens for an account with a proof.

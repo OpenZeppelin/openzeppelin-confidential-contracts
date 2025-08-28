@@ -17,9 +17,9 @@ contract ERC7984Mock is ERC7984, SepoliaConfig {
         _OWNER = msg.sender;
     }
 
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
-        transferred = super._update(from, to, amount);
-        FHE.allow(confidentialTotalSupply(), _OWNER);
+    function confidentialTotalSupplyAccess() public {
+        require(msg.sender == _OWNER);
+        FHE.allow(confidentialTotalSupply(), msg.sender);
     }
 
     function $_mint(
