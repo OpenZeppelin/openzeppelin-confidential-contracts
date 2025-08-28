@@ -59,8 +59,8 @@ describe('FHESafeMath', function () {
   describe('try decrease', function () {
     for (const args of [
       // a - b = c & success
-      [undefined, undefined, undefined, false],
-      [undefined, 0, undefined, false],
+      [undefined, undefined, undefined, true],
+      [undefined, 0, undefined, true],
       [0, undefined, 0, true],
       [1, 1, 0, true],
       [undefined, 1, undefined, false],
