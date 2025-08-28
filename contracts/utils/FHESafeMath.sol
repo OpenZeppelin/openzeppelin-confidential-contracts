@@ -33,7 +33,7 @@ library FHESafeMath {
             if (!FHE.isInitialized(delta)) {
                 return (FHE.asEbool(true), oldValue);
             } else {
-                return (FHE.ge(oldValue, delta), oldValue);
+                return (FHE.eq(oldValue, delta), oldValue);
             }
         }
         success = FHE.ge(oldValue, delta);
