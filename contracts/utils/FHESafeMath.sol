@@ -30,7 +30,11 @@ library FHESafeMath {
      */
     function tryDecrease(euint64 oldValue, euint64 delta) internal returns (ebool success, euint64 updated) {
         if (!FHE.isInitialized(oldValue)) {
-            return (FHE.asEbool(false), oldValue);
+            if (!FHE.isInitialized(delta)) {
+                return (FHE.asEbool(true), oldValue);
+            } else {
+                return (FHE.ge(oldValue, delta), oldValue);
+            }
         }
         success = FHE.ge(oldValue, delta);
         updated = FHE.select(success, FHE.sub(oldValue, delta), oldValue);

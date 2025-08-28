@@ -45,7 +45,7 @@ describe('FHESafeMath', function () {
           resultComputedSignature,
         );
         await expect(fhevm.userDecryptEbool(success, fheSafeMath.target, account)).to.eventually.equal(expected);
-        if (c != undefined) {
+        if (c !== undefined) {
           await expect(
             fhevm.userDecryptEuint(FhevmType.euint64, updated, fheSafeMath.target, account),
           ).to.eventually.equal(c);
@@ -80,7 +80,7 @@ describe('FHESafeMath', function () {
           fheSafeMath.tryDecrease(handleA, handleB),
           resultComputedSignature,
         );
-        if (c != undefined) {
+        if (c !== undefined) {
           await expect(
             fhevm.userDecryptEuint(FhevmType.euint64, updated, fheSafeMath.target, account),
           ).to.eventually.equal(c);
