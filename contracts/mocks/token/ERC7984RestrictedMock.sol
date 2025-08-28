@@ -3,7 +3,7 @@
 pragma solidity ^0.8.27;
 
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984Restricted} from "../../token/ERC7984/extensions/ERC7984Restricted.sol";
 
 abstract contract ERC7984RestrictedMock is ERC7984Restricted, SepoliaConfig {
