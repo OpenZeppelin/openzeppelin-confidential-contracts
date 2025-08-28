@@ -23,7 +23,7 @@ abstract contract ERC7984Restricted is ERC7984 {
     mapping(address account => Restriction) private _restrictions;
 
     /// @dev Emitted when a user account's restriction is updated.
-    event UserRestrictionsUpdated(address indexed account, Restriction restriction);
+    event UserRestrictionUpdated(address indexed account, Restriction restriction);
 
     /// @dev The operation failed because the user account is restricted.
     error UserRestricted(address account);
@@ -51,7 +51,7 @@ abstract contract ERC7984Restricted is ERC7984 {
     }
 
     /**
-     * @dev See {ERC7984-_update}. Enforces restriction transfers (excluding minting and burning).
+     * @dev See {ERC7984-_update}. Enforces transfer restrictions (excluding minting and burning).
      *
      * Requirements:
      *
