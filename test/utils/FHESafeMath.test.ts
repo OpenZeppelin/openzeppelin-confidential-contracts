@@ -37,7 +37,7 @@ describe('FHESafeMath', function () {
             ? await callAndGetResult(fheSafeMath.createHandle(a), handleCreatedSignature)
             : [ethers.ZeroHash];
         const [handleB] =
-          b != undefined
+          b !== undefined
             ? await callAndGetResult(fheSafeMath.createHandle(b), handleCreatedSignature)
             : [ethers.ZeroHash];
         const [success, updated] = await callAndGetResult(
@@ -59,11 +59,11 @@ describe('FHESafeMath', function () {
   describe('try decrease', function () {
     for (const args of [
       // a - b = c & success
-      [undefined, undefined, 0, true],
-      [undefined, 0, 0, true],
+      [undefined, undefined, undefined, false],
+      [undefined, 0, undefined, false],
       [0, undefined, 0, true],
       [1, 1, 0, true],
-      [undefined, 1, 0, false],
+      [undefined, 1, undefined, false],
       [0, 1, 0, false],
     ]) {
       it(`${args[0]} - ${args[1]} = ${args[2]} & ${args[3] ? 'success' : 'failure'}`, async function () {
@@ -73,16 +73,20 @@ describe('FHESafeMath', function () {
             ? await callAndGetResult(fheSafeMath.createHandle(a), handleCreatedSignature)
             : [ethers.ZeroHash];
         const [handleB] =
-          b != undefined
+          b !== undefined
             ? await callAndGetResult(fheSafeMath.createHandle(b), handleCreatedSignature)
             : [ethers.ZeroHash];
         const [success, updated] = await callAndGetResult(
           fheSafeMath.tryDecrease(handleA, handleB),
           resultComputedSignature,
         );
-        await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, updated, fheSafeMath.target, account),
-        ).to.eventually.equal(c);
+        if (c != undefined) {
+          await expect(
+            fhevm.userDecryptEuint(FhevmType.euint64, updated, fheSafeMath.target, account),
+          ).to.eventually.equal(c);
+        } else {
+          expect(updated).to.eq(ethers.ZeroHash);
+        }
         await expect(fhevm.userDecryptEbool(success, fheSafeMath.target, account)).to.eventually.equal(expected);
       });
     }
