@@ -214,8 +214,8 @@ abstract contract ERC7984 is IERC7984 {
      * In this case it would only display public information
      * since the handle would have already been allowed for public decryption through a previous
      * `FHE.requestDecryption` call.
-     * The downside of this behaviour is that a {finalizeDiscloseEncryptedAmount} watcher might observe
-     * unrelated decrypted amounts.
+     * The downside of this behavior is that a {finalizeDiscloseEncryptedAmount} watcher might observe
+     * unexpected `AmountDisclosed` events.
      */
     function finalizeDiscloseEncryptedAmount(
         uint256 requestId,
