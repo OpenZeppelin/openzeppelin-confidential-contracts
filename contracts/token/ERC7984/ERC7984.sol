@@ -211,8 +211,8 @@ abstract contract ERC7984 is IERC7984 {
      * For gas saving purposes, the `requestId` might not be related to the expected
      * {discloseEncryptedAmount} request. As a result, the current {finalizeDiscloseEncryptedAmount}
      * function might emit a disclosed amount related to another decryption request context.
-     * In this case it wouldn't reveal private information, but would only display public information
-     * since the handle would have already been allowed for public decryption anyway through a previous
+     * In this case it would only display public information
+     * since the handle would have already been allowed for public decryption through a previous
      * `FHE.requestDecryption` call.
      * The downside of this behaviour is that a {finalizeDiscloseEncryptedAmount} watcher might observe
      * unrelated decrypted amounts.
