@@ -41,7 +41,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
 
         FHE.allowThis(recipient_);
         FHE.allow(recipient_, omnibusTo);
-        FHE.allow(recipient_, msg.sender);
+        FHE.allow(recipient_, omnibusFrom);
 
         euint64 transferred = confidentialTransferFrom(omnibusFrom, omnibusTo, externalAmount, inputProof);
         emit OmnibusTransfer(omnibusFrom, omnibusTo, recipient_, transferred);
