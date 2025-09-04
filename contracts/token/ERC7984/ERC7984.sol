@@ -208,7 +208,7 @@ abstract contract ERC7984 is IERC7984 {
 
     /**
      * @dev Finalizes a disclose encrypted amount request.
-     * For gas saving purposes, the `requestId` might not be related to the expected
+     * For gas saving purposes, the `requestId` might not be related to a
      * {discloseEncryptedAmount} request. As a result, the current {finalizeDiscloseEncryptedAmount}
      * function might emit a disclosed amount related to another decryption request context.
      * In this case it would only display public information
