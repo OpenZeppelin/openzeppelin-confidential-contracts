@@ -97,6 +97,6 @@ Swapping from a confidential token to a non-confidential token is the most compl
 
 [source,solidity]
 ----
-include::api:example$SwapConfidentialToERC20.sol[]
+include::api:example$SwapERC7984ToERC20.sol[]
 ----
 
