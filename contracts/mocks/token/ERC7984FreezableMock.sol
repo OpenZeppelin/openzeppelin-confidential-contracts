@@ -32,9 +32,13 @@ contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, AccessControl, H
         return super._update(from, to, amount);
     }
 
-    function createEncryptedAmount(uint64 amount) public returns (euint64 encryptedAmount) {
-        FHE.allowThis(encryptedAmount = FHE.asEuint64(amount));
-        FHE.allow(encryptedAmount, msg.sender);
+    // solhint-disable-next-line func-name-mixedcase
+    function $_setConfidentialFrozen(
+        address account,
+        externalEuint64 encryptedAmount,
+        bytes calldata inputProof
+    ) public virtual {
+        _setConfidentialFrozen(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     function confidentialAvailableAccess(address account) public {
