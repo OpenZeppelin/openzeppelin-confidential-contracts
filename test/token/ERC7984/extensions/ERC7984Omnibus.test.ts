@@ -36,6 +36,7 @@ describe('ERC7984Omnibus', function () {
 
         const encryptedInput = await fhevm
           .createEncryptedInput(this.token.target, caller.address)
+          .addAddress(this.holder.address)
           .addAddress(this.subaccount.address)
           .add64(100)
           .encrypt();
@@ -43,6 +44,7 @@ describe('ERC7984Omnibus', function () {
           this.recipient.address,
           encryptedInput.handles[0],
           encryptedInput.handles[1],
+          encryptedInput.handles[2],
           encryptedInput.inputProof,
         ];
         if (transferFrom) {
@@ -52,8 +54,8 @@ describe('ERC7984Omnibus', function () {
           .connect(caller)
           [
             transferFrom
-              ? 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes)'
-              : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes)'
+              ? 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
+              : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32,bytes)'
           ](...args);
         const omnibusTransferEvent = (await tx.wait()).logs.filter(
           (log: any) => log.fragment?.name === 'OmnibusTransfer',
@@ -63,9 +65,12 @@ describe('ERC7984Omnibus', function () {
 
         await expect(
           fhevm.userDecryptEaddress(omnibusTransferEvent.args[2], this.token.target, this.holder),
+        ).to.eventually.equal(this.holder.address);
+        await expect(
+          fhevm.userDecryptEaddress(omnibusTransferEvent.args[3], this.token.target, this.holder),
         ).to.eventually.equal(this.subaccount.address);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, omnibusTransferEvent.args[3], this.token.target, this.holder),
+          fhevm.userDecryptEuint(FhevmType.euint64, omnibusTransferEvent.args[4], this.token.target, this.holder),
         ).to.eventually.equal(100);
 
         await expect(this.acl.isAllowed(omnibusTransferEvent.args[2], this.holder)).to.eventually.be.true;
@@ -78,6 +83,7 @@ describe('ERC7984Omnibus', function () {
 
         const encryptedInput = await fhevm
           .createEncryptedInput(this.token.target, caller.address)
+          .addAddress(this.holder.address)
           .addAddress(this.subaccount.address)
           .add64(10000)
           .encrypt();
@@ -85,6 +91,7 @@ describe('ERC7984Omnibus', function () {
           this.recipient.address,
           encryptedInput.handles[0],
           encryptedInput.handles[1],
+          encryptedInput.handles[2],
           encryptedInput.inputProof,
         ];
         if (transferFrom) {
@@ -94,14 +101,14 @@ describe('ERC7984Omnibus', function () {
           .connect(caller)
           [
             transferFrom
-              ? 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes)'
-              : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes)'
+              ? 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
+              : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32,bytes)'
           ](...args);
         const omnibusTransferEvent = (await tx.wait()).logs.filter(
           (log: any) => log.fragment?.name === 'OmnibusTransfer',
         )[0];
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, omnibusTransferEvent.args[3], this.token.target, this.holder),
+          fhevm.userDecryptEuint(FhevmType.euint64, omnibusTransferEvent.args[4], this.token.target, this.holder),
         ).to.eventually.equal(0);
 
         await expect(this.acl.isAllowed(omnibusTransferEvent.args[2], this.holder)).to.eventually.be.true;
