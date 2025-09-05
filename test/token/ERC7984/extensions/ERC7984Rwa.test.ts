@@ -131,7 +131,7 @@ describe('ERC7984Rwa', function () {
         const { admin, agent1, recipient } = await fixture();
         for (const manager of [admin, agent1]) {
           const { token } = await fixture();
-          await token.$_setCompliantTransfer();
+          await token.$_setCompliant();
           const amount = 100;
           let params = [recipient.address] as unknown as [
             account: AddressLike,
@@ -172,7 +172,7 @@ describe('ERC7984Rwa', function () {
         .createEncryptedInput(await token.getAddress(), anyone.address)
         .add64(100)
         .encrypt();
-      await token.$_setCompliantTransfer();
+      await token.$_setCompliant();
       await expect(
         token
           .connect(anyone)
@@ -222,7 +222,7 @@ describe('ERC7984Rwa', function () {
             .createEncryptedInput(await token.getAddress(), manager.address)
             .add64(100)
             .encrypt();
-          await token.$_setCompliantTransfer();
+          await token.$_setCompliant();
           await token
             .connect(manager)
             ['confidentialMint(address,bytes32,bytes)'](
@@ -275,7 +275,7 @@ describe('ERC7984Rwa', function () {
         .createEncryptedInput(await token.getAddress(), anyone.address)
         .add64(100)
         .encrypt();
-      await token.$_setCompliantTransfer();
+      await token.$_setCompliant();
       await expect(
         token
           .connect(anyone)
@@ -325,7 +325,7 @@ describe('ERC7984Rwa', function () {
             .createEncryptedInput(await token.getAddress(), manager.address)
             .add64(100)
             .encrypt();
-          await token.$_setCompliantTransfer();
+          await token.$_setCompliant();
           await token
             .connect(manager)
             ['confidentialMint(address,bytes32,bytes)'](
@@ -345,7 +345,7 @@ describe('ERC7984Rwa', function () {
               encryptedFrozenValueInput.handles[0],
               encryptedFrozenValueInput.inputProof,
             );
-          await token.$_unsetCompliantTransfer();
+          await token.$_unsetCompliant();
           expect(await token.compliantTransfer()).to.be.false;
           const amount = 25;
           let params = [recipient.address, anyone.address] as unknown as [
@@ -364,6 +364,7 @@ describe('ERC7984Rwa', function () {
             await token.connect(manager).createEncryptedAmount(amount);
             params.push(await token.connect(manager).createEncryptedAmount.staticCall(amount));
           }
+          await token.$_setForceCompliant();
           const [from, to, transferredHandle] = await callAndGetResult(
             token
               .connect(manager)
@@ -402,7 +403,7 @@ describe('ERC7984Rwa', function () {
             .createEncryptedInput(await token.getAddress(), manager.address)
             .add64(100)
             .encrypt();
-          await token.$_setCompliantTransfer();
+          await token.$_setCompliant();
           await token
             .connect(manager)
             ['confidentialMint(address,bytes32,bytes)'](
@@ -423,7 +424,7 @@ describe('ERC7984Rwa', function () {
               encryptedFrozenValueInput.inputProof,
             );
           // should force transfer even if not compliant
-          await token.$_unsetCompliantTransfer();
+          await token.$_unsetCompliant();
           expect(await token.compliantTransfer()).to.be.false;
           // should force transfer even if paused
           await token.connect(manager).pause();
@@ -445,6 +446,7 @@ describe('ERC7984Rwa', function () {
             await token.connect(manager).createEncryptedAmount(amount);
             params.push(await token.connect(manager).createEncryptedAmount.staticCall(amount));
           }
+          await token.$_setForceCompliant();
           const [account, frozenAmountHandle] = await callAndGetResult(
             token
               .connect(manager)
@@ -550,7 +552,7 @@ describe('ERC7984Rwa', function () {
         .createEncryptedInput(await token.getAddress(), manager.address)
         .add64(100)
         .encrypt();
-      await token.$_setCompliantTransfer();
+      await token.$_setCompliant();
       await token
         .connect(manager)
         ['confidentialMint(address,bytes32,bytes)'](
@@ -575,7 +577,7 @@ describe('ERC7984Rwa', function () {
         .createEncryptedInput(await token.getAddress(), recipient.address)
         .add64(amount)
         .encrypt();
-      await token.$_setCompliantTransfer();
+      await token.$_setCompliant();
       expect(await token.compliantTransfer()).to.be.true;
       const [from, to, transferredHandle] = await callAndGetResult(
         token
@@ -654,7 +656,7 @@ describe('ERC7984Rwa', function () {
         .createEncryptedInput(await token.getAddress(), manager.address)
         .add64(100)
         .encrypt();
-      await token.$_setCompliantTransfer();
+      await token.$_setCompliant();
       await token
         .connect(manager)
         ['confidentialMint(address,bytes32,bytes)'](
@@ -678,7 +680,7 @@ describe('ERC7984Rwa', function () {
         .createEncryptedInput(await token.getAddress(), recipient.address)
         .add64(25)
         .encrypt();
-      await token.$_setCompliantTransfer();
+      await token.$_setCompliant();
       expect(await token.compliantTransfer()).to.be.true;
       const [, , transferredHandle] = await callAndGetResult(
         token
@@ -708,7 +710,7 @@ describe('ERC7984Rwa', function () {
       it(`should not transfer if ${arg ? 'sender' : 'receiver'} blocked `, async function () {
         const { token, admin: manager, recipient, anyone } = await fixture();
         const account = arg ? recipient : anyone;
-        await token.$_setCompliantTransfer();
+        await token.$_setCompliant();
         const encryptedInput = await fhevm
           .createEncryptedInput(await token.getAddress(), recipient.address)
           .add64(25)

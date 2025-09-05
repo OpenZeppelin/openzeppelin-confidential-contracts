@@ -167,6 +167,7 @@ abstract contract ERC7984Rwa is
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (euint64 transferred) {
+        require(_isForceCompliant(from, to, encryptedAmount), UncompliantTransfer(from, to, encryptedAmount));
         _disableERC7984FreezableUpdateCheck(); // bypass frozen check
         _disableERC7984RestrictedUpdateCheck(); // bypass default restriction check
         if (to != address(0)) _checkRestriction(to); // only perform restriction check on `to`
@@ -181,7 +182,7 @@ abstract contract ERC7984Rwa is
         address to,
         euint64 encryptedAmount
     ) internal override(ERC7984Freezable, ERC7984Restricted, ERC7984) whenNotPaused returns (euint64) {
-        require(_isCompliantTransfer(from, to, encryptedAmount), UncompliantTransfer(from, to, encryptedAmount));
+        require(_isCompliant(from, to, encryptedAmount), UncompliantTransfer(from, to, encryptedAmount));
         // frozen and restriction checks performed through inheritance
         return super._update(from, to, encryptedAmount);
     }
@@ -192,6 +193,9 @@ abstract contract ERC7984Rwa is
      */
     function _checkFreezer() internal override onlyAdminOrAgent {}
 
-    /// @dev Checks if a transfer follows token compliance.
-    function _isCompliantTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (bool);
+    /// @dev Checks if a transfer follows compliance.
+    function _isCompliant(address from, address to, euint64 encryptedAmount) internal virtual returns (bool);
+
+    /// @dev Checks if a force transfer follows compliance.
+    function _isForceCompliant(address from, address to, euint64 encryptedAmount) internal virtual returns (bool);
 }
