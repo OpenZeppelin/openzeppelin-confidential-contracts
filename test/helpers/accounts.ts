@@ -1,8 +1,8 @@
 import { impersonateAccount, setBalance } from '@nomicfoundation/hardhat-network-helpers';
 import { Addressable, Signer, ethers } from 'ethers';
 import fs from 'fs';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { fhevm } from 'hardhat';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 const DEFAULT_BALANCE: bigint = 10000n * ethers.WeiPerEther;
 
