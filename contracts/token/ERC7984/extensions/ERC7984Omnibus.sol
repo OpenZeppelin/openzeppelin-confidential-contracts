@@ -16,7 +16,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
     /**
      * @dev Emitted when a confidential transfer is made representing the onchain settlement of
      * an omnibus transfer from `sender` to `recipient` of amount `amount`. Settlement occurs between
-     * `omnibusFrom` and `omnibusTo` and is represented in a matching {ConfidentialTransfer} event.
+     * `omnibusFrom` and `omnibusTo` and is represented in a matching {IERC7984-ConfidentialTransfer} event.
      *
      * NOTE: `omnibusFrom` and `omnibusTo` get permanent ACL allowances for `sender` and `recipient`.
      */
