@@ -5,8 +5,20 @@ pragma solidity ^0.8.27;
 import {FHE, euint64, externalEuint64, externalEaddress, eaddress} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984} from "../ERC7984.sol";
 
+/**
+ * @dev Extension of {ERC7984} that emits additional events for omnibus transfers.
+ * These events contain encrypted addresses for the sub-account sender and recipient.
+ *
+ * NOTE: There is no onchain accounting for sub-accounts--integrators must track sub-account
+ * balances externally.
+ */
 abstract contract ERC7984Omnibus is ERC7984 {
-    event OmnibusTransfer(
+    /**
+     * @dev Emitted when a confidential transfer is made representing the onchain settlement of
+     * an omnibus transfer from `sender` to `recipient` of amount `amount`. Settlement occurs between
+     * `omnibusFrom` and `omnibusTo` and is represented in a matching {ConfidentialTransfer} event.
+     */
+    event OmnibusConfidentialTransfer(
         address indexed omnibusFrom,
         address indexed omnibusTo,
         eaddress sender,
@@ -16,48 +28,141 @@ abstract contract ERC7984Omnibus is ERC7984 {
 
     function confidentialTransferOmnibus(
         address omnibusTo,
-        externalEaddress sender,
-        externalEaddress recipient,
+        externalEaddress externalSender,
+        externalEaddress externalRecipient,
         externalEuint64 externalAmount,
         bytes calldata inputProof
-    ) public returns (euint64) {
-        eaddress recipient_ = FHE.fromExternal(recipient, inputProof);
-        eaddress sender_ = FHE.fromExternal(sender, inputProof);
+    ) public virtual returns (euint64) {
+        eaddress sender = FHE.fromExternal(externalSender, inputProof);
+        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
+        euint64 amount = FHE.fromExternal(externalAmount, inputProof);
 
-        FHE.allowThis(recipient_);
-        FHE.allow(recipient_, omnibusTo);
-        FHE.allow(recipient_, msg.sender);
+        return confidentialTransferOmnibus(omnibusTo, sender, recipient, amount);
+    }
 
-        FHE.allowThis(sender_);
-        FHE.allow(sender_, omnibusTo);
-        FHE.allow(sender_, msg.sender);
+    function confidentialTransferOmnibus(
+        address omnibusTo,
+        eaddress sender,
+        eaddress recipient,
+        euint64 amount
+    ) public virtual returns (euint64) {
+        FHE.allowThis(recipient);
+        FHE.allow(recipient, omnibusTo);
+        FHE.allow(recipient, msg.sender);
 
-        euint64 transferred = confidentialTransfer(omnibusTo, externalAmount, inputProof);
-        emit OmnibusTransfer(msg.sender, omnibusTo, sender_, recipient_, transferred);
+        FHE.allowThis(sender);
+        FHE.allow(sender, omnibusTo);
+        FHE.allow(sender, msg.sender);
+
+        euint64 transferred = confidentialTransfer(omnibusTo, amount);
+        emit OmnibusConfidentialTransfer(msg.sender, omnibusTo, sender, recipient, transferred);
         return transferred;
     }
 
     function confidentialTransferFromOmnibus(
         address omnibusFrom,
         address omnibusTo,
-        externalEaddress sender,
-        externalEaddress recipient,
+        externalEaddress externalSender,
+        externalEaddress externalRecipient,
         externalEuint64 externalAmount,
         bytes calldata inputProof
-    ) public returns (euint64) {
-        eaddress recipient_ = FHE.fromExternal(recipient, inputProof);
-        eaddress sender_ = FHE.fromExternal(sender, inputProof);
+    ) public virtual returns (euint64) {
+        eaddress sender = FHE.fromExternal(externalSender, inputProof);
+        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
+        euint64 amount = FHE.fromExternal(externalAmount, inputProof);
 
-        FHE.allowThis(recipient_);
-        FHE.allow(recipient_, omnibusTo);
-        FHE.allow(recipient_, omnibusFrom);
+        return confidentialTransferFromOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount);
+    }
 
-        FHE.allowThis(sender_);
-        FHE.allow(sender_, omnibusTo);
-        FHE.allow(sender_, omnibusFrom);
+    function confidentialTransferFromOmnibus(
+        address omnibusFrom,
+        address omnibusTo,
+        eaddress sender,
+        eaddress recipient,
+        euint64 amount
+    ) public virtual returns (euint64) {
+        FHE.allowThis(sender);
+        FHE.allow(sender, omnibusTo);
+        FHE.allow(sender, omnibusFrom);
 
-        euint64 transferred = confidentialTransferFrom(omnibusFrom, omnibusTo, externalAmount, inputProof);
-        emit OmnibusTransfer(omnibusFrom, omnibusTo, sender_, recipient_, transferred);
+        FHE.allowThis(recipient);
+        FHE.allow(recipient, omnibusTo);
+        FHE.allow(recipient, omnibusFrom);
+
+        euint64 transferred = confidentialTransferFrom(omnibusFrom, omnibusTo, amount);
+        emit OmnibusConfidentialTransfer(omnibusFrom, omnibusTo, sender, recipient, transferred);
+        return transferred;
+    }
+
+    function confidentialTransferAndCallOmnibus(
+        address omnibusTo,
+        externalEaddress externalSender,
+        externalEaddress externalRecipient,
+        externalEuint64 externalAmount,
+        bytes calldata inputProof,
+        bytes calldata data
+    ) public virtual returns (euint64) {
+        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
+        eaddress sender = FHE.fromExternal(externalSender, inputProof);
+        euint64 amount = FHE.fromExternal(externalAmount, inputProof);
+
+        return confidentialTransferAndCallOmnibus(omnibusTo, sender, recipient, amount, data);
+    }
+
+    function confidentialTransferAndCallOmnibus(
+        address omnibusTo,
+        eaddress sender,
+        eaddress recipient,
+        euint64 amount,
+        bytes calldata data
+    ) public virtual returns (euint64) {
+        FHE.allowThis(recipient);
+        FHE.allow(recipient, omnibusTo);
+        FHE.allow(recipient, msg.sender);
+
+        FHE.allowThis(sender);
+        FHE.allow(sender, omnibusTo);
+        FHE.allow(sender, msg.sender);
+
+        euint64 transferred = confidentialTransferAndCall(omnibusTo, amount, data);
+        emit OmnibusConfidentialTransfer(msg.sender, omnibusTo, sender, recipient, transferred);
+        return transferred;
+    }
+
+    function confidentialTransferFromAndCallOmnibus(
+        address omnibusFrom,
+        address omnibusTo,
+        externalEaddress externalSender,
+        externalEaddress externalRecipient,
+        externalEuint64 externalAmount,
+        bytes calldata inputProof,
+        bytes calldata data
+    ) public virtual returns (euint64) {
+        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
+        eaddress sender = FHE.fromExternal(externalSender, inputProof);
+        euint64 amount = FHE.fromExternal(externalAmount, inputProof);
+
+        return confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data);
+    }
+
+    function confidentialTransferFromAndCallOmnibus(
+        address omnibusFrom,
+        address omnibusTo,
+        eaddress sender,
+        eaddress recipient,
+        euint64 amount,
+        bytes calldata data
+    ) public virtual returns (euint64) {
+        FHE.allowThis(recipient);
+        FHE.allow(recipient, omnibusTo);
+        FHE.allow(recipient, omnibusFrom);
+
+        FHE.allowThis(sender);
+        FHE.allow(sender, omnibusTo);
+        FHE.allow(sender, omnibusFrom);
+
+        euint64 transferred = confidentialTransferFromAndCall(omnibusFrom, omnibusTo, amount, data);
+        emit OmnibusConfidentialTransfer(omnibusFrom, omnibusTo, sender, recipient, transferred);
         return transferred;
     }
 }

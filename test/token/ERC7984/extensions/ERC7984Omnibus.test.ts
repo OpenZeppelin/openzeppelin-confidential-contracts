@@ -57,25 +57,32 @@ describe('ERC7984Omnibus', function () {
               ? 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
               : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32,bytes)'
           ](...args);
-        const omnibusTransferEvent = (await tx.wait()).logs.filter(
-          (log: any) => log.fragment?.name === 'OmnibusTransfer',
+        const omnibusConfidentialTransferEvent = (await tx.wait()).logs.filter(
+          (log: any) => log.fragment?.name === 'OmnibusConfidentialTransfer',
         )[0];
-        expect(omnibusTransferEvent.args[0]).to.equal(this.holder.address);
-        expect(omnibusTransferEvent.args[1]).to.equal(this.recipient.address);
+        expect(omnibusConfidentialTransferEvent.args[0]).to.equal(this.holder.address);
+        expect(omnibusConfidentialTransferEvent.args[1]).to.equal(this.recipient.address);
 
         await expect(
-          fhevm.userDecryptEaddress(omnibusTransferEvent.args[2], this.token.target, this.holder),
+          fhevm.userDecryptEaddress(omnibusConfidentialTransferEvent.args[2], this.token.target, this.holder),
         ).to.eventually.equal(this.holder.address);
         await expect(
-          fhevm.userDecryptEaddress(omnibusTransferEvent.args[3], this.token.target, this.holder),
+          fhevm.userDecryptEaddress(omnibusConfidentialTransferEvent.args[3], this.token.target, this.holder),
         ).to.eventually.equal(this.subaccount.address);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, omnibusTransferEvent.args[4], this.token.target, this.holder),
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            omnibusConfidentialTransferEvent.args[4],
+            this.token.target,
+            this.holder,
+          ),
         ).to.eventually.equal(100);
 
-        await expect(this.acl.isAllowed(omnibusTransferEvent.args[2], this.holder)).to.eventually.be.true;
-        await expect(this.acl.isAllowed(omnibusTransferEvent.args[2], this.recipient)).to.eventually.be.true;
-        await expect(this.acl.isAllowed(omnibusTransferEvent.args[2], this.operator)).to.eventually.be.false;
+        await expect(this.acl.isAllowed(omnibusConfidentialTransferEvent.args[2], this.holder)).to.eventually.be.true;
+        await expect(this.acl.isAllowed(omnibusConfidentialTransferEvent.args[2], this.recipient)).to.eventually.be
+          .true;
+        await expect(this.acl.isAllowed(omnibusConfidentialTransferEvent.args[2], this.operator)).to.eventually.be
+          .false;
       });
 
       it('transfer more than balance', async function () {
@@ -104,16 +111,23 @@ describe('ERC7984Omnibus', function () {
               ? 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
               : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32,bytes)'
           ](...args);
-        const omnibusTransferEvent = (await tx.wait()).logs.filter(
-          (log: any) => log.fragment?.name === 'OmnibusTransfer',
+        const omnibusConfidentialTransferEvent = (await tx.wait()).logs.filter(
+          (log: any) => log.fragment?.name === 'OmnibusConfidentialTransfer',
         )[0];
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, omnibusTransferEvent.args[4], this.token.target, this.holder),
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            omnibusConfidentialTransferEvent.args[4],
+            this.token.target,
+            this.holder,
+          ),
         ).to.eventually.equal(0);
 
-        await expect(this.acl.isAllowed(omnibusTransferEvent.args[2], this.holder)).to.eventually.be.true;
-        await expect(this.acl.isAllowed(omnibusTransferEvent.args[2], this.recipient)).to.eventually.be.true;
-        await expect(this.acl.isAllowed(omnibusTransferEvent.args[2], this.operator)).to.eventually.be.false;
+        await expect(this.acl.isAllowed(omnibusConfidentialTransferEvent.args[2], this.holder)).to.eventually.be.true;
+        await expect(this.acl.isAllowed(omnibusConfidentialTransferEvent.args[2], this.recipient)).to.eventually.be
+          .true;
+        await expect(this.acl.isAllowed(omnibusConfidentialTransferEvent.args[2], this.operator)).to.eventually.be
+          .false;
       });
     });
   }
