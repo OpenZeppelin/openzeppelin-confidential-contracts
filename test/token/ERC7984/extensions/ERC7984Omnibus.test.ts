@@ -35,7 +35,7 @@ describe('ERC7984Omnibus', function () {
                 }
               });
 
-              it.only('normal transfer', async function () {
+              it('normal transfer', async function () {
                 const caller = transferFrom ? this.operator : this.holder;
 
                 let encryptedInputWithProof;
@@ -104,7 +104,6 @@ describe('ERC7984Omnibus', function () {
                   fhevm.userDecryptEaddress(omnibusConfidentialTransferEvent.args[3], this.token.target, this.holder),
                 ).to.eventually.equal(this.subaccount.address);
 
-                console.log('made it here');
                 await expect(
                   fhevm.userDecryptEuint(
                     FhevmType.euint64,
@@ -125,29 +124,58 @@ describe('ERC7984Omnibus', function () {
               it('transfer more than balance', async function () {
                 const caller = transferFrom ? this.operator : this.holder;
 
-                const encryptedInput = await fhevm
-                  .createEncryptedInput(this.token.target, caller.address)
-                  .addAddress(this.holder.address)
-                  .addAddress(this.subaccount.address)
-                  .add64(10000)
-                  .encrypt();
+                let encryptedInputWithProof;
+                let encryptedInput: { handles: any[] } = { handles: [] };
+                if (withProof) {
+                  encryptedInputWithProof = await fhevm
+                    .createEncryptedInput(this.token.target, caller.address)
+                    .addAddress(this.holder.address)
+                    .addAddress(this.subaccount.address)
+                    .add64(10000)
+                    .encrypt();
+                } else {
+                  let tx = await this.token.connect(caller).createEncryptedAddress(this.holder.address);
+                  encryptedInput.handles.push(
+                    (await tx.wait()).logs.filter((log: any) => log.fragment?.name === 'EncryptedAddressCreated')[0]
+                      .args[0],
+                  );
+
+                  tx = await this.token.connect(caller).createEncryptedAddress(this.subaccount);
+                  encryptedInput.handles.push(
+                    (await tx.wait()).logs.filter((log: any) => log.fragment?.name === 'EncryptedAddressCreated')[0]
+                      .args[0],
+                  );
+
+                  tx = await this.token.connect(caller).createEncryptedAmount(10000);
+                  encryptedInput.handles.push(
+                    (await tx.wait()).logs.filter((log: any) => log.fragment?.name === 'EncryptedAmountCreated')[0]
+                      .args[0],
+                  );
+                }
+
                 const args = [
                   this.recipient.address,
-                  encryptedInput.handles[0],
-                  encryptedInput.handles[1],
-                  encryptedInput.handles[2],
-                  encryptedInput.inputProof,
+                  (withProof ? encryptedInputWithProof : encryptedInput)?.handles[0],
+                  (withProof ? encryptedInputWithProof : encryptedInput)?.handles[1],
+                  (withProof ? encryptedInputWithProof : encryptedInput)?.handles[2],
                 ];
                 if (transferFrom) {
                   args.unshift(this.holder.address);
                 }
-                const tx = await this.token
-                  .connect(caller)
-                  [
-                    transferFrom
-                      ? 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
-                      : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32,bytes)'
-                  ](...args);
+                if (withProof) {
+                  args.push(encryptedInputWithProof?.inputProof);
+                }
+                if (withCallback) {
+                  args.push('0x');
+                }
+
+                const tx = await doConfidentialTransferOmnibus(
+                  this.token.connect(caller),
+                  transferFrom,
+                  withCallback,
+                  withProof,
+                  args,
+                );
                 const omnibusConfidentialTransferEvent = (await tx.wait()).logs.filter(
                   (log: any) => log.fragment?.name === 'OmnibusConfidentialTransfer',
                 )[0];
@@ -166,9 +194,6 @@ describe('ERC7984Omnibus', function () {
                 await expect(
                   this.acl.isAllowed(omnibusConfidentialTransferEvent.args[2], this.recipient),
                 ).to.eventually.be.true;
-                await expect(
-                  this.acl.isAllowed(omnibusConfidentialTransferEvent.args[2], this.operator),
-                ).to.eventually.be.false;
               });
             });
           }

@@ -74,12 +74,12 @@ abstract contract ERC7984Omnibus is ERC7984 {
         euint64 amount
     ) public virtual returns (euint64) {
         FHE.allowThis(sender);
-        FHE.allow(sender, omnibusTo);
         FHE.allow(sender, omnibusFrom);
+        FHE.allow(sender, omnibusTo);
 
         FHE.allowThis(recipient);
-        FHE.allow(recipient, omnibusTo);
         FHE.allow(recipient, omnibusFrom);
+        FHE.allow(recipient, omnibusTo);
 
         euint64 transferred = confidentialTransferFrom(omnibusFrom, omnibusTo, amount);
         emit OmnibusConfidentialTransfer(omnibusFrom, omnibusTo, sender, recipient, transferred);
@@ -135,15 +135,20 @@ abstract contract ERC7984Omnibus is ERC7984 {
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64) {
+        euint64 transferred = confidentialTransferFromAndCall(omnibusFrom, omnibusTo, amount, data);
+
         FHE.allowThis(sender);
-        FHE.allow(sender, omnibusTo);
         FHE.allow(sender, omnibusFrom);
+        FHE.allow(sender, omnibusTo);
 
         FHE.allowThis(recipient);
-        FHE.allow(recipient, omnibusTo);
         FHE.allow(recipient, omnibusFrom);
+        FHE.allow(recipient, omnibusTo);
 
-        euint64 transferred = confidentialTransferFromAndCall(omnibusFrom, omnibusTo, amount, data);
+        FHE.allowThis(transferred);
+        FHE.allow(transferred, omnibusFrom);
+        FHE.allow(transferred, omnibusTo);
+
         emit OmnibusConfidentialTransfer(omnibusFrom, omnibusTo, sender, recipient, transferred);
         return transferred;
     }
