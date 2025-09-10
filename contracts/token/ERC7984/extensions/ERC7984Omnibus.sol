@@ -17,6 +17,8 @@ abstract contract ERC7984Omnibus is ERC7984 {
      * @dev Emitted when a confidential transfer is made representing the onchain settlement of
      * an omnibus transfer from `sender` to `recipient` of amount `amount`. Settlement occurs between
      * `omnibusFrom` and `omnibusTo` and is represented in a matching {ConfidentialTransfer} event.
+     *
+     * NOTE: `omnibusFrom` and `omnibusTo` get permanent ACL allowances for `sender` and `recipient`.
      */
     event OmnibusConfidentialTransfer(
         address indexed omnibusFrom,
@@ -37,7 +39,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
         euint64 amount = FHE.fromExternal(externalAmount, inputProof);
 
-        return confidentialTransferOmnibus(omnibusTo, sender, recipient, amount);
+        return confidentialTransferFromOmnibus(msg.sender, omnibusTo, sender, recipient, amount);
     }
 
     function confidentialTransferOmnibus(
@@ -46,17 +48,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         eaddress recipient,
         euint64 amount
     ) public virtual returns (euint64) {
-        FHE.allowThis(recipient);
-        FHE.allow(recipient, omnibusTo);
-        FHE.allow(recipient, msg.sender);
-
-        FHE.allowThis(sender);
-        FHE.allow(sender, omnibusTo);
-        FHE.allow(sender, msg.sender);
-
-        euint64 transferred = confidentialTransfer(omnibusTo, amount);
-        emit OmnibusConfidentialTransfer(msg.sender, omnibusTo, sender, recipient, transferred);
-        return transferred;
+        return confidentialTransferFromOmnibus(msg.sender, omnibusTo, sender, recipient, amount);
     }
 
     function confidentialTransferFromOmnibus(
@@ -102,11 +94,11 @@ abstract contract ERC7984Omnibus is ERC7984 {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64) {
-        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
         eaddress sender = FHE.fromExternal(externalSender, inputProof);
+        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
         euint64 amount = FHE.fromExternal(externalAmount, inputProof);
 
-        return confidentialTransferAndCallOmnibus(omnibusTo, sender, recipient, amount, data);
+        return confidentialTransferFromAndCallOmnibus(msg.sender, omnibusTo, sender, recipient, amount, data);
     }
 
     function confidentialTransferAndCallOmnibus(
@@ -116,17 +108,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64) {
-        FHE.allowThis(recipient);
-        FHE.allow(recipient, omnibusTo);
-        FHE.allow(recipient, msg.sender);
-
-        FHE.allowThis(sender);
-        FHE.allow(sender, omnibusTo);
-        FHE.allow(sender, msg.sender);
-
-        euint64 transferred = confidentialTransferAndCall(omnibusTo, amount, data);
-        emit OmnibusConfidentialTransfer(msg.sender, omnibusTo, sender, recipient, transferred);
-        return transferred;
+        return confidentialTransferFromAndCallOmnibus(msg.sender, omnibusTo, sender, recipient, amount, data);
     }
 
     function confidentialTransferFromAndCallOmnibus(
@@ -138,8 +120,8 @@ abstract contract ERC7984Omnibus is ERC7984 {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64) {
-        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
         eaddress sender = FHE.fromExternal(externalSender, inputProof);
+        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
         euint64 amount = FHE.fromExternal(externalAmount, inputProof);
 
         return confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data);
@@ -153,13 +135,13 @@ abstract contract ERC7984Omnibus is ERC7984 {
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64) {
-        FHE.allowThis(recipient);
-        FHE.allow(recipient, omnibusTo);
-        FHE.allow(recipient, omnibusFrom);
-
         FHE.allowThis(sender);
         FHE.allow(sender, omnibusTo);
         FHE.allow(sender, omnibusFrom);
+
+        FHE.allowThis(recipient);
+        FHE.allow(recipient, omnibusTo);
+        FHE.allow(recipient, omnibusFrom);
 
         euint64 transferred = confidentialTransferFromAndCall(omnibusFrom, omnibusTo, amount, data);
         emit OmnibusConfidentialTransfer(omnibusFrom, omnibusTo, sender, recipient, transferred);
