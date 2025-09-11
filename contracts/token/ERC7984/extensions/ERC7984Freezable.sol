@@ -38,6 +38,9 @@ abstract contract ERC7984Freezable is ERC7984 {
             confidentialBalanceOf(account),
             confidentialFrozen(account)
         );
+        if (!FHE.isInitialized(unfrozen)) {
+            return unfrozen;
+        }
         return FHE.select(success, unfrozen, FHE.asEuint64(0));
     }
 
