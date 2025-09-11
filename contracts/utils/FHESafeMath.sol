@@ -16,13 +16,11 @@ library FHESafeMath {
      */
     function tryIncrease(euint64 oldValue, euint64 delta) internal returns (ebool success, euint64 updated) {
         if (!FHE.isInitialized(oldValue)) {
-            success = FHE.asEbool(true);
-            updated = delta;
-        } else {
-            euint64 newValue = FHE.add(oldValue, delta);
-            success = FHE.ge(newValue, oldValue);
-            updated = FHE.select(success, newValue, oldValue);
+            return (FHE.asEbool(true), delta);
         }
+        euint64 newValue = FHE.add(oldValue, delta);
+        success = FHE.ge(newValue, oldValue);
+        updated = FHE.select(success, newValue, oldValue);
     }
 
     /**
@@ -31,6 +29,12 @@ library FHESafeMath {
      * and `updated` will be the original value.
      */
     function tryDecrease(euint64 oldValue, euint64 delta) internal returns (ebool success, euint64 updated) {
+        if (!FHE.isInitialized(oldValue)) {
+            if (!FHE.isInitialized(delta)) {
+                return (FHE.asEbool(true), oldValue);
+            }
+            return (FHE.eq(oldValue, delta), oldValue);
+        }
         success = FHE.ge(oldValue, delta);
         updated = FHE.select(success, FHE.sub(oldValue, delta), oldValue);
     }

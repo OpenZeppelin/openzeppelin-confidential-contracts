@@ -39,24 +39,6 @@ abstract contract ERC7984Freezable is ERC7984 {
         return FHE.select(success, unfrozen, FHE.asEuint64(0));
     }
 
-    /// @dev Freezes a confidential amount of tokens for an account with a proof.
-    function setConfidentialFrozen(
-        address account,
-        externalEuint64 encryptedAmount,
-        bytes calldata inputProof
-    ) public virtual {
-        _setConfidentialFrozen(account, FHE.fromExternal(encryptedAmount, inputProof));
-    }
-
-    /// @dev Freezes a confidential amount of tokens for an account.
-    function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual {
-        require(
-            FHE.isAllowed(encryptedAmount, msg.sender),
-            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
-        );
-        _setConfidentialFrozen(account, encryptedAmount);
-    }
-
     /// @dev Internal function to freeze a confidential amount of tokens for an account.
     function _setConfidentialFrozen(address account, euint64 encryptedAmount) internal virtual {
         _checkFreezer();
