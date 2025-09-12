@@ -96,16 +96,17 @@ describe('FHESafeMath', function () {
   const addArgsOptions: [BigNumberish | undefined, BigNumberish | undefined, BigNumberish | undefined, boolean][] = [
     // a + b = c & success
     [undefined, undefined, undefined, true],
-    [undefined, 0, 0, true],
-    [0, undefined, 0, true],
+    [undefined, 1, 1, true],
+    [1, undefined, 1, true],
     [1, 1, 2, true],
     [undefined, 1, 1, true],
     [0, 1, 1, true],
     [0, MaxUint64, MaxUint64, true],
     [1, MaxUint64, 0, false],
+    [MaxUint64 - 1n, 2, 0, false],
     [MaxUint64, MaxUint64, 0, false],
   ];
-  const subArgsOptions: [number | undefined, number | undefined, number | undefined, boolean][] = [
+  const subArgsOptions: [BigNumberish | undefined, BigNumberish | undefined, BigNumberish | undefined, boolean][] = [
     // a - b = c & success
     [undefined, undefined, undefined, true],
     [undefined, 0, 0, true],
@@ -113,6 +114,7 @@ describe('FHESafeMath', function () {
     [1, 1, 0, true],
     [undefined, 1, 0, false],
     [0, 1, 0, false],
+    [MaxUint64, MaxUint64, 0, true],
   ];
 
   for (const params of [
