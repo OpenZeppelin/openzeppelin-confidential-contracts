@@ -103,6 +103,7 @@ describe('FHESafeMath', function () {
     [0, 1, 1, true],
     [0, MaxUint64, MaxUint64, true],
     [1, MaxUint64, 0, false],
+    [MaxUint64, MaxUint64, 0, false],
   ];
   const subArgsOptions: [number | undefined, number | undefined, number | undefined, boolean][] = [
     // a - b = c & success
