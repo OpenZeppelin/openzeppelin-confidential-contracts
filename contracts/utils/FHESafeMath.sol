@@ -61,8 +61,8 @@ library FHESafeMath {
      * will be the difference of `a` and `b`. Otherwise, `success` will be false, and `res` will be 0.
      */
     function trySub(euint64 a, euint64 b) internal returns (ebool success, euint64 res) {
-        if (!FHE.isInitialized(a) && !FHE.isInitialized(b)) {
-            return (FHE.asEbool(true), b);
+        if (!FHE.isInitialized(b)) {
+            return (FHE.asEbool(true), a);
         }
 
         euint64 difference = FHE.sub(a, b);
