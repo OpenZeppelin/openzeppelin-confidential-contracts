@@ -47,6 +47,9 @@ library FHESafeMath {
         if (!FHE.isInitialized(a)) {
             return (FHE.asEbool(true), b);
         }
+        if (!FHE.isInitialized(b)) {
+            return (FHE.asEbool(true), a);
+        }
 
         euint64 sum = FHE.add(a, b);
         success = FHE.ge(sum, a);
