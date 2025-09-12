@@ -57,8 +57,8 @@ library FHESafeMath {
     }
 
     /**
-     * @dev Try to subtract `a` and `b`. If the operation is successful, `success` will be true and `res`
-     * will be the difference of `a` and `b`. Otherwise, `success` will be false, and `res` will be 0.
+     * @dev Try to subtract `b` from `a`. If the operation is successful, `success` will be true and `res`
+     * will be `a - b`. Otherwise, `success` will be false, and `res` will be 0.
      */
     function trySub(euint64 a, euint64 b) internal returns (ebool success, euint64 res) {
         if (!FHE.isInitialized(b)) {
