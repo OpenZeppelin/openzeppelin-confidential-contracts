@@ -111,6 +111,7 @@ describe('FHESafeMath', function () {
     [undefined, 0, 0, true],
     [0, undefined, 0, true],
     [1, 1, 0, true],
+    [1, undefined, 1, true],
     [undefined, 1, 0, false],
     [0, 1, 0, false],
     [MaxUint64, MaxUint64, 0, true],
