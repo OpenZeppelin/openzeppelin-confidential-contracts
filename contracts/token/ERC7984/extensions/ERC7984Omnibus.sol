@@ -28,6 +28,13 @@ abstract contract ERC7984Omnibus is ERC7984 {
         euint64 amount
     );
 
+    /**
+     * @dev The caller `user` does not have access to the encrypted address `addr`.
+     *
+     * NOTE: Try using the equivalent transfer function with an input proof.
+     */
+    error ERC7984UnauthorizedUseOfEncryptedAddress(eaddress addr);
+
     function confidentialTransferOmnibus(
         address omnibusTo,
         externalEaddress externalSender,
@@ -73,6 +80,9 @@ abstract contract ERC7984Omnibus is ERC7984 {
         eaddress recipient,
         euint64 amount
     ) public virtual returns (euint64) {
+        require(FHE.isAllowed(sender, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(sender));
+        require(FHE.isAllowed(recipient, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(recipient));
+
         FHE.allowThis(sender);
         FHE.allow(sender, omnibusFrom);
         FHE.allow(sender, omnibusTo);
@@ -135,6 +145,9 @@ abstract contract ERC7984Omnibus is ERC7984 {
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64) {
+        require(FHE.isAllowed(sender, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(sender));
+        require(FHE.isAllowed(recipient, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(recipient));
+
         euint64 transferred = confidentialTransferFromAndCall(omnibusFrom, omnibusTo, amount, data);
 
         FHE.allowThis(sender);
