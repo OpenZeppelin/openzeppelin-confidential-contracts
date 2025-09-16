@@ -35,6 +35,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
      */
     error ERC7984UnauthorizedUseOfEncryptedAddress(eaddress addr);
 
+    /// @dev Wraps the {confidentialTransfer-address-externalEuint64-bytes} function and emits the {OmnibusConfidentialTransfer} event.
     function confidentialTransferOmnibus(
         address omnibusTo,
         externalEaddress externalSender,
@@ -53,6 +54,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
             );
     }
 
+    /// @dev Wraps the {confidentialTransfer-address-euint64} function and emits the {OmnibusConfidentialTransfer} event.
     function confidentialTransferOmnibus(
         address omnibusTo,
         eaddress sender,
@@ -62,6 +64,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         return confidentialTransferFromOmnibus(msg.sender, omnibusTo, sender, recipient, amount);
     }
 
+    /// @dev Wraps the {confidentialTransferFrom-address-address-externalEuint64-bytes} function and emits the {OmnibusConfidentialTransfer} event.
     function confidentialTransferFromOmnibus(
         address omnibusFrom,
         address omnibusTo,
@@ -77,6 +80,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         return _confidentialTransferFromOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount);
     }
 
+    /// @dev Wraps the {confidentialTransferFrom-address-address-euint64} function and emits the {OmnibusConfidentialTransfer} event.
     function confidentialTransferFromOmnibus(
         address omnibusFrom,
         address omnibusTo,
@@ -90,6 +94,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         return _confidentialTransferFromOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount);
     }
 
+    /// @dev Wraps the {confidentialTransferAndCall-address-externalEuint64-bytes-bytes} function and emits the {OmnibusConfidentialTransfer} event.
     function confidentialTransferAndCallOmnibus(
         address omnibusTo,
         externalEaddress externalSender,
@@ -110,6 +115,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
             );
     }
 
+    /// @dev Wraps the {confidentialTransferAndCall-address-externalEuint64-bytes-bytes} function and emits the {OmnibusConfidentialTransfer} event.
     function confidentialTransferAndCallOmnibus(
         address omnibusTo,
         eaddress sender,
@@ -120,6 +126,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         return confidentialTransferFromAndCallOmnibus(msg.sender, omnibusTo, sender, recipient, amount, data);
     }
 
+    /// @dev Wraps the {confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes} function and emits the {OmnibusConfidentialTransfer} event.
     function confidentialTransferFromAndCallOmnibus(
         address omnibusFrom,
         address omnibusTo,
@@ -136,6 +143,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         return _confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data);
     }
 
+    /// @dev Wraps the {confidentialTransferFromAndCall-address-address-euint64-bytes} function and emits the {OmnibusConfidentialTransfer} event.
     function confidentialTransferFromAndCallOmnibus(
         address omnibusFrom,
         address omnibusTo,
@@ -150,7 +158,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         return _confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data);
     }
 
-    /// @dev Handles the ACL allowances, does the transfer, and emits event for omnibus transfers without callbacks.
+    /// @dev Handles the ACL allowances, does the transfer without a callback, and emits {OmnibusConfidentialTransfer}.
     function _confidentialTransferFromOmnibus(
         address omnibusFrom,
         address omnibusTo,
@@ -171,7 +179,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         return transferred;
     }
 
-    /// @dev Handles the ACL allowances, does the transfer, and emits event for omnibus transfers with callbacks.
+    /// @dev Handles the ACL allowances, does the transfer with a callback, and emits {OmnibusConfidentialTransfer}.
     function _confidentialTransferFromAndCallOmnibus(
         address omnibusFrom,
         address omnibusTo,
