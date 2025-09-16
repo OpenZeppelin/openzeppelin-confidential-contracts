@@ -42,11 +42,15 @@ abstract contract ERC7984Omnibus is ERC7984 {
         externalEuint64 externalAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64) {
-        eaddress sender = FHE.fromExternal(externalSender, inputProof);
-        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
-        euint64 amount = FHE.fromExternal(externalAmount, inputProof);
-
-        return confidentialTransferFromOmnibus(msg.sender, omnibusTo, sender, recipient, amount);
+        return
+            confidentialTransferFromOmnibus(
+                msg.sender,
+                omnibusTo,
+                externalSender,
+                externalRecipient,
+                externalAmount,
+                inputProof
+            );
     }
 
     function confidentialTransferOmnibus(
@@ -70,7 +74,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
         euint64 amount = FHE.fromExternal(externalAmount, inputProof);
 
-        return confidentialTransferFromOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount);
+        return _confidentialTransferFromOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount);
     }
 
     function confidentialTransferFromOmnibus(
@@ -83,6 +87,77 @@ abstract contract ERC7984Omnibus is ERC7984 {
         require(FHE.isAllowed(sender, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(sender));
         require(FHE.isAllowed(recipient, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(recipient));
 
+        return _confidentialTransferFromOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount);
+    }
+
+    function confidentialTransferAndCallOmnibus(
+        address omnibusTo,
+        externalEaddress externalSender,
+        externalEaddress externalRecipient,
+        externalEuint64 externalAmount,
+        bytes calldata inputProof,
+        bytes calldata data
+    ) public virtual returns (euint64) {
+        return
+            confidentialTransferFromAndCallOmnibus(
+                msg.sender,
+                omnibusTo,
+                externalSender,
+                externalRecipient,
+                externalAmount,
+                inputProof,
+                data
+            );
+    }
+
+    function confidentialTransferAndCallOmnibus(
+        address omnibusTo,
+        eaddress sender,
+        eaddress recipient,
+        euint64 amount,
+        bytes calldata data
+    ) public virtual returns (euint64) {
+        return confidentialTransferFromAndCallOmnibus(msg.sender, omnibusTo, sender, recipient, amount, data);
+    }
+
+    function confidentialTransferFromAndCallOmnibus(
+        address omnibusFrom,
+        address omnibusTo,
+        externalEaddress externalSender,
+        externalEaddress externalRecipient,
+        externalEuint64 externalAmount,
+        bytes calldata inputProof,
+        bytes calldata data
+    ) public virtual returns (euint64) {
+        eaddress sender = FHE.fromExternal(externalSender, inputProof);
+        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
+        euint64 amount = FHE.fromExternal(externalAmount, inputProof);
+
+        return _confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data);
+    }
+
+    function confidentialTransferFromAndCallOmnibus(
+        address omnibusFrom,
+        address omnibusTo,
+        eaddress sender,
+        eaddress recipient,
+        euint64 amount,
+        bytes calldata data
+    ) public virtual returns (euint64) {
+        require(FHE.isAllowed(sender, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(sender));
+        require(FHE.isAllowed(recipient, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(recipient));
+
+        return _confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data);
+    }
+
+    /// @dev Handles the ACL allowances, does the transfer, and emits events for omnibus transfers without callbacks.
+    function _confidentialTransferFromOmnibus(
+        address omnibusFrom,
+        address omnibusTo,
+        eaddress sender,
+        eaddress recipient,
+        euint64 amount
+    ) internal virtual returns (euint64) {
         FHE.allowThis(sender);
         FHE.allow(sender, omnibusFrom);
         FHE.allow(sender, omnibusTo);
@@ -96,58 +171,15 @@ abstract contract ERC7984Omnibus is ERC7984 {
         return transferred;
     }
 
-    function confidentialTransferAndCallOmnibus(
-        address omnibusTo,
-        externalEaddress externalSender,
-        externalEaddress externalRecipient,
-        externalEuint64 externalAmount,
-        bytes calldata inputProof,
-        bytes calldata data
-    ) public virtual returns (euint64) {
-        eaddress sender = FHE.fromExternal(externalSender, inputProof);
-        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
-        euint64 amount = FHE.fromExternal(externalAmount, inputProof);
-
-        return confidentialTransferFromAndCallOmnibus(msg.sender, omnibusTo, sender, recipient, amount, data);
-    }
-
-    function confidentialTransferAndCallOmnibus(
-        address omnibusTo,
-        eaddress sender,
-        eaddress recipient,
-        euint64 amount,
-        bytes calldata data
-    ) public virtual returns (euint64) {
-        return confidentialTransferFromAndCallOmnibus(msg.sender, omnibusTo, sender, recipient, amount, data);
-    }
-
-    function confidentialTransferFromAndCallOmnibus(
-        address omnibusFrom,
-        address omnibusTo,
-        externalEaddress externalSender,
-        externalEaddress externalRecipient,
-        externalEuint64 externalAmount,
-        bytes calldata inputProof,
-        bytes calldata data
-    ) public virtual returns (euint64) {
-        eaddress sender = FHE.fromExternal(externalSender, inputProof);
-        eaddress recipient = FHE.fromExternal(externalRecipient, inputProof);
-        euint64 amount = FHE.fromExternal(externalAmount, inputProof);
-
-        return confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data);
-    }
-
-    function confidentialTransferFromAndCallOmnibus(
+    /// @dev Handles the ACL allowances, does the transfer, and emits events for omnibus transfers with callbacks.
+    function _confidentialTransferFromAndCallOmnibus(
         address omnibusFrom,
         address omnibusTo,
         eaddress sender,
         eaddress recipient,
         euint64 amount,
         bytes calldata data
-    ) public virtual returns (euint64) {
-        require(FHE.isAllowed(sender, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(sender));
-        require(FHE.isAllowed(recipient, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(recipient));
-
+    ) internal virtual returns (euint64) {
         euint64 transferred = confidentialTransferFromAndCall(omnibusFrom, omnibusTo, amount, data);
 
         FHE.allowThis(sender);
