@@ -33,7 +33,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
      *
      * NOTE: Try using the equivalent transfer function with an input proof.
      */
-    error ERC7984UnauthorizedUseOfEncryptedAddress(eaddress addr);
+    error ERC7984UnauthorizedUseOfEncryptedAddress(eaddress addr, address user);
 
     /// @dev Wraps the {confidentialTransfer-address-externalEuint64-bytes} function and emits the {OmnibusConfidentialTransfer} event.
     function confidentialTransferOmnibus(
@@ -88,8 +88,8 @@ abstract contract ERC7984Omnibus is ERC7984 {
         eaddress recipient,
         euint64 amount
     ) public virtual returns (euint64) {
-        require(FHE.isAllowed(sender, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(sender));
-        require(FHE.isAllowed(recipient, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(recipient));
+        require(FHE.isAllowed(sender, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(sender, msg.sender));
+        require(FHE.isAllowed(recipient, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(recipient, msg.sender));
 
         return _confidentialTransferFromOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount);
     }
@@ -152,8 +152,8 @@ abstract contract ERC7984Omnibus is ERC7984 {
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64) {
-        require(FHE.isAllowed(sender, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(sender));
-        require(FHE.isAllowed(recipient, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(recipient));
+        require(FHE.isAllowed(sender, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(sender, msg.sender));
+        require(FHE.isAllowed(recipient, msg.sender), ERC7984UnauthorizedUseOfEncryptedAddress(recipient, msg.sender));
 
         return _confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data);
     }
