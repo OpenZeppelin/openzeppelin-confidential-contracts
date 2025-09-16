@@ -150,7 +150,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         return _confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data);
     }
 
-    /// @dev Handles the ACL allowances, does the transfer, and emits events for omnibus transfers without callbacks.
+    /// @dev Handles the ACL allowances, does the transfer, and emits event for omnibus transfers without callbacks.
     function _confidentialTransferFromOmnibus(
         address omnibusFrom,
         address omnibusTo,
@@ -171,7 +171,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
         return transferred;
     }
 
-    /// @dev Handles the ACL allowances, does the transfer, and emits events for omnibus transfers with callbacks.
+    /// @dev Handles the ACL allowances, does the transfer, and emits event for omnibus transfers with callbacks.
     function _confidentialTransferFromAndCallOmnibus(
         address omnibusFrom,
         address omnibusTo,
