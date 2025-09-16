@@ -115,7 +115,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
             );
     }
 
-    /// @dev Wraps the {confidentialTransferAndCall-address-externalEuint64-bytes-bytes} function and emits the {OmnibusConfidentialTransfer} event.
+    /// @dev Wraps the {confidentialTransferAndCall-address-euint64-bytes} function and emits the {OmnibusConfidentialTransfer} event.
     function confidentialTransferAndCallOmnibus(
         address omnibusTo,
         eaddress sender,
