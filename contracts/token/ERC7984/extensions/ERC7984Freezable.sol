@@ -21,8 +21,6 @@ import {ERC7984} from "../ERC7984.sol";
 abstract contract ERC7984Freezable is ERC7984 {
     /// @dev Confidential frozen amount of tokens per address.
     mapping(address account => euint64 encryptedAmount) private _frozenBalances;
-    /// @dev Skips frozen checks in {_update}.
-    bool private _skipUpdateCheck;
 
     /// @dev Emitted when a confidential amount of token is frozen for an account
     event TokensFrozen(address indexed account, euint64 encryptedAmount);
@@ -43,35 +41,15 @@ abstract contract ERC7984Freezable is ERC7984 {
 
     /// @dev Internal function to freeze a confidential amount of tokens for an account.
     function _setConfidentialFrozen(address account, euint64 encryptedAmount) internal virtual {
-        _setConfidentialFrozen(account, encryptedAmount, true);
-    }
-
-    /// @dev Private function to freeze a confidential amount of tokens for an account with optional freezer check.
-    function _setConfidentialFrozen(address account, euint64 encryptedAmount, bool checkFreezer) internal virtual {
-        if (checkFreezer) {
-            _checkFreezer();
-        }
         FHE.allowThis(encryptedAmount);
         FHE.allow(encryptedAmount, account);
         _frozenBalances[account] = encryptedAmount;
         emit TokensFrozen(account, encryptedAmount);
     }
 
-    /// @dev Unimplemented function that must revert if `msg.sender` is not authorized as a freezer.
-    function _checkFreezer() internal virtual;
-
-    /// @dev Internal function to skip update check. Check can be restored with {_restoreERC7984FreezableUpdateCheck}.
-    function _disableERC7984FreezableUpdateCheck() internal virtual {
-        if (!_skipUpdateCheck) {
-            _skipUpdateCheck = true;
-        }
-    }
-
-    /// @dev Internal function to restore update check previously disabled by {_disableERC7984FreezableUpdateCheck}.
-    function _restoreERC7984FreezableUpdateCheck() internal virtual {
-        if (_skipUpdateCheck) {
-            _skipUpdateCheck = false;
-        }
+    function _checkFrozenBalance(address from, euint64 requestedTransferAmount) internal virtual returns (euint64) {
+        euint64 unfrozen = confidentialAvailable(from);
+        return FHE.select(FHE.le(requestedTransferAmount, unfrozen), requestedTransferAmount, FHE.asEuint64(0));
     }
 
     /**
@@ -79,22 +57,9 @@ abstract contract ERC7984Freezable is ERC7984 {
      * otherwise 0 tokens are transferred.
      */
     function _update(address from, address to, euint64 encryptedAmount) internal virtual override returns (euint64) {
-        euint64 available;
         if (from != address(0)) {
-            available = confidentialAvailable(from);
-            if (!_skipUpdateCheck) {
-                encryptedAmount = FHE.select(FHE.le(encryptedAmount, available), encryptedAmount, FHE.asEuint64(0));
-            }
+            encryptedAmount = _checkFrozenBalance(from, encryptedAmount);
         }
-        euint64 transferred = super._update(from, to, encryptedAmount);
-        if (from != address(0) && _skipUpdateCheck) {
-            // Reset frozen to balance if transferred more than available
-            _setConfidentialFrozen(
-                from,
-                FHE.select(FHE.gt(transferred, available), confidentialBalanceOf(from), confidentialFrozen(from)),
-                false
-            );
-        }
-        return transferred;
+        return super._update(from, to, encryptedAmount);
     }
 }
