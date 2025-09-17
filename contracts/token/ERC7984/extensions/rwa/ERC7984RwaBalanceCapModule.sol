@@ -16,22 +16,27 @@ abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
 
     euint64 private _maxBalance;
 
+    event MaxBalanceSet(euint64 newMaxBalance);
+
     constructor(address token) ERC7984RwaComplianceModule(token) {
         _token = token;
     }
 
     /// @dev Sets max balance of an investor with proof.
     function setMaxBalance(externalEuint64 maxBalance, bytes calldata inputProof) public virtual onlyTokenAdmin {
-        FHE.allowThis(_maxBalance = FHE.fromExternal(maxBalance, inputProof));
+        euint64 maxBalance_ = FHE.fromExternal(maxBalance, inputProof);
+        FHE.allowThis(_maxBalance = maxBalance_);
+        emit MaxBalanceSet(maxBalance_);
     }
 
     /// @dev Sets max balance of an investor.
     function setMaxBalance(euint64 maxBalance) public virtual onlyTokenAdmin {
         FHE.allowThis(_maxBalance = maxBalance);
+        emit MaxBalanceSet(maxBalance);
     }
 
     /// @dev Gets max balance of an investor.
-    function getMaxBalance() public virtual returns (euint64) {
+    function getMaxBalance() public view virtual returns (euint64) {
         return _maxBalance;
     }
 
@@ -41,9 +46,8 @@ abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
         address to,
         euint64 encryptedAmount
     ) internal override returns (ebool compliant) {
-        if (!FHE.isInitialized(encryptedAmount) || to == address(0)) {
-            // if no amount or burning
-            return FHE.asEbool(true);
+        if (to == address(0)) {
+            return FHE.asEbool(true); // if burning
         }
         euint64 balance = IERC7984(_token).confidentialBalanceOf(to);
         _getTokenHandleAllowance(balance);

@@ -2,6 +2,7 @@ import { callAndGetResult } from '../../../helpers/event';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
+import { BytesLike } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
 const transferEventSignature = 'ConfidentialTransfer(address,address,bytes32)';
@@ -192,6 +193,68 @@ describe('ERC7984RwaModularCompliance', function () {
         });
       }
     }
+  });
+
+  describe('Balance cap module', async function () {
+    for (const withProof of [false, true]) {
+      it(`should set max balance ${withProof ? 'with proof' : ''}`, async function () {
+        const { admin, balanceCapModule } = await fixture();
+        let params = [] as unknown as [encryptedAmount: BytesLike, inputProof: BytesLike];
+        if (withProof) {
+          const { handles, inputProof } = await fhevm
+            .createEncryptedInput(await balanceCapModule.getAddress(), admin.address)
+            .add64(maxBalance + 100)
+            .encrypt();
+          params.push(handles[0], inputProof);
+        } else {
+          const [newBalance] = await callAndGetResult(
+            balanceCapModule.connect(admin).createEncryptedAmount(maxBalance + 100),
+            'AmountEncrypted(bytes32)',
+          );
+          params.push(newBalance);
+        }
+        await expect(
+          balanceCapModule
+            .connect(admin)
+            [withProof ? 'setMaxBalance(bytes32,bytes)' : 'setMaxBalance(bytes32)'](...params),
+        )
+          .to.emit(balanceCapModule, 'MaxBalanceSet')
+          .withArgs(params[0]);
+        await balanceCapModule
+          .connect(admin)
+          .getHandleAllowance(await balanceCapModule.getMaxBalance(), admin.address, true);
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await balanceCapModule.getMaxBalance(),
+            await balanceCapModule.getAddress(),
+            admin,
+          ),
+        ).to.eventually.equal(maxBalance + 100);
+      });
+    }
+    for (const withProof of [false, true]) {
+      it(`should not set max balance if not admin ${withProof ? 'with proof' : ''}`, async function () {
+        const { admin, balanceCapModule, anyone } = await fixture();
+        const [newBalance] = await callAndGetResult(
+          balanceCapModule.connect(admin).createEncryptedAmount(maxBalance + 100),
+          'AmountEncrypted(bytes32)',
+        );
+        const oldBalance = await balanceCapModule.getMaxBalance();
+        const params = [newBalance];
+        if (withProof) {
+          params.push('0x');
+        }
+        await expect(
+          balanceCapModule
+            .connect(anyone)
+            [withProof ? 'setMaxBalance(bytes32,bytes)' : 'setMaxBalance(bytes32)'](...params),
+        )
+          .to.be.revertedWithCustomError(balanceCapModule, 'SenderNotTokenAdmin')
+          .withArgs(anyone.address);
+        await expect(balanceCapModule.getMaxBalance()).to.eventually.equal(oldBalance);
+      });
+    }
 
     for (const type of moduleTypes) {
       it(`should transfer if compliant to balance cap module with type ${type}`, async function () {
@@ -264,66 +327,36 @@ describe('ERC7984RwaModularCompliance', function () {
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), recipient),
       ).to.eventually.equal(0);
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await token.confidentialBalanceOf(recipient),
-          await token.getAddress(),
-          recipient,
-        ),
-        // balance is unchanged
-      ).to.eventually.equal(100);
     });
-  });
 
-  for (const type of moduleTypes) {
-    it(`should transfer if compliant to investor cap module else zero with type ${type}`, async function () {
-      const { token, admin, investorCapModule, recipient, anyone } = await fixture();
-      await token.connect(admin).installModule(type, investorCapModule);
+    it('should transfer if compliant because burning', async function () {
+      const { token, admin, balanceCapModule, recipient } = await fixture();
+      await token.connect(admin).installModule(alwaysOnType, balanceCapModule);
       const encryptedMint = await fhevm
         .createEncryptedInput(await token.getAddress(), admin.address)
         .add64(100)
         .encrypt();
-      for (const investor of [
-        recipient.address, // investor#1
-        ethers.Wallet.createRandom().address, //investor#2
-      ]) {
-        await token
-          .connect(admin)
-          ['confidentialMint(address,bytes32,bytes)'](investor, encryptedMint.handles[0], encryptedMint.inputProof);
-      }
-      await investorCapModule
+      await token
         .connect(admin)
-        .getHandleAllowance(await investorCapModule.getCurrentInvestor(), admin.address, true);
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await investorCapModule.getCurrentInvestor(),
-          await investorCapModule.getAddress(),
-          admin,
-        ),
-      )
-        .to.eventually.equal(await investorCapModule.getMaxInvestor())
-        .to.equal(2);
+        ['confidentialMint(address,bytes32,bytes)'](recipient, encryptedMint.handles[0], encryptedMint.inputProof);
       const amount = 25;
-      const encryptedTransferValueInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), recipient.address)
+      const encryptedBurnValueInput = await fhevm
+        .createEncryptedInput(await token.getAddress(), admin.address)
         .add64(amount)
         .encrypt();
-      // trying to transfer to investor#3 (anyone) but number of investors is capped
       const [, , transferredHandle] = await callAndGetResult(
         token
-          .connect(recipient)
-          ['confidentialTransfer(address,bytes32,bytes)'](
-            anyone,
-            encryptedTransferValueInput.handles[0],
-            encryptedTransferValueInput.inputProof,
+          .connect(admin)
+          ['confidentialBurn(address,bytes32,bytes)'](
+            recipient,
+            encryptedBurnValueInput.handles[0],
+            encryptedBurnValueInput.inputProof,
           ),
         transferEventSignature,
       );
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), recipient),
-      ).to.eventually.equal(0);
+      ).to.eventually.equal(25);
       await expect(
         fhevm.userDecryptEuint(
           FhevmType.euint64,
@@ -331,19 +364,80 @@ describe('ERC7984RwaModularCompliance', function () {
           await token.getAddress(),
           recipient,
         ),
-      ).to.eventually.equal(100);
-      // current investor should be unchanged
-      await investorCapModule
-        .connect(admin)
-        .getHandleAllowance(await investorCapModule.getCurrentInvestor(), admin.address, true);
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await investorCapModule.getCurrentInvestor(),
-          await investorCapModule.getAddress(),
-          admin,
-        ),
-      ).to.eventually.equal(2);
+      ).to.eventually.equal(75);
     });
-  }
+  });
+
+  describe('Investor cap module', async function () {
+    for (const type of moduleTypes) {
+      it(`should transfer if compliant to investor cap module else zero with type ${type}`, async function () {
+        const { token, admin, investorCapModule, recipient, anyone } = await fixture();
+        await token.connect(admin).installModule(type, investorCapModule);
+        const encryptedMint = await fhevm
+          .createEncryptedInput(await token.getAddress(), admin.address)
+          .add64(100)
+          .encrypt();
+        for (const investor of [
+          recipient.address, // investor#1
+          ethers.Wallet.createRandom().address, //investor#2
+        ]) {
+          await token
+            .connect(admin)
+            ['confidentialMint(address,bytes32,bytes)'](investor, encryptedMint.handles[0], encryptedMint.inputProof);
+        }
+        await investorCapModule
+          .connect(admin)
+          .getHandleAllowance(await investorCapModule.getCurrentInvestor(), admin.address, true);
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await investorCapModule.getCurrentInvestor(),
+            await investorCapModule.getAddress(),
+            admin,
+          ),
+        )
+          .to.eventually.equal(await investorCapModule.getMaxInvestor())
+          .to.equal(2);
+        const amount = 25;
+        const encryptedTransferValueInput = await fhevm
+          .createEncryptedInput(await token.getAddress(), recipient.address)
+          .add64(amount)
+          .encrypt();
+        // trying to transfer to investor#3 (anyone) but number of investors is capped
+        const [, , transferredHandle] = await callAndGetResult(
+          token
+            .connect(recipient)
+            ['confidentialTransfer(address,bytes32,bytes)'](
+              anyone,
+              encryptedTransferValueInput.handles[0],
+              encryptedTransferValueInput.inputProof,
+            ),
+          transferEventSignature,
+        );
+        await expect(
+          fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), recipient),
+        ).to.eventually.equal(0);
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await token.confidentialBalanceOf(recipient),
+            await token.getAddress(),
+            recipient,
+          ),
+        ).to.eventually.equal(100);
+        // current investor should be unchanged
+        await investorCapModule
+          .connect(admin)
+          .getHandleAllowance(await investorCapModule.getCurrentInvestor(), admin.address, true);
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await investorCapModule.getCurrentInvestor(),
+            await investorCapModule.getAddress(),
+            admin,
+          ),
+        ).to.eventually.equal(2);
+      });
+    }
+  });
 });

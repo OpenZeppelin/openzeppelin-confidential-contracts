@@ -43,10 +43,7 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
         _getTokenHandleAllowance(encryptedAmount);
         compliant = FHE.or(
             FHE.or(
-                FHE.asEbool(
-                    to == address(0) || // return true if burning
-                        !FHE.isInitialized(encryptedAmount) // or no amount
-                ),
+                FHE.asEbool(to == address(0)), // return true if burning
                 FHE.eq(encryptedAmount, FHE.asEuint64(0)) // or zero amount
             ),
             FHE.or(
