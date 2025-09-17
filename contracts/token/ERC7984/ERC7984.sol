@@ -25,7 +25,6 @@ import {ERC7984Utils} from "./utils/ERC7984Utils.sol";
 abstract contract ERC7984 is IERC7984 {
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
-    mapping(uint256 requestId => euint64 encryptedAmount) private _requestHandles;
     euint64 private _totalSupply;
     string private _name;
     string private _symbol;
@@ -204,11 +203,20 @@ abstract contract ERC7984 is IERC7984 {
 
         bytes32[] memory cts = new bytes32[](1);
         cts[0] = euint64.unwrap(encryptedAmount);
-        uint256 requestID = FHE.requestDecryption(cts, this.finalizeDiscloseEncryptedAmount.selector);
-        _requestHandles[requestID] = encryptedAmount;
+        FHE.requestDecryption(cts, this.finalizeDiscloseEncryptedAmount.selector);
     }
 
-    /// @dev Finalizes a disclose encrypted amount request.
+    /**
+     * @dev Finalizes a disclose encrypted amount request.
+     * For gas saving purposes, the `requestId` might not be related to a
+     * {discloseEncryptedAmount} request. As a result, the current {finalizeDiscloseEncryptedAmount}
+     * function might emit a disclosed amount related to another decryption request context.
+     * In this case it would only display public information
+     * since the handle would have already been allowed for public decryption through a previous
+     * `FHE.requestDecryption` call.
+     * The downside of this behavior is that a {finalizeDiscloseEncryptedAmount} watcher might observe
+     * unexpected `AmountDisclosed` events.
+     */
     function finalizeDiscloseEncryptedAmount(
         uint256 requestId,
         uint64 amount,
@@ -216,11 +224,8 @@ abstract contract ERC7984 is IERC7984 {
     ) public virtual {
         FHE.checkSignatures(requestId, signatures);
 
-        euint64 requestHandle = _requestHandles[requestId];
-        require(FHE.isInitialized(requestHandle), ERC7984InvalidGatewayRequest(requestId));
+        euint64 requestHandle = euint64.wrap(FHE.loadRequestedHandles(requestId)[0]);
         emit AmountDisclosed(requestHandle, amount);
-
-        _requestHandles[requestId] = euint64.wrap(0);
     }
 
     function _setOperator(address holder, address operator, uint48 until) internal virtual {

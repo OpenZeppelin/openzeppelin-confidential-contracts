@@ -193,7 +193,7 @@ describe('ERC7984Rwa', function () {
           .connect(admin)
           ['confidentialMint(address,bytes32,bytes)'](recipient, encryptedInput.handles[0], encryptedInput.inputProof),
       )
-        .to.be.revertedWithCustomError(token, 'UncompliantTransfer')
+        .to.be.revertedWithCustomError(token, 'NoncompliantTransfer')
         .withArgs(ethers.ZeroAddress, recipient.address, encryptedInput.handles[0]);
     });
 
@@ -296,7 +296,7 @@ describe('ERC7984Rwa', function () {
           .connect(admin)
           ['confidentialBurn(address,bytes32,bytes)'](recipient, encryptedInput.handles[0], encryptedInput.inputProof),
       )
-        .to.be.revertedWithCustomError(token, 'UncompliantTransfer')
+        .to.be.revertedWithCustomError(token, 'NoncompliantTransfer')
         .withArgs(recipient.address, ethers.ZeroAddress, encryptedInput.handles[0]);
     });
 
@@ -644,7 +644,7 @@ describe('ERC7984Rwa', function () {
             encryptedTransferValueInput.inputProof,
           ),
       )
-        .to.be.revertedWithCustomError(token, 'UncompliantTransfer')
+        .to.be.revertedWithCustomError(token, 'NoncompliantTransfer')
         .withArgs(recipient.address, anyone.address, encryptedTransferValueInput.handles[0]);
     });
 
