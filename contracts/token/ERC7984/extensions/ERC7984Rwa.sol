@@ -7,7 +7,6 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
 import {IERC7984} from "./../../../interfaces/IERC7984.sol";
 import {IERC7984RwaBase} from "./../../../interfaces/IERC7984Rwa.sol";
 import {ERC7984} from "./../ERC7984.sol";
@@ -19,11 +18,7 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
 abstract contract ERC7984Rwa is ERC7984, ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, AccessControl {
-    using TransientSlot for TransientSlot.BooleanSlot;
-
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
-    TransientSlot.BooleanSlot private _isForceTransfer =
-        TransientSlot.asBoolean(keccak256(abi.encode("_isForceTransfer")));
 
     /// @dev The caller account is not authorized to perform the operation.
     error UnauthorizedSender(address account);
@@ -163,9 +158,8 @@ abstract contract ERC7984Rwa is ERC7984, ERC7984Freezable, ERC7984Restricted, Pa
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (euint64 transferred) {
-        _isForceTransfer.tstore(true);
-        transferred = super._update(from, to, encryptedAmount); // bypass compliance check
-        _isForceTransfer.tstore(false);
+        // bypass compliance check
+        transferred = super._update(from, to, encryptedAmount);
     }
 
     /// @inheritdoc ERC7984
@@ -178,7 +172,7 @@ abstract contract ERC7984Rwa is ERC7984, ERC7984Freezable, ERC7984Restricted, Pa
     }
 
     function _checkFromRestriction(address account) internal view virtual override {
-        if (!_isForceTransfer.tload()) {
+        if (!hasRole(AGENT_ROLE, msg.sender)) {
             super._checkFromRestriction(account);
         }
     }
@@ -187,7 +181,7 @@ abstract contract ERC7984Rwa is ERC7984, ERC7984Freezable, ERC7984Restricted, Pa
         address from,
         euint64 requestedTransferAmount
     ) internal virtual override returns (euint64) {
-        if (!_isForceTransfer.tload()) {
+        if (hasRole(AGENT_ROLE, msg.sender)) {
             return requestedTransferAmount;
         }
         return super._checkFrozenBalance(from, requestedTransferAmount);
