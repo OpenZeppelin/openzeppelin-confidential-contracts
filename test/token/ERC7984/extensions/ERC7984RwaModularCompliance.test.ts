@@ -439,5 +439,25 @@ describe('ERC7984RwaModularCompliance', function () {
         ).to.eventually.equal(2);
       });
     }
+
+    it('should set max investor', async function () {
+      const { token, admin, investorCapModule } = await fixture();
+      const newMaxInvestor = 100;
+      await token.connect(admin).installModule(alwaysOnType, investorCapModule);
+      await expect(investorCapModule.connect(admin).setMaxInvestor(newMaxInvestor))
+        .to.emit(investorCapModule, 'MaxInvestorSet')
+        .withArgs(newMaxInvestor);
+      await expect(investorCapModule.getMaxInvestor()).to.eventually.equal(newMaxInvestor);
+    });
+
+    it('should not set max investor if not admin', async function () {
+      const { token, admin, anyone, investorCapModule } = await fixture();
+      const newMaxInvestor = maxInverstor + 10;
+      await token.connect(admin).installModule(alwaysOnType, investorCapModule);
+      await expect(investorCapModule.connect(anyone).setMaxInvestor(newMaxInvestor))
+        .to.be.revertedWithCustomError(investorCapModule, 'SenderNotTokenAdmin')
+        .withArgs(anyone.address);
+      await expect(investorCapModule.getMaxInvestor()).to.eventually.equal(maxInverstor);
+    });
   });
 });

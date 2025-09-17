@@ -13,6 +13,8 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
     uint64 private _maxInvestor;
     euint64 private _investors;
 
+    event MaxInvestorSet(uint64 maxInvestor);
+
     constructor(address token, uint64 maxInvestor) ERC7984RwaComplianceModule(token) {
         _maxInvestor = maxInvestor;
     }
@@ -20,6 +22,7 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
     /// @dev Sets max number of investors.
     function setMaxInvestor(uint64 maxInvestor) public virtual onlyTokenAdmin {
         _maxInvestor = maxInvestor;
+        emit MaxInvestorSet(maxInvestor);
     }
 
     /// @dev Gets max number of investors.
