@@ -4,12 +4,9 @@ pragma solidity ^0.8.24;
 import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import {IERC7984} from "../../interfaces/IERC7984.sol";
 
 contract SwapConfidentialToERC20 {
-    using FHE for *;
-
     error SwapConfidentialToERC20InvalidGatewayRequest(uint256 requestId);
 
     mapping(uint256 requestId => address) private _receivers;
@@ -22,8 +19,8 @@ contract SwapConfidentialToERC20 {
     }
 
     function swapConfidentialToERC20(externalEuint64 encryptedInput, bytes memory inputProof) public {
-        euint64 amount = encryptedInput.fromExternal(inputProof);
-        amount.allowTransient(address(_fromToken));
+        euint64 amount = FHE.fromExternal(encryptedInput, inputProof);
+        FHE.allowTransient(amount, address(_fromToken));
         euint64 amountTransferred = _fromToken.confidentialTransferFrom(msg.sender, address(this), amount);
 
         bytes32[] memory cts = new bytes32[](1);
