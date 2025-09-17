@@ -17,15 +17,7 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  * @dev Extension of {ERC7984} that supports confidential Real World Assets (RWAs).
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
-abstract contract ERC7984Rwa is
-    ERC7984,
-    ERC7984Freezable,
-    ERC7984Restricted,
-    Pausable,
-    Multicall,
-    ERC165,
-    AccessControl
-{
+abstract contract ERC7984Rwa is ERC7984, ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, AccessControl {
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
     /// @dev The caller account is not authorized to perform the operation.
@@ -33,32 +25,20 @@ abstract contract ERC7984Rwa is
     /// @dev The transfer does not follow token compliance.
     error UncompliantTransfer(address from, address to, euint64 encryptedAmount);
 
-    /// @dev Checks if the sender is an admin or an agent.
-    modifier onlyAdminOrAgent() {
-        require(isAdmin(_msgSender()) || isAgent(_msgSender()), UnauthorizedSender(_msgSender()));
-        _;
-    }
-
     constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984(name, symbol, tokenUri) {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
-    /// @inheritdoc ERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, AccessControl) returns (bool) {
-        return
-            interfaceId == type(IERC7984RwaBase).interfaceId ||
-            interfaceId == type(IERC7984).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
-
     /// @dev Pauses contract.
-    function pause() public virtual onlyAdminOrAgent {
+    function pause() public virtual onlyRole(AGENT_ROLE) {
         _pause();
+        emit Paused(msg.sender);
     }
 
     /// @dev Unpauses contract.
-    function unpause() public virtual onlyAdminOrAgent {
+    function unpause() public virtual onlyRole(AGENT_ROLE) {
         _unpause();
+        emit Unpaused(msg.sender);
     }
 
     /// @dev Returns true if has admin role, false otherwise.
@@ -72,22 +52,22 @@ abstract contract ERC7984Rwa is
     }
 
     /// @dev Adds agent.
-    function addAgent(address account) public virtual onlyAdminOrAgent {
-        _addAgent(account);
+    function addAgent(address account) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
+        _grantRole(AGENT_ROLE, account);
     }
 
     /// @dev Removes agent.
-    function removeAgent(address account) public virtual onlyAdminOrAgent {
-        _removeAgent(account);
+    function removeAgent(address account) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(AGENT_ROLE, account);
     }
 
     /// @dev Blocks a user account.
-    function blockUser(address account) public virtual onlyAdminOrAgent {
+    function blockUser(address account) public virtual onlyRole(AGENT_ROLE) {
         _blockUser(account);
     }
 
     /// @dev Unblocks a user account.
-    function unblockUser(address account) public virtual onlyAdminOrAgent {
+    function unblockUser(address account) public virtual onlyRole(AGENT_ROLE) {
         _allowUser(account);
     }
 
@@ -96,13 +76,20 @@ abstract contract ERC7984Rwa is
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual onlyAdminOrAgent returns (euint64) {
-        return _confidentialMint(to, FHE.fromExternal(encryptedAmount, inputProof));
+    ) public virtual onlyRole(AGENT_ROLE) returns (euint64) {
+        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Mints confidential amount of tokens to account.
-    function confidentialMint(address to, euint64 encryptedAmount) public virtual onlyAdminOrAgent returns (euint64) {
-        return _confidentialMint(to, encryptedAmount);
+    function confidentialMint(
+        address to,
+        euint64 encryptedAmount
+    ) public virtual onlyRole(AGENT_ROLE) returns (euint64) {
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
+        return _mint(to, encryptedAmount);
     }
 
     /// @dev Burns confidential amount of tokens from account with proof.
@@ -110,16 +97,20 @@ abstract contract ERC7984Rwa is
         address account,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual onlyAdminOrAgent returns (euint64) {
-        return _confidentialBurn(account, FHE.fromExternal(encryptedAmount, inputProof));
+    ) public virtual onlyRole(AGENT_ROLE) returns (euint64) {
+        return _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Burns confidential amount of tokens from account.
     function confidentialBurn(
         address account,
         euint64 encryptedAmount
-    ) public virtual onlyAdminOrAgent returns (euint64) {
-        return _confidentialBurn(account, encryptedAmount);
+    ) public virtual onlyRole(AGENT_ROLE) returns (euint64) {
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
+        return _burn(account, encryptedAmount);
     }
 
     /// @dev Forces transfer of confidential amount of tokens from account to account with proof by skipping compliance checks.
@@ -128,7 +119,7 @@ abstract contract ERC7984Rwa is
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual onlyAdminOrAgent returns (euint64) {
+    ) public virtual onlyRole(AGENT_ROLE) returns (euint64) {
         return _forceConfidentialTransferFrom(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
@@ -137,28 +128,12 @@ abstract contract ERC7984Rwa is
         address from,
         address to,
         euint64 encryptedAmount
-    ) public virtual onlyAdminOrAgent returns (euint64 transferred) {
+    ) public virtual onlyRole(AGENT_ROLE) returns (euint64 transferred) {
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
         return _forceConfidentialTransferFrom(from, to, encryptedAmount);
-    }
-
-    /// @dev Internal function which adds an agent.
-    function _addAgent(address account) internal virtual {
-        _grantRole(AGENT_ROLE, account);
-    }
-
-    /// @dev Internal function which removes an agent.
-    function _removeAgent(address account) internal virtual {
-        _revokeRole(AGENT_ROLE, account);
-    }
-
-    /// @dev Internal function which mints confidential amount of tokens to account.
-    function _confidentialMint(address to, euint64 encryptedAmount) internal virtual returns (euint64) {
-        return _mint(to, encryptedAmount);
-    }
-
-    /// @dev Internal function which burns confidential amount of tokens from account.
-    function _confidentialBurn(address account, euint64 encryptedAmount) internal virtual returns (euint64) {
-        return _burn(account, encryptedAmount);
     }
 
     /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
@@ -185,12 +160,6 @@ abstract contract ERC7984Rwa is
         // frozen and restriction checks performed through inheritance
         return super._update(from, to, encryptedAmount);
     }
-
-    /**
-     * @dev Internal function which reverts if `msg.sender` is not authorized as a freezer.
-     * This freezer role is only granted to admin or agent.
-     */
-    function _checkFreezer() internal override onlyAdminOrAgent {}
 
     /// @dev Checks if a transfer follows token compliance.
     function _isCompliantTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (bool);
