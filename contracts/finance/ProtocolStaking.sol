@@ -9,7 +9,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {DoubleEndedQueue} from "@openzeppelin/contracts/utils/structs/DoubleEndedQueue.sol";
+import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 
 interface IERC20Mintable is IERC20 {
     function mint(address to, uint256 amount) external;
@@ -17,7 +17,7 @@ interface IERC20Mintable is IERC20 {
 
 contract ProtocolStaking is Ownable, ERC20Votes {
     using EnumerableSet for EnumerableSet.AddressSet;
-    using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
+    using Checkpoints for Checkpoints.Trace208;
     using SafeERC20 for IERC20;
 
     struct UserStakingInfo {
@@ -28,12 +28,13 @@ contract ProtocolStaking is Ownable, ERC20Votes {
     EnumerableSet.AddressSet private _operators;
     address private _stakingToken;
     uint256 private _totalStakedLog;
-    uint256 private _lastUpdateBlock;
+    uint256 private _lastUpdateTimestamp;
     uint256 private _rewardsPerUnit = 1;
     uint256 private _rewardRate;
     uint256 private _unstakeCooldownPeriod;
     mapping(address => UserStakingInfo) private _userStakingInfo;
-    mapping(address => DoubleEndedQueue.Bytes32Deque) private _unstakeRequests;
+    mapping(address => Checkpoints.Trace208) private _unstakeRequests;
+    mapping(address => uint256) private _totalReleased;
 
     event OperatorAdded(address operator);
     event OperatorRemoved(address operator);
@@ -63,16 +64,9 @@ contract ProtocolStaking is Ownable, ERC20Votes {
     }
 
     function release() public virtual {
-        uint256 amountToRelease = 0;
-        DoubleEndedQueue.Bytes32Deque storage queue = _unstakeRequests[msg.sender];
-        while (!queue.empty()) {
-            (uint48 releaseTime, uint256 amount) = _decodeReleaseData(queue.front());
-            if (block.timestamp < releaseTime) {
-                break;
-            }
-            queue.popFront();
-            amountToRelease += amount;
-        }
+        uint256 totalAmountCooledDown = _unstakeRequests[msg.sender].upperLookup(uint48(block.timestamp));
+        uint256 amountToRelease = totalAmountCooledDown - _totalReleased[msg.sender];
+        _totalReleased[msg.sender] = totalAmountCooledDown;
         if (amountToRelease > 0) {
             IERC20(_stakingToken).safeTransfer(msg.sender, amountToRelease);
         }
@@ -148,11 +142,13 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         return _stakingToken;
     }
 
+    function totalStakedLog() public view virtual returns (uint256) {
+        return _totalStakedLog;
+    }
+
     function _stake(uint256 amount) internal virtual {
         _updateRewards();
         _updateRewards(msg.sender);
-
-        require(amount != 0, InvalidAmount());
 
         if (isOperator(msg.sender)) {
             uint256 previousStakedAmount = balanceOf(msg.sender);
@@ -186,7 +182,10 @@ contract ProtocolStaking is Ownable, ERC20Votes {
             IERC20(_stakingToken).safeTransfer(msg.sender, amount);
         } else {
             uint256 releaseTime = block.timestamp + _unstakeCooldownPeriod;
-            _unstakeRequests[msg.sender].pushBack(_encodeReleaseData(uint48(releaseTime), amount));
+            _unstakeRequests[msg.sender].push(
+                uint48(releaseTime),
+                uint208(_unstakeRequests[msg.sender].latest() + amount)
+            );
         }
 
         emit TokensUnstaked(msg.sender, amount);
@@ -198,20 +197,20 @@ contract ProtocolStaking is Ownable, ERC20Votes {
     }
 
     function _updateRewards() internal virtual {
-        if (block.number == _lastUpdateBlock) {
+        if (block.timestamp == _lastUpdateTimestamp) {
             return;
         }
 
-        uint256 blocksElapsed = block.number - _lastUpdateBlock;
-        _lastUpdateBlock = block.number;
+        uint256 secondsElapsed = block.timestamp - _lastUpdateTimestamp;
+        _lastUpdateTimestamp = block.timestamp;
 
         if (_totalStakedLog == 0) {
             return;
         }
 
-        uint256 rewardsPerUnitDiff = (blocksElapsed * _rewardRate * 1e18) / _totalStakedLog;
+        uint256 rewardsPerUnitDiff = (secondsElapsed * _rewardRate * 1e18) / _totalStakedLog;
         _rewardsPerUnit += rewardsPerUnitDiff;
-        _lastUpdateBlock = block.number;
+        _lastUpdateTimestamp = block.timestamp;
     }
 
     function _encodeReleaseData(uint48 releaseTime, uint256 amount) private pure returns (bytes32) {
