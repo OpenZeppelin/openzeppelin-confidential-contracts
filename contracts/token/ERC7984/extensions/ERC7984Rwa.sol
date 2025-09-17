@@ -91,6 +91,24 @@ abstract contract ERC7984Rwa is
         _allowUser(account);
     }
 
+    /// @dev Sets confidential frozen with proof.
+    function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual onlyAdminOrAgent {
+        require(
+            FHE.isAllowed(encryptedAmount, account),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
+        _setConfidentialFrozen(account, encryptedAmount);
+    }
+
+    /// @dev Sets confidential frozen.
+    function setConfidentialFrozen(
+        address account,
+        externalEuint64 encryptedAmount,
+        bytes calldata inputProof
+    ) public virtual onlyAdminOrAgent {
+        _setConfidentialFrozen(account, FHE.fromExternal(encryptedAmount, inputProof));
+    }
+
     /// @dev Mints confidential amount of tokens to account with proof.
     function confidentialMint(
         address to,
