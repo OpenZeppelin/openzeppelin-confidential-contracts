@@ -58,52 +58,8 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         _stake(amount);
     }
 
-    function _stake(uint256 amount) internal virtual {
-        _updateRewards();
-        _updateRewards(msg.sender);
-
-        require(amount != 0, InvalidAmount());
-
-        if (isOperator(msg.sender)) {
-            uint256 previousStakedAmount = balanceOf(msg.sender);
-            uint256 newStakedAmount = previousStakedAmount + amount;
-
-            _totalStakedLog = _totalStakedLog + log(newStakedAmount) - log(previousStakedAmount);
-        }
-
-        _mint(msg.sender, amount);
-        IERC20(_stakingToken).safeTransferFrom(msg.sender, address(this), amount);
-
-        emit TokensStaked(msg.sender, amount);
-    }
-
     function unstake(uint256 amount) public virtual {
         _unstake(amount);
-    }
-
-    function _unstake(uint256 amount) internal virtual {
-        _updateRewards();
-        _updateRewards(msg.sender);
-
-        require(amount != 0, InvalidAmount());
-
-        if (isOperator(msg.sender)) {
-            uint256 previousStakedAmount = balanceOf(msg.sender);
-            uint256 newStakedAmount = previousStakedAmount - amount;
-
-            _totalStakedLog = _totalStakedLog + log(newStakedAmount) - log(previousStakedAmount);
-        }
-
-        _burn(msg.sender, amount);
-
-        if (_unstakeCooldownPeriod == 0) {
-            IERC20(_stakingToken).safeTransfer(msg.sender, amount);
-        } else {
-            uint256 releaseTime = block.timestamp + _unstakeCooldownPeriod;
-            _unstakeRequests[msg.sender].pushBack(_encodeReleaseData(uint48(releaseTime), amount));
-        }
-
-        emit TokensUnstaked(msg.sender, amount);
     }
 
     function release() public virtual {
@@ -123,15 +79,11 @@ contract ProtocolStaking is Ownable, ERC20Votes {
     }
 
     function earned(address account) public view virtual returns (uint256) {
-        return _earned(account, log(balanceOf(account)));
-    }
-
-    function _earned(address account, uint256 logStakedAmount) internal view virtual returns (uint256) {
         UserStakingInfo memory userInfo = _userStakingInfo[account];
         if (userInfo.rewardsPerUnitPaid == 0) {
             return userInfo.rewards;
         }
-        return (logStakedAmount * (_rewardsPerUnit - userInfo.rewardsPerUnitPaid)) / 1e18 + userInfo.rewards;
+        return (log(balanceOf(account)) * (_rewardsPerUnit - userInfo.rewardsPerUnitPaid)) / 1e18 + userInfo.rewards;
     }
 
     /// @dev Claim staking rewards for `account`.
@@ -144,28 +96,6 @@ contract ProtocolStaking is Ownable, ERC20Votes {
             _userStakingInfo[account].rewards = 0;
             IERC20Mintable(_stakingToken).mint(account, rewards);
         }
-    }
-
-    function _updateRewards(address account) internal virtual {
-        if (_userStakingInfo[account].rewardsPerUnitPaid == 0) return;
-        _userStakingInfo[account] = UserStakingInfo({rewards: earned(account), rewardsPerUnitPaid: _rewardsPerUnit});
-    }
-
-    function _updateRewards() internal virtual {
-        if (block.number == _lastUpdateBlock) {
-            return;
-        }
-
-        uint256 blocksElapsed = block.number - _lastUpdateBlock;
-        _lastUpdateBlock = block.number;
-
-        if (_totalStakedLog == 0) {
-            return;
-        }
-
-        uint256 rewardsPerUnitDiff = (blocksElapsed * _rewardRate * 1e18) / _totalStakedLog;
-        _rewardsPerUnit += rewardsPerUnitDiff;
-        _lastUpdateBlock = block.number;
     }
 
     function operators() public view virtual returns (address[] memory) {
@@ -216,6 +146,72 @@ contract ProtocolStaking is Ownable, ERC20Votes {
     /// @dev Returns the staking token which is used for staking and rewards.
     function stakingToken() public view virtual returns (address) {
         return _stakingToken;
+    }
+
+    function _stake(uint256 amount) internal virtual {
+        _updateRewards();
+        _updateRewards(msg.sender);
+
+        require(amount != 0, InvalidAmount());
+
+        if (isOperator(msg.sender)) {
+            uint256 previousStakedAmount = balanceOf(msg.sender);
+            uint256 newStakedAmount = previousStakedAmount + amount;
+
+            _totalStakedLog = _totalStakedLog + log(newStakedAmount) - log(previousStakedAmount);
+        }
+
+        _mint(msg.sender, amount);
+        IERC20(_stakingToken).safeTransferFrom(msg.sender, address(this), amount);
+
+        emit TokensStaked(msg.sender, amount);
+    }
+
+    function _unstake(uint256 amount) internal virtual {
+        _updateRewards();
+        _updateRewards(msg.sender);
+
+        require(amount != 0, InvalidAmount());
+
+        if (isOperator(msg.sender)) {
+            uint256 previousStakedAmount = balanceOf(msg.sender);
+            uint256 newStakedAmount = previousStakedAmount - amount;
+
+            _totalStakedLog = _totalStakedLog + log(newStakedAmount) - log(previousStakedAmount);
+        }
+
+        _burn(msg.sender, amount);
+
+        if (_unstakeCooldownPeriod == 0) {
+            IERC20(_stakingToken).safeTransfer(msg.sender, amount);
+        } else {
+            uint256 releaseTime = block.timestamp + _unstakeCooldownPeriod;
+            _unstakeRequests[msg.sender].pushBack(_encodeReleaseData(uint48(releaseTime), amount));
+        }
+
+        emit TokensUnstaked(msg.sender, amount);
+    }
+
+    function _updateRewards(address account) internal virtual {
+        if (_userStakingInfo[account].rewardsPerUnitPaid == 0) return;
+        _userStakingInfo[account] = UserStakingInfo({rewards: earned(account), rewardsPerUnitPaid: _rewardsPerUnit});
+    }
+
+    function _updateRewards() internal virtual {
+        if (block.number == _lastUpdateBlock) {
+            return;
+        }
+
+        uint256 blocksElapsed = block.number - _lastUpdateBlock;
+        _lastUpdateBlock = block.number;
+
+        if (_totalStakedLog == 0) {
+            return;
+        }
+
+        uint256 rewardsPerUnitDiff = (blocksElapsed * _rewardRate * 1e18) / _totalStakedLog;
+        _rewardsPerUnit += rewardsPerUnitDiff;
+        _lastUpdateBlock = block.number;
     }
 
     function _encodeReleaseData(uint48 releaseTime, uint256 amount) private pure returns (bytes32) {
