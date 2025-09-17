@@ -168,14 +168,12 @@ abstract contract ERC7984Rwa is ERC7984, ERC7984Freezable, ERC7984Restricted, Pa
         _isForceTransfer.tstore(false);
     }
 
-    /// @dev Internal function which updates confidential balances while performing frozen, restriction and compliance checks.
+    /// @inheritdoc ERC7984
     function _update(
         address from,
         address to,
         euint64 encryptedAmount
     ) internal override(ERC7984Freezable, ERC7984Restricted, ERC7984) whenNotPaused returns (euint64) {
-        require(_isCompliantTransfer(from, to, encryptedAmount), NoncompliantTransfer(from, to, encryptedAmount));
-        // frozen and restriction checks performed through inheritance
         return super._update(from, to, encryptedAmount);
     }
 
@@ -194,8 +192,4 @@ abstract contract ERC7984Rwa is ERC7984, ERC7984Freezable, ERC7984Restricted, Pa
         }
         return super._checkFrozenBalance(from, requestedTransferAmount);
     }
-
-    /// I think this should just exist on the version with modules
-    /// @dev Checks if a transfer follows token compliance.
-    function _isCompliantTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (bool);
 }
