@@ -79,17 +79,6 @@ describe('ERC7984Restricted', function () {
         await this.token.connect(this.holder).transfer(this.recipient, initialSupply);
       });
 
-      it('allows when sender and recipient are BLOCKED but restriction checks are disabled', async function () {
-        await this.token.$_blockUser(this.holder); // Sets to BLOCKED
-        await this.token.$_blockUser(this.recipient); // Sets to BLOCKED
-        await this.token.$_disableERC7984RestrictedUpdateCheck();
-        await this.token.connect(this.holder).transfer(this.recipient, initialSupply);
-        await this.token.$_restoreERC7984RestrictedUpdateCheck();
-        await expect(this.token.connect(this.holder).transfer(this.recipient, initialSupply))
-          .to.be.revertedWithCustomError(this.token, 'UserRestricted')
-          .withArgs(this.holder);
-      });
-
       it('reverts when sender is BLOCKED', async function () {
         await this.token.$_blockUser(this.holder); // Sets to BLOCKED
 

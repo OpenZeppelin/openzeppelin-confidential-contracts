@@ -16,8 +16,6 @@ import {ERC7984, euint64} from "../ERC7984.sol";
  */
 abstract contract ERC7984Restricted is ERC7984, IERC7984Restricted {
     mapping(address account => Restriction) private _restrictions;
-    /// @dev Skips restriction checks in {_update}.
-    bool private _skipUpdateCheck;
 
     /// @dev Returns the restriction of a user account.
     function getRestriction(address account) public view virtual returns (Restriction) {
@@ -41,20 +39,6 @@ abstract contract ERC7984Restricted is ERC7984, IERC7984Restricted {
         return getRestriction(account) != Restriction.BLOCKED; // i.e. DEFAULT && ALLOWED
     }
 
-    /// @dev Internal function to skip update check. Check can be restored with {_restoreERC7984RestrictedUpdateCheck}.
-    function _disableERC7984RestrictedUpdateCheck() internal virtual {
-        if (!_skipUpdateCheck) {
-            _skipUpdateCheck = true;
-        }
-    }
-
-    /// @dev Internal function to restore update check previously disabled by {_disableERC7984RestrictedUpdateCheck}.
-    function _restoreERC7984RestrictedUpdateCheck() internal virtual {
-        if (_skipUpdateCheck) {
-            _skipUpdateCheck = false;
-        }
-    }
-
     /**
      * @dev See {ERC7984-_update}. Enforces transfer restrictions (excluding minting and burning).
      *
@@ -62,12 +46,13 @@ abstract contract ERC7984Restricted is ERC7984, IERC7984Restricted {
      *
      * * `from` must be allowed to transfer tokens (see {isUserAllowed}).
      * * `to` must be allowed to receive tokens (see {isUserAllowed}).
+     *
+     * The default restriction behaviour can be changed (for a pass-through for instance) by overriding
+     * {_checkRestrictionFrom} and/or {_checkRestrictionTo}.
      */
     function _update(address from, address to, euint64 value) internal virtual override returns (euint64) {
-        if (!_skipUpdateCheck) {
-            if (from != address(0)) _checkRestriction(from); // Not minting
-            if (to != address(0)) _checkRestriction(to); // Not burning
-        }
+        _checkRestrictionFrom(from);
+        _checkRestrictionTo(to);
         return super._update(from, to, value);
     }
 
@@ -97,5 +82,25 @@ abstract contract ERC7984Restricted is ERC7984, IERC7984Restricted {
     /// @dev Checks if a user account is restricted. Reverts with {ERC20Restricted} if so.
     function _checkRestriction(address account) internal view virtual {
         require(isUserAllowed(account), UserRestricted(account));
+    }
+
+    /**
+     * @dev Internal function which checks restriction of the `from` account before a transfer.
+     * Working with {_update} function.
+     */
+    function _checkRestrictionFrom(address account) internal view virtual {
+        if (account != address(0)) {
+            _checkRestriction(account); // Not minting
+        }
+    }
+
+    /**
+     * @dev Internal function which checks restriction of the `to` account before a transfer.
+     * Working with {_update} function.
+     */
+    function _checkRestrictionTo(address account) internal view virtual {
+        if (account != address(0)) {
+            _checkRestriction(account); // Not burning
+        }
     }
 }

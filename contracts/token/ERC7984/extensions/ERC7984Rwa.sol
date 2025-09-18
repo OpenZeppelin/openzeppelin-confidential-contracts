@@ -176,12 +176,28 @@ abstract contract ERC7984Rwa is
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (euint64 transferred) {
-        _disableERC7984FreezableUpdateCheck(); // bypass frozen check
-        _disableERC7984RestrictedUpdateCheck(); // bypass default restriction check
-        if (to != address(0)) _checkRestriction(to); // only perform restriction check on `to`
+        // bypassing `from` restriction & frozen checks while `to` restriction check is still performed.
         transferred = super._update(from, to, encryptedAmount); // bypass compliance check
-        _restoreERC7984FreezableUpdateCheck();
-        _restoreERC7984RestrictedUpdateCheck();
+    }
+
+    /**
+     * @dev Bypasses the `from` restriction check when performing a {forceConfidentialTransferFrom}.
+     */
+    function _checkRestrictionFrom(address account) internal view override {
+        if (_isForceTransfer()) {
+            return;
+        }
+        super._checkRestrictionFrom(account);
+    }
+
+    /**
+     * @dev Bypasses the frozen check of the `from` account when performing a {forceConfidentialTransferFrom}.
+     */
+    function _getUnfrozenAvailableFrom(address account, euint64 encryptedAmount) internal override returns (euint64) {
+        if (_isForceTransfer()) {
+            return encryptedAmount;
+        }
+        return super._getUnfrozenAvailableFrom(account, encryptedAmount);
     }
 
     /// @dev Internal function which updates confidential balances while performing frozen, restriction and compliance checks.
@@ -203,4 +219,11 @@ abstract contract ERC7984Rwa is
 
     /// @dev Checks if a transfer follows token compliance.
     function _isCompliantTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (bool);
+
+    /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
+    function _isForceTransfer() private pure returns (bool) {
+        return
+            msg.sig == bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)")) ||
+            msg.sig == bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"));
+    }
 }
