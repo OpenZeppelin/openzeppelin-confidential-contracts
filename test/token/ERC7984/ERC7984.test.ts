@@ -40,7 +40,7 @@ describe('ERC7984', function () {
     });
 
     it('sets the uri', async function () {
-      await expect(this.token.tokenURI()).to.eventually.equal(uri);
+      await expect(this.token.contractURI()).to.eventually.equal(uri);
     });
 
     it('decimals is 6', async function () {
