@@ -38,13 +38,14 @@ describe.only('Protocol Staking', function () {
     const [staker1, staker2, admin] = accounts;
 
     const token = await ethers.deployContract('$ERC20Mock', ['StakingToken', 'ST', 18]);
-    const protocolStaking = await ethers.deployContract('$ProtocolStaking', [
-      'StakedToken',
-      'SST',
-      '1',
-      token.target,
-      admin,
-    ]);
+
+    const impl = await ethers.deployContract('ProtocolStaking');
+    const initializerCall = (await impl.initialize.populateTransaction('StakedToken', 'SST', '1', token.target, admin))
+      .data;
+    const protocolStaking = await ethers.getContractAt(
+      'ProtocolStaking',
+      await ethers.deployContract('ERC1967ProxyMock', [impl, initializerCall]),
+    );
 
     this.accounts = accounts.slice(3);
     this.staker1 = staker1;
@@ -337,12 +338,17 @@ describe.only('Protocol Staking', function () {
   describe('Transfer', function () {
     it('transfer is disabled', async function () {
       await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
-      await expect(this.mock.connect(this.staker1).transfer(this.staker2, 100)).to.be.reverted;
+      await expect(this.mock.connect(this.staker1).transfer(this.staker2, 100)).to.be.revertedWithCustomError(
+        this.mock,
+        'TransferDisabled',
+      );
     });
 
     it('transferFrom is disabled', async function () {
       await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
-      await expect(this.mock.connect(this.staker1).transferFrom(this.staker1, this.staker2, 100)).to.be.reverted;
+      await expect(
+        this.mock.connect(this.staker1).transferFrom(this.staker1, this.staker2, 100),
+      ).to.be.revertedWithCustomError(this.mock, 'TransferDisabled');
     });
   });
 });

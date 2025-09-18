@@ -2,21 +2,21 @@
 
 pragma solidity ^0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC20Votes, ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ERC20VotesUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 interface IERC20Mintable is IERC20 {
     function mint(address to, uint256 amount) external;
 }
 
-contract ProtocolStaking is Ownable, ERC20Votes {
+contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgradeable {
     using EnumerableSet for EnumerableSet.AddressSet;
     using Checkpoints for Checkpoints.Trace208;
     using SafeERC20 for IERC20;
@@ -30,7 +30,7 @@ contract ProtocolStaking is Ownable, ERC20Votes {
     address private _stakingToken;
     uint256 private _totalStakedWeight;
     uint256 private _lastUpdateTimestamp;
-    uint256 private _rewardsPerUnit = 1;
+    uint256 private _rewardsPerUnit;
     uint256 private _rewardRate;
     uint256 private _unstakeCooldownPeriod;
     mapping(address => UserStakingInfo) private _userStakingInfo;
@@ -46,15 +46,24 @@ contract ProtocolStaking is Ownable, ERC20Votes {
     error InvalidAmount();
     error OperatorAlreadyExists(address operator);
     error OperatorDoesNotExist(address operator);
+    error TransferDisabled();
 
-    constructor(
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         string memory name,
         string memory symbol,
         string memory version,
         address stakingToken_,
         address governor
-    ) Ownable(governor) ERC20(name, symbol) EIP712(name, version) {
+    ) public virtual initializer {
+        __Ownable_init(governor);
+        __ERC20_init(name, symbol);
+        __EIP712_init(name, version);
         _stakingToken = stakingToken_;
+        _rewardsPerUnit = 1; // initialize rewards per unit
     }
 
     function stake(uint256 amount) public virtual {
@@ -232,12 +241,14 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         _lastUpdateTimestamp = block.timestamp;
     }
 
+    function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
+
     // MARK: Disable Transfers
     function transfer(address, uint256) public virtual override returns (bool) {
-        revert();
+        revert TransferDisabled();
     }
 
     function transferFrom(address, address, uint256) public virtual override returns (bool) {
-        revert();
+        revert TransferDisabled();
     }
 }
