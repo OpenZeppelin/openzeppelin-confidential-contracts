@@ -15,18 +15,6 @@ contract ERC7984RwaMock is ERC7984Rwa, HandleAccessManager, SepoliaConfig {
     bool public compliantTransfer = false;
     bool public compliantForceTransfer = false;
 
-    // TODO: Move modifiers to `ERC7984Rwa` or remove from mock if useless
-    /// @dev Checks if the sender is an admin.
-    modifier onlyAdmin() {
-        require(isAdmin(_msgSender()), UnauthorizedSender(_msgSender()));
-        _;
-    }
-    /// @dev Checks if the sender is an agent.
-    modifier onlyAgent() {
-        require(isAgent(_msgSender()), UnauthorizedSender(_msgSender()));
-        _;
-    }
-
     constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984Rwa(name, symbol, tokenUri) {}
 
     function createEncryptedAmount(uint64 amount) public returns (euint64 encryptedAmount) {
@@ -72,5 +60,5 @@ contract ERC7984RwaMock is ERC7984Rwa, HandleAccessManager, SepoliaConfig {
         FHE.allowThis(compliant);
     }
 
-    function _validateHandleAllowance(bytes32 handle) internal view override onlyAdminOrAgent {}
+    function _validateHandleAllowance(bytes32 handle) internal view override onlyAgent {}
 }

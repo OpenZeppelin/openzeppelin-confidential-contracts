@@ -28,12 +28,15 @@ abstract contract ERC7984Rwa is
 {
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
-    /// @dev The caller account is not authorized to perform the operation.
-    error UnauthorizedSender(address account);
+    /// @dev Checks if the sender is an admin.
+    modifier onlyAdmin() {
+        _checkRole(DEFAULT_ADMIN_ROLE);
+        _;
+    }
 
-    /// @dev Checks if the sender is an admin or an agent.
-    modifier onlyAdminOrAgent() {
-        require(isAdmin(_msgSender()) || isAgent(_msgSender()), UnauthorizedSender(_msgSender()));
+    /// @dev Checks if the sender is an agent.
+    modifier onlyAgent() {
+        _checkRole(AGENT_ROLE);
         _;
     }
 
@@ -50,12 +53,12 @@ abstract contract ERC7984Rwa is
     }
 
     /// @dev Pauses contract.
-    function pause() public virtual onlyAdminOrAgent {
+    function pause() public virtual onlyAgent {
         _pause();
     }
 
     /// @dev Unpauses contract.
-    function unpause() public virtual onlyAdminOrAgent {
+    function unpause() public virtual onlyAgent {
         _unpause();
     }
 
@@ -69,24 +72,47 @@ abstract contract ERC7984Rwa is
         return hasRole(AGENT_ROLE, account);
     }
 
+    /// @dev Returns true if admin or agent, false otherwise.
+    function isAdminOrAgent(address account) public view virtual returns (bool) {
+        return isAdmin(account) || isAgent(account);
+    }
+
     /// @dev Adds agent.
-    function addAgent(address account) public virtual onlyAdminOrAgent {
-        _addAgent(account);
+    function addAgent(address account) public virtual onlyAdmin {
+        _grantRole(AGENT_ROLE, account);
     }
 
     /// @dev Removes agent.
-    function removeAgent(address account) public virtual onlyAdminOrAgent {
-        _removeAgent(account);
+    function removeAgent(address account) public virtual onlyAdmin {
+        _revokeRole(AGENT_ROLE, account);
     }
 
     /// @dev Blocks a user account.
-    function blockUser(address account) public virtual onlyAdminOrAgent {
+    function blockUser(address account) public virtual onlyAgent {
         _blockUser(account);
     }
 
     /// @dev Unblocks a user account.
-    function unblockUser(address account) public virtual onlyAdminOrAgent {
+    function unblockUser(address account) public virtual onlyAgent {
         _allowUser(account);
+    }
+
+    /// @dev Sets confidential frozen with proof.
+    function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual onlyAgent {
+        require(
+            FHE.isAllowed(encryptedAmount, account),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
+        _setConfidentialFrozen(account, encryptedAmount);
+    }
+
+    /// @dev Sets confidential frozen.
+    function setConfidentialFrozen(
+        address account,
+        externalEuint64 encryptedAmount,
+        bytes calldata inputProof
+    ) public virtual onlyAgent {
+        _setConfidentialFrozen(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Mints confidential amount of tokens to account with proof.
@@ -94,12 +120,12 @@ abstract contract ERC7984Rwa is
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual onlyAdminOrAgent returns (euint64) {
+    ) public virtual onlyAgent returns (euint64) {
         return _confidentialMint(to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Mints confidential amount of tokens to account.
-    function confidentialMint(address to, euint64 encryptedAmount) public virtual onlyAdminOrAgent returns (euint64) {
+    function confidentialMint(address to, euint64 encryptedAmount) public virtual onlyAgent returns (euint64) {
         return _confidentialMint(to, encryptedAmount);
     }
 
@@ -108,15 +134,12 @@ abstract contract ERC7984Rwa is
         address account,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual onlyAdminOrAgent returns (euint64) {
+    ) public virtual onlyAgent returns (euint64) {
         return _confidentialBurn(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Burns confidential amount of tokens from account.
-    function confidentialBurn(
-        address account,
-        euint64 encryptedAmount
-    ) public virtual onlyAdminOrAgent returns (euint64) {
+    function confidentialBurn(address account, euint64 encryptedAmount) public virtual onlyAgent returns (euint64) {
         return _confidentialBurn(account, encryptedAmount);
     }
 
@@ -126,7 +149,7 @@ abstract contract ERC7984Rwa is
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual onlyAdminOrAgent returns (euint64) {
+    ) public virtual onlyAgent returns (euint64) {
         return _forceConfidentialTransferFrom(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
@@ -135,18 +158,8 @@ abstract contract ERC7984Rwa is
         address from,
         address to,
         euint64 encryptedAmount
-    ) public virtual onlyAdminOrAgent returns (euint64 transferred) {
+    ) public virtual onlyAgent returns (euint64 transferred) {
         return _forceConfidentialTransferFrom(from, to, encryptedAmount);
-    }
-
-    /// @dev Internal function which adds an agent.
-    function _addAgent(address account) internal virtual {
-        _grantRole(AGENT_ROLE, account);
-    }
-
-    /// @dev Internal function which removes an agent.
-    function _removeAgent(address account) internal virtual {
-        _revokeRole(AGENT_ROLE, account);
     }
 
     /// @dev Internal function which mints confidential amount of tokens to account.
@@ -201,7 +214,7 @@ abstract contract ERC7984Rwa is
      * @dev Internal function which reverts if `msg.sender` is not authorized as a freezer.
      * This freezer role is only granted to admin or agent.
      */
-    function _checkFreezer() internal override onlyAdminOrAgent {}
+    function _checkFreezer() internal override onlyAgent {}
 
     /// @dev Checks if a transfer follows compliance.
     function _preCheckTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);

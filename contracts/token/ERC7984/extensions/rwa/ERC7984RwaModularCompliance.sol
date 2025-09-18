@@ -51,12 +51,12 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
      * @dev Consider gas footprint of the module before adding it since all modules will perform
      * all steps (pre-check, compliance check, post-hook) in a single transaction.
      */
-    function installModule(ComplianceModuleType moduleType, address module) public virtual onlyAdminOrAgent {
+    function installModule(ComplianceModuleType moduleType, address module) public virtual onlyAdmin {
         _installModule(moduleType, module);
     }
 
     /// @inheritdoc IERC7984RwaModularCompliance
-    function uninstallModule(ComplianceModuleType moduleType, address module) public virtual onlyAdminOrAgent {
+    function uninstallModule(ComplianceModuleType moduleType, address module) public virtual onlyAdmin {
         _uninstallModule(moduleType, module);
     }
 

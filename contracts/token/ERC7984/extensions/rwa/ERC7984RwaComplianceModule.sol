@@ -16,6 +16,10 @@ abstract contract ERC7984RwaComplianceModule is IERC7984RwaComplianceModule, Han
     error SenderNotToken(address account);
     /// @dev The sender is not the token admin.
     error SenderNotTokenAdmin(address account);
+    /// @dev The sender is not a token agent.
+    error SenderNotTokenAgent(address account);
+    /// @dev The sender is not the token admin or a token agent.
+    error SenderNotTokenAdminOrTokenAgent(address account);
 
     /// @dev Throws if called by any account other than the token.
     modifier onlyToken() {
@@ -26,6 +30,18 @@ abstract contract ERC7984RwaComplianceModule is IERC7984RwaComplianceModule, Han
     /// @dev Throws if called by any account other than the token admin.
     modifier onlyTokenAdmin() {
         require(IERC7984Rwa(_token).isAdmin(msg.sender), SenderNotTokenAdmin(msg.sender));
+        _;
+    }
+
+    /// @dev Throws if called by any account other than a token agent.
+    modifier onlyTokenAgent() {
+        require(IERC7984Rwa(_token).isAgent(msg.sender), SenderNotTokenAgent(msg.sender));
+        _;
+    }
+
+    /// @dev Throws if called by any account other than the token admin or a token agent.
+    modifier onlyTokenAdminOrTokenAgent() {
+        require(IERC7984Rwa(_token).isAdminOrAgent(msg.sender), SenderNotTokenAdminOrTokenAgent(msg.sender));
         _;
     }
 
@@ -76,5 +92,5 @@ abstract contract ERC7984RwaComplianceModule is IERC7984RwaComplianceModule, Han
         }
     }
 
-    function _validateHandleAllowance(bytes32 handle) internal view override onlyTokenAdmin {}
+    function _validateHandleAllowance(bytes32 handle) internal view override onlyTokenAdminOrTokenAgent {}
 }

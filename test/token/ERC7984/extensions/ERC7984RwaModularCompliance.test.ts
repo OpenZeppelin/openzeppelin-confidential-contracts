@@ -13,6 +13,7 @@ const alwaysOn = 'always-on';
 const transferOnly = 'transfer-only';
 const maxInverstor = 2;
 const maxBalance = 100;
+const adminRole = ethers.ZeroHash;
 
 const fixture = async () => {
   const [admin, agent1, agent2, recipient, anyone] = await ethers.getSigners();
@@ -75,11 +76,11 @@ describe('ERC7984RwaModularCompliance', function () {
       });
     }
 
-    it('should not install module if not admin or agent', async function () {
+    it('should not install module if not admin', async function () {
       const { token, investorCapModule, anyone } = await fixture();
       await expect(token.connect(anyone).installModule(alwaysOnType, investorCapModule))
-        .to.be.revertedWithCustomError(token, 'UnauthorizedSender')
-        .withArgs(anyone.address);
+        .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
+        .withArgs(anyone.address, adminRole);
     });
 
     for (const type of moduleTypes) {
@@ -123,19 +124,19 @@ describe('ERC7984RwaModularCompliance', function () {
         it(`should ${forceTransfer ? 'force transfer' : 'transfer'} ${
           compliant ? 'if' : 'zero if not'
         } compliant`, async function () {
-          const { token, alwaysOnModule, transferOnlyModule, admin, recipient, anyone } = await fixture();
+          const { token, alwaysOnModule, transferOnlyModule, admin, agent1, recipient, anyone } = await fixture();
           await token.connect(admin).installModule(alwaysOnType, alwaysOnModule);
           await token.connect(admin).installModule(transferOnlyType, transferOnlyModule);
           const amount = 100;
           const encryptedMint = await fhevm
-            .createEncryptedInput(await token.getAddress(), admin.address)
+            .createEncryptedInput(await token.getAddress(), agent1.address)
             .add64(amount)
             .encrypt();
           // set compliant for initial mint
           await alwaysOnModule.$_setCompliant();
           await transferOnlyModule.$_setCompliant();
           await token
-            .connect(admin)
+            .connect(agent1)
             ['confidentialMint(address,bytes32,bytes)'](
               recipient.address,
               encryptedMint.handles[0],
@@ -150,7 +151,7 @@ describe('ERC7984RwaModularCompliance', function () {
             ),
           ).to.eventually.equal(amount);
           const encryptedMint2 = await fhevm
-            .createEncryptedInput(await token.getAddress(), admin.address)
+            .createEncryptedInput(await token.getAddress(), agent1.address)
             .add64(amount)
             .encrypt();
           if (compliant) {
@@ -161,10 +162,10 @@ describe('ERC7984RwaModularCompliance', function () {
             await transferOnlyModule.$_unsetCompliant();
           }
           if (!forceTransfer) {
-            await token.connect(recipient).setOperator(admin.address, (await time.latest()) + 1000);
+            await token.connect(recipient).setOperator(agent1.address, (await time.latest()) + 1000);
           }
           const tx = token
-            .connect(admin)
+            .connect(agent1)
             [
               forceTransfer
                 ? 'forceConfidentialTransferFrom(address,address,bytes32,bytes)'
@@ -258,14 +259,14 @@ describe('ERC7984RwaModularCompliance', function () {
 
     for (const type of moduleTypes) {
       it(`should transfer if compliant to balance cap module with type ${type}`, async function () {
-        const { token, admin, balanceCapModule, recipient, anyone } = await fixture();
+        const { token, admin, agent1, balanceCapModule, recipient, anyone } = await fixture();
         await token.connect(admin).installModule(type, balanceCapModule);
         const encryptedMint = await fhevm
-          .createEncryptedInput(await token.getAddress(), admin.address)
+          .createEncryptedInput(await token.getAddress(), agent1.address)
           .add64(100)
           .encrypt();
         await token
-          .connect(admin)
+          .connect(agent1)
           ['confidentialMint(address,bytes32,bytes)'](recipient, encryptedMint.handles[0], encryptedMint.inputProof);
         const amount = 25;
         const encryptedTransferValueInput = await fhevm
@@ -297,17 +298,17 @@ describe('ERC7984RwaModularCompliance', function () {
     }
 
     it(`should transfer zero if not compliant to balance cap module`, async function () {
-      const { token, admin, balanceCapModule, recipient, anyone } = await fixture();
+      const { token, admin, agent1, balanceCapModule, recipient, anyone } = await fixture();
       await token.connect(admin).installModule(transferOnlyType, balanceCapModule);
       const encryptedMint = await fhevm
-        .createEncryptedInput(await token.getAddress(), admin.address)
+        .createEncryptedInput(await token.getAddress(), agent1.address)
         .add64(100)
         .encrypt();
       await token
-        .connect(admin)
+        .connect(agent1)
         ['confidentialMint(address,bytes32,bytes)'](recipient, encryptedMint.handles[0], encryptedMint.inputProof);
       await token
-        .connect(admin)
+        .connect(agent1)
         ['confidentialMint(address,bytes32,bytes)'](anyone, encryptedMint.handles[0], encryptedMint.inputProof);
       const amount = 25;
       const encryptedTransferValueInput = await fhevm
@@ -330,23 +331,23 @@ describe('ERC7984RwaModularCompliance', function () {
     });
 
     it('should transfer if compliant because burning', async function () {
-      const { token, admin, balanceCapModule, recipient } = await fixture();
+      const { token, admin, agent1, balanceCapModule, recipient } = await fixture();
       await token.connect(admin).installModule(alwaysOnType, balanceCapModule);
       const encryptedMint = await fhevm
-        .createEncryptedInput(await token.getAddress(), admin.address)
+        .createEncryptedInput(await token.getAddress(), agent1.address)
         .add64(100)
         .encrypt();
       await token
-        .connect(admin)
+        .connect(agent1)
         ['confidentialMint(address,bytes32,bytes)'](recipient, encryptedMint.handles[0], encryptedMint.inputProof);
       const amount = 25;
       const encryptedBurnValueInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), admin.address)
+        .createEncryptedInput(await token.getAddress(), agent1.address)
         .add64(amount)
         .encrypt();
       const [, , transferredHandle] = await callAndGetResult(
         token
-          .connect(admin)
+          .connect(agent1)
           ['confidentialBurn(address,bytes32,bytes)'](
             recipient,
             encryptedBurnValueInput.handles[0],
@@ -371,10 +372,10 @@ describe('ERC7984RwaModularCompliance', function () {
   describe('Investor cap module', async function () {
     for (const type of moduleTypes) {
       it(`should transfer if compliant to investor cap module else zero with type ${type}`, async function () {
-        const { token, admin, investorCapModule, recipient, anyone } = await fixture();
+        const { token, admin, agent1, investorCapModule, recipient, anyone } = await fixture();
         await token.connect(admin).installModule(type, investorCapModule);
         const encryptedMint = await fhevm
-          .createEncryptedInput(await token.getAddress(), admin.address)
+          .createEncryptedInput(await token.getAddress(), agent1.address)
           .add64(100)
           .encrypt();
         for (const investor of [
@@ -382,7 +383,7 @@ describe('ERC7984RwaModularCompliance', function () {
           ethers.Wallet.createRandom().address, //investor#2
         ]) {
           await token
-            .connect(admin)
+            .connect(agent1)
             ['confidentialMint(address,bytes32,bytes)'](investor, encryptedMint.handles[0], encryptedMint.inputProof);
         }
         await investorCapModule

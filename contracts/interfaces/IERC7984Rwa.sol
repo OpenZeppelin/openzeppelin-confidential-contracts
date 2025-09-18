@@ -25,6 +25,8 @@ interface IERC7984RwaBase {
     function isAdmin(address account) external view returns (bool);
     /// @dev Returns true if agent, false otherwise.
     function isAgent(address account) external view returns (bool);
+    /// @dev Returns true if admin or agent, false otherwise.
+    function isAdminOrAgent(address account) external view returns (bool);
     /// @dev Returns true if the contract is paused, and false otherwise.
     function paused() external view returns (bool);
     /// @dev Pauses contract.
