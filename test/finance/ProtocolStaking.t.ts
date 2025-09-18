@@ -1,4 +1,5 @@
 import { FhevmType } from '@fhevm/hardhat-plugin';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { time, mine } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import chai from 'chai';
@@ -8,12 +9,12 @@ import { ethers, fhevm } from 'hardhat';
 declare global {
   namespace Chai {
     interface Assertion {
-      closeToBigInt(expected: bigint, tolerance: bigint): Assertion;
+      closeToLessThanOrEqual(expected: bigint, tolerance: bigint): Assertion;
     }
   }
 }
 
-chai.Assertion.addMethod('closeToBigInt', function (expected, tolerance) {
+chai.Assertion.addMethod('closeToLessThanOrEqual', function (expected, tolerance) {
   const actual = this._obj;
 
   new chai.Assertion(actual).to.be.a('bigint');
@@ -23,7 +24,7 @@ chai.Assertion.addMethod('closeToBigInt', function (expected, tolerance) {
   const diff = actual > expected ? actual - expected : expected - actual;
 
   this.assert(
-    diff <= tolerance,
+    diff <= tolerance && expected >= actual,
     `expected ${actual} to be within ${tolerance} of ${expected}`,
     `expected ${actual} not to be within ${tolerance} of ${expected}`,
     `Difference was ${diff}`,
@@ -90,7 +91,7 @@ describe.only('Protocol Staking', function () {
       await expect(this.mock.totalStakedWeight()).to.eventually.equal(
         await this.mock.weight(await this.mock.balanceOf(this.staker1)),
       );
-      expect(await this.mock.earned(this.staker1)).to.be.closeToBigInt(ethers.parseEther('5'), 10n);
+      expect(await this.mock.earned(this.staker1)).to.be.closeToLessThanOrEqual(ethers.parseEther('5'), 10n);
     });
 
     it('Two users should split rewards according to logarithm', async function () {
@@ -107,9 +108,9 @@ describe.only('Protocol Staking', function () {
       const earned1 = await this.mock.earned(this.staker1);
       const earned2 = await this.mock.earned(this.staker2);
 
-      expect(earned1 + earned2).to.be.closeToBigInt(ethers.parseEther('5'), 10n);
+      expect(earned1 + earned2).to.be.closeToLessThanOrEqual(ethers.parseEther('5'), 10n);
       // Should come back to this. Checking that ratio is correct
-      expect((earned2 * 1000n) / earned1).to.be.closeToBigInt(1050n, 5n);
+      expect((earned2 * 1000n) / earned1).to.be.closeToLessThanOrEqual(1050n, 5n);
     });
   });
 
@@ -246,6 +247,19 @@ describe.only('Protocol Staking', function () {
       await expect(this.mock.claimRewards(this.staker1))
         .to.emit(this.token, 'Transfer')
         .withArgs(ethers.ZeroAddress, this.staker1, earned);
+    });
+
+    it('should be able to set recipient', async function () {
+      await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
+      await this.mock.connect(this.staker1).setRewardsRecipient(this.staker2);
+
+      await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
+      await this.mock.connect(this.admin).addOperator(this.staker1.address);
+      await mine(9);
+
+      await expect(this.mock.claimRewards(this.staker1))
+        .to.emit(this.token, 'Transfer')
+        .withArgs(ethers.ZeroAddress, this.staker2, anyValue);
     });
   });
 

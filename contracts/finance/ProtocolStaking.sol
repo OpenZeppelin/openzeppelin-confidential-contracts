@@ -36,6 +36,7 @@ contract ProtocolStaking is Ownable, ERC20Votes {
     mapping(address => UserStakingInfo) private _userStakingInfo;
     mapping(address => Checkpoints.Trace208) private _unstakeRequests;
     mapping(address => uint256) private _totalReleased;
+    mapping(address => address) private _rewardsRecipient;
 
     event OperatorAdded(address operator);
     event OperatorRemoved(address operator);
@@ -89,7 +90,7 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         uint256 rewards = _userStakingInfo[account].rewards;
         if (rewards > 0) {
             _userStakingInfo[account].rewards = 0;
-            IERC20Mintable(stakingToken()).mint(account, rewards);
+            IERC20Mintable(stakingToken()).mint(rewardsRecipient(account), rewards);
         }
     }
 
@@ -125,6 +126,10 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         _unstakeCooldownPeriod = unstakeCooldownPeriod;
     }
 
+    function setRewardsRecipient(address recipient) public virtual {
+        _rewardsRecipient[msg.sender] = recipient;
+    }
+
     /// @dev Gets the staking weight for a given raw amount.
     function weight(uint256 amount) public view virtual returns (uint256) {
         return Math.log2(amount);
@@ -150,6 +155,12 @@ contract ProtocolStaking is Ownable, ERC20Votes {
     /// @notice Returns the amount of tokens cooling down for the given account `account`.
     function tokensInCooldown(address account) public view virtual returns (uint256) {
         return _unstakeRequests[account].latest() - _totalReleased[account];
+    }
+
+    /// @notice Returns the recipient for rewards earned by `account`.
+    function rewardsRecipient(address account) public view virtual returns (address) {
+        address storedRewardsRecipient = _rewardsRecipient[account];
+        return storedRewardsRecipient == address(0) ? account : storedRewardsRecipient;
     }
 
     function _stake(uint256 amount) internal virtual {
