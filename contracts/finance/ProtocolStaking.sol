@@ -28,7 +28,7 @@ contract ProtocolStaking is Ownable, ERC20Votes {
 
     EnumerableSet.AddressSet private _operators;
     address private _stakingToken;
-    uint256 private _totalStakedLog;
+    uint256 private _totalStakedWeight;
     uint256 private _lastUpdateTimestamp;
     uint256 private _rewardsPerUnit = 1;
     uint256 private _rewardRate;
@@ -69,7 +69,7 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         uint256 amountToRelease = totalAmountCooledDown - _totalReleased[msg.sender];
         _totalReleased[msg.sender] = totalAmountCooledDown;
         if (amountToRelease > 0) {
-            IERC20(_stakingToken).safeTransfer(msg.sender, amountToRelease);
+            IERC20(stakingToken()).safeTransfer(msg.sender, amountToRelease);
         }
     }
 
@@ -78,7 +78,7 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         if (userInfo.rewardsPerUnitPaid == 0) {
             return userInfo.rewards;
         }
-        return (log(balanceOf(account)) * (_rewardsPerUnit - userInfo.rewardsPerUnitPaid)) / 1e18 + userInfo.rewards;
+        return (weight(balanceOf(account)) * (_rewardsPerUnit - userInfo.rewardsPerUnitPaid)) / 1e18 + userInfo.rewards;
     }
 
     /// @dev Claim staking rewards for `account`.
@@ -89,16 +89,8 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         uint256 rewards = _userStakingInfo[account].rewards;
         if (rewards > 0) {
             _userStakingInfo[account].rewards = 0;
-            IERC20Mintable(_stakingToken).mint(account, rewards);
+            IERC20Mintable(stakingToken()).mint(account, rewards);
         }
-    }
-
-    function operators() public view virtual returns (address[] memory) {
-        return _operators.values();
-    }
-
-    function isOperator(address account) public view virtual returns (bool) {
-        return _operators.contains(account);
     }
 
     function addOperator(address account) public virtual onlyOwner {
@@ -107,7 +99,7 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         _updateRewards();
         _userStakingInfo[account].rewardsPerUnitPaid = _rewardsPerUnit;
 
-        _totalStakedLog += log(balanceOf(account));
+        _totalStakedWeight += weight(balanceOf(account));
 
         emit OperatorAdded(account);
     }
@@ -119,7 +111,7 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         _updateRewards(account);
         _userStakingInfo[account].rewardsPerUnitPaid = 0;
 
-        _totalStakedLog -= log(balanceOf(account));
+        _totalStakedWeight -= weight(balanceOf(account));
 
         emit OperatorRemoved(account);
     }
@@ -133,8 +125,8 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         _unstakeCooldownPeriod = unstakeCooldownPeriod;
     }
 
-    /// @dev Calculate the logarithm base 2 of the amount `amount`.
-    function log(uint256 amount) public view virtual returns (uint256) {
+    /// @dev Gets the staking weight for a given raw amount.
+    function weight(uint256 amount) public view virtual returns (uint256) {
         return Math.log2(amount);
     }
 
@@ -143,8 +135,21 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         return _stakingToken;
     }
 
-    function totalStakedLog() public view virtual returns (uint256) {
-        return _totalStakedLog;
+    function totalStakedWeight() public view virtual returns (uint256) {
+        return _totalStakedWeight;
+    }
+
+    function operators() public view virtual returns (address[] memory) {
+        return _operators.values();
+    }
+
+    function isOperator(address account) public view virtual returns (bool) {
+        return _operators.contains(account);
+    }
+
+    /// @notice Returns the amount of tokens cooling down for the given account `account`.
+    function tokensInCooldown(address account) public view virtual returns (uint256) {
+        return _unstakeRequests[account].latest() - _totalReleased[account];
     }
 
     function _stake(uint256 amount) internal virtual {
@@ -155,11 +160,11 @@ contract ProtocolStaking is Ownable, ERC20Votes {
             uint256 previousStakedAmount = balanceOf(msg.sender);
             uint256 newStakedAmount = previousStakedAmount + amount;
 
-            _totalStakedLog = _totalStakedLog + log(newStakedAmount) - log(previousStakedAmount);
+            _totalStakedWeight = _totalStakedWeight + weight(newStakedAmount) - weight(previousStakedAmount);
         }
 
         _mint(msg.sender, amount);
-        IERC20(_stakingToken).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(stakingToken()).safeTransferFrom(msg.sender, address(this), amount);
 
         emit TokensStaked(msg.sender, amount);
     }
@@ -174,13 +179,13 @@ contract ProtocolStaking is Ownable, ERC20Votes {
             uint256 previousStakedAmount = balanceOf(msg.sender);
             uint256 newStakedAmount = previousStakedAmount - amount;
 
-            _totalStakedLog = _totalStakedLog + log(newStakedAmount) - log(previousStakedAmount);
+            _totalStakedWeight = _totalStakedWeight + weight(newStakedAmount) - weight(previousStakedAmount);
         }
 
         _burn(msg.sender, amount);
 
         if (_unstakeCooldownPeriod == 0) {
-            IERC20(_stakingToken).safeTransfer(msg.sender, amount);
+            IERC20(stakingToken()).safeTransfer(msg.sender, amount);
         } else {
             (, uint256 lastReleaseTime, uint256 totalRequestedToWithdraw) = _unstakeRequests[msg.sender]
                 .latestCheckpoint();
@@ -207,22 +212,13 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         uint256 secondsElapsed = block.timestamp - _lastUpdateTimestamp;
         _lastUpdateTimestamp = block.timestamp;
 
-        if (_totalStakedLog == 0) {
+        if (_totalStakedWeight == 0) {
             return;
         }
 
-        uint256 rewardsPerUnitDiff = (secondsElapsed * _rewardRate * 1e18) / _totalStakedLog;
+        uint256 rewardsPerUnitDiff = (secondsElapsed * _rewardRate * 1e18) / _totalStakedWeight;
         _rewardsPerUnit += rewardsPerUnitDiff;
         _lastUpdateTimestamp = block.timestamp;
-    }
-
-    function _encodeReleaseData(uint48 releaseTime, uint256 amount) private pure returns (bytes32) {
-        return bytes32((uint256(releaseTime) << 208) | amount);
-    }
-
-    function _decodeReleaseData(bytes32 data) private pure returns (uint48 releaseTime, uint256 amount) {
-        amount = uint208(uint256(data));
-        releaseTime = uint48(uint256(data) >> 208);
     }
 
     // MARK: Disable Transfers
