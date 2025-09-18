@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {ebool, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC7984} from "./IERC7984.sol";
@@ -21,6 +21,12 @@ interface IERC7984RwaBase {
     /// @dev The operation failed because the contract is paused.
     error EnforcedPause();
 
+    /// @dev Returns true if has admin role, false otherwise.
+    function isAdmin(address account) external view returns (bool);
+    /// @dev Returns true if agent, false otherwise.
+    function isAgent(address account) external view returns (bool);
+    /// @dev Returns true if admin or agent, false otherwise.
+    function isAdminOrAgent(address account) external view returns (bool);
     /// @dev Returns true if the contract is paused, and false otherwise.
     function paused() external view returns (bool);
     /// @dev Pauses contract.
@@ -83,8 +89,27 @@ interface IERC7984RwaBase {
 /// @dev Full interface for confidential RWA contracts.
 interface IERC7984Rwa is IERC7984, IERC7984RwaBase, IERC165, IAccessControl {}
 
-/// @dev Interface for confidential RWA compliance.
-interface IERC7984RwaCompliance {
-    /// @dev Checks if a transfer follows token compliance.
-    function isCompliantTransfer(address from, address to, euint64 encryptedAmount) external returns (bool);
+/// @dev Interface for confidential RWA with modular compliance.
+interface IERC7984RwaModularCompliance {
+    enum ComplianceModuleType {
+        ALWAYS_ON,
+        TRANSFER_ONLY
+    }
+
+    /// @dev Installs a transfer compliance module.
+    function installModule(ComplianceModuleType moduleType, address module) external;
+    /// @dev Uninstalls a transfer compliance module.
+    function uninstallModule(ComplianceModuleType moduleType, address module) external;
+    /// @dev Checks if a compliance module is installed.
+    function isModuleInstalled(ComplianceModuleType moduleType, address module) external view returns (bool);
+}
+
+/// @dev Interface for confidential RWA transfer compliance module.
+interface IERC7984RwaComplianceModule {
+    /// @dev Returns magic number if it is a module.
+    function isModule() external returns (bytes4);
+    /// @dev Checks if a transfer is compliant. Should be non-mutating.
+    function isCompliantTransfer(address from, address to, euint64 encryptedAmount) external returns (ebool);
+    /// @dev Performs operation after transfer.
+    function postTransfer(address from, address to, euint64 encryptedAmount) external;
 }

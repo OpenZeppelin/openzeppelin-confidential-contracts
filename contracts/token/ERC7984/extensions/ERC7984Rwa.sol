@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.27;
 
-import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, ebool, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
@@ -27,9 +27,6 @@ abstract contract ERC7984Rwa is
     AccessControl
 {
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
-
-    /// @dev The transfer does not follow token compliance.
-    error UncompliantTransfer(address from, address to, euint64 encryptedAmount);
 
     /// @dev Checks if the sender is an admin.
     modifier onlyAdmin() {
@@ -73,6 +70,11 @@ abstract contract ERC7984Rwa is
     /// @dev Returns true if agent, false otherwise.
     function isAgent(address account) public view virtual returns (bool) {
         return hasRole(AGENT_ROLE, account);
+    }
+
+    /// @dev Returns true if admin or agent, false otherwise.
+    function isAdminOrAgent(address account) public view virtual returns (bool) {
+        return isAdmin(account) || isAgent(account);
     }
 
     /// @dev Adds agent.
@@ -176,10 +178,19 @@ abstract contract ERC7984Rwa is
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (euint64 transferred) {
+        if (!FHE.isInitialized(encryptedAmount)) {
+            return encryptedAmount;
+        }
+        encryptedAmount = FHE.select(
+            _preCheckForceTransfer(from, to, encryptedAmount),
+            encryptedAmount,
+            FHE.asEuint64(0)
+        );
         _disableERC7984FreezableUpdateCheck(); // bypass frozen check
         _disableERC7984RestrictedUpdateCheck(); // bypass default restriction check
         if (to != address(0)) _checkRestriction(to); // only perform restriction check on `to`
         transferred = super._update(from, to, encryptedAmount); // bypass compliance check
+        _postForceTransfer(from, to, encryptedAmount);
         _restoreERC7984FreezableUpdateCheck();
         _restoreERC7984RestrictedUpdateCheck();
     }
@@ -189,10 +200,14 @@ abstract contract ERC7984Rwa is
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal override(ERC7984Freezable, ERC7984Restricted, ERC7984) whenNotPaused returns (euint64) {
-        require(_isCompliantTransfer(from, to, encryptedAmount), UncompliantTransfer(from, to, encryptedAmount));
+    ) internal override(ERC7984Freezable, ERC7984Restricted, ERC7984) whenNotPaused returns (euint64 transferred) {
+        if (!FHE.isInitialized(encryptedAmount)) {
+            return encryptedAmount;
+        }
+        encryptedAmount = FHE.select(_preCheckTransfer(from, to, encryptedAmount), encryptedAmount, FHE.asEuint64(0));
         // frozen and restriction checks performed through inheritance
-        return super._update(from, to, encryptedAmount);
+        transferred = super._update(from, to, encryptedAmount);
+        _postTransfer(from, to, encryptedAmount);
     }
 
     /**
@@ -201,6 +216,15 @@ abstract contract ERC7984Rwa is
      */
     function _checkFreezer() internal override onlyAgent {}
 
-    /// @dev Checks if a transfer follows token compliance.
-    function _isCompliantTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (bool);
+    /// @dev Checks if a transfer follows compliance.
+    function _preCheckTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);
+
+    /// @dev Checks if a force transfer follows compliance.
+    function _preCheckForceTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);
+
+    /// @dev Performs operation after transfer.
+    function _postTransfer(address from, address to, euint64 encryptedAmount) internal virtual {}
+
+    /// @dev Performs operation after force transfer.
+    function _postForceTransfer(address from, address to, euint64 encryptedAmount) internal virtual {}
 }
