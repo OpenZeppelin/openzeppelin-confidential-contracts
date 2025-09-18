@@ -8,8 +8,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
 
 interface IERC20Mintable is IERC20 {
     function mint(address to, uint256 amount) external;
@@ -64,7 +65,7 @@ contract ProtocolStaking is Ownable, ERC20Votes {
     }
 
     function release() public virtual {
-        uint256 totalAmountCooledDown = _unstakeRequests[msg.sender].upperLookup(uint48(block.timestamp));
+        uint256 totalAmountCooledDown = _unstakeRequests[msg.sender].upperLookup(Time.timestamp());
         uint256 amountToRelease = totalAmountCooledDown - _totalReleased[msg.sender];
         _totalReleased[msg.sender] = totalAmountCooledDown;
         if (amountToRelease > 0) {
@@ -181,10 +182,12 @@ contract ProtocolStaking is Ownable, ERC20Votes {
         if (_unstakeCooldownPeriod == 0) {
             IERC20(_stakingToken).safeTransfer(msg.sender, amount);
         } else {
+            (, uint256 lastReleaseTime, uint256 totalRequestedToWithdraw) = _unstakeRequests[msg.sender]
+                .latestCheckpoint();
             uint256 releaseTime = block.timestamp + _unstakeCooldownPeriod;
             _unstakeRequests[msg.sender].push(
-                uint48(releaseTime),
-                uint208(_unstakeRequests[msg.sender].latest() + amount)
+                uint48(Math.max(releaseTime, lastReleaseTime)),
+                uint208(totalRequestedToWithdraw + amount)
             );
         }
 
