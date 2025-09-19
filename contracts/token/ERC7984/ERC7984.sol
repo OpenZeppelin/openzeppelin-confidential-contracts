@@ -28,7 +28,7 @@ abstract contract ERC7984 is IERC7984 {
     euint64 private _totalSupply;
     string private _name;
     string private _symbol;
-    string private _tokenURI;
+    string private _contractURI;
 
     /// @dev The given receiver `receiver` is invalid for transfers.
     error ERC7984InvalidReceiver(address receiver);
@@ -55,10 +55,10 @@ abstract contract ERC7984 is IERC7984 {
     /// @dev The given gateway request ID `requestId` is invalid.
     error ERC7984InvalidGatewayRequest(uint256 requestId);
 
-    constructor(string memory name_, string memory symbol_, string memory tokenURI_) {
+    constructor(string memory name_, string memory symbol_, string memory contractURI_) {
         _name = name_;
         _symbol = symbol_;
-        _tokenURI = tokenURI_;
+        _contractURI = contractURI_;
     }
 
     /// @inheritdoc IERC7984
@@ -77,8 +77,8 @@ abstract contract ERC7984 is IERC7984 {
     }
 
     /// @inheritdoc IERC7984
-    function tokenURI() public view virtual returns (string memory) {
-        return _tokenURI;
+    function contractURI() public view virtual returns (string memory) {
+        return _contractURI;
     }
 
     /// @inheritdoc IERC7984
