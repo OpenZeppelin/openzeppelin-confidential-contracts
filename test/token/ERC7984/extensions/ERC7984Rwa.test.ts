@@ -116,7 +116,7 @@ describe('ERC7984Rwa', function () {
 
   describe('Mintable', async function () {
     for (const withProof of [true, false]) {
-      it(`should mint by agent ${withProof ? 'with proof' : ''}`, async function () {
+      it(`should mint ${withProof ? 'with proof' : ''}`, async function () {
         const { agent1, recipient } = await fixture();
         const { token } = await fixture();
         await token.$_setCompliantTransfer();
@@ -298,7 +298,7 @@ describe('ERC7984Rwa', function () {
 
   describe('Force transfer', async function () {
     for (const withProof of [true, false]) {
-      it(`should force transfer by admin or agent ${withProof ? 'with proof' : ''}`, async function () {
+      it(`should force transfer ${withProof ? 'with proof' : ''}`, async function () {
         const { agent1, recipient, anyone } = await fixture();
         const { token } = await fixture();
         const encryptedMintValueInput = await fhevm
@@ -496,26 +496,26 @@ describe('ERC7984Rwa', function () {
         const amount = 100;
         if (withProof) {
           const { handles, inputProof } = await fhevm
-            .createEncryptedInput(await token.getAddress(), anyone.address)
+            .createEncryptedInput(await token.getAddress(), agent1.address)
             .add64(amount)
             .encrypt();
           params.push(handles[0], inputProof);
         } else {
-          await token.connect(anyone).createEncryptedAmount(amount);
-          params.push(await token.connect(anyone).createEncryptedAmount.staticCall(amount));
+          await token.connect(agent1).createEncryptedAmount(amount);
+          params.push(await token.connect(agent1).createEncryptedAmount.staticCall(amount));
         }
         await token.connect(agent1).blockUser(anyone);
         await expect(
           token
-            .connect(anyone)
+            .connect(agent1)
             [
               withProof
                 ? 'forceConfidentialTransferFrom(address,address,bytes32,bytes)'
                 : 'forceConfidentialTransferFrom(address,address,bytes32)'
             ](...params),
         )
-          .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
-          .withArgs(anyone.address, agentRole);
+          .to.be.revertedWithCustomError(token, 'UserRestricted')
+          .withArgs(anyone.address);
       });
     }
   });
