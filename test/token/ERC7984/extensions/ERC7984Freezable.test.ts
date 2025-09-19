@@ -71,37 +71,6 @@ describe('ERC7984Freezable', function () {
     ).to.eventually.equal(900);
   });
 
-  it('should not set confidential frozen if not called by freezer', async function () {
-    const { token, holder, recipient, anyone } = await deployFixture();
-    const encryptedRecipientMintInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), holder.address)
-      .add64(1000)
-      .encrypt();
-    await token
-      .connect(holder)
-      ['$_mint(address,bytes32,bytes)'](
-        recipient.address,
-        encryptedRecipientMintInput.handles[0],
-        encryptedRecipientMintInput.inputProof,
-      );
-    const encryptedInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), anyone.address)
-      .add64(100)
-      .encrypt();
-
-    await expect(
-      token
-        .connect(anyone)
-        ['$_setConfidentialFrozen(address,bytes32,bytes)'](
-          recipient.address,
-          encryptedInput.handles[0],
-          encryptedInput.inputProof,
-        ),
-    )
-      .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
-      .withArgs(anyone.address, ethers.id('FREEZER_ROLE'));
-  });
-
   it('should transfer max available', async function () {
     const { token, holder, recipient, freezer, anyone } = await deployFixture();
     const encryptedRecipientMintInput = await fhevm
@@ -206,18 +175,5 @@ describe('ERC7984Freezable', function () {
         recipient,
       ),
     ).to.eventually.equal(1000);
-  });
-
-  it('should not set confidential frozen if unauthorized', async function () {
-    const { token, recipient, freezer, anyone } = await deployFixture();
-    const encryptedInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), freezer.address)
-      .add64(100)
-      .encrypt();
-    await expect(
-      token.connect(anyone)['$_setConfidentialFrozen(address,bytes32)'](recipient.address, encryptedInput.handles[0]),
-    )
-      .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
-      .withArgs(anyone.address, ethers.id('FREEZER_ROLE'));
   });
 });

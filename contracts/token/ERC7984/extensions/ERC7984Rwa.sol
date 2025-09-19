@@ -211,12 +211,6 @@ abstract contract ERC7984Rwa is
         return super._update(from, to, encryptedAmount);
     }
 
-    /**
-     * @dev Internal function which reverts if `msg.sender` is not authorized as a freezer.
-     * This freezer role is only granted to admin or agent.
-     */
-    function _checkFreezer() internal override onlyAgent {}
-
     /// @dev Checks if a transfer follows token compliance.
     function _isCompliantTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (bool);
 
