@@ -3,7 +3,7 @@
 pragma solidity ^0.8.24;
 
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {FHE, euint64, externalEuint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Impl} from "@fhevm/solidity/lib/Impl.sol";
 import {ERC7984Rwa} from "../../token/ERC7984/extensions/ERC7984Rwa.sol";
 import {FHESafeMath} from "../../utils/FHESafeMath.sol";
@@ -13,6 +13,9 @@ import {HandleAccessManager} from "../../utils/HandleAccessManager.sol";
 contract ERC7984RwaMock is ERC7984Rwa, HandleAccessManager, SepoliaConfig {
     mapping(address account => euint64 encryptedAmount) private _frozenBalances;
     bool public compliantTransfer;
+
+    event PostTransfer();
+    event PostForceTransfer();
 
     constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984Rwa(name, symbol, tokenUri) {}
 
@@ -33,12 +36,28 @@ contract ERC7984RwaMock is ERC7984Rwa, HandleAccessManager, SepoliaConfig {
         return _mint(to, FHE.asEuint64(amount));
     }
 
-    function _isCompliantTransfer(
+    function _preCheckTransfer(
         address /*from*/,
         address /*to*/,
         euint64 /*encryptedAmount*/
-    ) internal override returns (bool) {
-        return compliantTransfer;
+    ) internal override returns (ebool) {
+        return FHE.asEbool(compliantTransfer);
+    }
+
+    function _preCheckForceTransfer(
+        address /*from*/,
+        address /*to*/,
+        euint64 /*encryptedAmount*/
+    ) internal override returns (ebool) {
+        return FHE.asEbool(compliantTransfer);
+    }
+
+    function _postTransfer(address /*from*/, address /*to*/, euint64 /*encryptedAmount*/) internal override {
+        emit PostTransfer();
+    }
+
+    function _postForceTransfer(address /*from*/, address /*to*/, euint64 /*encryptedAmount*/) internal override {
+        emit PostForceTransfer();
     }
 
     function _validateHandleAllowance(bytes32 handle) internal view override onlyAgent {}
