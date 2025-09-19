@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.27;
 
+import {IERC7984Restricted} from "../../../interfaces/IERC7984Restricted.sol";
 import {ERC7984, euint64} from "../ERC7984.sol";
 
 /**
@@ -13,20 +14,8 @@ import {ERC7984, euint64} from "../ERC7984.sol";
  * a blocklist. Developers can override {isUserAllowed} to check that `restriction == ALLOWED`
  * to implement an allowlist.
  */
-abstract contract ERC7984Restricted is ERC7984 {
-    enum Restriction {
-        DEFAULT, // User has no explicit restriction
-        BLOCKED, // User is explicitly blocked
-        ALLOWED // User is explicitly allowed
-    }
-
+abstract contract ERC7984Restricted is ERC7984, IERC7984Restricted {
     mapping(address account => Restriction) private _restrictions;
-
-    /// @dev Emitted when a user account's restriction is updated.
-    event UserRestrictionUpdated(address indexed account, Restriction restriction);
-
-    /// @dev The operation failed because the user account is restricted.
-    error UserRestricted(address account);
 
     /// @dev Returns the restriction of a user account.
     function getRestriction(address account) public view virtual returns (Restriction) {
@@ -57,10 +46,13 @@ abstract contract ERC7984Restricted is ERC7984 {
      *
      * * `from` must be allowed to transfer tokens (see {isUserAllowed}).
      * * `to` must be allowed to receive tokens (see {isUserAllowed}).
+     *
+     * The default restriction behaviour can be changed (for a pass-through for instance) by overriding
+     * {_checkRestrictionFrom} and/or {_checkRestrictionTo}.
      */
     function _update(address from, address to, euint64 value) internal virtual override returns (euint64) {
-        if (from != address(0)) _checkRestriction(from); // Not minting
-        if (to != address(0)) _checkRestriction(to); // Not burning
+        _checkRestrictionFrom(from);
+        _checkRestrictionTo(to);
         return super._update(from, to, value);
     }
 
@@ -90,5 +82,25 @@ abstract contract ERC7984Restricted is ERC7984 {
     /// @dev Checks if a user account is restricted. Reverts with {ERC20Restricted} if so.
     function _checkRestriction(address account) internal view virtual {
         require(isUserAllowed(account), UserRestricted(account));
+    }
+
+    /**
+     * @dev Internal function which checks restriction of the `from` account before a transfer.
+     * Working with {_update} function.
+     */
+    function _checkRestrictionFrom(address account) internal view virtual {
+        if (account != address(0)) {
+            _checkRestriction(account); // Not minting
+        }
+    }
+
+    /**
+     * @dev Internal function which checks restriction of the `to` account before a transfer.
+     * Working with {_update} function.
+     */
+    function _checkRestrictionTo(address account) internal view virtual {
+        if (account != address(0)) {
+            _checkRestriction(account); // Not burning
+        }
     }
 }

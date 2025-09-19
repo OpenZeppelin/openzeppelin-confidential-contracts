@@ -41,25 +41,56 @@ abstract contract ERC7984Freezable is ERC7984 {
 
     /// @dev Internal function to freeze a confidential amount of tokens for an account.
     function _setConfidentialFrozen(address account, euint64 encryptedAmount) internal virtual {
-        _checkFreezer();
         FHE.allowThis(encryptedAmount);
         FHE.allow(encryptedAmount, account);
         _frozenBalances[account] = encryptedAmount;
         emit TokensFrozen(account, encryptedAmount);
     }
 
-    /// @dev Unimplemented function that must revert if `msg.sender` is not authorized as a freezer.
-    function _checkFreezer() internal virtual;
+    /**
+     * @dev Internal function which gets unfrozen available of the `from` account before a transfer.
+     * Working with {_update} function.
+     */
+    function _getUnfrozenAvailableFrom(address account, euint64 encryptedAmount) internal virtual returns (euint64) {
+        if (account != address(0)) {
+            return
+                FHE.select(FHE.le(encryptedAmount, confidentialAvailable(account)), encryptedAmount, FHE.asEuint64(0));
+        }
+        return encryptedAmount;
+    }
+
+    /**
+     * @dev Internal function which resets frozen of the `from` account to its balance after a transfer.
+     * Working with {_update} function.
+     */
+    function _refreshFrozenFrom(address account, euint64 encryptedAmount) internal virtual {
+        if (account != address(0)) {
+            euint64 frozen = confidentialFrozen(account);
+            if (!FHE.isInitialized(frozen)) {
+                return;
+            }
+            // Reset frozen to balance if transferred more than available
+            _setConfidentialFrozen(
+                account,
+                FHE.select(
+                    FHE.gt(encryptedAmount, confidentialAvailable(account)),
+                    confidentialBalanceOf(account),
+                    frozen
+                )
+            );
+        }
+    }
 
     /**
      * @dev See {ERC7984-_update}. The `from` account must have sufficient unfrozen balance,
      * otherwise 0 tokens are transferred.
+     * The default freezing behaviour can be changed (for a pass-through for instance) by overriding
+     * {_getUnfrozenAvailableFrom} and/or {_refreshFrozenFrom}.
      */
     function _update(address from, address to, euint64 encryptedAmount) internal virtual override returns (euint64) {
-        if (from != address(0)) {
-            euint64 unfrozen = confidentialAvailable(from);
-            encryptedAmount = FHE.select(FHE.le(encryptedAmount, unfrozen), encryptedAmount, FHE.asEuint64(0));
-        }
-        return super._update(from, to, encryptedAmount);
+        encryptedAmount = _getUnfrozenAvailableFrom(from, encryptedAmount);
+        euint64 transferred = super._update(from, to, encryptedAmount);
+        _refreshFrozenFrom(from, transferred);
+        return transferred;
     }
 }
