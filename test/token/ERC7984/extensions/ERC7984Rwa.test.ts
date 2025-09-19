@@ -1,9 +1,4 @@
-import {
-  IAccessControl__factory,
-  IERC165__factory,
-  IERC7984__factory,
-  IERC7984RwaBase__factory,
-} from '../../../../types';
+import { IAccessControl__factory, IERC165__factory, IERC7984__factory, IERC7984Rwa__factory } from '../../../../types';
 import { callAndGetResult } from '../../../helpers/event';
 import { getFunctions, getInterfaceId } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
@@ -28,14 +23,12 @@ describe('ERC7984Rwa', function () {
   describe('ERC165', async function () {
     it('should support interface', async function () {
       const { token } = await fixture();
-      const interfaceFactories = [
-        IERC7984RwaBase__factory,
-        IERC7984__factory,
-        IERC165__factory,
-        IAccessControl__factory,
-      ];
-      for (const interfaceFactory of interfaceFactories) {
-        const functions = getFunctions(interfaceFactory);
+      const erc7984RwaFunctions = [IERC7984Rwa__factory, IERC7984__factory, IERC165__factory].flatMap(
+        interfaceFactory => getFunctions(interfaceFactory),
+      );
+      const erc7984Functions = getFunctions(IERC7984__factory);
+      const erc165Functions = getFunctions(IERC165__factory);
+      for (let functions of [erc7984RwaFunctions, erc7984Functions, erc165Functions]) {
         expect(await token.supportsInterface(getInterfaceId(functions))).is.true;
       }
     });

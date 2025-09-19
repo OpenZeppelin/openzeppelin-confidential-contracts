@@ -2,24 +2,16 @@
 pragma solidity ^0.8.24;
 
 import {externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC7984} from "./IERC7984.sol";
 import {IERC7984Restricted} from "./IERC7984Restricted.sol";
 
 /// @dev Base interface for confidential RWA contracts.
-interface IERC7984RwaBase {
+interface IERC7984Rwa is IERC7984, IERC165 {
     /// @dev Emitted when the contract is paused.
     event Paused(address account);
     /// @dev Emitted when the contract is unpaused.
     event Unpaused(address account);
-
-    /// @dev The caller account is not authorized to perform an operation.
-    error OwnableUnauthorizedAccount(address account);
-    /// @dev The owner is not a valid owner account. (eg. `address(0)`)
-    error OwnableInvalidOwner(address owner);
-    /// @dev The operation failed because the contract is paused.
-    error EnforcedPause();
 
     /// @dev Returns true if the contract is paused, and false otherwise.
     function paused() external view returns (bool);
@@ -79,9 +71,6 @@ interface IERC7984RwaBase {
     /// @dev Receives and executes a batch of function calls on this contract.
     function multicall(bytes[] calldata data) external returns (bytes[] memory results);
 }
-
-/// @dev Full interface for confidential RWA contracts.
-interface IERC7984Rwa is IERC7984, IERC7984RwaBase, IERC165, IAccessControl {}
 
 /// @dev Interface for confidential RWA compliance.
 interface IERC7984RwaCompliance {
