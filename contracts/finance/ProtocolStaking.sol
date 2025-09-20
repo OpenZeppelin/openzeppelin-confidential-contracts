@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.22;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC20VotesUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 interface IERC20Mintable is IERC20 {
     function mint(address to, uint256 amount) external;
@@ -42,6 +42,9 @@ contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgra
     event OperatorRemoved(address operator);
     event TokensStaked(address operator, uint256 amount);
     event TokensUnstaked(address operator, uint256 amount);
+    event RewardRateSet(uint256 rewardRate);
+    event UnstakeCooldownPeriodSet(uint256 unstakeCooldownPeriod);
+    event RewardsRecipientSet(address indexed account, address indexed recipient);
 
     error InvalidAmount();
     error OperatorAlreadyExists(address operator);
@@ -129,14 +132,20 @@ contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgra
     function setRewardRate(uint256 rewardRate) public virtual onlyOwner {
         _updateRewards();
         _rewardRate = rewardRate;
+
+        emit RewardRateSet(rewardRate);
     }
 
     function setUnstakeCooldownPeriod(uint256 unstakeCooldownPeriod) public virtual onlyOwner {
         _unstakeCooldownPeriod = unstakeCooldownPeriod;
+
+        emit UnstakeCooldownPeriodSet(unstakeCooldownPeriod);
     }
 
     function setRewardsRecipient(address recipient) public virtual {
         _rewardsRecipient[msg.sender] = recipient;
+
+        emit RewardsRecipientSet(msg.sender, recipient);
     }
 
     /// @dev Gets the staking weight for a given raw amount.
