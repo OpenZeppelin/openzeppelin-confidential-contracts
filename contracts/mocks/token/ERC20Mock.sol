@@ -13,6 +13,10 @@ contract ERC20Mock is ERC1363 {
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }
+
+    function mint(address to, uint256 amount) public virtual {
+        _mint(to, amount);
+    }
 }
 
 contract ERC20RevertDecimalsMock is ERC20Mock {
