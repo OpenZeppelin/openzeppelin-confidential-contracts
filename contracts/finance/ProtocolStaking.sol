@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.27;
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {AccessControlDefaultAdminRulesUpgradeable} from "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlDefaultAdminRulesUpgradeable.sol";
 import {ERC20VotesUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -16,7 +16,7 @@ interface IERC20Mintable is IERC20 {
     function mint(address to, uint256 amount) external;
 }
 
-contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgradeable {
+contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20VotesUpgradeable, UUPSUpgradeable {
     using EnumerableSet for EnumerableSet.AddressSet;
     using Checkpoints for Checkpoints.Trace208;
     using SafeERC20 for IERC20;
@@ -26,7 +26,7 @@ contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgra
         uint256 rewards;
     }
 
-    EnumerableSet.AddressSet private _operators;
+    bytes32 private constant OPERATOR_ROLE = keccak256(bytes("operator-role"));
     address private _stakingToken;
     uint256 private _totalStakedWeight;
     uint256 private _lastUpdateTimestamp;
@@ -62,7 +62,7 @@ contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgra
         address stakingToken_,
         address governor
     ) public virtual initializer {
-        __Ownable_init(governor);
+        __AccessControlDefaultAdminRules_init(0, governor);
         __ERC20_init(name, symbol);
         __EIP712_init(name, version);
         _stakingToken = stakingToken_;
@@ -106,8 +106,9 @@ contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgra
         }
     }
 
-    function addOperator(address account) public virtual onlyOwner {
-        require(_operators.add(account), OperatorAlreadyExists(account));
+    function addOperator(address account) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(!isOperator(account), OperatorAlreadyExists(account));
+        _grantRole(OPERATOR_ROLE, account);
 
         _updateRewards();
         _userStakingInfo[account].rewardsPerUnitPaid = _rewardsPerUnit;
@@ -117,8 +118,9 @@ contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgra
         emit OperatorAdded(account);
     }
 
-    function removeOperator(address account) public virtual onlyOwner {
-        require(_operators.remove(account), OperatorDoesNotExist(account));
+    function removeOperator(address account) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(isOperator(account), OperatorDoesNotExist(account));
+        _revokeRole(OPERATOR_ROLE, account);
 
         _updateRewards();
         _updateRewards(account);
@@ -129,14 +131,14 @@ contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgra
         emit OperatorRemoved(account);
     }
 
-    function setRewardRate(uint256 rewardRate) public virtual onlyOwner {
+    function setRewardRate(uint256 rewardRate) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
         _updateRewards();
         _rewardRate = rewardRate;
 
         emit RewardRateSet(rewardRate);
     }
 
-    function setUnstakeCooldownPeriod(uint256 unstakeCooldownPeriod) public virtual onlyOwner {
+    function setUnstakeCooldownPeriod(uint256 unstakeCooldownPeriod) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
         _unstakeCooldownPeriod = unstakeCooldownPeriod;
 
         emit UnstakeCooldownPeriodSet(unstakeCooldownPeriod);
@@ -162,12 +164,8 @@ contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgra
         return _totalStakedWeight;
     }
 
-    function operators() public view virtual returns (address[] memory) {
-        return _operators.values();
-    }
-
     function isOperator(address account) public view virtual returns (bool) {
-        return _operators.contains(account);
+        return hasRole(_operatorRole, account);
     }
 
     /// @notice Returns the amount of tokens cooling down for the given account `account`.
@@ -250,7 +248,7 @@ contract ProtocolStaking is OwnableUpgradeable, ERC20VotesUpgradeable, UUPSUpgra
         _lastUpdateTimestamp = block.timestamp;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
     // MARK: Disable Transfers
     function transfer(address, uint256) public virtual override returns (bool) {

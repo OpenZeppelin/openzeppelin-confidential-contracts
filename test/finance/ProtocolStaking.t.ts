@@ -293,13 +293,11 @@ describe.only('Protocol Staking', function () {
           .to.emit(this.mock, 'OperatorAdded')
           .withArgs(this.staker1.address);
       });
-      it('should reflect in operator list', async function () {
-        await expect(this.mock.operators()).to.eventually.deep.equal([]);
 
+      it('should reflect in operator list', async function () {
         await this.mock.connect(this.admin).addOperator(this.staker1.address);
         await this.mock.connect(this.admin).addOperator(this.staker2.address);
 
-        await expect(this.mock.operators()).to.eventually.deep.equal([this.staker1.address, this.staker2.address]);
         await expect(this.mock.isOperator(this.staker1.address)).to.eventually.equal(true);
         await expect(this.mock.isOperator(this.staker2.address)).to.eventually.equal(true);
         await expect(this.mock.isOperator(this.admin.address)).to.eventually.equal(false);
@@ -336,7 +334,6 @@ describe.only('Protocol Staking', function () {
       it('should reflect in operator list', async function () {
         await this.mock.connect(this.admin).removeOperator(this.staker1.address);
 
-        await expect(this.mock.operators()).to.eventually.deep.equal([this.staker2.address]);
         await expect(this.mock.isOperator(this.staker1.address)).to.eventually.equal(false);
         await expect(this.mock.isOperator(this.staker2.address)).to.eventually.equal(true);
       });
