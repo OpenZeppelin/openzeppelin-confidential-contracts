@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
-import {Impl} from "@fhevm/solidity/lib/Impl.sol";
 import {ERC7984Rwa} from "../../token/ERC7984/extensions/ERC7984Rwa.sol";
 import {FHESafeMath} from "../../utils/FHESafeMath.sol";
 import {HandleAccessManager} from "../../utils/HandleAccessManager.sol";
@@ -14,8 +13,8 @@ contract ERC7984RwaMock is ERC7984Rwa, HandleAccessManager, SepoliaConfig {
     mapping(address account => euint64 encryptedAmount) private _frozenBalances;
     bool public compliantTransfer;
 
-    event PostTransfer();
-    event PostForceTransfer();
+    event PostTransfer(address from, address to, euint64 encryptedAmount);
+    event PostForceTransfer(address from, address to, euint64 encryptedAmount);
 
     constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984Rwa(name, symbol, tokenUri) {}
 
@@ -52,12 +51,12 @@ contract ERC7984RwaMock is ERC7984Rwa, HandleAccessManager, SepoliaConfig {
         return FHE.asEbool(compliantTransfer);
     }
 
-    function _postTransfer(address /*from*/, address /*to*/, euint64 /*encryptedAmount*/) internal override {
-        emit PostTransfer();
+    function _postTransfer(address from, address to, euint64 encryptedAmount) internal override {
+        emit PostTransfer(from, to, encryptedAmount);
     }
 
-    function _postForceTransfer(address /*from*/, address /*to*/, euint64 /*encryptedAmount*/) internal override {
-        emit PostForceTransfer();
+    function _postForceTransfer(address from, address to, euint64 encryptedAmount) internal override {
+        emit PostForceTransfer(from, to, encryptedAmount);
     }
 
     function _validateHandleAllowance(bytes32 handle) internal view override onlyAgent {}

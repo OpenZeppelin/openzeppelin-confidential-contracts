@@ -1,10 +1,4 @@
-import {
-  IAccessControl__factory,
-  IERC165__factory,
-  IERC7984__factory,
-  IERC7984Rwa__factory,
-  IERC7984RwaBase__factory,
-} from '../../../../types';
+import { IERC165__factory, IERC7984__factory, IERC7984Rwa__factory } from '../../../../types';
 import { callAndGetResult } from '../../../helpers/event';
 import { getFunctions, getInterfaceId } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
@@ -120,6 +114,80 @@ describe('ERC7984Rwa', function () {
     }
   });
 
+  describe('ERC7984Freezable', async function () {
+    for (let withProof of [false, true]) {
+      it(`should set and get confidential frozen ${withProof ? 'with proof' : ''}`, async function () {
+        const { token, agent1, recipient } = await fixture();
+        const amount = 100;
+        let params = [recipient.address] as unknown as [
+          account: AddressLike,
+          encryptedAmount: BytesLike,
+          inputProof: BytesLike,
+        ];
+        if (withProof) {
+          const { handles, inputProof } = await fhevm
+            .createEncryptedInput(await token.getAddress(), agent1.address)
+            .add64(amount)
+            .encrypt();
+          params.push(handles[0], inputProof);
+        } else {
+          await token.connect(agent1).createEncryptedAmount(amount);
+          params.push(await token.connect(agent1).createEncryptedAmount.staticCall(amount));
+        }
+        await expect(
+          await token
+            .connect(agent1)
+            [withProof ? 'setConfidentialFrozen(address,bytes32,bytes)' : 'setConfidentialFrozen(address,bytes32)'](
+              ...params,
+            ),
+        ).to.emit(token, 'TokensFrozen');
+        const frozenHandle = await token.confidentialFrozen(recipient.address);
+        expect(frozenHandle).to.equal(ethers.hexlify(params[1]));
+      });
+    }
+
+    for (let withProof of [false, true]) {
+      it(`should not set confidential frozen ${withProof ? 'with proof' : ''} if not agent`, async function () {
+        const { token, recipient, anyone } = await fixture();
+        const amount = 100;
+        let params = [recipient.address] as unknown as [
+          account: AddressLike,
+          encryptedAmount: BytesLike,
+          inputProof: BytesLike,
+        ];
+        if (withProof) {
+          const { handles, inputProof } = await fhevm
+            .createEncryptedInput(await token.getAddress(), anyone.address)
+            .add64(amount)
+            .encrypt();
+          params.push(handles[0], inputProof);
+        } else {
+          await token.connect(anyone).createEncryptedAmount(amount);
+          params.push(await token.connect(anyone).createEncryptedAmount.staticCall(amount));
+        }
+        await expect(
+          token
+            .connect(anyone)
+            [withProof ? 'setConfidentialFrozen(address,bytes32,bytes)' : 'setConfidentialFrozen(address,bytes32)'](
+              ...params,
+            ),
+        )
+          .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
+          .withArgs(anyone.address, agentRole);
+      });
+    }
+
+    it(`should not set confidential frozen if amount not allowed`, async function () {
+      const { token, recipient, agent1, anyone } = await fixture();
+      const amount = 200;
+      await token.connect(anyone).createEncryptedAmount(amount);
+      const encryptedAmount = await token.connect(anyone).createEncryptedAmount.staticCall(amount);
+      await expect(token.connect(agent1)['setConfidentialFrozen(address,bytes32)'](recipient.address, encryptedAmount))
+        .to.be.revertedWithCustomError(token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
+        .withArgs(encryptedAmount, agent1.address);
+    });
+  });
+
   describe('Mintable', async function () {
     for (const withProof of [true, false]) {
       it(`should mint ${withProof ? 'with proof' : ''}`, async function () {
@@ -159,21 +227,34 @@ describe('ERC7984Rwa', function () {
       });
     }
 
-    it('should not mint if not agent', async function () {
-      const { token, recipient, anyone } = await fixture();
-      const encryptedInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), anyone.address)
-        .add64(100)
-        .encrypt();
-      await token.$_setCompliantTransfer();
-      await expect(
-        token
-          .connect(anyone)
-          ['confidentialMint(address,bytes32,bytes)'](recipient, encryptedInput.handles[0], encryptedInput.inputProof),
-      )
-        .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
-        .withArgs(anyone.address, agentRole);
-    });
+    for (let withProof of [false, true]) {
+      it(`should not mint ${withProof ? 'with proof' : ''} if not agent`, async function () {
+        const { token, recipient, anyone } = await fixture();
+        const amount = 100;
+        let params = [recipient.address] as unknown as [
+          account: AddressLike,
+          encryptedAmount: BytesLike,
+          inputProof: BytesLike,
+        ];
+        if (withProof) {
+          const { handles, inputProof } = await fhevm
+            .createEncryptedInput(await token.getAddress(), anyone.address)
+            .add64(amount)
+            .encrypt();
+          params.push(handles[0], inputProof);
+        } else {
+          await token.connect(anyone).createEncryptedAmount(amount);
+          params.push(await token.connect(anyone).createEncryptedAmount.staticCall(amount));
+        }
+        await expect(
+          token
+            .connect(anyone)
+            [withProof ? 'confidentialMint(address,bytes32,bytes)' : 'confidentialMint(address,bytes32)'](...params),
+        )
+          .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
+          .withArgs(anyone.address, agentRole);
+      });
+    }
 
     it('should not mint if transfer not compliant', async function () {
       const { token, agent1, recipient } = await fixture();
@@ -259,21 +340,34 @@ describe('ERC7984Rwa', function () {
       });
     }
 
-    it('should not burn if not agent', async function () {
-      const { token, recipient, anyone } = await fixture();
-      const encryptedInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), anyone.address)
-        .add64(100)
-        .encrypt();
-      await token.$_setCompliantTransfer();
-      await expect(
-        token
-          .connect(anyone)
-          ['confidentialBurn(address,bytes32,bytes)'](recipient, encryptedInput.handles[0], encryptedInput.inputProof),
-      )
-        .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
-        .withArgs(anyone.address, agentRole);
-    });
+    for (let withProof of [false, true]) {
+      it(`should not burn ${withProof ? 'with proof' : ''} if not agent`, async function () {
+        const { token, recipient, anyone } = await fixture();
+        const amount = 100;
+        let params = [recipient.address] as unknown as [
+          account: AddressLike,
+          encryptedAmount: BytesLike,
+          inputProof: BytesLike,
+        ];
+        if (withProof) {
+          const { handles, inputProof } = await fhevm
+            .createEncryptedInput(await token.getAddress(), anyone.address)
+            .add64(amount)
+            .encrypt();
+          params.push(handles[0], inputProof);
+        } else {
+          await token.connect(anyone).createEncryptedAmount(amount);
+          params.push(await token.connect(anyone).createEncryptedAmount.staticCall(amount));
+        }
+        await expect(
+          token
+            .connect(anyone)
+            [withProof ? 'confidentialBurn(address,bytes32,bytes)' : 'confidentialBurn(address,bytes32)'](...params),
+        )
+          .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
+          .withArgs(anyone.address, agentRole);
+      });
+    }
 
     it('should not burn if transfer not compliant', async function () {
       const { token, agent1, recipient } = await fixture();
@@ -386,6 +480,28 @@ describe('ERC7984Rwa', function () {
       });
     }
 
+    it(`should force transfer without operation if non-initialized amount`, async function () {
+      const { token, recipient, agent1, anyone } = await fixture();
+      await expect(
+        token
+          .connect(agent1)
+          ['forceConfidentialTransferFrom(address,address,bytes32)'](
+            recipient.address,
+            anyone.address,
+            ethers.ZeroHash,
+          ),
+      ).to.not.be.reverted;
+      expect(
+        token
+          .connect(agent1)
+          ['forceConfidentialTransferFrom(address,address,bytes32)'].staticCall(
+            recipient.address,
+            anyone.address,
+            ethers.ZeroHash,
+          ),
+      ).to.eventually.equal(ethers.ZeroHash);
+    });
+
     it('should not force transfer if not compliant', async function () {
       const { token, agent1, recipient, anyone } = await fixture();
       const encryptedMint = await fhevm
@@ -488,6 +604,40 @@ describe('ERC7984Rwa', function () {
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, frozenHandle, await token.getAddress(), agent1),
         ).to.eventually.equal(75); // frozen got reset to balance
+      });
+    }
+
+    for (let withProof of [false, true]) {
+      it(`should not force transfer ${withProof ? 'with proof' : ''} if not agent`, async function () {
+        const { token, recipient, anyone } = await fixture();
+        const amount = 100;
+        let params = [recipient.address, anyone.address] as unknown as [
+          from: AddressLike,
+          to: AddressLike,
+          encryptedAmount: BytesLike,
+          inputProof: BytesLike,
+        ];
+        if (withProof) {
+          const { handles, inputProof } = await fhevm
+            .createEncryptedInput(await token.getAddress(), anyone.address)
+            .add64(amount)
+            .encrypt();
+          params.push(handles[0], inputProof);
+        } else {
+          await token.connect(anyone).createEncryptedAmount(amount);
+          params.push(await token.connect(anyone).createEncryptedAmount.staticCall(amount));
+        }
+        await expect(
+          token
+            .connect(anyone)
+            [
+              withProof
+                ? 'forceConfidentialTransferFrom(address,address,bytes32,bytes)'
+                : 'forceConfidentialTransferFrom(address,address,bytes32)'
+            ](...params),
+        )
+          .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
+          .withArgs(anyone.address, agentRole);
       });
     }
 

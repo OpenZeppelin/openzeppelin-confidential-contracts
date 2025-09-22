@@ -95,7 +95,7 @@ abstract contract ERC7984Rwa is
     /// @dev Sets confidential frozen with proof.
     function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual onlyAgent {
         require(
-            FHE.isAllowed(encryptedAmount, account),
+            FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
         _setConfidentialFrozen(account, encryptedAmount);
