@@ -675,41 +675,6 @@ describe('ERC7984Rwa', function () {
           .withArgs(anyone.address);
       });
     }
-
-    for (const withProof of [true, false]) {
-      it(`should not force transfer if receiver blocked ${withProof ? 'with proof' : ''}`, async function () {
-        const { token, agent1, recipient, anyone } = await fixture();
-        let params = [recipient.address, anyone.address] as unknown as [
-          from: AddressLike,
-          to: AddressLike,
-          encryptedAmount: BytesLike,
-          inputProof: BytesLike,
-        ];
-        const amount = 100;
-        if (withProof) {
-          const { handles, inputProof } = await fhevm
-            .createEncryptedInput(await token.getAddress(), agent1.address)
-            .add64(amount)
-            .encrypt();
-          params.push(handles[0], inputProof);
-        } else {
-          await token.connect(agent1).createEncryptedAmount(amount);
-          params.push(await token.connect(agent1).createEncryptedAmount.staticCall(amount));
-        }
-        await token.connect(agent1).blockUser(anyone);
-        await expect(
-          token
-            .connect(agent1)
-            [
-              withProof
-                ? 'forceConfidentialTransferFrom(address,address,bytes32,bytes)'
-                : 'forceConfidentialTransferFrom(address,address,bytes32)'
-            ](...params),
-        )
-          .to.be.revertedWithCustomError(token, 'UserRestricted')
-          .withArgs(anyone.address);
-      });
-    }
   });
 
   describe('Transfer', async function () {
