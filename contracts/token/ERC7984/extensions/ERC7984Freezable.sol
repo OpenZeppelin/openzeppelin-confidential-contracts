@@ -48,15 +48,19 @@ abstract contract ERC7984Freezable is ERC7984 {
     }
 
     /**
-     * @dev Internal function which gets unfrozen available of the `from` account before a transfer.
+     * @dev Internal function which returns the amount to be updated if that amount is not exceeding
+     * the frozen balance of the `from` account. Otherwise if it is exceeding it returns 0.
      * Working with {_update} function.
      */
-    function _getUnfrozenAvailableFrom(address account, euint64 encryptedAmount) internal virtual returns (euint64) {
+    function _getUpdateAmountIfNotExceedingFrozenFrom(
+        address account,
+        euint64 requestedAmount
+    ) internal virtual returns (euint64) {
         if (account != address(0)) {
             return
-                FHE.select(FHE.le(encryptedAmount, confidentialAvailable(account)), encryptedAmount, FHE.asEuint64(0));
+                FHE.select(FHE.le(requestedAmount, confidentialAvailable(account)), requestedAmount, FHE.asEuint64(0));
         }
-        return encryptedAmount;
+        return requestedAmount;
     }
 
     /**
@@ -85,10 +89,10 @@ abstract contract ERC7984Freezable is ERC7984 {
      * @dev See {ERC7984-_update}. The `from` account must have sufficient unfrozen balance,
      * otherwise 0 tokens are transferred.
      * The default freezing behaviour can be changed (for a pass-through for instance) by overriding
-     * {_getUnfrozenAvailableFrom} and/or {_refreshFrozenFrom}.
+     * {_getUpdateAmountIfNotExceedingFrozenFrom} and/or {_refreshFrozenFrom}.
      */
     function _update(address from, address to, euint64 encryptedAmount) internal virtual override returns (euint64) {
-        encryptedAmount = _getUnfrozenAvailableFrom(from, encryptedAmount);
+        encryptedAmount = _getUpdateAmountIfNotExceedingFrozenFrom(from, encryptedAmount);
         euint64 transferred = super._update(from, to, encryptedAmount);
         _refreshFrozenFrom(from, transferred);
         return transferred;

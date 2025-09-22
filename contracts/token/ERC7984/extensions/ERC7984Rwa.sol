@@ -199,11 +199,14 @@ abstract contract ERC7984Rwa is
     /**
      * @dev Bypasses the frozen check of the `from` account when performing a {forceConfidentialTransferFrom}.
      */
-    function _getUnfrozenAvailableFrom(address account, euint64 encryptedAmount) internal override returns (euint64) {
+    function _getUpdateAmountIfNotExceedingFrozenFrom(
+        address account,
+        euint64 encryptedAmount
+    ) internal override returns (euint64) {
         if (_isForceTransfer()) {
             return encryptedAmount;
         }
-        return super._getUnfrozenAvailableFrom(account, encryptedAmount);
+        return super._getUpdateAmountIfNotExceedingFrozenFrom(account, encryptedAmount);
     }
 
     /// @dev Internal function which updates confidential balances while performing frozen, restriction and compliance checks.
