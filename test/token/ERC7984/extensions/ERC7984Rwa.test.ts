@@ -13,7 +13,7 @@ const agentRole = ethers.id('AGENT_ROLE');
 
 const fixture = async () => {
   const [admin, agent1, agent2, recipient, anyone] = await ethers.getSigners();
-  const token = await ethers.deployContract('ERC7984RwaMock', ['name', 'symbol', 'uri']);
+  const token = await ethers.deployContract('ERC7984RwaMock', ['name', 'symbol', 'uri', admin.address]);
   await token.connect(admin).addAgent(agent1);
   token.connect(anyone);
   return { token, admin, agent1, agent2, recipient, anyone };
@@ -256,6 +256,16 @@ describe('ERC7984Rwa', function () {
       });
     }
 
+    it(`should not mint if amount not allowed`, async function () {
+      const { token, recipient, agent1, anyone } = await fixture();
+      const amount = 200;
+      await token.connect(anyone).createEncryptedAmount(amount);
+      const encryptedAmount = await token.connect(anyone).createEncryptedAmount.staticCall(amount);
+      await expect(token.connect(agent1)['confidentialMint(address,bytes32)'](recipient.address, encryptedAmount))
+        .to.be.revertedWithCustomError(token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
+        .withArgs(encryptedAmount, agent1.address);
+    });
+
     it('should not mint if transfer not compliant', async function () {
       const { token, agent1, recipient } = await fixture();
       const encryptedInput = await fhevm
@@ -368,6 +378,16 @@ describe('ERC7984Rwa', function () {
           .withArgs(anyone.address, agentRole);
       });
     }
+
+    it(`should not burn if amount not allowed`, async function () {
+      const { token, recipient, agent1, anyone } = await fixture();
+      const amount = 200;
+      await token.connect(anyone).createEncryptedAmount(amount);
+      const encryptedAmount = await token.connect(anyone).createEncryptedAmount.staticCall(amount);
+      await expect(token.connect(agent1)['confidentialBurn(address,bytes32)'](recipient.address, encryptedAmount))
+        .to.be.revertedWithCustomError(token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
+        .withArgs(encryptedAmount, agent1.address);
+    });
 
     it('should not burn if transfer not compliant', async function () {
       const { token, agent1, recipient } = await fixture();

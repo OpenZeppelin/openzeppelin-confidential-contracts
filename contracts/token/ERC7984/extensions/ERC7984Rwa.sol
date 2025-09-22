@@ -27,6 +27,10 @@ abstract contract ERC7984Rwa is
     AccessControl
 {
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
+    // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+    bytes4 private constant FORCE_CONFIDENTIAL_TRANSFER_FROM_SIG = 0x6c9c3c85;
+    // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
+    bytes4 private constant FORCE_CONFIDENTIAL_TRANSFER_FROM_WITH_PROOF_SIG = 0x44fd6e40;
 
     /// @dev Checks if the sender is an admin.
     modifier onlyAdmin() {
@@ -40,8 +44,13 @@ abstract contract ERC7984Rwa is
         _;
     }
 
-    constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984(name, symbol, tokenUri) {
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    constructor(
+        string memory name,
+        string memory symbol,
+        string memory tokenUri,
+        address admin
+    ) ERC7984(name, symbol, tokenUri) {
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
     /// @inheritdoc ERC165
@@ -50,16 +59,6 @@ abstract contract ERC7984Rwa is
             interfaceId == type(IERC7984Rwa).interfaceId ||
             interfaceId == type(IERC7984).interfaceId ||
             super.supportsInterface(interfaceId);
-    }
-
-    /// @dev Pauses contract.
-    function pause() public virtual onlyAgent {
-        _pause();
-    }
-
-    /// @dev Unpauses contract.
-    function unpause() public virtual onlyAgent {
-        _unpause();
     }
 
     /// @dev Returns true if has admin role, false otherwise.
@@ -82,6 +81,16 @@ abstract contract ERC7984Rwa is
         _revokeRole(AGENT_ROLE, account);
     }
 
+    /// @dev Pauses contract.
+    function pause() public virtual onlyAgent {
+        _pause();
+    }
+
+    /// @dev Unpauses contract.
+    function unpause() public virtual onlyAgent {
+        _unpause();
+    }
+
     /// @dev Blocks a user account.
     function blockUser(address account) public virtual onlyAgent {
         _blockUser(account);
@@ -90,15 +99,6 @@ abstract contract ERC7984Rwa is
     /// @dev Unblocks a user account.
     function unblockUser(address account) public virtual onlyAgent {
         _allowUser(account);
-    }
-
-    /// @dev Sets confidential frozen for an account with proof.
-    function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual onlyAgent {
-        require(
-            FHE.isAllowed(encryptedAmount, msg.sender),
-            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
-        );
-        _setConfidentialFrozen(account, encryptedAmount);
     }
 
     /// @dev Sets confidential frozen for an account.
@@ -110,18 +110,31 @@ abstract contract ERC7984Rwa is
         _setConfidentialFrozen(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
+    /// @dev Sets confidential frozen for an account with proof.
+    function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual onlyAgent {
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
+        _setConfidentialFrozen(account, encryptedAmount);
+    }
+
     /// @dev Mints confidential amount of tokens to account with proof.
     function confidentialMint(
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _confidentialMint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Mints confidential amount of tokens to account.
     function confidentialMint(address to, euint64 encryptedAmount) public virtual onlyAgent returns (euint64) {
-        return _confidentialMint(to, encryptedAmount);
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
+        return _mint(to, encryptedAmount);
     }
 
     /// @dev Burns confidential amount of tokens from account with proof.
@@ -130,12 +143,16 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _confidentialBurn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        return _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Burns confidential amount of tokens from account.
     function confidentialBurn(address account, euint64 encryptedAmount) public virtual onlyAgent returns (euint64) {
-        return _confidentialBurn(account, encryptedAmount);
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
+        return _burn(account, encryptedAmount);
     }
 
     /// @dev Forces transfer of confidential amount of tokens from account to account with proof by skipping compliance checks.
@@ -155,16 +172,6 @@ abstract contract ERC7984Rwa is
         euint64 encryptedAmount
     ) public virtual onlyAgent returns (euint64 transferred) {
         return _forceConfidentialTransferFrom(from, to, encryptedAmount);
-    }
-
-    /// @dev Internal function which mints confidential amount of tokens to account.
-    function _confidentialMint(address to, euint64 encryptedAmount) internal virtual returns (euint64) {
-        return _mint(to, encryptedAmount);
-    }
-
-    /// @dev Internal function which burns confidential amount of tokens from account.
-    function _confidentialBurn(address account, euint64 encryptedAmount) internal virtual returns (euint64) {
-        return _burn(account, encryptedAmount);
     }
 
     /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
@@ -239,7 +246,7 @@ abstract contract ERC7984Rwa is
     /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
     function _isForceTransfer() private pure returns (bool) {
         return
-            msg.sig == bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)")) ||
-            msg.sig == bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"));
+            msg.sig == FORCE_CONFIDENTIAL_TRANSFER_FROM_SIG ||
+            msg.sig == FORCE_CONFIDENTIAL_TRANSFER_FROM_WITH_PROOF_SIG;
     }
 }
