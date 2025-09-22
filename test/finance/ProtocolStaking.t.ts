@@ -113,6 +113,28 @@ describe.only('Protocol Staking', function () {
       // Should come back to this. Checking that ratio is correct
       expect((earned2 * 1000n) / earned1).to.be.closeToLessThanOrEqual(1050n, 5n);
     });
+
+    it('Second staker should not get reward from previous period', async function () {
+      await this.mock.connect(this.admin).addOperator(this.staker1.address);
+      await this.mock.connect(this.admin).addOperator(this.staker2.address);
+
+      // Reward 0.5 tokens per block in aggregate
+      await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
+      // staker1 stakes early and stars accumulating rewards
+      await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
+      await mine(9);
+      // staker2 stakes late
+      await this.mock.connect(this.staker2).stake(ethers.parseEther('100'));
+      await mine(9);
+      // stop rewards
+      await this.mock.connect(this.admin).setRewardRate(0);
+
+      const earned1 = await this.mock.earned(this.staker1);
+      const earned2 = await this.mock.earned(this.staker2);
+
+      expect(earned1 + earned2).to.be.closeToLessThanOrEqual(ethers.parseEther('10'), 10n);
+      expect(earned1).to.be.closeTo(earned2 * 3n, 5n);
+    });
   });
 
   describe('Unstaking', function () {
