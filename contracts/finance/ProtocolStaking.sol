@@ -9,7 +9,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
 
 interface IERC20Mintable is IERC20 {
@@ -17,7 +16,6 @@ interface IERC20Mintable is IERC20 {
 }
 
 contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20VotesUpgradeable, UUPSUpgradeable {
-    using EnumerableSet for EnumerableSet.AddressSet;
     using Checkpoints for Checkpoints.Trace208;
     using SafeERC20 for IERC20;
 
@@ -165,7 +163,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     }
 
     function isOperator(address account) public view virtual returns (bool) {
-        return hasRole(_operatorRole, account);
+        return hasRole(OPERATOR_ROLE, account);
     }
 
     /// @notice Returns the amount of tokens cooling down for the given account `account`.
