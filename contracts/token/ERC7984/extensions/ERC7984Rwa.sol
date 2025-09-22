@@ -177,7 +177,7 @@ abstract contract ERC7984Rwa is
             return encryptedAmount;
         }
         encryptedAmount = FHE.select(
-            _preCheckForceTransfer(from, to, encryptedAmount),
+            _preForceTransferCheck(from, to, encryptedAmount),
             encryptedAmount,
             FHE.asEuint64(0)
         );
@@ -218,17 +218,17 @@ abstract contract ERC7984Rwa is
         if (!FHE.isInitialized(encryptedAmount)) {
             return encryptedAmount;
         }
-        encryptedAmount = FHE.select(_preCheckTransfer(from, to, encryptedAmount), encryptedAmount, FHE.asEuint64(0));
+        encryptedAmount = FHE.select(_preTransferCheck(from, to, encryptedAmount), encryptedAmount, FHE.asEuint64(0));
         // frozen and restriction checks performed through inheritance
         transferred = super._update(from, to, encryptedAmount);
         _postTransfer(from, to, encryptedAmount);
     }
 
     /// @dev Checks if a transfer follows compliance.
-    function _preCheckTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);
+    function _preTransferCheck(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);
 
     /// @dev Checks if a force transfer follows compliance.
-    function _preCheckForceTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);
+    function _preForceTransferCheck(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);
 
     /// @dev Performs operation after transfer.
     function _postTransfer(address from, address to, euint64 encryptedAmount) internal virtual {}
