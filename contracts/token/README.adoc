@@ -10,6 +10,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 - {ERC7984Freezable}: An extension of {ERC7984}, which allows accounts granted the "freezer" role to freeze and unfreeze tokens.
 - {ERC7984ObserverAccess}: An extension of {ERC7984}, which allows each account to add an observer who is given access to their transfer and balance amounts.
 - {ERC7984Restricted}: An extension of {ERC7984} that implements user account transfer restrictions.
+- {ERC7984Omnibus}: An extension of {ERC7984} that emits additional events for omnibus transfers, which contain encrypted addresses for the sub-account sender and recipient.
 - {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}.
 
 == Core
@@ -20,6 +21,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 {{ERC7984Freezable}}
 {{ERC7984ObserverAccess}}
 {{ERC7984Restricted}}
+{{ERC7984Omnibus}}
 
 == Utilities
 {{ERC7984Utils}}

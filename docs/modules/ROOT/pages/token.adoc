@@ -80,7 +80,7 @@ Swapping from a confidential `ERC7984` to another confidential `ERC7984` is a bi
 
 [source,solidity]
 ----
-include::api:example$SwapERC7984ToERC7984.sol[lines=8..24]
+include::api:example$SwapERC7984ToERC7984.sol[lines=8..23]
 ----
 
 The steps are as follows:
@@ -97,6 +97,6 @@ Swapping from a confidential token to a non-confidential token is the most compl
 
 [source,solidity]
 ----
-include::api:example$SwapConfidentialToERC20.sol[]
+include::api:example$SwapERC7984ToERC20.sol[]
 ----
 

@@ -3,6 +3,7 @@ import { callAndGetResult } from '../helpers/event';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
+import { BigNumberish } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
 const MaxUint64 = BigInt('0xffffffffffffffff');
@@ -91,4 +92,71 @@ describe('FHESafeMath', function () {
       });
     }
   });
+
+  const addArgsOptions: [BigNumberish | undefined, BigNumberish | undefined, BigNumberish | undefined, boolean][] = [
+    // a + b = c & success
+    [undefined, undefined, undefined, true],
+    [undefined, 1, 1, true],
+    [1, undefined, 1, true],
+    [1, 1, 2, true],
+    [0, 1, 1, true],
+    [0, MaxUint64, MaxUint64, true],
+    [1, MaxUint64, 0, false],
+    [MaxUint64 - 1n, 2, 0, false],
+    [MaxUint64, MaxUint64, 0, false],
+  ];
+  const subArgsOptions: [BigNumberish | undefined, BigNumberish | undefined, BigNumberish | undefined, boolean][] = [
+    // a - b = c & success
+    [undefined, undefined, undefined, true],
+    [undefined, 0, 0, true],
+    [0, undefined, 0, true],
+    [1, 1, 0, true],
+    [1, undefined, 1, true],
+    [undefined, 1, 0, false],
+    [0, 1, 0, false],
+    [MaxUint64, MaxUint64, 0, true],
+  ];
+
+  for (const params of [
+    {
+      functionSignature: 'tryAdd(bytes32,bytes32)',
+      argsOptions: addArgsOptions,
+      operation: '+',
+    },
+    {
+      functionSignature: 'trySub(bytes32,bytes32)',
+      argsOptions: subArgsOptions,
+      operation: '-',
+    },
+  ]) {
+    describe(`try ${params.functionSignature.startsWith('tryAdd') ? 'add' : 'sub'}`, function () {
+      for (const args of params.argsOptions) {
+        it(`${args[0]} ${params.operation} ${args[1]} = ${args[2]} & ${
+          args[3] ? 'success' : 'failure'
+        }`, async function () {
+          const [a, b, c, expected] = args;
+          const [handleA] =
+            a !== undefined
+              ? await callAndGetResult(fheSafeMath.createHandle(a), handleCreatedSignature)
+              : [ethers.ZeroHash];
+          const [handleB] =
+            b !== undefined
+              ? await callAndGetResult(fheSafeMath.createHandle(b), handleCreatedSignature)
+              : [ethers.ZeroHash];
+          const [success, updated] = await callAndGetResult(
+            (fheSafeMath as any)[params.functionSignature](handleA, handleB),
+            resultComputedSignature,
+          );
+          if (c !== undefined) {
+            await expect(
+              fhevm.userDecryptEuint(FhevmType.euint64, updated, fheSafeMath.target, account),
+            ).to.eventually.equal(c);
+          } else {
+            expect(updated).to.eq(ethers.ZeroHash);
+          }
+          await expect(fhevm.userDecryptEbool(success, fheSafeMath.target, account)).to.eventually.equal(expected);
+        });
+      }
+    });
+  }
 });
