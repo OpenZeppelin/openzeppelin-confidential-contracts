@@ -191,7 +191,7 @@ abstract contract ERC7984Rwa is
     /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
     function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
         // bypassing `from` restriction check with {_checkSenderRestriction}
-        // bypassing `from` frozen check with {_getUpdateAmountIfNotExceedingFrozenFrom}
+        // bypassing `from` frozen check with {_checkSenderAmountNotFrozenBeforeUpdate}
         return super._update(from, to, encryptedAmount); // still performing `to` restriction check
     }
 

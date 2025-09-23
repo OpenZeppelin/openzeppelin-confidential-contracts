@@ -17,7 +17,6 @@ describe('ERC7984Freezable', function () {
       name,
       symbol,
       uri,
-      freezer.address,
     ])) as any as $ERC7984FreezableMock;
     const acl = IACL__factory.connect(ACL_ADDRESS, ethers.provider);
     return { token, acl, holder, recipient, freezer, operator, anyone };
