@@ -1,9 +1,8 @@
-import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { time, mine } from '@nomicfoundation/hardhat-network-helpers';
+import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import chai from 'chai';
-import { ethers, fhevm } from 'hardhat';
+import { ethers } from 'hardhat';
 
 // Extend Chai Assertion interface to include closeToBigInt
 declare global {
@@ -75,7 +74,7 @@ describe.only('Protocol Staking', function () {
 
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-      await mine(10);
+      await time.increase(10);
 
       await expect(this.mock.totalStakedWeight()).to.eventually.equal(0);
       await expect(this.mock.connect(this.staker1).earned(this.staker1)).to.eventually.equal(0);
@@ -87,7 +86,7 @@ describe.only('Protocol Staking', function () {
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await this.mock.connect(this.admin).addOperator(this.staker1.address);
-      await mine(9);
+      await time.increase(9);
       await this.mock.connect(this.admin).setRewardRate(0);
       await expect(this.mock.totalStakedWeight()).to.eventually.equal(
         await this.mock.weight(await this.mock.balanceOf(this.staker1)),
@@ -103,7 +102,7 @@ describe.only('Protocol Staking', function () {
       await this.mock.connect(this.admin).addOperator(this.staker1.address);
       await this.mock.connect(this.admin).addOperator(this.staker2.address);
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-      await mine(9);
+      await time.increase(9);
       await this.mock.connect(this.admin).setRewardRate(0);
 
       const earned1 = await this.mock.earned(this.staker1);
@@ -122,10 +121,10 @@ describe.only('Protocol Staking', function () {
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       // staker1 stakes early and stars accumulating rewards
       await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
-      await mine(9);
+      await time.increase(9);
       // staker2 stakes late
       await this.mock.connect(this.staker2).stake(ethers.parseEther('100'));
-      await mine(9);
+      await time.increase(9);
       // stop rewards
       await this.mock.connect(this.admin).setRewardRate(0);
 
@@ -264,7 +263,7 @@ describe.only('Protocol Staking', function () {
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await this.mock.connect(this.admin).addOperator(this.staker1.address);
-      await mine(9);
+      await time.increase(9);
       await this.mock.connect(this.admin).setRewardRate(0);
       const earned = await this.mock.earned(this.staker1);
       await expect(this.mock.claimRewards(this.staker1))
@@ -278,7 +277,7 @@ describe.only('Protocol Staking', function () {
 
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await this.mock.connect(this.admin).addOperator(this.staker1.address);
-      await mine(9);
+      await time.increase(9);
 
       await expect(this.mock.claimRewards(this.staker1))
         .to.emit(this.token, 'Transfer')
