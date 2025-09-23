@@ -1,10 +1,8 @@
-import constants from '../../node_modules/@fhevm/hardhat-plugin/src/constants';
 import { impersonateAccount, setBalance } from '@nomicfoundation/hardhat-network-helpers';
 import { Addressable, Signer, ethers } from 'ethers';
 import fs from 'fs';
+import { fhevm } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-
-export const ACL_ADDRESS = constants.ACL_CONTRACT_ADDRESS;
 
 const DEFAULT_BALANCE: bigint = 10000n * ethers.WeiPerEther;
 
@@ -14,11 +12,15 @@ export async function impersonate(hre: HardhatRuntimeEnvironment, account: strin
     .then(() => hre.ethers.getSigner(account));
 }
 
+export async function getAclAddress() {
+  return (await fhevm.getRelayerMetadata()).ACLAddress;
+}
+
 export async function allowHandle(hre: HardhatRuntimeEnvironment, from: Signer, to: Addressable, handle: string) {
   const acl_abi = JSON.parse(
     fs.readFileSync('node_modules/@fhevm/core-contracts/artifacts/contracts/ACL.sol/ACL.json', 'utf8'),
   ).abi;
-  const aclContract = await hre.ethers.getContractAt(acl_abi, ACL_ADDRESS);
+  const aclContract = await hre.ethers.getContractAt(acl_abi, await getAclAddress());
 
   await aclContract.connect(from).allow(handle, to);
 }
