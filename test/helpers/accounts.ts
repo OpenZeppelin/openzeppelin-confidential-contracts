@@ -12,12 +12,15 @@ export async function impersonate(hre: HardhatRuntimeEnvironment, account: strin
     .then(() => hre.ethers.getSigner(account));
 }
 
+export async function getAclAddress() {
+  return (await fhevm.getRelayerMetadata()).ACLAddress;
+}
+
 export async function allowHandle(hre: HardhatRuntimeEnvironment, from: Signer, to: Addressable, handle: string) {
   const acl_abi = JSON.parse(
     fs.readFileSync('node_modules/@fhevm/core-contracts/artifacts/contracts/ACL.sol/ACL.json', 'utf8'),
   ).abi;
-  const aclAddress = (await fhevm.getRelayerMetadata()).ACLAddress;
-  const aclContract = await hre.ethers.getContractAt(acl_abi, aclAddress);
+  const aclContract = await hre.ethers.getContractAt(acl_abi, await getAclAddress());
 
   await aclContract.connect(from).allow(handle, to);
 }
