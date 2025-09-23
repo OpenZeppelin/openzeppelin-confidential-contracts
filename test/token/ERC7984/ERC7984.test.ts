@@ -567,7 +567,7 @@ describe('ERC7984', function () {
       const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
       await this.token.connect(this.holder).discloseEncryptedAmount(holderBalanceHandle);
 
-      await expect(this.token.connect(this.holder).finalizeDiscloseEncryptedAmount(0, 0, [])).to.be.reverted;
+      await expect(this.token.connect(this.holder).finalizeDiscloseEncryptedAmount(0, '0x', '0x')).to.be.reverted;
     });
 
     afterEach(async function () {

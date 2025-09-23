@@ -68,7 +68,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 :confidentialTransferFromAndCall: pass:normal[xref:#ERC7984-confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes-[`++confidentialTransferFromAndCall++`]]
 :confidentialTransferFromAndCall: pass:normal[xref:#ERC7984-confidentialTransferFromAndCall-address-address-euint64-bytes-[`++confidentialTransferFromAndCall++`]]
 :discloseEncryptedAmount: pass:normal[xref:#ERC7984-discloseEncryptedAmount-euint64-[`++discloseEncryptedAmount++`]]
-:finalizeDiscloseEncryptedAmount: pass:normal[xref:#ERC7984-finalizeDiscloseEncryptedAmount-uint256-uint64-bytes---[`++finalizeDiscloseEncryptedAmount++`]]
+:finalizeDiscloseEncryptedAmount: pass:normal[xref:#ERC7984-finalizeDiscloseEncryptedAmount-uint256-bytes-bytes-[`++finalizeDiscloseEncryptedAmount++`]]
 :_setOperator: pass:normal[xref:#ERC7984-_setOperator-address-address-uint48-[`++_setOperator++`]]
 :_mint: pass:normal[xref:#ERC7984-_mint-address-euint64-[`++_mint++`]]
 :_burn: pass:normal[xref:#ERC7984-_burn-address-euint64-[`++_burn++`]]
@@ -94,7 +94,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 :confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes: pass:normal[xref:#ERC7984-confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes-[`++confidentialTransferFromAndCall++`]]
 :confidentialTransferFromAndCall-address-address-euint64-bytes: pass:normal[xref:#ERC7984-confidentialTransferFromAndCall-address-address-euint64-bytes-[`++confidentialTransferFromAndCall++`]]
 :discloseEncryptedAmount-euint64: pass:normal[xref:#ERC7984-discloseEncryptedAmount-euint64-[`++discloseEncryptedAmount++`]]
-:finalizeDiscloseEncryptedAmount-uint256-uint64-bytes--: pass:normal[xref:#ERC7984-finalizeDiscloseEncryptedAmount-uint256-uint64-bytes---[`++finalizeDiscloseEncryptedAmount++`]]
+:finalizeDiscloseEncryptedAmount-uint256-bytes-bytes: pass:normal[xref:#ERC7984-finalizeDiscloseEncryptedAmount-uint256-bytes-bytes-[`++finalizeDiscloseEncryptedAmount++`]]
 :_setOperator-address-address-uint48: pass:normal[xref:#ERC7984-_setOperator-address-address-uint48-[`++_setOperator++`]]
 :_mint-address-euint64: pass:normal[xref:#ERC7984-_mint-address-euint64-[`++_mint++`]]
 :_burn-address-euint64: pass:normal[xref:#ERC7984-_burn-address-euint64-[`++_burn++`]]
@@ -146,7 +146,7 @@ Key features:
 * `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
 * `++confidentialTransferFromAndCall(from, to, amount, data)++`
 * `++discloseEncryptedAmount(encryptedAmount)++`
-* `++finalizeDiscloseEncryptedAmount(requestId, amount, signatures)++`
+* `++finalizeDiscloseEncryptedAmount(requestId, cleartexts, decryptionProof)++`
 * `++_setOperator(holder, operator, until)++`
 * `++_mint(to, amount)++`
 * `++_burn(from, amount)++`
@@ -314,8 +314,8 @@ NOTE: This is an asynchronous operation where the actual decryption happens off-
 {finalizeDiscloseEncryptedAmount} is called with the result.
 
 [.contract-item]
-[[ERC7984-finalizeDiscloseEncryptedAmount-uint256-uint64-bytes---]]
-==== `[.contract-item-name]#++finalizeDiscloseEncryptedAmount++#++(uint256 requestId, uint64 amount, bytes[] signatures)++` [.item-kind]#public#
+[[ERC7984-finalizeDiscloseEncryptedAmount-uint256-bytes-bytes-]]
+==== `[.contract-item-name]#++finalizeDiscloseEncryptedAmount++#++(uint256 requestId, bytes cleartexts, bytes decryptionProof)++` [.item-kind]#public#
 
 Finalizes a disclose encrypted amount request.
 For gas saving purposes, the `requestId` might not be related to a
@@ -404,7 +404,7 @@ The given gateway request ID `requestId` is invalid.
 :wrap: pass:normal[xref:#ERC7984ERC20Wrapper-wrap-address-uint256-[`++wrap++`]]
 :unwrap: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-euint64-[`++unwrap++`]]
 :unwrap: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-[`++unwrap++`]]
-:finalizeUnwrap: pass:normal[xref:#ERC7984ERC20Wrapper-finalizeUnwrap-uint256-uint64-bytes---[`++finalizeUnwrap++`]]
+:finalizeUnwrap: pass:normal[xref:#ERC7984ERC20Wrapper-finalizeUnwrap-uint256-bytes-bytes-[`++finalizeUnwrap++`]]
 :_unwrap: pass:normal[xref:#ERC7984ERC20Wrapper-_unwrap-address-address-euint64-[`++_unwrap++`]]
 :_fallbackUnderlyingDecimals: pass:normal[xref:#ERC7984ERC20Wrapper-_fallbackUnderlyingDecimals--[`++_fallbackUnderlyingDecimals++`]]
 :_maxDecimals: pass:normal[xref:#ERC7984ERC20Wrapper-_maxDecimals--[`++_maxDecimals++`]]
@@ -417,7 +417,7 @@ The given gateway request ID `requestId` is invalid.
 :wrap-address-uint256: pass:normal[xref:#ERC7984ERC20Wrapper-wrap-address-uint256-[`++wrap++`]]
 :unwrap-address-address-euint64: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-euint64-[`++unwrap++`]]
 :unwrap-address-address-externalEuint64-bytes: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-[`++unwrap++`]]
-:finalizeUnwrap-uint256-uint64-bytes--: pass:normal[xref:#ERC7984ERC20Wrapper-finalizeUnwrap-uint256-uint64-bytes---[`++finalizeUnwrap++`]]
+:finalizeUnwrap-uint256-bytes-bytes: pass:normal[xref:#ERC7984ERC20Wrapper-finalizeUnwrap-uint256-bytes-bytes-[`++finalizeUnwrap++`]]
 :_unwrap-address-address-euint64: pass:normal[xref:#ERC7984ERC20Wrapper-_unwrap-address-address-euint64-[`++_unwrap++`]]
 :_fallbackUnderlyingDecimals-: pass:normal[xref:#ERC7984ERC20Wrapper-_fallbackUnderlyingDecimals--[`++_fallbackUnderlyingDecimals++`]]
 :_maxDecimals-: pass:normal[xref:#ERC7984ERC20Wrapper-_maxDecimals--[`++_maxDecimals++`]]
@@ -449,7 +449,7 @@ tokens such as fee-on-transfer or other deflationary-type tokens are not support
 * `++wrap(to, amount)++`
 * `++unwrap(from, to, amount)++`
 * `++unwrap(from, to, encryptedAmount, inputProof)++`
-* `++finalizeUnwrap(requestID, amount, signatures)++`
+* `++finalizeUnwrap(requestID, cleartexts, decryptionProof)++`
 * `++_unwrap(from, to, amount)++`
 * `++_fallbackUnderlyingDecimals()++`
 * `++_maxDecimals()++`
@@ -475,7 +475,7 @@ tokens such as fee-on-transfer or other deflationary-type tokens are not support
 * `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
 * `++confidentialTransferFromAndCall(from, to, amount, data)++`
 * `++discloseEncryptedAmount(encryptedAmount)++`
-* `++finalizeDiscloseEncryptedAmount(requestId, amount, signatures)++`
+* `++finalizeDiscloseEncryptedAmount(requestId, cleartexts, decryptionProof)++`
 * `++_setOperator(holder, operator, until)++`
 * `++_mint(to, amount)++`
 * `++_burn(from, amount)++`
@@ -586,8 +586,8 @@ Variant of {unwrap} that passes an `inputProof` which approves the caller for th
 in the ACL.
 
 [.contract-item]
-[[ERC7984ERC20Wrapper-finalizeUnwrap-uint256-uint64-bytes---]]
-==== `[.contract-item-name]#++finalizeUnwrap++#++(uint256 requestID, uint64 amount, bytes[] signatures)++` [.item-kind]#public#
+[[ERC7984ERC20Wrapper-finalizeUnwrap-uint256-bytes-bytes-]]
+==== `[.contract-item-name]#++finalizeUnwrap++#++(uint256 requestID, bytes cleartexts, bytes decryptionProof)++` [.item-kind]#public#
 
 Fills an unwrap request for a given request id related to a decrypted unwrap amount.
 
@@ -670,7 +670,7 @@ Inspired by https://github.com/OpenZeppelin/openzeppelin-community-contracts/blo
 * `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
 * `++confidentialTransferFromAndCall(from, to, amount, data)++`
 * `++discloseEncryptedAmount(encryptedAmount)++`
-* `++finalizeDiscloseEncryptedAmount(requestId, amount, signatures)++`
+* `++finalizeDiscloseEncryptedAmount(requestId, cleartexts, decryptionProof)++`
 * `++_setOperator(holder, operator, until)++`
 * `++_mint(to, amount)++`
 * `++_burn(from, amount)++`
@@ -802,7 +802,7 @@ permanent ACL access to its transfer and balance amounts. A observer can be adde
 * `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
 * `++confidentialTransferFromAndCall(from, to, amount, data)++`
 * `++discloseEncryptedAmount(encryptedAmount)++`
-* `++finalizeDiscloseEncryptedAmount(requestId, amount, signatures)++`
+* `++finalizeDiscloseEncryptedAmount(requestId, cleartexts, decryptionProof)++`
 * `++_setOperator(holder, operator, until)++`
 * `++_mint(to, amount)++`
 * `++_burn(from, amount)++`
@@ -948,7 +948,7 @@ to implement an allowlist.
 * `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
 * `++confidentialTransferFromAndCall(from, to, amount, data)++`
 * `++discloseEncryptedAmount(encryptedAmount)++`
-* `++finalizeDiscloseEncryptedAmount(requestId, amount, signatures)++`
+* `++finalizeDiscloseEncryptedAmount(requestId, cleartexts, decryptionProof)++`
 * `++_setOperator(holder, operator, until)++`
 * `++_mint(to, amount)++`
 * `++_burn(from, amount)++`
@@ -1143,7 +1143,7 @@ balances externally.
 * `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
 * `++confidentialTransferFromAndCall(from, to, amount, data)++`
 * `++discloseEncryptedAmount(encryptedAmount)++`
-* `++finalizeDiscloseEncryptedAmount(requestId, amount, signatures)++`
+* `++finalizeDiscloseEncryptedAmount(requestId, cleartexts, decryptionProof)++`
 * `++_setOperator(holder, operator, until)++`
 * `++_mint(to, amount)++`
 * `++_burn(from, amount)++`

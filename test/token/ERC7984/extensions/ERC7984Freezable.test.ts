@@ -1,6 +1,6 @@
 import { IACL__factory } from '../../../../types';
 import { $ERC7984FreezableMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984FreezableMock.sol/$ERC7984FreezableMock';
-import { ACL_ADDRESS } from '../../../helpers/accounts';
+import { getAclAddress } from '../../../helpers/accounts';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { AddressLike, BytesLike, EventLog } from 'ethers';
@@ -19,7 +19,7 @@ describe('ERC7984Freezable', function () {
       uri,
       freezer.address,
     ])) as any as $ERC7984FreezableMock;
-    const acl = IACL__factory.connect(ACL_ADDRESS, ethers.provider);
+    const acl = IACL__factory.connect(await getAclAddress(), ethers.provider);
     return { token, acl, holder, recipient, freezer, operator, anyone };
   }
 
