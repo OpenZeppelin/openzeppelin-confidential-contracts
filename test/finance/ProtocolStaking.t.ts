@@ -281,6 +281,7 @@ describe.only('Protocol Staking', function () {
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await this.mock.connect(this.admin).addOperator(this.staker1.address);
       await timeIncreaseNoMine(9);
+
       await expect(this.mock.claimRewards(this.staker1))
         .to.emit(this.token, 'Transfer')
         .withArgs(ethers.ZeroAddress, this.staker2, anyValue);
