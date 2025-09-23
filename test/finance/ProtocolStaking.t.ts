@@ -266,7 +266,7 @@ describe.only('Protocol Staking', function () {
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await this.mock.connect(this.admin).addOperator(this.staker1.address);
-      // await timeIncreaseNoMine(9);
+      await timeIncreaseNoMine(9);
       await this.mock.connect(this.admin).setRewardRate(0);
       const earned = await this.mock.earned(this.staker1);
       await expect(this.mock.claimRewards(this.staker1))
