@@ -103,7 +103,7 @@
     "elliptic": "6.6.1"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.19.0"
   },
   "lint-staged": {
     "*.{js,ts}": [
