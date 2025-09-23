@@ -171,6 +171,10 @@ abstract contract ERC7984Rwa is
         address to,
         euint64 encryptedAmount
     ) public virtual onlyAgent returns (euint64 transferred) {
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
         return _forceConfidentialTransferFrom(from, to, encryptedAmount);
     }
 
@@ -179,18 +183,10 @@ abstract contract ERC7984Rwa is
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal virtual returns (euint64 transferred) {
-        if (!FHE.isInitialized(encryptedAmount)) {
-            return encryptedAmount;
-        }
-        encryptedAmount = FHE.select(
-            _preForceTransferCheck(from, to, encryptedAmount),
-            encryptedAmount,
-            FHE.asEuint64(0)
-        );
-        // bypassing `from` restriction & frozen checks while `to` restriction check is still performed.
-        transferred = super._update(from, to, encryptedAmount); // bypass compliance check
-        _postForceTransfer(from, to, encryptedAmount);
+    ) internal virtual returns (euint64) {
+        // bypassing `from` restriction check with {_checkRestrictionFrom}
+        // bypassing `from` frozen check with {_getUpdateAmountIfNotExceedingFrozenFrom}
+        return super._update(from, to, encryptedAmount); // still performing `to` restriction check
     }
 
     /**
@@ -216,32 +212,15 @@ abstract contract ERC7984Rwa is
         return super._getUpdateAmountIfNotExceedingFrozenFrom(account, encryptedAmount);
     }
 
-    /// @dev Internal function which updates confidential balances while performing frozen, restriction and compliance checks.
+    /// @dev Internal function which updates confidential balances while performing frozen and restriction compliance checks.
     function _update(
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal override(ERC7984Freezable, ERC7984Restricted, ERC7984) whenNotPaused returns (euint64 transferred) {
-        if (!FHE.isInitialized(encryptedAmount)) {
-            return encryptedAmount;
-        }
-        encryptedAmount = FHE.select(_preTransferCheck(from, to, encryptedAmount), encryptedAmount, FHE.asEuint64(0));
+    ) internal override(ERC7984Freezable, ERC7984Restricted, ERC7984) whenNotPaused returns (euint64) {
         // frozen and restriction checks performed through inheritance
-        transferred = super._update(from, to, encryptedAmount);
-        _postTransfer(from, to, encryptedAmount);
+        return super._update(from, to, encryptedAmount);
     }
-
-    /// @dev Checks if a transfer follows compliance.
-    function _preTransferCheck(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);
-
-    /// @dev Checks if a force transfer follows compliance.
-    function _preForceTransferCheck(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);
-
-    /// @dev Performs operation after transfer.
-    function _postTransfer(address from, address to, euint64 encryptedAmount) internal virtual {}
-
-    /// @dev Performs operation after force transfer.
-    function _postForceTransfer(address from, address to, euint64 encryptedAmount) internal virtual {}
 
     /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
     function _isForceTransfer() private pure returns (bool) {
