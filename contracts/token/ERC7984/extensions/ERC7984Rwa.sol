@@ -162,7 +162,7 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _forceConfidentialTransferFrom(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
@@ -175,41 +175,7 @@ abstract contract ERC7984Rwa is
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _forceConfidentialTransferFrom(from, to, encryptedAmount);
-    }
-
-    /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
-    function _forceConfidentialTransferFrom(
-        address from,
-        address to,
-        euint64 encryptedAmount
-    ) internal virtual returns (euint64) {
-        // bypassing `from` restriction check with {_checkRestrictionFrom}
-        // bypassing `from` frozen check with {_getUpdateAmountIfNotExceedingFrozenFrom}
-        return super._update(from, to, encryptedAmount); // still performing `to` restriction check
-    }
-
-    /**
-     * @dev Bypasses the `from` restriction check when performing a {forceConfidentialTransferFrom}.
-     */
-    function _checkRestrictionFrom(address account) internal view override {
-        if (_isForceTransfer()) {
-            return;
-        }
-        super._checkRestrictionFrom(account);
-    }
-
-    /**
-     * @dev Bypasses the frozen check of the `from` account when performing a {forceConfidentialTransferFrom}.
-     */
-    function _getUpdateAmountIfNotExceedingFrozenFrom(
-        address account,
-        euint64 encryptedAmount
-    ) internal override returns (euint64) {
-        if (_isForceTransfer()) {
-            return encryptedAmount;
-        }
-        return super._getUpdateAmountIfNotExceedingFrozenFrom(account, encryptedAmount);
+        return _forceUpdate(from, to, encryptedAmount);
     }
 
     /// @dev Internal function which updates confidential balances while performing frozen and restriction compliance checks.
@@ -220,6 +186,36 @@ abstract contract ERC7984Rwa is
     ) internal override(ERC7984Freezable, ERC7984Restricted, ERC7984) whenNotPaused returns (euint64) {
         // frozen and restriction checks performed through inheritance
         return super._update(from, to, encryptedAmount);
+    }
+
+    /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
+    function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
+        // bypassing `from` restriction check with {_checkSenderRestriction}
+        // bypassing `from` frozen check with {_getUpdateAmountIfNotExceedingFrozenFrom}
+        return super._update(from, to, encryptedAmount); // still performing `to` restriction check
+    }
+
+    /**
+     * @dev Bypasses the `from` restriction check when performing a {forceConfidentialTransferFrom}.
+     */
+    function _checkSenderRestriction(address account) internal view override {
+        if (_isForceTransfer()) {
+            return;
+        }
+        super._checkSenderRestriction(account);
+    }
+
+    /**
+     * @dev Bypasses the frozen check of the `from` account when performing a {forceConfidentialTransferFrom}.
+     */
+    function _checkSenderAmountNotFrozenBeforeUpdate(
+        address account,
+        euint64 encryptedAmount
+    ) internal override returns (euint64) {
+        if (_isForceTransfer()) {
+            return encryptedAmount;
+        }
+        return super._checkSenderAmountNotFrozenBeforeUpdate(account, encryptedAmount);
     }
 
     /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
