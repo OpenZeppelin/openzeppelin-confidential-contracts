@@ -37,7 +37,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     mapping(address => address) private _rewardsRecipient;
     // Reward - payment tracking
     mapping(address => int256) private _paid;
-    int256 private _totalPaid;
+    int256 private _totalVirtualPaid;
 
     event TokensStaked(address operator, uint256 amount);
     event TokensUnstaked(address operator, uint256 amount);
@@ -208,11 +208,11 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
             if (weightBefore > weightAfter) {
                 int256 virtualAmount = SafeCast.toInt256(_allocation(weightBefore - weightAfter, oldTotalWeight));
                 _paid[user] -= virtualAmount;
-                _totalPaid -= virtualAmount;
+                _totalVirtualPaid -= virtualAmount;
             } else {
                 int256 virtualAmount = SafeCast.toInt256(_allocation(weightAfter - weightBefore, oldTotalWeight));
                 _paid[user] += virtualAmount;
-                _totalPaid += virtualAmount;
+                _totalVirtualPaid += virtualAmount;
             }
         }
     }
@@ -240,6 +240,6 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     }
 
     function _allocation(uint256 share, uint256 total) private view returns (uint256) {
-        return SafeCast.toUint256(SafeCast.toInt256(_historicalReward()) + _totalPaid).mulDiv(share, total);
+        return SafeCast.toUint256(SafeCast.toInt256(_historicalReward()) + _totalVirtualPaid).mulDiv(share, total);
     }
 }
