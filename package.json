@@ -9,7 +9,7 @@
     "!/contracts/mocks/**/*"
   ],
   "scripts": {
-    "clean": "hardhat clean && rimraf build contracts/build",
+    "clean": "hardhat clean && rimraf build contracts/build fhevmTemp",
     "compile": "hardhat compile",
     "docs": "npm run prepare-docs && oz-docs",
     "docs:watch": "oz-docs watch contracts docs/templates docs/config.js",
@@ -19,6 +19,7 @@
     "lint:js:fix": "prettier --loglevel warn '**/*.{js,ts}' --write && eslint . --fix",
     "lint:sol": "prettier --loglevel warn '{contracts,test}/**/*.sol' --check && solhint --config solhint.config.js '{contracts,test}/**/*.sol'",
     "lint:sol:fix": "solhint --config solhint.config.js '{contracts,test}/**/*.sol' --fix; prettier --loglevel warn '{contracts,test}/**/*.sol' --write",
+    "postinstall": "rimraf fhevmTemp",
     "prepack": "scripts/prepack.sh",
     "prepare": "husky",
     "prepare-docs": "scripts/prepare-docs.sh",
