@@ -451,7 +451,7 @@ describe('ERC7984Rwa', function () {
         await token.connect(agent1).getHandleAllowance(frozenHandle, agent1, true);
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, frozenHandle, await token.getAddress(), agent1),
-        ).to.eventually.equal(25); // frozen is left unchanged
+        ).to.eventually.equal(25); // is decreased by transfer amount
       });
     }
 
