@@ -21,7 +21,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    bytes32 private constant OPERATOR_ROLE = keccak256(bytes("operator-role"));
+    bytes32 private constant OPERATOR_ROLE = keccak256("operator-role");
     // Stake - general
     address private _stakingToken;
     uint256 private _totalStakedWeight;
@@ -39,8 +39,6 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     mapping(address => int256) private _paid;
     int256 private _totalPaid;
 
-    event OperatorAdded(address operator);
-    event OperatorRemoved(address operator);
     event TokensStaked(address operator, uint256 amount);
     event TokensUnstaked(address operator, uint256 amount);
     event RewardRateSet(uint256 rewardRate);
@@ -102,18 +100,28 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         }
     }
 
-    function addOperator(address account) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!isOperator(account), OperatorAlreadyExists(account));
-        _grantRole(OPERATOR_ROLE, account);
-        _updateRewards(account, 0, weight(balanceOf(account)));
-        emit OperatorAdded(account);
+    function addOperator(address account) public virtual onlyRole(getRoleAdmin(OPERATOR_ROLE)) {
+        require(_grantRole(OPERATOR_ROLE, account), OperatorAlreadyExists(account));
     }
 
-    function removeOperator(address account) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(isOperator(account), OperatorDoesNotExist(account));
-        _revokeRole(OPERATOR_ROLE, account);
-        _updateRewards(account, weight(balanceOf(account)), 0);
-        emit OperatorRemoved(account);
+    function removeOperator(address account) public virtual onlyRole(getRoleAdmin(OPERATOR_ROLE)) {
+        require(_revokeRole(OPERATOR_ROLE, account), OperatorDoesNotExist(account));
+    }
+
+    function _grantRole(bytes32 role, address account) internal virtual override returns (bool) {
+        bool success = super._grantRole(role, account);
+        if (role == OPERATOR_ROLE && success) {
+            _updateRewards(account, 0, weight(balanceOf(account)));
+        }
+        return success;
+    }
+
+    function _revokeRole(bytes32 role, address account) internal virtual override returns (bool) {
+        bool success = super._revokeRole(role, account);
+        if (role == OPERATOR_ROLE && success) {
+            _updateRewards(account, weight(balanceOf(account)), 0);
+        }
+        return success;
     }
 
     function setRewardRate(uint256 rewardRate) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {

@@ -292,8 +292,8 @@ describe.only('Protocol Staking', function () {
     describe('Add Operator', function () {
       it('should emit event', async function () {
         await expect(this.mock.connect(this.admin).addOperator(this.staker1.address))
-          .to.emit(this.mock, 'OperatorAdded')
-          .withArgs(this.staker1.address);
+          .to.emit(this.mock, 'RoleGranted')
+          .withArgs(ethers.id('operator-role'), this.staker1, this.admin);
       });
 
       it('should reflect in operator list', async function () {
@@ -307,7 +307,7 @@ describe.only('Protocol Staking', function () {
 
       it("can't add twice", async function () {
         await this.mock.connect(this.admin).addOperator(this.staker1.address);
-        await expect(this.mock.connect(this.admin).addOperator(this.staker1))
+        await expect(this.mock.connect(this.admin).addOperator(this.staker1.address))
           .to.be.revertedWithCustomError(this.mock, 'OperatorAlreadyExists')
           .withArgs(this.staker1);
       });
@@ -329,8 +329,8 @@ describe.only('Protocol Staking', function () {
 
       it('should emit event', async function () {
         await expect(this.mock.connect(this.admin).removeOperator(this.staker1.address))
-          .to.emit(this.mock, 'OperatorRemoved')
-          .withArgs(this.staker1.address);
+          .to.emit(this.mock, 'RoleRevoked')
+          .withArgs(ethers.id('operator-role'), this.staker1, this.admin);
       });
 
       it('should reflect in operator list', async function () {
