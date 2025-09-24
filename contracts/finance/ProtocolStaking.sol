@@ -67,6 +67,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         _stakingToken = stakingToken_;
     }
 
+    /// @dev Stake `amount` tokens from `msg.sender`.
     function stake(uint256 amount) public virtual {
         _stake(amount);
     }
@@ -84,13 +85,6 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         }
     }
 
-    function earned(address account) public view virtual returns (uint256) {
-        uint256 stakedWeight = isOperator(account) ? weight(balanceOf(account)) : 0;
-        // if stakedWeight == 0, there is a risk of totalStakedWeight == 0. To avoid div by 0 just return 0
-        uint256 allocation = stakedWeight > 0 ? _allocation(stakedWeight, _totalStakedWeight) : 0;
-        return SafeCast.toUint256(SafeCast.toInt256(allocation) - _paid[account]);
-    }
-
     /// @dev Claim staking rewards for `account`.
     function claimRewards(address account) public virtual {
         uint256 rewards = earned(account);
@@ -100,36 +94,20 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         }
     }
 
-    function addOperator(address account) public virtual onlyRole(getRoleAdmin(OPERATOR_ROLE)) {
-        require(_grantRole(OPERATOR_ROLE, account), OperatorAlreadyExists(account));
-    }
-
-    function removeOperator(address account) public virtual onlyRole(getRoleAdmin(OPERATOR_ROLE)) {
-        require(_revokeRole(OPERATOR_ROLE, account), OperatorDoesNotExist(account));
-    }
-
-    function _grantRole(bytes32 role, address account) internal virtual override returns (bool) {
-        bool success = super._grantRole(role, account);
-        if (role == OPERATOR_ROLE && success) {
-            _updateRewards(account, 0, weight(balanceOf(account)));
-        }
-        return success;
-    }
-
-    function _revokeRole(bytes32 role, address account) internal virtual override returns (bool) {
-        bool success = super._revokeRole(role, account);
-        if (role == OPERATOR_ROLE && success) {
-            _updateRewards(account, weight(balanceOf(account)), 0);
-        }
-        return success;
-    }
-
     function setRewardRate(uint256 rewardRate) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
         _lastUpdateReward = _historicalReward();
         _lastUpdateTimestamp = Time.timestamp();
         _rewardRate = rewardRate;
 
         emit RewardRateSet(rewardRate);
+    }
+
+    function addOperator(address account) public virtual onlyRole(getRoleAdmin(OPERATOR_ROLE)) {
+        require(_grantRole(OPERATOR_ROLE, account), OperatorAlreadyExists(account));
+    }
+
+    function removeOperator(address account) public virtual onlyRole(getRoleAdmin(OPERATOR_ROLE)) {
+        require(_revokeRole(OPERATOR_ROLE, account), OperatorDoesNotExist(account));
     }
 
     function setUnstakeCooldownPeriod(uint256 unstakeCooldownPeriod) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -144,9 +122,11 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         emit RewardsRecipientSet(msg.sender, recipient);
     }
 
-    /// @dev Gets the staking weight for a given raw amount.
-    function weight(uint256 amount) public view virtual returns (uint256) {
-        return Math.log2(amount);
+    function earned(address account) public view virtual returns (uint256) {
+        uint256 stakedWeight = isOperator(account) ? weight(balanceOf(account)) : 0;
+        // if stakedWeight == 0, there is a risk of totalStakedWeight == 0. To avoid div by 0 just return 0
+        uint256 allocation = stakedWeight > 0 ? _allocation(stakedWeight, _totalStakedWeight) : 0;
+        return SafeCast.toUint256(SafeCast.toInt256(allocation) - _paid[account]);
     }
 
     /// @dev Returns the staking token which is used for staking and rewards.
@@ -154,12 +134,13 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         return _stakingToken;
     }
 
-    function totalStakedWeight() public view virtual returns (uint256) {
-        return _totalStakedWeight;
+    /// @dev Gets the staking weight for a given raw amount.
+    function weight(uint256 amount) public view virtual returns (uint256) {
+        return Math.log2(amount);
     }
 
-    function isOperator(address account) public view virtual returns (bool) {
-        return hasRole(OPERATOR_ROLE, account);
+    function totalStakedWeight() public view virtual returns (uint256) {
+        return _totalStakedWeight;
     }
 
     /// @notice Returns the amount of tokens cooling down for the given account `account`.
@@ -171,6 +152,10 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     function rewardsRecipient(address account) public view virtual returns (address) {
         address storedRewardsRecipient = _rewardsRecipient[account];
         return storedRewardsRecipient == address(0) ? account : storedRewardsRecipient;
+    }
+
+    function isOperator(address account) public view virtual returns (bool) {
+        return hasRole(OPERATOR_ROLE, account);
     }
 
     function _stake(uint256 amount) internal virtual {
@@ -199,12 +184,20 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         emit TokensUnstaked(msg.sender, amount);
     }
 
-    function _historicalReward() public view virtual returns (uint256) {
-        return _lastUpdateReward + (Time.timestamp() - _lastUpdateTimestamp) * _rewardRate;
+    function _grantRole(bytes32 role, address account) internal virtual override returns (bool) {
+        bool success = super._grantRole(role, account);
+        if (role == OPERATOR_ROLE && success) {
+            _updateRewards(account, 0, weight(balanceOf(account)));
+        }
+        return success;
     }
 
-    function _allocation(uint256 share, uint256 total) private view returns (uint256) {
-        return SafeCast.toUint256(SafeCast.toInt256(_historicalReward()) + _totalPaid).mulDiv(share, total);
+    function _revokeRole(bytes32 role, address account) internal virtual override returns (bool) {
+        bool success = super._revokeRole(role, account);
+        if (role == OPERATOR_ROLE && success) {
+            _updateRewards(account, weight(balanceOf(account)), 0);
+        }
+        return success;
     }
 
     function _updateRewards(address user, uint256 weightBefore, uint256 weightAfter) internal {
@@ -241,4 +234,12 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     }
 
     function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(DEFAULT_ADMIN_ROLE) {}
+
+    function _historicalReward() public view virtual returns (uint256) {
+        return _lastUpdateReward + (Time.timestamp() - _lastUpdateTimestamp) * _rewardRate;
+    }
+
+    function _allocation(uint256 share, uint256 total) private view returns (uint256) {
+        return SafeCast.toUint256(SafeCast.toInt256(_historicalReward()) + _totalPaid).mulDiv(share, total);
+    }
 }
