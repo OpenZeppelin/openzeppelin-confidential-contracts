@@ -353,10 +353,7 @@ describe.only('Protocol Staking', function () {
 
       it('should retain rewards after removed as an operator', async function () {
         await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
-        await this.mock.connect(this.staker1).setRewardsRecipient(this.staker2);
-
         await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-        await this.mock.connect(this.admin).addOperator(this.staker1.address);
         await time.increase(9);
 
         await this.mock.connect(this.admin).removeOperator(this.staker1.address);
