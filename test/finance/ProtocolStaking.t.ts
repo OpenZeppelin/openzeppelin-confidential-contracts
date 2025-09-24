@@ -1,5 +1,5 @@
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import { time } from '@nomicfoundation/hardhat-network-helpers';
+import { mine, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import chai from 'chai';
 import { ethers } from 'hardhat';
@@ -352,6 +352,21 @@ describe.only('Protocol Staking', function () {
         await this.mock.connect(this.admin).removeOperator(this.staker1.address);
 
         await expect(this.mock.totalStakedWeight()).to.eventually.eq(weightBefore - staker1Weight);
+      });
+
+      it('should retain rewards after removed as an operator', async function () {
+        await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
+        await this.mock.connect(this.staker1).setRewardsRecipient(this.staker2);
+
+        await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
+        await this.mock.connect(this.admin).addOperator(this.staker1.address);
+        await time.increase(9);
+
+        await this.mock.connect(this.admin).removeOperator(this.staker1.address);
+        await time.increase(100);
+
+        await mine();
+        expect(await this.mock.earned(this.staker1)).to.be.closeToLessThanOrEqual(ethers.parseEther('5'), 10n);
       });
     });
   });
