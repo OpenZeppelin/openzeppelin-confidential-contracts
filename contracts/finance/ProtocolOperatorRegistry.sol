@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-
 pragma solidity ^0.8.27;
+
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @notice This contract creates a registry for validators to indicate which account holds their staked tokens.
 contract ProtocolOperatorRegistry {
