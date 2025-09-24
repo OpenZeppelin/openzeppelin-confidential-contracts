@@ -12,6 +12,7 @@ import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
 import {ERC7984} from "./../ERC7984.sol";
 import {ERC7984Freezable} from "./ERC7984Freezable.sol";
 import {ERC7984Restricted} from "./ERC7984Restricted.sol";
+import {FHESafeMath} from "../../../utils/FHESafeMath.sol";
 
 /**
  * @dev Extension of {ERC7984} that supports confidential Real World Assets (RWAs).
@@ -190,8 +191,14 @@ abstract contract ERC7984Rwa is
 
     /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
     function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
+        euint64 senderFrozenAmount = confidentialFrozen(from);
+        if (FHE.isInitialized(senderFrozenAmount)) {
+            (, euint64 newFrozen) = FHESafeMath.tryDecrease(senderFrozenAmount, encryptedAmount);
+            _setConfidentialFrozen(from, newFrozen);
+        }
+
         // bypassing `from` restriction check with {_checkSenderRestriction}
-        // bypassing `from` frozen check with {_checkSenderAmountNotFrozenBeforeUpdate}
+        // bypassing `from` frozen check with {confidentialAvailable}
         return super._update(from, to, encryptedAmount); // still performing `to` restriction check
     }
 
@@ -205,17 +212,12 @@ abstract contract ERC7984Rwa is
         super._checkSenderRestriction(account);
     }
 
-    /**
-     * @dev Bypasses the frozen check of the `from` account when performing a {forceConfidentialTransferFrom}.
-     */
-    function _checkSenderAmountNotFrozenBeforeUpdate(
-        address account,
-        euint64 encryptedAmount
-    ) internal override returns (euint64) {
+    function confidentialAvailable(address account) public virtual override returns (euint64) {
         if (_isForceTransfer()) {
-            return encryptedAmount;
+            return confidentialBalanceOf(account);
+        } else {
+            return super.confidentialAvailable(account);
         }
-        return super._checkSenderAmountNotFrozenBeforeUpdate(account, encryptedAmount);
     }
 
     /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
