@@ -62,6 +62,12 @@ describe.only('Protocol Staking', function () {
     }
   });
 
+  it('unstake cooldown period returned correctly', async function () {
+    await expect(this.mock.unstakeCooldownPeriod()).to.eventually.eq(0);
+    await this.mock.connect(this.admin).setUnstakeCooldownPeriod(100);
+    await expect(this.mock.unstakeCooldownPeriod()).to.eventually.eq(100);
+  });
+
   describe('Staking', function () {
     it('should emit event on stake', async function () {
       await expect(this.mock.connect(this.staker1).stake(ethers.parseEther('100')))

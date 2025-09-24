@@ -143,6 +143,11 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         return _totalStakedWeight;
     }
 
+    /// @dev Returns the current unstake cooldown period in seconds.
+    function unstakeCooldownPeriod() public view virtual returns (uint256) {
+        return _unstakeCooldownPeriod;
+    }
+
     /// @notice Returns the amount of tokens cooling down for the given account `account`.
     function tokensInCooldown(address account) public view virtual returns (uint256) {
         return _unstakeRequests[account].latest() - _released[account];
