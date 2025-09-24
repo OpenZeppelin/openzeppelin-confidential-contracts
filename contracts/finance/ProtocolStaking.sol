@@ -88,9 +88,9 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
 
     function earned(address account) public view virtual returns (uint256) {
         if (isOperator(account)) {
-            uint256 stackedWeight = weight(balanceOf(account));
+            uint256 stakedWeight = weight(balanceOf(account));
             // if personalShares == 0, there is a risk of totalShares == 0. To avoid div by 0 just return 0
-            uint256 allocation = stackedWeight > 0 ? _allocation(stackedWeight, _totalStakedWeight) : 0;
+            uint256 allocation = stakedWeight > 0 ? _allocation(stakedWeight, _totalStakedWeight) : 0;
             return SafeCast.toUint256(SafeCast.toInt256(allocation) - _paid[account]);
         } else {
             return 0;
