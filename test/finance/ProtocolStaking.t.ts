@@ -1,7 +1,6 @@
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { mine, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import chai from 'chai';
 import { ethers, upgrades } from 'hardhat';
 
 const timeIncreaseNoMine = (duration: number) =>
