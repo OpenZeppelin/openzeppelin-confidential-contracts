@@ -15,21 +15,17 @@ contract ProtocolOperatorRegistry {
     error StakingAccountAlreadyRegistered();
 
     function setStakedTokensAccount(address account) public virtual {
-        address currentStakedTokensAccount = stakedTokens(msg.sender);
+        if (account != address(0)) {
+            require(Ownable(account).owner() == msg.sender, StakingAccountNotOwnedByCaller());
+            require(operator(account) == address(0), StakingAccountAlreadyRegistered());
 
-        if (account == address(0)) {
-            _stakedTokensToOperator[currentStakedTokensAccount] = address(0);
-            _operatorToStakedTokens[msg.sender] = address(0);
-            return;
+            _stakedTokensToOperator[account] = msg.sender;
         }
 
-        require(Ownable(account).owner() == msg.sender, StakingAccountNotOwnedByCaller());
-        require(operator(account) == address(0), StakingAccountAlreadyRegistered());
-
+        address currentStakedTokensAccount = stakedTokens(msg.sender);
         if (currentStakedTokensAccount != address(0)) {
             _stakedTokensToOperator[currentStakedTokensAccount] = address(0);
         }
-        _stakedTokensToOperator[account] = msg.sender;
         _operatorToStakedTokens[msg.sender] = account;
 
         emit StakedTokensAccountSet(msg.sender, currentStakedTokensAccount, account);
