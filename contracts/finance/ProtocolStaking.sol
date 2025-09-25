@@ -39,8 +39,8 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     mapping(address => int256) private _paid;
     int256 private _totalVirtualPaid;
 
-    event TokensStaked(address operator, uint256 amount);
-    event TokensUnstaked(address operator, uint256 amount);
+    event TokensStaked(address indexed operator, uint256 amount);
+    event TokensUnstaked(address indexed operator, uint256 amount);
     event RewardRateSet(uint256 rewardRate);
     event UnstakeCooldownPeriodSet(uint256 unstakeCooldownPeriod);
     event RewardsRecipientSet(address indexed account, address indexed recipient);
@@ -69,13 +69,37 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
 
     /// @dev Stake `amount` tokens from `msg.sender`.
     function stake(uint256 amount) public virtual {
-        _stake(amount);
+        _mint(msg.sender, amount);
+        IERC20(stakingToken()).safeTransferFrom(msg.sender, address(this), amount);
+
+        emit TokensStaked(msg.sender, amount);
     }
 
+    /**
+     * @dev Unstake `amount` tokens to `msg.sender`.
+     *
+     * NOTE: Unstaked tokens will not be sent immediately if {unstakeCooldownPeriod} is non-zero.
+     */
     function unstake(uint256 amount) public virtual {
-        _unstake(amount);
+        require(amount != 0, InvalidAmount());
+        _burn(msg.sender, amount);
+
+        if (_unstakeCooldownPeriod == 0) {
+            IERC20(stakingToken()).safeTransfer(msg.sender, amount);
+        } else {
+            (, uint256 lastReleaseTime, uint256 totalRequestedToWithdraw) = _unstakeRequests[msg.sender]
+                .latestCheckpoint();
+            uint256 releaseTime = Time.timestamp() + _unstakeCooldownPeriod;
+            _unstakeRequests[msg.sender].push(
+                uint48(Math.max(releaseTime, lastReleaseTime)),
+                uint208(totalRequestedToWithdraw + amount)
+            );
+        }
+
+        emit TokensUnstaked(msg.sender, amount);
     }
 
+    /// @dev Releases tokens requested for unstaking after the cooldown period to `msg.sender`.
     function release() public virtual {
         uint256 totalAmountCooledDown = _unstakeRequests[msg.sender].upperLookup(Time.timestamp());
         uint256 amountToRelease = totalAmountCooledDown - _released[msg.sender];
@@ -85,7 +109,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         }
     }
 
-    /// @dev Claim staking rewards for `account`.
+    /// @dev Claim staking rewards for `account`. Can be called by anyone.
     function claimRewards(address account) public virtual {
         uint256 rewards = earned(account);
         if (rewards > 0) {
@@ -94,6 +118,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         }
     }
 
+    /// @dev Sets the reward rate in tokens per second. Only callable by {owner}.
     function setRewardRate(uint256 rewardRate) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
         _lastUpdateReward = _historicalReward();
         _lastUpdateTimestamp = Time.timestamp();
@@ -102,26 +127,37 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         emit RewardRateSet(rewardRate);
     }
 
+    /**
+     * @dev Adds the operator role to `account`. Only accounts with the operator role earn rewards for staked tokens.
+     * Only callable by the `OPERATOR_ROLE` role admin (by default {owner}).
+     */
     function addOperator(address account) public virtual onlyRole(getRoleAdmin(OPERATOR_ROLE)) {
         require(_grantRole(OPERATOR_ROLE, account), OperatorAlreadyExists(account));
     }
 
+    /**
+     * @dev Removes the operator role to `account`. `account` stops to earn rewards but maintains all existing rewards.
+     * Only callable by the `OPERATOR_ROLE` role admin (by default {owner}).
+     */
     function removeOperator(address account) public virtual onlyRole(getRoleAdmin(OPERATOR_ROLE)) {
         require(_revokeRole(OPERATOR_ROLE, account), OperatorDoesNotExist(account));
     }
 
+    /// @dev Sets the {unstake} cooldown period in seconds to `unstakeCooldownPeriod`. Only callable by {owner}.
     function setUnstakeCooldownPeriod(uint256 unstakeCooldownPeriod) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
         _unstakeCooldownPeriod = unstakeCooldownPeriod;
 
         emit UnstakeCooldownPeriodSet(unstakeCooldownPeriod);
     }
 
+    /// @dev Sets the reward recipient for `msg.sender` to `recipient`. All future rewards for `msg.sender` will be sent to `recipient`.
     function setRewardsRecipient(address recipient) public virtual {
         _rewardsRecipient[msg.sender] = recipient;
 
         emit RewardsRecipientSet(msg.sender, recipient);
     }
 
+    /// @dev Returns the amount of rewards earned by `account` at the current `block.timestamp`.
     function earned(address account) public view virtual returns (uint256) {
         uint256 stakedWeight = isOperator(account) ? weight(balanceOf(account)) : 0;
         // if stakedWeight == 0, there is a risk of totalStakedWeight == 0. To avoid div by 0 just return 0
@@ -139,6 +175,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         return Math.log2(amount);
     }
 
+    /// @dev Returns the current total staked weight.
     function totalStakedWeight() public view virtual returns (uint256) {
         return _totalStakedWeight;
     }
@@ -148,45 +185,20 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         return _unstakeCooldownPeriod;
     }
 
-    /// @notice Returns the amount of tokens cooling down for the given account `account`.
+    /// @dev Returns the amount of tokens cooling down for the given account `account`.
     function tokensInCooldown(address account) public view virtual returns (uint256) {
         return _unstakeRequests[account].latest() - _released[account];
     }
 
-    /// @notice Returns the recipient for rewards earned by `account`.
+    /// @dev Returns the recipient for rewards earned by `account`.
     function rewardsRecipient(address account) public view virtual returns (address) {
         address storedRewardsRecipient = _rewardsRecipient[account];
         return storedRewardsRecipient == address(0) ? account : storedRewardsRecipient;
     }
 
+    /// @dev Indicates if the given account `account` has the operator role.
     function isOperator(address account) public view virtual returns (bool) {
         return hasRole(OPERATOR_ROLE, account);
-    }
-
-    function _stake(uint256 amount) internal virtual {
-        _mint(msg.sender, amount);
-        IERC20(stakingToken()).safeTransferFrom(msg.sender, address(this), amount);
-
-        emit TokensStaked(msg.sender, amount);
-    }
-
-    function _unstake(uint256 amount) internal virtual {
-        require(amount != 0, InvalidAmount());
-        _burn(msg.sender, amount);
-
-        if (_unstakeCooldownPeriod == 0) {
-            IERC20(stakingToken()).safeTransfer(msg.sender, amount);
-        } else {
-            (, uint256 lastReleaseTime, uint256 totalRequestedToWithdraw) = _unstakeRequests[msg.sender]
-                .latestCheckpoint();
-            uint256 releaseTime = Time.timestamp() + _unstakeCooldownPeriod;
-            _unstakeRequests[msg.sender].push(
-                uint48(Math.max(releaseTime, lastReleaseTime)),
-                uint208(totalRequestedToWithdraw + amount)
-            );
-        }
-
-        emit TokensUnstaked(msg.sender, amount);
     }
 
     function _grantRole(bytes32 role, address account) internal virtual override returns (bool) {
@@ -223,7 +235,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     }
 
     function _update(address from, address to, uint256 value) internal virtual override {
-        // MARK: Disable Transfers
+        // Disable Transfers
         require(from == address(0) || to == address(0), TransferDisabled());
         if (isOperator(from)) {
             uint256 balanceBefore = balanceOf(from);
