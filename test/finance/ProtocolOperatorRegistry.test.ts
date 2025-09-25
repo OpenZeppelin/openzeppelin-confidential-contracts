@@ -3,9 +3,7 @@ import { ethers } from 'hardhat';
 
 describe.only('ProtocolOperatorRegistry', function () {
   beforeEach(async function () {
-    let accounts = await ethers.getSigners();
-    const [owner, receiver, thief] = accounts;
-    accounts = accounts.slice(3);
+    const [owner, receiver, thief, ...accounts] = await ethers.getSigners();
 
     const ownable = await ethers.deployContract('$OwnableMock', [owner]);
     const mock = await ethers.deployContract('ProtocolOperatorRegistry');

@@ -23,12 +23,7 @@ describe.only('Protocol Staking', function () {
       ]),
     );
 
-    this.accounts = accounts;
-    this.staker1 = staker1;
-    this.staker2 = staker2;
-    this.admin = admin;
-    this.token = token;
-    this.mock = mock;
+    Object.assign(this, { accounts, staker1, staker2, admin, token, mock });
   });
 
   it('unstake cooldown period returned correctly', async function () {
