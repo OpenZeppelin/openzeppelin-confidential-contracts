@@ -14,8 +14,8 @@ interface IProtocolStaking {
     function releasable(address account) external view returns (uint256);
     function setRewardsRecipient(address recipient) external;
     function stake(uint256 amount) external;
-    function unstake(uint256 amount) external;
-    function release() external;
+    function unstake(address recipient, uint256 amount) external;
+    function release(address account) external;
     function claimRewards(address account) external;
 }
 
@@ -78,14 +78,14 @@ abstract contract OperatorStaking is ERC4626, Ownable {
     /// @dev
     function _protocolUnstake(uint256 amount) internal virtual {
         require(amount <= IERC20(_protocolStaking).balanceOf(address(this)), ProtocolUnstakingTooMuch());
-        IProtocolStaking(_protocolStaking).unstake(amount);
+        IProtocolStaking(_protocolStaking).unstake(address(this), amount);
         emit ProtocolUnstaked(amount);
     }
 
     /// @dev
     function _protocolRelease() internal virtual {
         //require(IProtocolStaking(_protocolStaking).releasable(address(this)) > 0, ProtocolNothingReleaseable());
-        IProtocolStaking(_protocolStaking).release();
+        IProtocolStaking(_protocolStaking).release(address(this));
         emit ProtocolReleased();
     }
 }
