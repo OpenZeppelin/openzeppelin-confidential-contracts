@@ -183,15 +183,9 @@ abstract contract ERC7984Rwa is ERC7984Freezable, ERC7984Restricted, Pausable, M
 
     /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
     function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
-        euint64 senderFrozenAmount = confidentialFrozen(from);
-        if (FHE.isInitialized(senderFrozenAmount)) {
-            (, euint64 newFrozen) = FHESafeMath.tryDecrease(senderFrozenAmount, encryptedAmount);
-            _setConfidentialFrozen(from, newFrozen);
-        }
-
-        // bypassing `from` restriction check with {_checkSenderRestriction}
-        // bypassing `from` frozen check with {confidentialAvailable}
-        return super._update(from, to, encryptedAmount); // still performing `to` restriction check
+        // bypassing `from` restriction check with {_checkSenderRestriction}. Still performing `to` restriction check.
+        // bypassing paused state by directly calling `super._update`
+        return super._update(from, to, encryptedAmount); //
     }
 
     /**
@@ -202,14 +196,6 @@ abstract contract ERC7984Rwa is ERC7984Freezable, ERC7984Restricted, Pausable, M
             return;
         }
         super._checkSenderRestriction(account);
-    }
-
-    function confidentialAvailable(address account) public virtual override returns (euint64) {
-        if (_isForceTransfer()) {
-            return confidentialBalanceOf(account);
-        } else {
-            return super.confidentialAvailable(account);
-        }
     }
 
     /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
