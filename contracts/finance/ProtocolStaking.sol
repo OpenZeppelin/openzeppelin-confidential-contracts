@@ -79,8 +79,8 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     function release() public virtual {
         uint256 totalAmountCooledDown = _unstakeRequests[msg.sender].upperLookup(Time.timestamp());
         uint256 amountToRelease = totalAmountCooledDown - _released[msg.sender];
-        _released[msg.sender] = totalAmountCooledDown;
         if (amountToRelease > 0) {
+            _released[msg.sender] = totalAmountCooledDown;
             IERC20(stakingToken()).safeTransfer(msg.sender, amountToRelease);
         }
     }
