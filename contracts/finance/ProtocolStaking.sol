@@ -81,32 +81,31 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
      *
      * NOTE: Unstaked tokens will not be sent immediately if {unstakeCooldownPeriod} is non-zero.
      */
-    function unstake(uint256 amount) public virtual {
-        require(amount != 0, InvalidAmount());
+    function unstake(uint256 amount, address recipient) public virtual {
         _burn(msg.sender, amount);
 
         if (_unstakeCooldownPeriod == 0) {
-            IERC20(stakingToken()).safeTransfer(msg.sender, amount);
+            IERC20(stakingToken()).safeTransfer(recipient, amount);
         } else {
-            (, uint256 lastReleaseTime, uint256 totalRequestedToWithdraw) = _unstakeRequests[msg.sender]
+            (, uint256 lastReleaseTime, uint256 totalRequestedToWithdraw) = _unstakeRequests[recipient]
                 .latestCheckpoint();
             uint256 releaseTime = Time.timestamp() + _unstakeCooldownPeriod;
-            _unstakeRequests[msg.sender].push(
+            _unstakeRequests[recipient].push(
                 uint48(Math.max(releaseTime, lastReleaseTime)),
                 uint208(totalRequestedToWithdraw + amount)
             );
         }
 
-        emit TokensUnstaked(msg.sender, amount);
+        emit TokensUnstaked(msg.sender, recipient, amount);
     }
 
     /// @dev Releases tokens requested for unstaking after the cooldown period to `msg.sender`.
-    function release() public virtual {
-        uint256 totalAmountCooledDown = _unstakeRequests[msg.sender].upperLookup(Time.timestamp());
-        uint256 amountToRelease = totalAmountCooledDown - _released[msg.sender];
+    function release(address account) public virtual {
+        uint256 totalAmountCooledDown = _unstakeRequests[account].upperLookup(Time.timestamp());
+        uint256 amountToRelease = totalAmountCooledDown - _released[account];
         if (amountToRelease > 0) {
-            _released[msg.sender] = totalAmountCooledDown;
-            IERC20(stakingToken()).safeTransfer(msg.sender, amountToRelease);
+            _released[account] = totalAmountCooledDown;
+            IERC20(stakingToken()).safeTransfer(account, amountToRelease);
         }
     }
 
