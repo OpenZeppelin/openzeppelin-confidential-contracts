@@ -2,6 +2,7 @@ import './hardhat/remappings';
 import '@fhevm/hardhat-plugin';
 import '@nomicfoundation/hardhat-chai-matchers';
 import '@nomicfoundation/hardhat-ethers';
+import '@openzeppelin/hardhat-upgrades';
 import '@typechain/hardhat';
 import dotenv from 'dotenv';
 import 'hardhat-exposed';

@@ -2,64 +2,34 @@ import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { mine, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import chai from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 
 const timeIncreaseNoMine = (duration: number) =>
   time.latest().then(clock => time.setNextBlockTimestamp(clock + duration));
 
-// Extend Chai Assertion interface to include closeToBigInt
-declare global {
-  namespace Chai {
-    interface Assertion {
-      closeToLessThanOrEqual(expected: bigint, tolerance: bigint): Assertion;
-    }
-  }
-}
-
-chai.Assertion.addMethod('closeToLessThanOrEqual', function (expected, tolerance) {
-  const actual = this._obj;
-
-  new chai.Assertion(actual).to.be.a('bigint');
-  new chai.Assertion(expected).to.be.a('bigint');
-  new chai.Assertion(tolerance).to.be.a('bigint');
-
-  const diff = actual > expected ? actual - expected : expected - actual;
-
-  this.assert(
-    diff <= tolerance && expected >= actual,
-    `expected ${actual} to be within ${tolerance} of ${expected}`,
-    `expected ${actual} not to be within ${tolerance} of ${expected}`,
-    `Difference was ${diff}`,
-  );
-});
-
 /* eslint-disable no-unexpected-multiline */
 describe.only('Protocol Staking', function () {
   beforeEach(async function () {
-    const accounts = await ethers.getSigners();
-    const [staker1, staker2, admin] = accounts;
+    const [staker1, staker2, admin, ...accounts] = await ethers.getSigners();
 
     const token = await ethers.deployContract('$ERC20Mock', ['StakingToken', 'ST', 18]);
+    const mock = await ethers
+      .getContractFactory('ProtocolStaking')
+      .then(factory => upgrades.deployProxy(factory, ['StakedToken', 'SST', '1', token.target, admin.address]));
 
-    const impl = await ethers.deployContract('ProtocolStaking');
-    const initializerCall = (await impl.initialize.populateTransaction('StakedToken', 'SST', '1', token.target, admin))
-      .data;
-    const protocolStaking = await ethers.getContractAt(
-      'ProtocolStaking',
-      await ethers.deployContract('ERC1967ProxyMock', [impl, initializerCall]),
+    await Promise.all(
+      [staker1, staker2].flatMap(account => [
+        token.mint(account, ethers.parseEther('1000')),
+        token.$_approve(account, mock, ethers.MaxUint256),
+      ]),
     );
 
-    this.accounts = accounts.slice(3);
+    this.accounts = accounts;
     this.staker1 = staker1;
     this.staker2 = staker2;
     this.admin = admin;
     this.token = token;
-    this.mock = protocolStaking;
-
-    for (const account of [staker1, staker2]) {
-      await token.mint(account, ethers.parseEther('1000'));
-      await this.token.connect(account).approve(this.mock.target, ethers.MaxUint256);
-    }
+    this.mock = mock;
   });
 
   it('unstake cooldown period returned correctly', async function () {
@@ -72,9 +42,9 @@ describe.only('Protocol Staking', function () {
     it('should emit event on stake', async function () {
       await expect(this.mock.connect(this.staker1).stake(ethers.parseEther('100')))
         .to.emit(this.mock, 'TokensStaked')
-        .withArgs(this.staker1.address, ethers.parseEther('100'))
+        .withArgs(this.staker1, ethers.parseEther('100'))
         .to.emit(this.token, 'Transfer')
-        .withArgs(this.staker1.address, this.mock.target, ethers.parseEther('100'));
+        .withArgs(this.staker1, this.mock, ethers.parseEther('100'));
       await expect(this.mock.balanceOf(this.staker1)).to.eventually.equal(ethers.parseEther('100'));
     });
 
@@ -94,13 +64,13 @@ describe.only('Protocol Staking', function () {
 
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-      await this.mock.connect(this.admin).addOperator(this.staker1.address);
+      await this.mock.connect(this.admin).addOperator(this.staker1);
       await timeIncreaseNoMine(9);
       await this.mock.connect(this.admin).setRewardRate(0);
       await expect(this.mock.totalStakedWeight()).to.eventually.equal(
         await this.mock.weight(await this.mock.balanceOf(this.staker1)),
       );
-      expect(await this.mock.earned(this.staker1)).to.be.closeToLessThanOrEqual(ethers.parseEther('5'), 10n);
+      expect(await this.mock.earned(this.staker1)).to.be.equal(ethers.parseEther('5'));
     });
 
     it('Two users should split rewards according to logarithm', async function () {
@@ -108,8 +78,8 @@ describe.only('Protocol Staking', function () {
       await this.mock.connect(this.staker2).stake(ethers.parseEther('1000'));
 
       // Reward 0.5 tokens per block in aggregate
-      await this.mock.connect(this.admin).addOperator(this.staker1.address);
-      await this.mock.connect(this.admin).addOperator(this.staker2.address);
+      await this.mock.connect(this.admin).addOperator(this.staker1);
+      await this.mock.connect(this.admin).addOperator(this.staker2);
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await timeIncreaseNoMine(10);
       await this.mock.connect(this.admin).setRewardRate(0);
@@ -117,14 +87,16 @@ describe.only('Protocol Staking', function () {
       const earned1 = await this.mock.earned(this.staker1);
       const earned2 = await this.mock.earned(this.staker2);
 
-      expect(earned1 + earned2).to.be.closeToLessThanOrEqual(ethers.parseEther('5'), 10n);
+      expect(earned1 + earned2).to.be.lessThanOrEqual(ethers.parseEther('5'));
+      expect(earned1 + earned2).to.be.closeTo(ethers.parseEther('5'), 1n);
+
       // Should come back to this. Checking that ratio is correct
-      expect((earned2 * 1000n) / earned1).to.be.closeToLessThanOrEqual(1050n, 5n);
+      expect((1000n * earned2) / earned1).to.be.closeTo(1050n, 5n);
     });
 
     it('Second staker should not get reward from previous period', async function () {
-      await this.mock.connect(this.admin).addOperator(this.staker1.address);
-      await this.mock.connect(this.admin).addOperator(this.staker2.address);
+      await this.mock.connect(this.admin).addOperator(this.staker1);
+      await this.mock.connect(this.admin).addOperator(this.staker2);
 
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
@@ -140,7 +112,7 @@ describe.only('Protocol Staking', function () {
       const earned1 = await this.mock.earned(this.staker1);
       const earned2 = await this.mock.earned(this.staker2);
 
-      expect(earned1 + earned2).to.be.closeToLessThanOrEqual(ethers.parseEther('10'), 10n);
+      expect(earned1 + earned2).to.be.equal(ethers.parseEther('10'));
       expect(earned1).to.be.closeTo(earned2 * 3n, 5n);
     });
   });
@@ -161,7 +133,7 @@ describe.only('Protocol Staking', function () {
       await this.mock.connect(this.admin).setUnstakeCooldownPeriod(60); // 1 minute
       await expect(this.mock.connect(this.staker1).unstake(ethers.parseEther('50')))
         .to.emit(this.mock, 'Transfer')
-        .withArgs(this.staker1.address, ethers.ZeroAddress, ethers.parseEther('50'))
+        .withArgs(this.staker1, ethers.ZeroAddress, ethers.parseEther('50'))
         .to.not.emit(this.token, 'Transfer');
     });
 
@@ -254,7 +226,7 @@ describe.only('Protocol Staking', function () {
     });
 
     it('should decrease total staking amount log accordingly', async function () {
-      await this.mock.connect(this.admin).addOperator(this.staker1.address);
+      await this.mock.connect(this.admin).addOperator(this.staker1);
 
       const beforetotalStakedWeight = await this.mock.totalStakedWeight();
       const beforeStaker1Log = await this.mock.weight(await this.mock.balanceOf(this.staker1));
@@ -271,7 +243,7 @@ describe.only('Protocol Staking', function () {
 
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-      await this.mock.connect(this.admin).addOperator(this.staker1.address);
+      await this.mock.connect(this.admin).addOperator(this.staker1);
       await timeIncreaseNoMine(9);
       await this.mock.connect(this.admin).setRewardRate(0);
       const earned = await this.mock.earned(this.staker1);
@@ -285,7 +257,7 @@ describe.only('Protocol Staking', function () {
       await this.mock.connect(this.staker1).setRewardsRecipient(this.staker2);
 
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-      await this.mock.connect(this.admin).addOperator(this.staker1.address);
+      await this.mock.connect(this.admin).addOperator(this.staker1);
       await timeIncreaseNoMine(9);
 
       await expect(this.mock.claimRewards(this.staker1))
@@ -297,23 +269,23 @@ describe.only('Protocol Staking', function () {
   describe('Manage Operators', function () {
     describe('Add Operator', function () {
       it('should emit event', async function () {
-        await expect(this.mock.connect(this.admin).addOperator(this.staker1.address))
+        await expect(this.mock.connect(this.admin).addOperator(this.staker1))
           .to.emit(this.mock, 'RoleGranted')
           .withArgs(ethers.id('operator-role'), this.staker1, this.admin);
       });
 
       it('should reflect in operator list', async function () {
-        await this.mock.connect(this.admin).addOperator(this.staker1.address);
-        await this.mock.connect(this.admin).addOperator(this.staker2.address);
+        await this.mock.connect(this.admin).addOperator(this.staker1);
+        await this.mock.connect(this.admin).addOperator(this.staker2);
 
-        await expect(this.mock.isOperator(this.staker1.address)).to.eventually.equal(true);
-        await expect(this.mock.isOperator(this.staker2.address)).to.eventually.equal(true);
-        await expect(this.mock.isOperator(this.admin.address)).to.eventually.equal(false);
+        await expect(this.mock.isOperator(this.staker1)).to.eventually.equal(true);
+        await expect(this.mock.isOperator(this.staker2)).to.eventually.equal(true);
+        await expect(this.mock.isOperator(this.admin)).to.eventually.equal(false);
       });
 
       it("can't add twice", async function () {
-        await this.mock.connect(this.admin).addOperator(this.staker1.address);
-        await expect(this.mock.connect(this.admin).addOperator(this.staker1.address))
+        await this.mock.connect(this.admin).addOperator(this.staker1);
+        await expect(this.mock.connect(this.admin).addOperator(this.staker1))
           .to.be.revertedWithCustomError(this.mock, 'OperatorAlreadyExists')
           .withArgs(this.staker1);
       });
@@ -321,7 +293,7 @@ describe.only('Protocol Staking', function () {
       it('should add to totalStakedWeight', async function () {
         const weightBefore = await this.mock.totalStakedWeight();
         const staker1Weight = await this.mock.weight(await this.mock.balanceOf(this.staker1));
-        await this.mock.connect(this.admin).addOperator(this.staker1.address);
+        await this.mock.connect(this.admin).addOperator(this.staker1);
 
         await expect(this.mock.totalStakedWeight()).to.eventually.eq(weightBefore + staker1Weight);
       });
@@ -329,21 +301,21 @@ describe.only('Protocol Staking', function () {
 
     describe('Remove Operator', function () {
       beforeEach(async function () {
-        await this.mock.connect(this.admin).addOperator(this.staker1.address);
-        await this.mock.connect(this.admin).addOperator(this.staker2.address);
+        await this.mock.connect(this.admin).addOperator(this.staker1);
+        await this.mock.connect(this.admin).addOperator(this.staker2);
       });
 
       it('should emit event', async function () {
-        await expect(this.mock.connect(this.admin).removeOperator(this.staker1.address))
+        await expect(this.mock.connect(this.admin).removeOperator(this.staker1))
           .to.emit(this.mock, 'RoleRevoked')
           .withArgs(ethers.id('operator-role'), this.staker1, this.admin);
       });
 
       it('should reflect in operator list', async function () {
-        await this.mock.connect(this.admin).removeOperator(this.staker1.address);
+        await this.mock.connect(this.admin).removeOperator(this.staker1);
 
-        await expect(this.mock.isOperator(this.staker1.address)).to.eventually.equal(false);
-        await expect(this.mock.isOperator(this.staker2.address)).to.eventually.equal(true);
+        await expect(this.mock.isOperator(this.staker1)).to.eventually.equal(false);
+        await expect(this.mock.isOperator(this.staker2)).to.eventually.equal(true);
       });
 
       it('should revert if not an operator', async function () {
@@ -355,7 +327,7 @@ describe.only('Protocol Staking', function () {
       it('should deduct from totalStakedWeight', async function () {
         const weightBefore = await this.mock.totalStakedWeight();
         const staker1Weight = await this.mock.weight(await this.mock.balanceOf(this.staker1));
-        await this.mock.connect(this.admin).removeOperator(this.staker1.address);
+        await this.mock.connect(this.admin).removeOperator(this.staker1);
 
         await expect(this.mock.totalStakedWeight()).to.eventually.eq(weightBefore - staker1Weight);
       });
@@ -365,11 +337,11 @@ describe.only('Protocol Staking', function () {
         await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
         await time.increase(9);
 
-        await this.mock.connect(this.admin).removeOperator(this.staker1.address);
+        await this.mock.connect(this.admin).removeOperator(this.staker1);
         await time.increase(100);
 
         await mine();
-        expect(await this.mock.earned(this.staker1)).to.be.closeToLessThanOrEqual(ethers.parseEther('5'), 10n);
+        expect(await this.mock.earned(this.staker1)).to.be.equal(ethers.parseEther('5'));
       });
     });
   });
