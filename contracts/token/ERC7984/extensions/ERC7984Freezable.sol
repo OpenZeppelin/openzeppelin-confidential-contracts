@@ -48,50 +48,18 @@ abstract contract ERC7984Freezable is ERC7984 {
     }
 
     /**
-     * @dev See {ERC7984-_update}. The `from` account must have sufficient unfrozen balance,
+     * @dev See {ERC7984-_update}.
+     *
+     * The `from` account must have sufficient unfrozen balance,
      * otherwise 0 tokens are transferred.
-     * The default freezing behaviour can be changed (for a pass-through for instance) by overriding
-     * {_checkSenderAmountNotFrozenBeforeUpdate} and/or {_syncSenderFrozenAfterUpdate}.
+     * The default freezing behavior can be changed (for a pass-through for instance) by overriding
+     * {confidentialAvailable}.
      */
-    function _update(
-        address from,
-        address to,
-        euint64 encryptedAmount
-    ) internal virtual override returns (euint64 transferred) {
-        encryptedAmount = _checkSenderAmountNotFrozenBeforeUpdate(from, encryptedAmount);
-        transferred = super._update(from, to, encryptedAmount);
-        _syncSenderFrozenAfterUpdate(from);
-    }
-
-    /**
-     * @dev Internal function which returns the amount to be updated if that amount is not exceeding
-     * the frozen balance of the `from` account. Otherwise if it is exceeding it returns 0.
-     * Used in {_update} function.
-     */
-    function _checkSenderAmountNotFrozenBeforeUpdate(
-        address account,
-        euint64 requestedAmount
-    ) internal virtual returns (euint64) {
-        if (account != address(0)) {
-            return
-                FHE.select(FHE.le(requestedAmount, confidentialAvailable(account)), requestedAmount, FHE.asEuint64(0));
+    function _update(address from, address to, euint64 encryptedAmount) internal virtual override returns (euint64) {
+        if (from != address(0)) {
+            euint64 unfrozen = confidentialAvailable(from);
+            encryptedAmount = FHE.select(FHE.le(encryptedAmount, unfrozen), encryptedAmount, FHE.asEuint64(0));
         }
-        return requestedAmount;
-    }
-
-    /**
-     * @dev Internal function which resets frozen of the `from` account to its balance after a transfer.
-     * Used in {_update} function.
-     */
-    function _syncSenderFrozenAfterUpdate(address account) internal virtual {
-        if (account != address(0)) {
-            euint64 frozen = confidentialFrozen(account);
-            if (!FHE.isInitialized(frozen)) {
-                return;
-            }
-            euint64 balance = confidentialBalanceOf(account);
-            // Reset frozen to balance if transferred more than available
-            _setConfidentialFrozen(account, FHE.select(FHE.gt(frozen, balance), balance, frozen));
-        }
+        return super._update(from, to, encryptedAmount);
     }
 }

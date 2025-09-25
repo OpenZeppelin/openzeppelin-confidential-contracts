@@ -451,7 +451,7 @@ describe('ERC7984Rwa', function () {
         await token.connect(agent1).getHandleAllowance(frozenHandle, agent1, true);
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, frozenHandle, await token.getAddress(), agent1),
-        ).to.eventually.equal(50); // frozen is left unchanged
+        ).to.eventually.equal(25); // is decreased by transfer amount
       });
     }
 
@@ -514,18 +514,18 @@ describe('ERC7984Rwa', function () {
         );
         expect(account).equal(recipient.address);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, frozenAmountHandle, await token.getAddress(), recipient),
-        ).to.eventually.equal(75);
+          fhevm.userDecryptEuint(FhevmType.euint64, frozenAmountHandle, token.target, recipient),
+        ).to.eventually.equal(55);
         const balanceHandle = await token.confidentialBalanceOf(recipient);
         await token.connect(agent1).getHandleAllowance(balanceHandle, agent1, true);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, balanceHandle, await token.getAddress(), agent1),
+          fhevm.userDecryptEuint(FhevmType.euint64, balanceHandle, token.target, agent1),
         ).to.eventually.equal(75);
         const frozenHandle = await token.confidentialFrozen(recipient);
         await token.connect(agent1).getHandleAllowance(frozenHandle, agent1, true);
-        await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, frozenHandle, await token.getAddress(), agent1),
-        ).to.eventually.equal(75); // frozen got reset to balance
+        await expect(fhevm.userDecryptEuint(FhevmType.euint64, frozenHandle, token.target, agent1)).to.eventually.equal(
+          55,
+        );
       });
     }
 

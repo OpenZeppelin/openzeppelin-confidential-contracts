@@ -2,13 +2,14 @@
 
 pragma solidity ^0.8.27;
 
-import {FHE, ebool, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC7984} from "./../../../interfaces/IERC7984.sol";
 import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
+import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984} from "./../ERC7984.sol";
 import {ERC7984Freezable} from "./ERC7984Freezable.sol";
 import {ERC7984Restricted} from "./ERC7984Restricted.sol";
@@ -17,15 +18,7 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  * @dev Extension of {ERC7984} that supports confidential Real World Assets (RWAs).
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
-abstract contract ERC7984Rwa is
-    ERC7984,
-    ERC7984Freezable,
-    ERC7984Restricted,
-    Pausable,
-    Multicall,
-    ERC165,
-    AccessControl
-{
+abstract contract ERC7984Rwa is ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, ERC165, AccessControl {
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
     // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
     bytes4 private constant FORCE_CONFIDENTIAL_TRANSFER_FROM_SIG = 0x6c9c3c85;
@@ -183,15 +176,21 @@ abstract contract ERC7984Rwa is
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal override(ERC7984Freezable, ERC7984Restricted, ERC7984) whenNotPaused returns (euint64) {
+    ) internal override(ERC7984Freezable, ERC7984Restricted) whenNotPaused returns (euint64) {
         // frozen and restriction checks performed through inheritance
         return super._update(from, to, encryptedAmount);
     }
 
     /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
     function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
+        euint64 senderFrozenAmount = confidentialFrozen(from);
+        if (FHE.isInitialized(senderFrozenAmount)) {
+            (, euint64 newFrozen) = FHESafeMath.tryDecrease(senderFrozenAmount, encryptedAmount);
+            _setConfidentialFrozen(from, newFrozen);
+        }
+
         // bypassing `from` restriction check with {_checkSenderRestriction}
-        // bypassing `from` frozen check with {_checkSenderAmountNotFrozenBeforeUpdate}
+        // bypassing `from` frozen check with {confidentialAvailable}
         return super._update(from, to, encryptedAmount); // still performing `to` restriction check
     }
 
@@ -205,17 +204,12 @@ abstract contract ERC7984Rwa is
         super._checkSenderRestriction(account);
     }
 
-    /**
-     * @dev Bypasses the frozen check of the `from` account when performing a {forceConfidentialTransferFrom}.
-     */
-    function _checkSenderAmountNotFrozenBeforeUpdate(
-        address account,
-        euint64 encryptedAmount
-    ) internal override returns (euint64) {
+    function confidentialAvailable(address account) public virtual override returns (euint64) {
         if (_isForceTransfer()) {
-            return encryptedAmount;
+            return confidentialBalanceOf(account);
+        } else {
+            return super.confidentialAvailable(account);
         }
-        return super._checkSenderAmountNotFrozenBeforeUpdate(account, encryptedAmount);
     }
 
     /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
