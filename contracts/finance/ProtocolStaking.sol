@@ -40,7 +40,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     int256 private _totalVirtualPaid;
 
     event TokensStaked(address indexed operator, uint256 amount);
-    event TokensUnstaked(address indexed operator, uint256 amount);
+    event TokensUnstaked(address indexed operator, address indexed recipient, uint256 amount);
     event RewardRateSet(uint256 rewardRate);
     event UnstakeCooldownPeriodSet(uint256 unstakeCooldownPeriod);
     event RewardsRecipientSet(address indexed account, address indexed recipient);
@@ -77,11 +77,11 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     }
 
     /**
-     * @dev Unstake `amount` tokens to `msg.sender`.
+     * @dev Unstake `amount` tokens from `msg.sender`'s staked balance to `recipient`.
      *
      * NOTE: Unstaked tokens will not be sent immediately if {unstakeCooldownPeriod} is non-zero.
      */
-    function unstake(uint256 amount, address recipient) public virtual {
+    function unstake(address recipient, uint256 amount) public virtual {
         _burn(msg.sender, amount);
 
         if (_unstakeCooldownPeriod == 0) {
@@ -99,7 +99,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         emit TokensUnstaked(msg.sender, recipient, amount);
     }
 
-    /// @dev Releases tokens requested for unstaking after the cooldown period to `msg.sender`.
+    /// @dev Releases tokens requested for unstaking after the cooldown period to `account`.
     function release(address account) public virtual {
         uint256 totalAmountCooledDown = _unstakeRequests[account].upperLookup(Time.timestamp());
         uint256 amountToRelease = totalAmountCooledDown - _released[account];

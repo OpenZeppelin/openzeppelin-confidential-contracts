@@ -118,28 +118,36 @@ describe.only('Protocol Staking', function () {
     });
 
     it('should transfer instantly if cooldown is 0', async function () {
-      const tx = this.mock.connect(this.staker1).unstake(ethers.parseEther('50'));
+      const tx = this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('50'));
       await expect(tx).to.changeTokenBalance(this.token, this.staker1, ethers.parseEther('50'));
       await expect(tx).to.changeTokenBalance(this.mock, this.staker1, -ethers.parseEther('50'));
     });
 
     it('should not transfer if cooldown is set', async function () {
       await this.mock.connect(this.admin).setUnstakeCooldownPeriod(60); // 1 minute
-      await expect(this.mock.connect(this.staker1).unstake(ethers.parseEther('50')))
+      await expect(this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('50')))
         .to.emit(this.mock, 'Transfer')
         .withArgs(this.staker1, ethers.ZeroAddress, ethers.parseEther('50'))
         .to.not.emit(this.token, 'Transfer');
     });
 
+    it('should be able to unstake to someone else', async function () {
+      await expect(this.mock.connect(this.staker1).unstake(this.staker2, ethers.parseEther('50')))
+        .to.emit(this.mock, 'TokensUnstaked')
+        .withArgs(this.staker1, this.staker2, ethers.parseEther('50'))
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.staker2, ethers.parseEther('50'));
+    });
+
     describe('Release', function () {
       it('should transfer after cooldown complete', async function () {
         await this.mock.connect(this.admin).setUnstakeCooldownPeriod(60); // 1 minute
-        await this.mock.connect(this.staker1).unstake(ethers.parseEther('50'));
+        await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('50'));
         await expect(this.mock.tokensInCooldown(this.staker1)).to.eventually.eq(ethers.parseEther('50'));
 
         await timeIncreaseNoMine(60);
 
-        await expect(this.mock.connect(this.staker1).release()).to.changeTokenBalance(
+        await expect(this.mock.release(this.staker1)).to.changeTokenBalance(
           this.token,
           this.staker1,
           ethers.parseEther('50'),
@@ -149,36 +157,36 @@ describe.only('Protocol Staking', function () {
 
       it('should only release once', async function () {
         await this.mock.connect(this.admin).setUnstakeCooldownPeriod(60); // 1 minute
-        await this.mock.connect(this.staker1).unstake(ethers.parseEther('50'));
+        await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('50'));
 
         await timeIncreaseNoMine(60);
 
-        await expect(this.mock.connect(this.staker1).release()).to.changeTokenBalance(
+        await expect(this.mock.release(this.staker1)).to.changeTokenBalance(
           this.token,
           this.staker1,
           ethers.parseEther('50'),
         );
-        await expect(this.mock.connect(this.staker1).release()).to.not.emit(this.token, 'Transfer');
+        await expect(this.mock.release(this.staker1)).to.not.emit(this.token, 'Transfer');
       });
 
       it("should not release if cooldown isn't complete", async function () {
         await this.mock.connect(this.admin).setUnstakeCooldownPeriod(60);
-        await this.mock.connect(this.staker1).unstake(ethers.parseEther('50'));
+        await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('50'));
 
         await timeIncreaseNoMine(30);
-        await expect(this.mock.connect(this.staker1).release()).to.not.emit(this.token, 'Transfer');
+        await expect(this.mock.release(this.staker1)).to.not.emit(this.token, 'Transfer');
       });
 
       it('should combine multiple complete withdrawals', async function () {
         await this.mock.connect(this.admin).setUnstakeCooldownPeriod(60); // 1 minute
-        await this.mock.connect(this.staker1).unstake(ethers.parseEther('50'));
+        await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('50'));
 
         await timeIncreaseNoMine(30);
-        await this.mock.connect(this.staker1).unstake(ethers.parseEther('50'));
+        await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('50'));
         await expect(this.mock.tokensInCooldown(this.staker1)).to.eventually.eq(ethers.parseEther('100'));
 
         await timeIncreaseNoMine(60);
-        await expect(this.mock.connect(this.staker1).release())
+        await expect(this.mock.release(this.staker1))
           .to.emit(this.token, 'Transfer')
           .withArgs(this.mock, this.staker1, ethers.parseEther('100'));
         await expect(this.mock.tokensInCooldown(this.staker1)).to.eventually.eq(ethers.parseEther('0'));
@@ -186,34 +194,34 @@ describe.only('Protocol Staking', function () {
 
       it('should only release completed cooldowns in batch', async function () {
         await this.mock.connect(this.admin).setUnstakeCooldownPeriod(60); // 1 minute
-        await this.mock.connect(this.staker1).unstake(ethers.parseEther('25'));
+        await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('25'));
 
         await timeIncreaseNoMine(20);
-        await this.mock.connect(this.staker1).unstake(ethers.parseEther('25'));
+        await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('25'));
 
         await timeIncreaseNoMine(20);
-        await this.mock.connect(this.staker1).unstake(ethers.parseEther('25'));
+        await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('25'));
 
         await timeIncreaseNoMine(40);
-        await expect(this.mock.connect(this.staker1).release())
+        await expect(this.mock.release(this.staker1))
           .to.emit(this.token, 'Transfer')
           .withArgs(this.mock, this.staker1, ethers.parseEther('50'));
       });
 
       it('should handle decrease in cooldown period gracefully', async function () {
         await this.mock.connect(this.admin).setUnstakeCooldownPeriod(120);
-        await this.mock.connect(this.staker1).unstake(ethers.parseEther('25'));
+        await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('25'));
 
         await timeIncreaseNoMine(30);
         await this.mock.connect(this.admin).setUnstakeCooldownPeriod(30);
-        await this.mock.connect(this.staker1).unstake(ethers.parseEther('25'));
+        await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('25'));
 
         // advance 30 seconds. Still need to wait another 60 seconds for the original unstake request to complete.
         await timeIncreaseNoMine(30);
-        await expect(this.mock.connect(this.staker1).release()).to.not.emit(this.token, 'Transfer');
+        await expect(this.mock.release(this.staker1)).to.not.emit(this.token, 'Transfer');
 
         await timeIncreaseNoMine(60);
-        await expect(this.mock.connect(this.staker1).release())
+        await expect(this.mock.release(this.staker1))
           .to.emit(this.token, 'Transfer')
           .withArgs(this.mock, this.staker1, ethers.parseEther('50'));
       });
@@ -224,7 +232,7 @@ describe.only('Protocol Staking', function () {
 
       const beforetotalStakedWeight = await this.mock.totalStakedWeight();
       const beforeStaker1Log = await this.mock.weight(await this.mock.balanceOf(this.staker1));
-      await this.mock.connect(this.staker1).unstake(ethers.parseEther('75'));
+      await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('75'));
       const afterStaker1Log = await this.mock.weight(await this.mock.balanceOf(this.staker1));
       const aftertotalStakedWeight = await this.mock.totalStakedWeight();
       expect(beforetotalStakedWeight - aftertotalStakedWeight).to.equal(beforeStaker1Log - afterStaker1Log);
