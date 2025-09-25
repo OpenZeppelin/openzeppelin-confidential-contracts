@@ -191,8 +191,7 @@ describe('ERC7984Rwa', function () {
   describe('Mintable', async function () {
     for (const withProof of [true, false]) {
       it(`should mint ${withProof ? 'with proof' : ''}`, async function () {
-        const { agent1, recipient } = await fixture();
-        const { token } = await fixture();
+        const { agent1, recipient, token } = await fixture();
         const amount = 100;
         let params = [recipient.address] as unknown as [
           account: AddressLike,
@@ -283,8 +282,7 @@ describe('ERC7984Rwa', function () {
   describe('Burnable', async function () {
     for (const withProof of [true, false]) {
       it(`should burn agent ${withProof ? 'with proof' : ''}`, async function () {
-        const { agent1, recipient } = await fixture();
-        const { token } = await fixture();
+        const { agent1, recipient, token } = await fixture();
         const encryptedInput = await fhevm
           .createEncryptedInput(await token.getAddress(), agent1.address)
           .add64(100)
@@ -387,8 +385,7 @@ describe('ERC7984Rwa', function () {
   describe('Force transfer', async function () {
     for (const withProof of [true, false]) {
       it(`should force transfer ${withProof ? 'with proof' : ''}`, async function () {
-        const { agent1, recipient, anyone } = await fixture();
-        const { token } = await fixture();
+        const { agent1, recipient, anyone, token } = await fixture();
         const encryptedMintValueInput = await fhevm
           .createEncryptedInput(await token.getAddress(), agent1.address)
           .add64(100)
@@ -457,8 +454,7 @@ describe('ERC7984Rwa', function () {
 
     for (const withProof of [true, false]) {
       it(`should force transfer even if frozen ${withProof ? 'with proof' : ''}`, async function () {
-        const { agent1, recipient, anyone } = await fixture();
-        const { token } = await fixture();
+        const { agent1, recipient, anyone, token } = await fixture();
         const encryptedMintValueInput = await fhevm
           .createEncryptedInput(await token.getAddress(), agent1.address)
           .add64(100)
