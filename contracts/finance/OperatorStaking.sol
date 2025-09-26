@@ -11,12 +11,29 @@ abstract contract OperatorStaking is ERC4626 {
 
     constructor(IERC20 asset, ProtocolStaking protocolStaking) ERC4626(asset) {
         _protocolStaking = protocolStaking;
+        asset.approve(address(protocolStaking), type(uint256).max);
     }
 
     function totalAssets() public view virtual override returns (uint256) {
         return
             super.totalAssets() +
-            _protocolStaking.balanceOf(address(this)) +
-            _protocolStaking.tokensInCooldown(address(this));
+            _protocolStaking.tokensInCooldown(address(this)) +
+            _protocolStaking.balanceOf(address(this));
+    }
+
+    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
+        super._deposit(caller, receiver, assets, shares);
+        _protocolStaking.stake(assets);
+    }
+
+    function _withdraw(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares
+    ) internal virtual override {
+        super._withdraw(caller, receiver, owner, assets, shares);
+        _protocolStaking.unstake(receiver, assets);
     }
 }
