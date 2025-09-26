@@ -385,7 +385,7 @@ describe('ERC7984Rwa', function () {
     for (const withProof of [true, false]) {
       it(`should force transfer${withProof ? ' with proof' : ''}`, async function () {
         const { agent1, recipient, anyone, token } = await fixture();
-        await token.$_mint(recipient, 100);
+        await token['$_mint(address,uint64)'](recipient, 100);
         const amount = 25;
         let params = [recipient.address, anyone.address] as unknown as [
           from: AddressLike,
@@ -429,7 +429,7 @@ describe('ERC7984Rwa', function () {
     for (const withProof of [true, false]) {
       it(`should not force transfer frozen funds ${withProof ? 'with proof' : ''}`, async function () {
         const { agent1, recipient, anyone, token } = await fixture();
-        await token.$_mint(recipient, 100);
+        await token['$_mint(address,uint64)'](recipient, 100);
         // set frozen (only 20 available but about to force transfer 25)
         await token.$_setConfidentialFrozen(recipient, 80);
         const amount = 25;
@@ -568,7 +568,7 @@ describe('ERC7984Rwa', function () {
   describe('Transfer', async function () {
     it('should transfer', async function () {
       const { token, agent1, recipient, anyone } = await fixture();
-      await token.$_mint(recipient, 100);
+      await token['$_mint(address,uint64)'](recipient, 100);
       // set frozen (50 available and about to transfer 25)
       await token.$_setConfidentialFrozen(recipient, 50);
       const amount = 25;
@@ -627,7 +627,7 @@ describe('ERC7984Rwa', function () {
 
     it('should not transfer if frozen', async function () {
       const { token, agent1, recipient, anyone } = await fixture();
-      await token.$_mint(recipient, 100);
+      await token['$_mint(address,uint64)'](recipient, 100);
       // set frozen (20 available but about to transfer 25)
       await token.$_setConfidentialFrozen(recipient, 80);
       const encryptedTransferValueInput = await fhevm

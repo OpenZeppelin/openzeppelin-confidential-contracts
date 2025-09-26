@@ -180,7 +180,7 @@ abstract contract ERC7984Rwa is ERC7984Freezable, ERC7984Restricted, Pausable, M
     function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
         // bypassing `from` restriction check with {_checkSenderRestriction}. Still performing `to` restriction check.
         // bypassing paused state by directly calling `super._update`
-        return super._update(from, to, encryptedAmount); //
+        return super._update(from, to, encryptedAmount);
     }
 
     /**
