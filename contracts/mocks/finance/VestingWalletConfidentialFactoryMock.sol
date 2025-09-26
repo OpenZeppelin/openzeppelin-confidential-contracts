@@ -62,6 +62,5 @@ contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidentia
         __ERC7821WithExecutor_init(executor);
 
         FHE.setCoprocessor(ZamaConfig.getSepoliaConfig());
-        FHE.setDecryptionOracle(ZamaConfig.getSepoliaOracleAddress());
     }
 }

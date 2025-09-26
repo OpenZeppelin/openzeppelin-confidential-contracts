@@ -245,7 +245,7 @@ describe('ConfidentialFungibleTokenWrapper', function () {
     });
 
     it('finalized with invalid signature', async function () {
-      await expect(this.wrapper.connect(this.holder).finalizeUnwrap(0, 0, [])).to.be.reverted;
+      await expect(this.wrapper.connect(this.holder).finalizeUnwrap(0, '0x', '0x')).to.be.reverted;
     });
   });
 

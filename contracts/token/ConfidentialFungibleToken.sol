@@ -223,14 +223,14 @@ abstract contract ConfidentialFungibleToken is IConfidentialFungibleToken {
     /// @dev Finalizes a disclose encrypted amount request.
     function finalizeDiscloseEncryptedAmount(
         uint256 requestId,
-        uint64 amount,
-        bytes[] memory signatures
+        bytes calldata cleartexts,
+        bytes calldata decryptionProof
     ) public virtual {
-        FHE.checkSignatures(requestId, signatures);
+        FHE.checkSignatures(requestId, cleartexts, decryptionProof);
 
         euint64 requestHandle = _requestHandles[requestId];
         require(FHE.isInitialized(requestHandle), ConfidentialFungibleTokenInvalidGatewayRequest(requestId));
-        emit AmountDisclosed(requestHandle, amount);
+        emit AmountDisclosed(requestHandle, abi.decode(cleartexts, (uint64)));
 
         _requestHandles[requestId] = euint64.wrap(0);
     }
