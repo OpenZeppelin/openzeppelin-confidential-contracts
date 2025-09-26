@@ -17,6 +17,8 @@ contract OperatorStakingRewarder is Ownable {
     uint256 private _totalReleased;
     mapping(address => uint256) private _released;
 
+    event RewardClaimed(address account, uint256 amount);
+
     constructor(address owner, address operatorStaking) Ownable(owner) {
         _operatorStaking = operatorStaking;
     }
@@ -64,5 +66,6 @@ contract OperatorStakingRewarder is Ownable {
         _totalReleased += releasable;
         _released[account] = released + releasable;
         IERC20(stakingToken_).transfer(account, releasable);
+        emit RewardClaimed(msg.sender, releasable);
     }
 }

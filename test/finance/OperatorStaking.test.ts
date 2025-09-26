@@ -82,9 +82,9 @@ describe.only('Operator Staking', function () {
       for (const holder of holders) {
         await baseToken.$_mint(holder.address, amount);
         await baseToken.connect(holder).approve(operatorStaking.target, amount);
-        await operatorStaking.connect(holder).deposit(amount, holder.address);
+        await operatorStaking.connect(holder).deposit(amount);
       }
-      await operatorStaking.connect(operator).protocolStake(amount * holders.length);
+      await operatorStaking.connect(operator).stake(amount * holders.length);
       await mine(1);
       await protocolStaking.connect(protocolAdmin).setRewardRate(0); // stop rewarding for easier accounting
       const earned = await protocolStaking.earned(operatorStaking.target);
@@ -107,21 +107,24 @@ describe.only('Operator Staking', function () {
     });
 
     it('should get holder stake if operator unstaked and released', async function () {
-      const { baseToken, operator, operatorStaking, holder1, holder2 } = await fixture();
+      const { baseToken, protocolAdmin, protocolStaking, operator, operatorStaking, holder1, holder2 } =
+        await fixture();
       const amount = 100;
       const holders = [holder1, holder2];
       for (const holder of holders) {
         await baseToken.$_mint(holder.address, amount);
         await baseToken.connect(holder).approve(operatorStaking.target, amount);
-        await operatorStaking.connect(holder).deposit(amount, holder.address);
+        await operatorStaking.connect(holder).deposit(amount);
         await expect(baseToken.balanceOf(holder.address)).to.eventually.equal(0);
       }
       await expect(baseToken.balanceOf(operatorStaking.target)).to.eventually.equal(amount * holders.length);
-      await operatorStaking.connect(operator).protocolStake(amount * holders.length);
-      await operatorStaking.connect(operator).protocolUnstake(amount * holders.length);
-      await operatorStaking.connect(operator).protocolRelease();
+      await operatorStaking.connect(operator).stake(amount * holders.length);
+      await protocolStaking.connect(protocolAdmin).setUnstakeCooldownPeriod(1); // set short cool down
       for (const holder of holders) {
-        await operatorStaking.connect(holder).withdraw(amount, holder.address, holder.address);
+        await operatorStaking.connect(holder).requestWithdraw(amount);
+        await expect(baseToken.balanceOf(holder.address)).to.eventually.equal(0);
+        await mine(1); // now cooled down
+        await operatorStaking.connect(holder).withdraw(amount);
         await expect(baseToken.balanceOf(holder.address)).to.eventually.equal(amount);
       }
       await expect(baseToken.balanceOf(operatorStaking.target)).to.eventually.equal(0);
