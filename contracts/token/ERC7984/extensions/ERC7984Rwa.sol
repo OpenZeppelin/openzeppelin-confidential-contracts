@@ -37,12 +37,7 @@ abstract contract ERC7984Rwa is ERC7984Freezable, ERC7984Restricted, Pausable, M
         _;
     }
 
-    constructor(
-        string memory name,
-        string memory symbol,
-        string memory tokenUri,
-        address admin
-    ) ERC7984(name, symbol, tokenUri) {
+    constructor(address admin) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
@@ -176,7 +171,7 @@ abstract contract ERC7984Rwa is ERC7984Freezable, ERC7984Restricted, Pausable, M
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal override(ERC7984Freezable, ERC7984Restricted) whenNotPaused returns (euint64) {
+    ) internal virtual override(ERC7984Freezable, ERC7984Restricted) whenNotPaused returns (euint64) {
         // frozen and restriction checks performed through inheritance
         return super._update(from, to, encryptedAmount);
     }

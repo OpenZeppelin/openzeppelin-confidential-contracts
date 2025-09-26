@@ -7,7 +7,6 @@ import { AddressLike, BytesLike } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
 const transferEventSignature = 'ConfidentialTransfer(address,address,bytes32)';
-const frozenEventSignature = 'TokensFrozen(address,bytes32)';
 const adminRole = ethers.ZeroHash;
 const agentRole = ethers.id('AGENT_ROLE');
 
@@ -384,31 +383,9 @@ describe('ERC7984Rwa', function () {
 
   describe('Force transfer', async function () {
     for (const withProof of [true, false]) {
-      it(`should force transfer ${withProof ? 'with proof' : ''}`, async function () {
+      it(`should force transfer${withProof ? ' with proof' : ''}`, async function () {
         const { agent1, recipient, anyone, token } = await fixture();
-        const encryptedMintValueInput = await fhevm
-          .createEncryptedInput(await token.getAddress(), agent1.address)
-          .add64(100)
-          .encrypt();
-        await token
-          .connect(agent1)
-          ['confidentialMint(address,bytes32,bytes)'](
-            recipient,
-            encryptedMintValueInput.handles[0],
-            encryptedMintValueInput.inputProof,
-          );
-        // set frozen (50 available and about to force transfer 25)
-        const encryptedFrozenValueInput = await fhevm
-          .createEncryptedInput(await token.getAddress(), agent1.address)
-          .add64(50)
-          .encrypt();
-        await token
-          .connect(agent1)
-          ['setConfidentialFrozen(address,bytes32,bytes)'](
-            recipient,
-            encryptedFrozenValueInput.handles[0],
-            encryptedFrozenValueInput.inputProof,
-          );
+        await token.$_mint(recipient, 100);
         const amount = 25;
         let params = [recipient.address, anyone.address] as unknown as [
           from: AddressLike,
@@ -426,6 +403,8 @@ describe('ERC7984Rwa', function () {
           await token.connect(agent1).createEncryptedAmount(amount);
           params.push(await token.connect(agent1).createEncryptedAmount.staticCall(amount));
         }
+        await token.connect(agent1).pause();
+        await token.connect(agent1).blockUser(recipient);
         const tx = token
           .connect(agent1)
           [
@@ -434,8 +413,8 @@ describe('ERC7984Rwa', function () {
               : 'forceConfidentialTransferFrom(address,address,bytes32)'
           ](...params);
         const [from, to, transferredHandle] = await callAndGetResult(tx, transferEventSignature);
-        expect(from).equal(recipient.address);
-        expect(to).equal(anyone.address);
+        expect(from).to.equal(recipient.address);
+        expect(to).to.equal(anyone.address);
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), anyone),
         ).to.eventually.equal(amount);
@@ -444,43 +423,15 @@ describe('ERC7984Rwa', function () {
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, balanceHandle, await token.getAddress(), agent1),
         ).to.eventually.equal(75);
-        const frozenHandle = await token.confidentialFrozen(recipient);
-        await token.connect(agent1).getHandleAllowance(frozenHandle, agent1, true);
-        await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, frozenHandle, await token.getAddress(), agent1),
-        ).to.eventually.equal(25); // is decreased by transfer amount
       });
     }
 
     for (const withProof of [true, false]) {
-      it(`should force transfer even if frozen ${withProof ? 'with proof' : ''}`, async function () {
+      it(`should not force transfer frozen funds ${withProof ? 'with proof' : ''}`, async function () {
         const { agent1, recipient, anyone, token } = await fixture();
-        const encryptedMintValueInput = await fhevm
-          .createEncryptedInput(await token.getAddress(), agent1.address)
-          .add64(100)
-          .encrypt();
-        await token
-          .connect(agent1)
-          ['confidentialMint(address,bytes32,bytes)'](
-            recipient,
-            encryptedMintValueInput.handles[0],
-            encryptedMintValueInput.inputProof,
-          );
+        await token.$_mint(recipient, 100);
         // set frozen (only 20 available but about to force transfer 25)
-        const encryptedFrozenValueInput = await fhevm
-          .createEncryptedInput(await token.getAddress(), agent1.address)
-          .add64(80)
-          .encrypt();
-        await token
-          .connect(agent1)
-          ['setConfidentialFrozen(address,bytes32,bytes)'](
-            recipient,
-            encryptedFrozenValueInput.handles[0],
-            encryptedFrozenValueInput.inputProof,
-          );
-        // should force transfer even if paused
-        await token.connect(agent1).pause();
-        expect(await token.paused()).to.be.true;
+        await token.$_setConfidentialFrozen(recipient, 80);
         const amount = 25;
         let params = [recipient.address, anyone.address] as unknown as [
           from: AddressLike,
@@ -498,7 +449,7 @@ describe('ERC7984Rwa', function () {
           await token.connect(agent1).createEncryptedAmount(amount);
           params.push(await token.connect(agent1).createEncryptedAmount.staticCall(amount));
         }
-        const [account, frozenAmountHandle] = await callAndGetResult(
+        const [from, to, transferredHandle] = await callAndGetResult(
           token
             .connect(agent1)
             [
@@ -506,22 +457,23 @@ describe('ERC7984Rwa', function () {
                 ? 'forceConfidentialTransferFrom(address,address,bytes32,bytes)'
                 : 'forceConfidentialTransferFrom(address,address,bytes32)'
             ](...params),
-          frozenEventSignature,
+          transferEventSignature,
         );
-        expect(account).equal(recipient.address);
+        expect(from).to.equal(recipient.address);
+        expect(to).to.equal(anyone.address);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, frozenAmountHandle, token.target, recipient),
-        ).to.eventually.equal(55);
+          fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), recipient),
+        ).to.eventually.equal(0);
+
         const balanceHandle = await token.confidentialBalanceOf(recipient);
-        await token.connect(agent1).getHandleAllowance(balanceHandle, agent1, true);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, balanceHandle, token.target, agent1),
-        ).to.eventually.equal(75);
+          fhevm.userDecryptEuint(FhevmType.euint64, balanceHandle, await token.getAddress(), recipient),
+        ).to.eventually.equal(100);
+
         const frozenHandle = await token.confidentialFrozen(recipient);
-        await token.connect(agent1).getHandleAllowance(frozenHandle, agent1, true);
-        await expect(fhevm.userDecryptEuint(FhevmType.euint64, frozenHandle, token.target, agent1)).to.eventually.equal(
-          55,
-        );
+        await expect(
+          fhevm.userDecryptEuint(FhevmType.euint64, frozenHandle, await token.getAddress(), recipient),
+        ).to.eventually.equal(80);
       });
     }
 
@@ -616,29 +568,9 @@ describe('ERC7984Rwa', function () {
   describe('Transfer', async function () {
     it('should transfer', async function () {
       const { token, agent1, recipient, anyone } = await fixture();
-      const encryptedMintValueInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), agent1.address)
-        .add64(100)
-        .encrypt();
-      await token
-        .connect(agent1)
-        ['confidentialMint(address,bytes32,bytes)'](
-          recipient,
-          encryptedMintValueInput.handles[0],
-          encryptedMintValueInput.inputProof,
-        );
+      await token.$_mint(recipient, 100);
       // set frozen (50 available and about to transfer 25)
-      const encryptedFrozenValueInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), agent1.address)
-        .add64(50)
-        .encrypt();
-      await token
-        .connect(agent1)
-        ['setConfidentialFrozen(address,bytes32,bytes)'](
-          recipient,
-          encryptedFrozenValueInput.handles[0],
-          encryptedFrozenValueInput.inputProof,
-        );
+      await token.$_setConfidentialFrozen(recipient, 50);
       const amount = 25;
       const encryptedTransferValueInput = await fhevm
         .createEncryptedInput(await token.getAddress(), recipient.address)
@@ -695,29 +627,9 @@ describe('ERC7984Rwa', function () {
 
     it('should not transfer if frozen', async function () {
       const { token, agent1, recipient, anyone } = await fixture();
-      const encryptedMintValueInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), agent1.address)
-        .add64(100)
-        .encrypt();
-      await token
-        .connect(agent1)
-        ['confidentialMint(address,bytes32,bytes)'](
-          recipient,
-          encryptedMintValueInput.handles[0],
-          encryptedMintValueInput.inputProof,
-        );
+      await token.$_mint(recipient, 100);
       // set frozen (20 available but about to transfer 25)
-      const encryptedFrozenValueInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), agent1.address)
-        .add64(80)
-        .encrypt();
-      await token
-        .connect(agent1)
-        ['setConfidentialFrozen(address,bytes32,bytes)'](
-          recipient,
-          encryptedFrozenValueInput.handles[0],
-          encryptedFrozenValueInput.inputProof,
-        );
+      await token.$_setConfidentialFrozen(recipient, 80);
       const encryptedTransferValueInput = await fhevm
         .createEncryptedInput(await token.getAddress(), recipient.address)
         .add64(25)
