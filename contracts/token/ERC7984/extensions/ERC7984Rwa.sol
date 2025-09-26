@@ -229,7 +229,7 @@ abstract contract ERC7984Rwa is
     /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
     function _isForceTransfer() private pure returns (bool) {
         return
-            msg.sig == bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)")) ||
-            msg.sig == bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"));
+            msg.sig == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+            msg.sig == 0x44fd6e40; // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
     }
 }
