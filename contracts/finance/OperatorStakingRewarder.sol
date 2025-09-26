@@ -9,7 +9,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
- * @dev
+ * @dev A contract handling reward logic to holders having deposited tokens on an {OperatorStaking} contract.
  */
 contract OperatorStakingRewarder is Ownable {
     address private immutable _operatorStaking;
@@ -17,39 +17,36 @@ contract OperatorStakingRewarder is Ownable {
     uint256 private _totalReleased;
     mapping(address => uint256) private _released;
 
+    event HoldersRewardRatioSet(uint256 holdersRewardRatio);
     event RewardClaimed(address account, uint256 amount);
 
     constructor(address owner, address operatorStaking) Ownable(owner) {
         _operatorStaking = operatorStaking;
     }
 
-    /// @dev
+    /// @dev Gets staking token.
     function stakingToken() public view virtual returns (address) {
         return IERC4626(_operatorStaking).asset();
     }
 
-    /// @dev
+    /// @dev Gets reward ratio for all holders.
     function holdersRewardRatio() public view virtual returns (uint256) {
         return _holdersRewardRatio;
     }
 
-    /// @dev
+    /// @dev Gets reward ratio for operator.
     function operatorRewardRatio() public view virtual returns (uint256) {
         return 100 - _holdersRewardRatio;
     }
 
-    /// @dev
+    /// @dev Sets reward ratio for all holders.
     function setHoldersRewardRatio(uint256 holdersRewardRatio_) public virtual onlyOwner {
         _holdersRewardRatio = holdersRewardRatio_;
+        emit HoldersRewardRatioSet(holdersRewardRatio_);
     }
 
-    /// @dev
+    /// @dev Claim rewards for deposits made by holders.
     function claim(address account) public virtual {
-        _claim(account);
-    }
-
-    /// @dev
-    function _claim(address account) internal virtual {
         uint256 ratio;
         if (account == owner()) {
             ratio = operatorRewardRatio();
@@ -65,7 +62,7 @@ contract OperatorStakingRewarder is Ownable {
         uint256 releasable = Math.mulDiv(_totalReleased + balance, ratio, 100) - released;
         _totalReleased += releasable;
         _released[account] = released + releasable;
-        IERC20(stakingToken_).transfer(account, releasable);
+        require(IERC20(stakingToken_).transfer(account, releasable));
         emit RewardClaimed(msg.sender, releasable);
     }
 }

@@ -24,13 +24,12 @@ interface IOperatorStakingRewarder {
 }
 
 /**
- * @dev
+ * @dev A contract to allow holders to deposits tokens that can be staked on the protocol by the operator.
  */
 abstract contract OperatorStaking is ERC20, Ownable {
     using SafeERC20 for IERC20;
 
     address private immutable _protocolStaking;
-    address private _operatorStakingRewarder;
 
     event Staked(uint256 amount);
     event Deposited(address account, uint256 amount);
@@ -50,19 +49,19 @@ abstract contract OperatorStaking is ERC20, Ownable {
         setRewarder(address(new OperatorStakingRewarder(owner, address(this))));
     }
 
-    /// @dev
+    /// @dev Gets underlying asset address.
     function asset() public view virtual returns (address) {
         return IProtocolStaking(_protocolStaking).stakingToken();
     }
 
-    /// @dev
+    /// @dev Gets rewarder address.
     function rewarder() public view virtual returns (address) {
         return IProtocolStaking(_protocolStaking).rewardsRecipient(address(this));
     }
 
-    /// @dev
-    function setRewarder(address rewarder) public virtual onlyOwner {
-        IProtocolStaking(_protocolStaking).setRewardsRecipient(rewarder);
+    /// @dev Sets rewarder address.
+    function setRewarder(address rewarder_) public virtual onlyOwner {
+        IProtocolStaking(_protocolStaking).setRewardsRecipient(rewarder_);
     }
 
     /// @dev Stakes on protocol the full or partial amount of tokens deposited by holders.
@@ -72,7 +71,7 @@ abstract contract OperatorStaking is ERC20, Ownable {
 
     /// @dev Deposits an amount of tokens that can be later staked by the operator on the protocol.
     function deposit(uint256 amount) public {
-        IERC20(asset()).transferFrom(msg.sender, address(this), amount);
+        require(IERC20(asset()).transferFrom(msg.sender, address(this), amount));
         _mint(msg.sender, amount);
         emit Deposited(msg.sender, amount);
     }
