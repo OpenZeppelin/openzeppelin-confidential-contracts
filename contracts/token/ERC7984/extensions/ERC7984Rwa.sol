@@ -13,17 +13,22 @@ import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984} from "./../ERC7984.sol";
 import {ERC7984Freezable} from "./ERC7984Freezable.sol";
 import {ERC7984Restricted} from "./ERC7984Restricted.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
  * @dev Extension of {ERC7984} that supports confidential Real World Assets (RWAs).
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
-abstract contract ERC7984Rwa is ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, ERC165, AccessControl {
+abstract contract ERC7984Rwa is
+    IERC7984Rwa,
+    ERC7984Freezable,
+    ERC7984Restricted,
+    Pausable,
+    Multicall,
+    ERC165,
+    AccessControl
+{
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
-    // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
-    bytes4 private constant FORCE_CONFIDENTIAL_TRANSFER_FROM_SIG = 0x6c9c3c85;
-    // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
-    bytes4 private constant FORCE_CONFIDENTIAL_TRANSFER_FROM_WITH_PROOF_SIG = 0x44fd6e40;
 
     /// @dev Checks if the sender is an admin.
     modifier onlyAdmin() {
@@ -42,7 +47,9 @@ abstract contract ERC7984Rwa is ERC7984Freezable, ERC7984Restricted, Pausable, M
     }
 
     /// @inheritdoc ERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(IERC165, ERC165, AccessControl) returns (bool) {
         return
             interfaceId == type(IERC7984Rwa).interfaceId ||
             interfaceId == type(IERC7984).interfaceId ||
@@ -166,6 +173,32 @@ abstract contract ERC7984Rwa is ERC7984Freezable, ERC7984Restricted, Pausable, M
         return _forceUpdate(from, to, encryptedAmount);
     }
 
+    /// @inheritdoc ERC7984Freezable
+    function confidentialAvailable(
+        address account
+    ) public virtual override(IERC7984Rwa, ERC7984Freezable) returns (euint64) {
+        return super.confidentialAvailable(account);
+    }
+
+    /// @inheritdoc ERC7984Freezable
+    function confidentialFrozen(
+        address account
+    ) public view virtual override(IERC7984Rwa, ERC7984Freezable) returns (euint64) {
+        return super.confidentialFrozen(account);
+    }
+
+    /// @inheritdoc Pausable
+    function paused() public view virtual override(IERC7984Rwa, Pausable) returns (bool) {
+        return super.paused();
+    }
+
+    /// @inheritdoc ERC7984Restricted
+    function isUserAllowed(
+        address account
+    ) public view virtual override(IERC7984Rwa, ERC7984Restricted) returns (bool) {
+        return super.isUserAllowed(account);
+    }
+
     /// @dev Internal function which updates confidential balances while performing frozen and restriction compliance checks.
     function _update(
         address from,
@@ -196,7 +229,7 @@ abstract contract ERC7984Rwa is ERC7984Freezable, ERC7984Restricted, Pausable, M
     /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
     function _isForceTransfer() private pure returns (bool) {
         return
-            msg.sig == FORCE_CONFIDENTIAL_TRANSFER_FROM_SIG ||
-            msg.sig == FORCE_CONFIDENTIAL_TRANSFER_FROM_WITH_PROOF_SIG;
+            msg.sig == bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)")) ||
+            msg.sig == bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"));
     }
 }

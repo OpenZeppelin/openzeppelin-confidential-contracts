@@ -60,6 +60,4 @@ interface IERC7984Rwa is IERC7984, IERC165 {
         address to,
         euint64 encryptedAmount
     ) external returns (euint64);
-    /// @dev Receives and executes a batch of function calls on this contract.
-    function multicall(bytes[] calldata data) external returns (bytes[] memory results);
 }
