@@ -232,4 +232,18 @@ abstract contract ERC7984Rwa is
             msg.sig == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
             msg.sig == 0x44fd6e40; // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
     }
+
+    /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
+    function _isForceTransfer00() public returns (bool) {
+        return
+            msg.sig == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+            msg.sig == 0x44fd6e40; // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
+    }
+
+    /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
+    function _isForceTransfer11() public returns (bool) {
+        return
+            msg.sig == bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)")) ||
+            msg.sig == bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"));
+    }
 }

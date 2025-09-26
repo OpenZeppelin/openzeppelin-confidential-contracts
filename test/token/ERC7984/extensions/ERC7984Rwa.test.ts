@@ -20,6 +20,12 @@ const fixture = async () => {
 
 describe('ERC7984Rwa', function () {
   describe('ERC165', async function () {
+    it.only('should test', async function () {
+      const { token } = await fixture();
+      await token._isForceTransfer00();
+      await token._isForceTransfer11();
+    });
+
     it('should support interface', async function () {
       const { token } = await fixture();
       const erc7984RwaFunctions = [IERC7984Rwa__factory, IERC7984__factory, IERC165__factory].flatMap(
