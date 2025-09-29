@@ -23,6 +23,10 @@ contract OperatorStaking is ERC4626 {
         _protocolStaking.stake(IERC20(asset()).balanceOf(address(this)));
     }
 
+    /**
+     * WARNING: This design only works with a non-negligible cooldown period on `ProtocolStaking` such that the jumps in `totalAssets`
+     * upon claiming and disbursing rewards can't be gamed. If the cooldown period is small, `totalAssets` must count unclaimed rewards.
+     */
     function totalAssets() public view virtual override returns (uint256) {
         return super.totalAssets() + _protocolStaking.balanceOf(address(this));
     }
