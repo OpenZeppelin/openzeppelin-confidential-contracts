@@ -22,7 +22,7 @@ contract ProtocolOperatorRegistry {
     error StakingAccountAlreadyRegistered();
 
     /**
-     * @dev Sets the staked tokens account for an operator `msg.sender`. Operators my unset their
+     * @dev Sets the staked tokens account for an operator `msg.sender`. Operators may unset their
      * staked tokens account by calling this function with `address(0)`.
      *
      * Requirements:
