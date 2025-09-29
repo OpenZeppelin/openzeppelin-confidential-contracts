@@ -57,10 +57,13 @@ abstract contract ERC7984Restricted is ERC7984 {
      *
      * * `from` must be allowed to transfer tokens (see {isUserAllowed}).
      * * `to` must be allowed to receive tokens (see {isUserAllowed}).
+     *
+     * The default restriction behaviour can be changed (for a pass-through for instance) by overriding
+     * {_checkSenderRestriction} and/or {_checkRecipientRestriction}.
      */
     function _update(address from, address to, euint64 value) internal virtual override returns (euint64) {
-        if (from != address(0)) _checkRestriction(from); // Not minting
-        if (to != address(0)) _checkRestriction(to); // Not burning
+        _checkSenderRestriction(from);
+        _checkRecipientRestriction(to);
         return super._update(from, to, value);
     }
 
@@ -90,5 +93,25 @@ abstract contract ERC7984Restricted is ERC7984 {
     /// @dev Checks if a user account is restricted. Reverts with {ERC20Restricted} if so.
     function _checkRestriction(address account) internal view virtual {
         require(isUserAllowed(account), UserRestricted(account));
+    }
+
+    /**
+     * @dev Internal function which checks restriction of the `from` account before a transfer.
+     * Working with {_update} function.
+     */
+    function _checkSenderRestriction(address account) internal view virtual {
+        if (account != address(0)) {
+            _checkRestriction(account); // Not minting
+        }
+    }
+
+    /**
+     * @dev Internal function which checks restriction of the `to` account before a transfer.
+     * Working with {_update} function.
+     */
+    function _checkRecipientRestriction(address account) internal view virtual {
+        if (account != address(0)) {
+            _checkRestriction(account); // Not burning
+        }
     }
 }

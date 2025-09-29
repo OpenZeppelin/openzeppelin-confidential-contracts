@@ -4,25 +4,15 @@ pragma solidity ^0.8.27;
 
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC7984} from "../../token/ERC7984/ERC7984.sol";
 import {ERC7984Freezable} from "../../token/ERC7984/extensions/ERC7984Freezable.sol";
 import {HandleAccessManager} from "../../utils/HandleAccessManager.sol";
 import {ERC7984Mock} from "./ERC7984Mock.sol";
 
-contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, AccessControl, HandleAccessManager {
-    bytes32 public constant FREEZER_ROLE = keccak256("FREEZER_ROLE");
-
+contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, HandleAccessManager {
     error UnallowedHandleAccess(bytes32 handle, address account);
 
-    constructor(
-        string memory name,
-        string memory symbol,
-        string memory tokenUri,
-        address freezer
-    ) ERC7984Mock(name, symbol, tokenUri) {
-        _grantRole(FREEZER_ROLE, freezer);
-    }
+    constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984Mock(name, symbol, tokenUri) {}
 
     function _update(
         address from,
@@ -48,6 +38,4 @@ contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, AccessControl, H
     }
 
     function _validateHandleAllowance(bytes32 handle) internal view override {}
-
-    function _checkFreezer() internal override onlyRole(FREEZER_ROLE) {}
 }

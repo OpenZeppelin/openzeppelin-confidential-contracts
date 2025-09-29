@@ -41,19 +41,19 @@ abstract contract ERC7984Freezable is ERC7984 {
 
     /// @dev Internal function to freeze a confidential amount of tokens for an account.
     function _setConfidentialFrozen(address account, euint64 encryptedAmount) internal virtual {
-        _checkFreezer();
         FHE.allowThis(encryptedAmount);
         FHE.allow(encryptedAmount, account);
         _frozenBalances[account] = encryptedAmount;
         emit TokensFrozen(account, encryptedAmount);
     }
 
-    /// @dev Unimplemented function that must revert if `msg.sender` is not authorized as a freezer.
-    function _checkFreezer() internal virtual;
-
     /**
-     * @dev See {ERC7984-_update}. The `from` account must have sufficient unfrozen balance,
+     * @dev See {ERC7984-_update}.
+     *
+     * The `from` account must have sufficient unfrozen balance,
      * otherwise 0 tokens are transferred.
+     * The default freezing behavior can be changed (for a pass-through for instance) by overriding
+     * {confidentialAvailable}.
      */
     function _update(address from, address to, euint64 encryptedAmount) internal virtual override returns (euint64) {
         if (from != address(0)) {

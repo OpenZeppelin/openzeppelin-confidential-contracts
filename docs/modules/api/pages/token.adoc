@@ -11,6 +11,8 @@
 :ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :ERC7984Omnibus: pass:normal[xref:token.adoc#ERC7984Omnibus[`ERC7984Omnibus`]]
 :ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984Rwa: pass:normal[xref:token.adoc#ERC7984Rwa[`ERC7984Rwa`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :ERC7984Utils: pass:normal[xref:token.adoc#ERC7984Utils[`ERC7984Utils`]]
 :ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :IERC7984: pass:normal[xref:interfaces.adoc#IERC7984[`IERC7984`]]
@@ -24,6 +26,7 @@
 :ERC7984-_update: pass:normal[xref:token.adoc#ERC7984-_update-address-address-euint64-[`ERC7984._update`]]
 :ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :IERC7984-ConfidentialTransfer: pass:normal[xref:interfaces.adoc#IERC7984-ConfidentialTransfer-address-address-euint64-[`IERC7984.ConfidentialTransfer`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :IERC7984Receiver-onConfidentialTransferReceived: pass:normal[xref:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`IERC7984Receiver.onConfidentialTransferReceived`]]
@@ -40,6 +43,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 - {ERC7984ObserverAccess}: An extension of {ERC7984}, which allows each account to add an observer who is given access to their transfer and balance amounts.
 - {ERC7984Restricted}: An extension of {ERC7984} that implements user account transfer restrictions.
 - {ERC7984Omnibus}: An extension of {ERC7984} that emits additional events for omnibus transfers, which contain encrypted addresses for the sub-account sender and recipient.
+- {ERC7984Rwa}: Extension of {ERC7984} that supports confidential Real World Assets (RWAs) by providing compliance checks, transfer controls and enforcement actions.
 - {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}.
 
 == Core
@@ -613,13 +617,11 @@ Returns the maximum number that will be used for {decimals} by the wrapper.
 :confidentialFrozen: pass:normal[xref:#ERC7984Freezable-confidentialFrozen-address-[`++confidentialFrozen++`]]
 :confidentialAvailable: pass:normal[xref:#ERC7984Freezable-confidentialAvailable-address-[`++confidentialAvailable++`]]
 :_setConfidentialFrozen: pass:normal[xref:#ERC7984Freezable-_setConfidentialFrozen-address-euint64-[`++_setConfidentialFrozen++`]]
-:_checkFreezer: pass:normal[xref:#ERC7984Freezable-_checkFreezer--[`++_checkFreezer++`]]
 :_update: pass:normal[xref:#ERC7984Freezable-_update-address-address-euint64-[`++_update++`]]
 
 :confidentialFrozen-address: pass:normal[xref:#ERC7984Freezable-confidentialFrozen-address-[`++confidentialFrozen++`]]
 :confidentialAvailable-address: pass:normal[xref:#ERC7984Freezable-confidentialAvailable-address-[`++confidentialAvailable++`]]
 :_setConfidentialFrozen-address-euint64: pass:normal[xref:#ERC7984Freezable-_setConfidentialFrozen-address-euint64-[`++_setConfidentialFrozen++`]]
-:_checkFreezer-: pass:normal[xref:#ERC7984Freezable-_checkFreezer--[`++_checkFreezer++`]]
 :_update-address-address-euint64: pass:normal[xref:#ERC7984Freezable-_update-address-address-euint64-[`++_update++`]]
 
 [.contract]
@@ -648,7 +650,6 @@ Inspired by https://github.com/OpenZeppelin/openzeppelin-community-contracts/blo
 * `++confidentialFrozen(account)++`
 * `++confidentialAvailable(account)++`
 * `++_setConfidentialFrozen(account, encryptedAmount)++`
-* `++_checkFreezer()++`
 * `++_update(from, to, encryptedAmount)++`
 
 [.contract-subindex-inherited]
@@ -736,17 +737,15 @@ Returns the confidential available (unfrozen) balance of an account. Up to {conf
 Internal function to freeze a confidential amount of tokens for an account.
 
 [.contract-item]
-[[ERC7984Freezable-_checkFreezer--]]
-==== `[.contract-item-name]#++_checkFreezer++#++()++` [.item-kind]#internal#
-
-Unimplemented function that must revert if `msg.sender` is not authorized as a freezer.
-
-[.contract-item]
 [[ERC7984Freezable-_update-address-address-euint64-]]
 ==== `[.contract-item-name]#++_update++#++(address from, address to, euint64 encryptedAmount) → euint64++` [.item-kind]#internal#
 
-See {ERC7984-_update}. The `from` account must have sufficient unfrozen balance,
+See {ERC7984-_update}.
+
+The `from` account must have sufficient unfrozen balance,
 otherwise 0 tokens are transferred.
+The default freezing behavior can be changed (for a pass-through for instance) by overriding
+{confidentialAvailable}.
 
 [.contract-item]
 [[ERC7984Freezable-TokensFrozen-address-euint64-]]
@@ -890,6 +889,8 @@ Thrown when an account tries to set a `newObserver` for a given `account` withou
 :_allowUser: pass:normal[xref:#ERC7984Restricted-_allowUser-address-[`++_allowUser++`]]
 :_resetUser: pass:normal[xref:#ERC7984Restricted-_resetUser-address-[`++_resetUser++`]]
 :_checkRestriction: pass:normal[xref:#ERC7984Restricted-_checkRestriction-address-[`++_checkRestriction++`]]
+:_checkSenderRestriction: pass:normal[xref:#ERC7984Restricted-_checkSenderRestriction-address-[`++_checkSenderRestriction++`]]
+:_checkRecipientRestriction: pass:normal[xref:#ERC7984Restricted-_checkRecipientRestriction-address-[`++_checkRecipientRestriction++`]]
 
 :getRestriction-address: pass:normal[xref:#ERC7984Restricted-getRestriction-address-[`++getRestriction++`]]
 :isUserAllowed-address: pass:normal[xref:#ERC7984Restricted-isUserAllowed-address-[`++isUserAllowed++`]]
@@ -899,6 +900,8 @@ Thrown when an account tries to set a `newObserver` for a given `account` withou
 :_allowUser-address: pass:normal[xref:#ERC7984Restricted-_allowUser-address-[`++_allowUser++`]]
 :_resetUser-address: pass:normal[xref:#ERC7984Restricted-_resetUser-address-[`++_resetUser++`]]
 :_checkRestriction-address: pass:normal[xref:#ERC7984Restricted-_checkRestriction-address-[`++_checkRestriction++`]]
+:_checkSenderRestriction-address: pass:normal[xref:#ERC7984Restricted-_checkSenderRestriction-address-[`++_checkSenderRestriction++`]]
+:_checkRecipientRestriction-address: pass:normal[xref:#ERC7984Restricted-_checkRecipientRestriction-address-[`++_checkRecipientRestriction++`]]
 
 [.contract]
 [[ERC7984Restricted]]
@@ -928,6 +931,8 @@ to implement an allowlist.
 * `++_allowUser(account)++`
 * `++_resetUser(account)++`
 * `++_checkRestriction(account)++`
+* `++_checkSenderRestriction(account)++`
+* `++_checkRecipientRestriction(account)++`
 
 [.contract-subindex-inherited]
 .ERC7984
@@ -1029,6 +1034,9 @@ Requirements:
 * `from` must be allowed to transfer tokens (see {isUserAllowed}).
 * `to` must be allowed to receive tokens (see {isUserAllowed}).
 
+The default restriction behaviour can be changed (for a pass-through for instance) by overriding
+{_checkSenderRestriction} and/or {_checkRecipientRestriction}.
+
 [.contract-item]
 [[ERC7984Restricted-_setRestriction-address-enum-ERC7984Restricted-Restriction-]]
 ==== `[.contract-item-name]#++_setRestriction++#++(address account, enum ERC7984Restricted.Restriction restriction)++` [.item-kind]#internal#
@@ -1058,6 +1066,20 @@ Convenience function to reset a user account to default restriction.
 ==== `[.contract-item-name]#++_checkRestriction++#++(address account)++` [.item-kind]#internal#
 
 Checks if a user account is restricted. Reverts with {ERC20Restricted} if so.
+
+[.contract-item]
+[[ERC7984Restricted-_checkSenderRestriction-address-]]
+==== `[.contract-item-name]#++_checkSenderRestriction++#++(address account)++` [.item-kind]#internal#
+
+Internal function which checks restriction of the `from` account before a transfer.
+Working with {_update} function.
+
+[.contract-item]
+[[ERC7984Restricted-_checkRecipientRestriction-address-]]
+==== `[.contract-item-name]#++_checkRecipientRestriction++#++(address account)++` [.item-kind]#internal#
+
+Internal function which checks restriction of the `to` account before a transfer.
+Working with {_update} function.
 
 [.contract-item]
 [[ERC7984Restricted-UserRestrictionUpdated-address-enum-ERC7984Restricted-Restriction-]]
@@ -1269,6 +1291,472 @@ NOTE: `omnibusFrom` and `omnibusTo` get permanent ACL allowances for `sender` an
 The caller `user` does not have access to the encrypted address `addr`.
 
 NOTE: Try using the equivalent transfer function with an input proof.
+
+:AGENT_ROLE: pass:normal[xref:#ERC7984Rwa-AGENT_ROLE-bytes32[`++AGENT_ROLE++`]]
+:onlyAdmin: pass:normal[xref:#ERC7984Rwa-onlyAdmin--[`++onlyAdmin++`]]
+:onlyAgent: pass:normal[xref:#ERC7984Rwa-onlyAgent--[`++onlyAgent++`]]
+:constructor: pass:normal[xref:#ERC7984Rwa-constructor-address-[`++constructor++`]]
+:supportsInterface: pass:normal[xref:#ERC7984Rwa-supportsInterface-bytes4-[`++supportsInterface++`]]
+:isAdmin: pass:normal[xref:#ERC7984Rwa-isAdmin-address-[`++isAdmin++`]]
+:isAgent: pass:normal[xref:#ERC7984Rwa-isAgent-address-[`++isAgent++`]]
+:addAgent: pass:normal[xref:#ERC7984Rwa-addAgent-address-[`++addAgent++`]]
+:removeAgent: pass:normal[xref:#ERC7984Rwa-removeAgent-address-[`++removeAgent++`]]
+:pause: pass:normal[xref:#ERC7984Rwa-pause--[`++pause++`]]
+:unpause: pass:normal[xref:#ERC7984Rwa-unpause--[`++unpause++`]]
+:blockUser: pass:normal[xref:#ERC7984Rwa-blockUser-address-[`++blockUser++`]]
+:unblockUser: pass:normal[xref:#ERC7984Rwa-unblockUser-address-[`++unblockUser++`]]
+:setConfidentialFrozen: pass:normal[xref:#ERC7984Rwa-setConfidentialFrozen-address-externalEuint64-bytes-[`++setConfidentialFrozen++`]]
+:setConfidentialFrozen: pass:normal[xref:#ERC7984Rwa-setConfidentialFrozen-address-euint64-[`++setConfidentialFrozen++`]]
+:confidentialMint: pass:normal[xref:#ERC7984Rwa-confidentialMint-address-externalEuint64-bytes-[`++confidentialMint++`]]
+:confidentialMint: pass:normal[xref:#ERC7984Rwa-confidentialMint-address-euint64-[`++confidentialMint++`]]
+:confidentialBurn: pass:normal[xref:#ERC7984Rwa-confidentialBurn-address-externalEuint64-bytes-[`++confidentialBurn++`]]
+:confidentialBurn: pass:normal[xref:#ERC7984Rwa-confidentialBurn-address-euint64-[`++confidentialBurn++`]]
+:forceConfidentialTransferFrom: pass:normal[xref:#ERC7984Rwa-forceConfidentialTransferFrom-address-address-externalEuint64-bytes-[`++forceConfidentialTransferFrom++`]]
+:forceConfidentialTransferFrom: pass:normal[xref:#ERC7984Rwa-forceConfidentialTransferFrom-address-address-euint64-[`++forceConfidentialTransferFrom++`]]
+:confidentialAvailable: pass:normal[xref:#ERC7984Rwa-confidentialAvailable-address-[`++confidentialAvailable++`]]
+:confidentialFrozen: pass:normal[xref:#ERC7984Rwa-confidentialFrozen-address-[`++confidentialFrozen++`]]
+:paused: pass:normal[xref:#ERC7984Rwa-paused--[`++paused++`]]
+:isUserAllowed: pass:normal[xref:#ERC7984Rwa-isUserAllowed-address-[`++isUserAllowed++`]]
+:_update: pass:normal[xref:#ERC7984Rwa-_update-address-address-euint64-[`++_update++`]]
+:_forceUpdate: pass:normal[xref:#ERC7984Rwa-_forceUpdate-address-address-euint64-[`++_forceUpdate++`]]
+:_checkSenderRestriction: pass:normal[xref:#ERC7984Rwa-_checkSenderRestriction-address-[`++_checkSenderRestriction++`]]
+
+:constructor-address: pass:normal[xref:#ERC7984Rwa-constructor-address-[`++constructor++`]]
+:supportsInterface-bytes4: pass:normal[xref:#ERC7984Rwa-supportsInterface-bytes4-[`++supportsInterface++`]]
+:isAdmin-address: pass:normal[xref:#ERC7984Rwa-isAdmin-address-[`++isAdmin++`]]
+:isAgent-address: pass:normal[xref:#ERC7984Rwa-isAgent-address-[`++isAgent++`]]
+:addAgent-address: pass:normal[xref:#ERC7984Rwa-addAgent-address-[`++addAgent++`]]
+:removeAgent-address: pass:normal[xref:#ERC7984Rwa-removeAgent-address-[`++removeAgent++`]]
+:pause-: pass:normal[xref:#ERC7984Rwa-pause--[`++pause++`]]
+:unpause-: pass:normal[xref:#ERC7984Rwa-unpause--[`++unpause++`]]
+:blockUser-address: pass:normal[xref:#ERC7984Rwa-blockUser-address-[`++blockUser++`]]
+:unblockUser-address: pass:normal[xref:#ERC7984Rwa-unblockUser-address-[`++unblockUser++`]]
+:setConfidentialFrozen-address-externalEuint64-bytes: pass:normal[xref:#ERC7984Rwa-setConfidentialFrozen-address-externalEuint64-bytes-[`++setConfidentialFrozen++`]]
+:setConfidentialFrozen-address-euint64: pass:normal[xref:#ERC7984Rwa-setConfidentialFrozen-address-euint64-[`++setConfidentialFrozen++`]]
+:confidentialMint-address-externalEuint64-bytes: pass:normal[xref:#ERC7984Rwa-confidentialMint-address-externalEuint64-bytes-[`++confidentialMint++`]]
+:confidentialMint-address-euint64: pass:normal[xref:#ERC7984Rwa-confidentialMint-address-euint64-[`++confidentialMint++`]]
+:confidentialBurn-address-externalEuint64-bytes: pass:normal[xref:#ERC7984Rwa-confidentialBurn-address-externalEuint64-bytes-[`++confidentialBurn++`]]
+:confidentialBurn-address-euint64: pass:normal[xref:#ERC7984Rwa-confidentialBurn-address-euint64-[`++confidentialBurn++`]]
+:forceConfidentialTransferFrom-address-address-externalEuint64-bytes: pass:normal[xref:#ERC7984Rwa-forceConfidentialTransferFrom-address-address-externalEuint64-bytes-[`++forceConfidentialTransferFrom++`]]
+:forceConfidentialTransferFrom-address-address-euint64: pass:normal[xref:#ERC7984Rwa-forceConfidentialTransferFrom-address-address-euint64-[`++forceConfidentialTransferFrom++`]]
+:confidentialAvailable-address: pass:normal[xref:#ERC7984Rwa-confidentialAvailable-address-[`++confidentialAvailable++`]]
+:confidentialFrozen-address: pass:normal[xref:#ERC7984Rwa-confidentialFrozen-address-[`++confidentialFrozen++`]]
+:paused-: pass:normal[xref:#ERC7984Rwa-paused--[`++paused++`]]
+:isUserAllowed-address: pass:normal[xref:#ERC7984Rwa-isUserAllowed-address-[`++isUserAllowed++`]]
+:_update-address-address-euint64: pass:normal[xref:#ERC7984Rwa-_update-address-address-euint64-[`++_update++`]]
+:_forceUpdate-address-address-euint64: pass:normal[xref:#ERC7984Rwa-_forceUpdate-address-address-euint64-[`++_forceUpdate++`]]
+:_checkSenderRestriction-address: pass:normal[xref:#ERC7984Rwa-_checkSenderRestriction-address-[`++_checkSenderRestriction++`]]
+:AGENT_ROLE-bytes32: pass:normal[xref:#ERC7984Rwa-AGENT_ROLE-bytes32[`++AGENT_ROLE++`]]
+
+[.contract]
+[[ERC7984Rwa]]
+=== `++ERC7984Rwa++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/extensions/ERC7984Rwa.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984Rwa.sol";
+```
+
+Extension of {ERC7984} that supports confidential Real World Assets (RWAs).
+This interface provides compliance checks, transfer controls and enforcement actions.
+
+[.contract-index]
+.Modifiers
+--
+* `++onlyAdmin()++`
+* `++onlyAgent()++`
+--
+
+[.contract-index]
+.Functions
+--
+* `++constructor(admin)++`
+* `++supportsInterface(interfaceId)++`
+* `++isAdmin(account)++`
+* `++isAgent(account)++`
+* `++addAgent(account)++`
+* `++removeAgent(account)++`
+* `++pause()++`
+* `++unpause()++`
+* `++blockUser(account)++`
+* `++unblockUser(account)++`
+* `++setConfidentialFrozen(account, encryptedAmount, inputProof)++`
+* `++setConfidentialFrozen(account, encryptedAmount)++`
+* `++confidentialMint(to, encryptedAmount, inputProof)++`
+* `++confidentialMint(to, encryptedAmount)++`
+* `++confidentialBurn(account, encryptedAmount, inputProof)++`
+* `++confidentialBurn(account, encryptedAmount)++`
+* `++forceConfidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++forceConfidentialTransferFrom(from, to, encryptedAmount)++`
+* `++confidentialAvailable(account)++`
+* `++confidentialFrozen(account)++`
+* `++paused()++`
+* `++isUserAllowed(account)++`
+* `++_update(from, to, encryptedAmount)++`
+* `++_forceUpdate(from, to, encryptedAmount)++`
+* `++_checkSenderRestriction(account)++`
+* `++AGENT_ROLE()++`
+
+[.contract-subindex-inherited]
+.AccessControl
+* `++hasRole(role, account)++`
+* `++_checkRole(role)++`
+* `++_checkRole(role, account)++`
+* `++getRoleAdmin(role)++`
+* `++grantRole(role, account)++`
+* `++revokeRole(role, account)++`
+* `++renounceRole(role, callerConfirmation)++`
+* `++_setRoleAdmin(role, adminRole)++`
+* `++_grantRole(role, account)++`
+* `++_revokeRole(role, account)++`
+* `++DEFAULT_ADMIN_ROLE()++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.Multicall
+* `++multicall(data)++`
+
+[.contract-subindex-inherited]
+.Pausable
+* `++_requireNotPaused()++`
+* `++_requirePaused()++`
+* `++_pause()++`
+* `++_unpause()++`
+
+[.contract-subindex-inherited]
+.ERC7984Restricted
+* `++getRestriction(account)++`
+* `++_setRestriction(account, restriction)++`
+* `++_blockUser(account)++`
+* `++_allowUser(account)++`
+* `++_resetUser(account)++`
+* `++_checkRestriction(account)++`
+* `++_checkRecipientRestriction(account)++`
+
+[.contract-subindex-inherited]
+.ERC7984Freezable
+* `++_setConfidentialFrozen(account, encryptedAmount)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++name()++`
+* `++symbol()++`
+* `++decimals()++`
+* `++tokenURI()++`
+* `++confidentialTotalSupply()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+* `++discloseEncryptedAmount(encryptedAmount)++`
+* `++finalizeDiscloseEncryptedAmount(requestId, cleartexts, decryptionProof)++`
+* `++_setOperator(holder, operator, until)++`
+* `++_mint(to, amount)++`
+* `++_burn(from, amount)++`
+* `++_transfer(from, to, amount)++`
+* `++_transferAndCall(from, to, amount, data)++`
+
+[.contract-subindex-inherited]
+.IERC7984Rwa
+
+[.contract-subindex-inherited]
+.IERC165
+
+[.contract-subindex-inherited]
+.IAccessControl
+
+[.contract-subindex-inherited]
+.IERC7984
+
+--
+
+[.contract-index]
+.Events
+--
+
+[.contract-subindex-inherited]
+.AccessControl
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.Multicall
+
+[.contract-subindex-inherited]
+.Pausable
+* `++Paused(account)++`
+* `++Unpaused(account)++`
+
+[.contract-subindex-inherited]
+.ERC7984Restricted
+* `++UserRestrictionUpdated(account, restriction)++`
+
+[.contract-subindex-inherited]
+.ERC7984Freezable
+* `++TokensFrozen(account, encryptedAmount)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+
+[.contract-subindex-inherited]
+.IERC7984Rwa
+
+[.contract-subindex-inherited]
+.IERC165
+
+[.contract-subindex-inherited]
+.IAccessControl
+* `++RoleAdminChanged(role, previousAdminRole, newAdminRole)++`
+* `++RoleGranted(role, account, sender)++`
+* `++RoleRevoked(role, account, sender)++`
+
+[.contract-subindex-inherited]
+.IERC7984
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+--
+
+[.contract-index]
+.Errors
+--
+
+[.contract-subindex-inherited]
+.AccessControl
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.Multicall
+
+[.contract-subindex-inherited]
+.Pausable
+* `++EnforcedPause()++`
+* `++ExpectedPause()++`
+
+[.contract-subindex-inherited]
+.ERC7984Restricted
+* `++UserRestricted(account)++`
+
+[.contract-subindex-inherited]
+.ERC7984Freezable
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++ERC7984InvalidReceiver(receiver)++`
+* `++ERC7984InvalidSender(sender)++`
+* `++ERC7984UnauthorizedSpender(holder, spender)++`
+* `++ERC7984ZeroBalance(holder)++`
+* `++ERC7984UnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984UnauthorizedCaller(caller)++`
+* `++ERC7984InvalidGatewayRequest(requestId)++`
+
+[.contract-subindex-inherited]
+.IERC7984Rwa
+
+[.contract-subindex-inherited]
+.IERC165
+
+[.contract-subindex-inherited]
+.IAccessControl
+* `++AccessControlUnauthorizedAccount(account, neededRole)++`
+* `++AccessControlBadConfirmation()++`
+
+[.contract-subindex-inherited]
+.IERC7984
+
+--
+
+[.contract-item]
+[[ERC7984Rwa-onlyAdmin--]]
+==== `[.contract-item-name]#++onlyAdmin++#++()++` [.item-kind]#modifier#
+
+Checks if the sender is an admin.
+
+[.contract-item]
+[[ERC7984Rwa-onlyAgent--]]
+==== `[.contract-item-name]#++onlyAgent++#++()++` [.item-kind]#modifier#
+
+Checks if the sender is an agent.
+
+[.contract-item]
+[[ERC7984Rwa-constructor-address-]]
+==== `[.contract-item-name]#++constructor++#++(address admin)++` [.item-kind]#internal#
+
+[.contract-item]
+[[ERC7984Rwa-supportsInterface-bytes4-]]
+==== `[.contract-item-name]#++supportsInterface++#++(bytes4 interfaceId) → bool++` [.item-kind]#public#
+
+Returns true if this contract implements the interface defined by
+`interfaceId`. See the corresponding
+https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
+to learn more about how these ids are created.
+
+This function call must use less than 30 000 gas.
+
+[.contract-item]
+[[ERC7984Rwa-isAdmin-address-]]
+==== `[.contract-item-name]#++isAdmin++#++(address account) → bool++` [.item-kind]#public#
+
+Returns true if has admin role, false otherwise.
+
+[.contract-item]
+[[ERC7984Rwa-isAgent-address-]]
+==== `[.contract-item-name]#++isAgent++#++(address account) → bool++` [.item-kind]#public#
+
+Returns true if agent, false otherwise.
+
+[.contract-item]
+[[ERC7984Rwa-addAgent-address-]]
+==== `[.contract-item-name]#++addAgent++#++(address account)++` [.item-kind]#public#
+
+Adds agent.
+
+[.contract-item]
+[[ERC7984Rwa-removeAgent-address-]]
+==== `[.contract-item-name]#++removeAgent++#++(address account)++` [.item-kind]#public#
+
+Removes agent.
+
+[.contract-item]
+[[ERC7984Rwa-pause--]]
+==== `[.contract-item-name]#++pause++#++()++` [.item-kind]#public#
+
+Pauses contract.
+
+[.contract-item]
+[[ERC7984Rwa-unpause--]]
+==== `[.contract-item-name]#++unpause++#++()++` [.item-kind]#public#
+
+Unpauses contract.
+
+[.contract-item]
+[[ERC7984Rwa-blockUser-address-]]
+==== `[.contract-item-name]#++blockUser++#++(address account)++` [.item-kind]#public#
+
+Blocks a user account.
+
+[.contract-item]
+[[ERC7984Rwa-unblockUser-address-]]
+==== `[.contract-item-name]#++unblockUser++#++(address account)++` [.item-kind]#public#
+
+Unblocks a user account.
+
+[.contract-item]
+[[ERC7984Rwa-setConfidentialFrozen-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++setConfidentialFrozen++#++(address account, externalEuint64 encryptedAmount, bytes inputProof)++` [.item-kind]#public#
+
+Sets confidential frozen for an account.
+
+[.contract-item]
+[[ERC7984Rwa-setConfidentialFrozen-address-euint64-]]
+==== `[.contract-item-name]#++setConfidentialFrozen++#++(address account, euint64 encryptedAmount)++` [.item-kind]#public#
+
+Sets confidential frozen for an account with proof.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialMint-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++confidentialMint++#++(address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+
+Mints confidential amount of tokens to account with proof.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialMint-address-euint64-]]
+==== `[.contract-item-name]#++confidentialMint++#++(address to, euint64 encryptedAmount) → euint64++` [.item-kind]#public#
+
+Mints confidential amount of tokens to account.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialBurn-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++confidentialBurn++#++(address account, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+
+Burns confidential amount of tokens from account with proof.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialBurn-address-euint64-]]
+==== `[.contract-item-name]#++confidentialBurn++#++(address account, euint64 encryptedAmount) → euint64++` [.item-kind]#public#
+
+Burns confidential amount of tokens from account.
+
+[.contract-item]
+[[ERC7984Rwa-forceConfidentialTransferFrom-address-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++forceConfidentialTransferFrom++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+
+Forces transfer of confidential amount of tokens from account to account with proof by skipping compliance checks.
+
+[.contract-item]
+[[ERC7984Rwa-forceConfidentialTransferFrom-address-address-euint64-]]
+==== `[.contract-item-name]#++forceConfidentialTransferFrom++#++(address from, address to, euint64 encryptedAmount) → euint64 transferred++` [.item-kind]#public#
+
+Forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialAvailable-address-]]
+==== `[.contract-item-name]#++confidentialAvailable++#++(address account) → euint64++` [.item-kind]#public#
+
+Returns the confidential available (unfrozen) balance of an account. Up to {confidentialBalanceOf}.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialFrozen-address-]]
+==== `[.contract-item-name]#++confidentialFrozen++#++(address account) → euint64++` [.item-kind]#public#
+
+Returns the confidential frozen balance of an account.
+
+[.contract-item]
+[[ERC7984Rwa-paused--]]
+==== `[.contract-item-name]#++paused++#++() → bool++` [.item-kind]#public#
+
+Returns true if the contract is paused, and false otherwise.
+
+[.contract-item]
+[[ERC7984Rwa-isUserAllowed-address-]]
+==== `[.contract-item-name]#++isUserAllowed++#++(address account) → bool++` [.item-kind]#public#
+
+Returns whether a user account is allowed to interact with the token.
+
+Default implementation only disallows explicitly BLOCKED accounts (i.e. a blocklist).
+
+To convert into an allowlist, override as:
+
+```solidity
+function isUserAllowed(address account) public view virtual override returns (bool) {
+    return getRestriction(account) == Restriction.ALLOWED;
+}
+```
+
+[.contract-item]
+[[ERC7984Rwa-_update-address-address-euint64-]]
+==== `[.contract-item-name]#++_update++#++(address from, address to, euint64 encryptedAmount) → euint64++` [.item-kind]#internal#
+
+Internal function which updates confidential balances while performing frozen and restriction compliance checks.
+
+[.contract-item]
+[[ERC7984Rwa-_forceUpdate-address-address-euint64-]]
+==== `[.contract-item-name]#++_forceUpdate++#++(address from, address to, euint64 encryptedAmount) → euint64++` [.item-kind]#internal#
+
+Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
+
+[.contract-item]
+[[ERC7984Rwa-_checkSenderRestriction-address-]]
+==== `[.contract-item-name]#++_checkSenderRestriction++#++(address account)++` [.item-kind]#internal#
+
+Bypasses the `from` restriction check when performing a {forceConfidentialTransferFrom}.
+
+[.contract-item]
+[[ERC7984Rwa-AGENT_ROLE-bytes32]]
+==== `[.contract-item-name]#++AGENT_ROLE++#++() → bytes32++` [.item-kind]#public#
 
 == Utilities
 :checkOnTransferReceived: pass:normal[xref:#ERC7984Utils-checkOnTransferReceived-address-address-address-euint64-bytes-[`++checkOnTransferReceived++`]]
