@@ -13,11 +13,10 @@ contract OperatorStaking is ERC4626 {
     constructor(
         string memory name,
         string memory symbol,
-        IERC20 asset,
         ProtocolStaking protocolStaking
-    ) ERC20(name, symbol) ERC4626(asset) {
+    ) ERC20(name, symbol) ERC4626(IERC20(protocolStaking.stakingToken())) {
         _protocolStaking = protocolStaking;
-        asset.approve(address(protocolStaking), type(uint256).max);
+        IERC20(protocolStaking.stakingToken()).approve(address(protocolStaking), type(uint256).max);
     }
 
     function restake() public virtual {
@@ -40,7 +39,12 @@ contract OperatorStaking is ERC4626 {
         uint256 assets,
         uint256 shares
     ) internal virtual override {
-        super._withdraw(caller, receiver, owner, assets, shares);
+        if (caller != owner) {
+            _spendAllowance(owner, caller, shares);
+        }
+        _burn(owner, shares);
         _protocolStaking.unstake(receiver, assets);
+
+        emit Withdraw(caller, receiver, owner, assets, shares);
     }
 }
