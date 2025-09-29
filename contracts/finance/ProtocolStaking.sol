@@ -25,7 +25,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     struct ProtocolStakingStorage {
         // Stake - general
         address _stakingToken;
-        uint256 _totalStakedWeight;
+        uint256 _totalEligibleStakedWeight;
         // Stake - release
         uint256 _unstakeCooldownPeriod;
         mapping(address => Checkpoints.Trace208) _unstakeRequests;
@@ -173,7 +173,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         ProtocolStakingStorage storage $ = _getProtocolStakingStorage();
         uint256 stakedWeight = isEligibleAccount(account) ? weight(balanceOf(account)) : 0;
         // if stakedWeight == 0, there is a risk of totalStakedWeight == 0. To avoid div by 0 just return 0
-        uint256 allocation = stakedWeight > 0 ? _allocation(stakedWeight, $._totalStakedWeight) : 0;
+        uint256 allocation = stakedWeight > 0 ? _allocation(stakedWeight, $._totalEligibleStakedWeight) : 0;
         return SafeCast.toUint256(SafeCast.toInt256(allocation) - $._paid[account]);
     }
 
@@ -189,7 +189,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
 
     /// @dev Returns the current total staked weight.
     function totalStakedWeight() public view virtual returns (uint256) {
-        return _getProtocolStakingStorage()._totalStakedWeight;
+        return _getProtocolStakingStorage()._totalEligibleStakedWeight;
     }
 
     /// @dev Returns the current unstake cooldown period in seconds.
@@ -232,8 +232,8 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
 
     function _updateRewards(address user, uint256 weightBefore, uint256 weightAfter) internal {
         ProtocolStakingStorage storage $ = _getProtocolStakingStorage();
-        uint256 oldTotalWeight = $._totalStakedWeight;
-        $._totalStakedWeight = oldTotalWeight - weightBefore + weightAfter;
+        uint256 oldTotalWeight = $._totalEligibleStakedWeight;
+        $._totalEligibleStakedWeight = oldTotalWeight - weightBefore + weightAfter;
 
         if (weightBefore != weightAfter && oldTotalWeight > 0) {
             if (weightBefore > weightAfter) {
