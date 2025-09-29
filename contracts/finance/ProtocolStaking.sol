@@ -21,7 +21,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     using SafeERC20 for IERC20;
     using Math for uint256;
 
-    bytes32 private constant OPERATOR_ROLE = keccak256("operator-role");
+    bytes32 private constant ELIGIBLE_ACCOUNT_ROLE = keccak256("eligible-account-role");
     // Stake - general
     address private _stakingToken;
     uint256 private _totalStakedWeight;
@@ -39,15 +39,15 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     mapping(address => int256) private _paid;
     int256 private _totalVirtualPaid;
 
-    event TokensStaked(address indexed operator, uint256 amount);
-    event TokensUnstaked(address indexed operator, address indexed recipient, uint256 amount);
+    event TokensStaked(address indexed account, uint256 amount);
+    event TokensUnstaked(address indexed account, address indexed recipient, uint256 amount);
     event RewardRateSet(uint256 rewardRate);
     event UnstakeCooldownPeriodSet(uint256 unstakeCooldownPeriod);
     event RewardsRecipientSet(address indexed account, address indexed recipient);
 
     error InvalidAmount();
-    error OperatorAlreadyExists(address operator);
-    error OperatorDoesNotExist(address operator);
+    error EligibleAccountAlreadyExists(address account);
+    error EligibleAccountDoesNotExist(address account);
     error TransferDisabled();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -128,19 +128,19 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     }
 
     /**
-     * @dev Adds the operator role to `account`. Only accounts with the operator role earn rewards for staked tokens.
-     * Only callable by the `OPERATOR_ROLE` role admin (by default {owner}).
+     * @dev Adds the eligible account role to `account`. Only accounts with the eligible account role earn rewards for staked tokens.
+     * Only callable by the `ELIGIBLE_ACCOUNT_ROLE` role admin (by default {owner}).
      */
-    function addOperator(address account) public virtual onlyRole(getRoleAdmin(OPERATOR_ROLE)) {
-        require(_grantRole(OPERATOR_ROLE, account), OperatorAlreadyExists(account));
+    function addEligibleAccount(address account) public virtual onlyRole(getRoleAdmin(ELIGIBLE_ACCOUNT_ROLE)) {
+        require(_grantRole(ELIGIBLE_ACCOUNT_ROLE, account), EligibleAccountAlreadyExists(account));
     }
 
     /**
-     * @dev Removes the operator role to `account`. `account` stops to earn rewards but maintains all existing rewards.
-     * Only callable by the `OPERATOR_ROLE` role admin (by default {owner}).
+     * @dev Removes the eligible account role from `account`. `account` stops to earn rewards but maintains all existing rewards.
+     * Only callable by the `ELIGIBLE_ACCOUNT_ROLE` role admin (by default {owner}).
      */
-    function removeOperator(address account) public virtual onlyRole(getRoleAdmin(OPERATOR_ROLE)) {
-        require(_revokeRole(OPERATOR_ROLE, account), OperatorDoesNotExist(account));
+    function removeEligibleAccount(address account) public virtual onlyRole(getRoleAdmin(ELIGIBLE_ACCOUNT_ROLE)) {
+        require(_revokeRole(ELIGIBLE_ACCOUNT_ROLE, account), EligibleAccountDoesNotExist(account));
     }
 
     /// @dev Sets the {unstake} cooldown period in seconds to `unstakeCooldownPeriod`. Only callable by {owner}.
@@ -159,7 +159,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
 
     /// @dev Returns the amount of rewards earned by `account` at the current `block.timestamp`.
     function earned(address account) public view virtual returns (uint256) {
-        uint256 stakedWeight = isOperator(account) ? weight(balanceOf(account)) : 0;
+        uint256 stakedWeight = isEligibleAccount(account) ? weight(balanceOf(account)) : 0;
         // if stakedWeight == 0, there is a risk of totalStakedWeight == 0. To avoid div by 0 just return 0
         uint256 allocation = stakedWeight > 0 ? _allocation(stakedWeight, _totalStakedWeight) : 0;
         return SafeCast.toUint256(SafeCast.toInt256(allocation) - _paid[account]);
@@ -196,14 +196,14 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         return storedRewardsRecipient == address(0) ? account : storedRewardsRecipient;
     }
 
-    /// @dev Indicates if the given account `account` has the operator role.
-    function isOperator(address account) public view virtual returns (bool) {
-        return hasRole(OPERATOR_ROLE, account);
+    /// @dev Indicates if the given account `account` has the eligible account role.
+    function isEligibleAccount(address account) public view virtual returns (bool) {
+        return hasRole(ELIGIBLE_ACCOUNT_ROLE, account);
     }
 
     function _grantRole(bytes32 role, address account) internal virtual override returns (bool) {
         bool success = super._grantRole(role, account);
-        if (role == OPERATOR_ROLE && success) {
+        if (role == ELIGIBLE_ACCOUNT_ROLE && success) {
             _updateRewards(account, 0, weight(balanceOf(account)));
         }
         return success;
@@ -211,7 +211,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
 
     function _revokeRole(bytes32 role, address account) internal virtual override returns (bool) {
         bool success = super._revokeRole(role, account);
-        if (role == OPERATOR_ROLE && success) {
+        if (role == ELIGIBLE_ACCOUNT_ROLE && success) {
             _updateRewards(account, weight(balanceOf(account)), 0);
         }
         return success;
@@ -237,12 +237,12 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     function _update(address from, address to, uint256 value) internal virtual override {
         // Disable Transfers
         require(from == address(0) || to == address(0), TransferDisabled());
-        if (isOperator(from)) {
+        if (isEligibleAccount(from)) {
             uint256 balanceBefore = balanceOf(from);
             uint256 balanceAfter = balanceBefore - value;
             _updateRewards(from, weight(balanceBefore), weight(balanceAfter));
         }
-        if (isOperator(to)) {
+        if (isEligibleAccount(to)) {
             uint256 balanceBefore = balanceOf(to);
             uint256 balanceAfter = balanceBefore + value;
             _updateRewards(to, weight(balanceBefore), weight(balanceAfter));

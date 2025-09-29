@@ -42,7 +42,7 @@ describe.only('Protocol Staking', function () {
       await expect(this.mock.balanceOf(this.staker1)).to.eventually.equal(ethers.parseEther('100'));
     });
 
-    it("should not reward accounts that aren't operators", async function () {
+    it("should not reward accounts that aren't eligible", async function () {
       await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
 
       // Reward 0.5 tokens per block in aggregate
@@ -58,7 +58,7 @@ describe.only('Protocol Staking', function () {
 
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-      await this.mock.connect(this.admin).addOperator(this.staker1);
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
       await timeIncreaseNoMine(9);
       await this.mock.connect(this.admin).setRewardRate(0);
       await expect(this.mock.totalStakedWeight()).to.eventually.equal(
@@ -72,8 +72,8 @@ describe.only('Protocol Staking', function () {
       await this.mock.connect(this.staker2).stake(ethers.parseEther('1000'));
 
       // Reward 0.5 tokens per block in aggregate
-      await this.mock.connect(this.admin).addOperator(this.staker1);
-      await this.mock.connect(this.admin).addOperator(this.staker2);
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker2);
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await timeIncreaseNoMine(10);
       await this.mock.connect(this.admin).setRewardRate(0);
@@ -89,8 +89,8 @@ describe.only('Protocol Staking', function () {
     });
 
     it('Second staker should not get reward from previous period', async function () {
-      await this.mock.connect(this.admin).addOperator(this.staker1);
-      await this.mock.connect(this.admin).addOperator(this.staker2);
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker2);
 
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
@@ -228,7 +228,7 @@ describe.only('Protocol Staking', function () {
     });
 
     it('should decrease total staking amount log accordingly', async function () {
-      await this.mock.connect(this.admin).addOperator(this.staker1);
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
 
       const beforetotalStakedWeight = await this.mock.totalStakedWeight();
       const beforeStaker1Log = await this.mock.weight(await this.mock.balanceOf(this.staker1));
@@ -245,7 +245,7 @@ describe.only('Protocol Staking', function () {
 
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-      await this.mock.connect(this.admin).addOperator(this.staker1);
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
       await timeIncreaseNoMine(9);
       await this.mock.connect(this.admin).setRewardRate(0);
       const earned = await this.mock.earned(this.staker1);
@@ -259,7 +259,7 @@ describe.only('Protocol Staking', function () {
       await this.mock.connect(this.staker1).setRewardsRecipient(this.staker2);
 
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-      await this.mock.connect(this.admin).addOperator(this.staker1);
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
       await timeIncreaseNoMine(9);
 
       await expect(this.mock.claimRewards(this.staker1))
@@ -268,78 +268,78 @@ describe.only('Protocol Staking', function () {
     });
   });
 
-  describe('Manage Operators', function () {
-    describe('Add Operator', function () {
+  describe('Manage Eligible Accounts', function () {
+    describe('Add Eligible Account', function () {
       it('should emit event', async function () {
-        await expect(this.mock.connect(this.admin).addOperator(this.staker1))
+        await expect(this.mock.connect(this.admin).addEligibleAccount(this.staker1))
           .to.emit(this.mock, 'RoleGranted')
-          .withArgs(ethers.id('operator-role'), this.staker1, this.admin);
+          .withArgs(ethers.id('eligible-account-role'), this.staker1, this.admin);
       });
 
-      it('should reflect in operator list', async function () {
-        await this.mock.connect(this.admin).addOperator(this.staker1);
-        await this.mock.connect(this.admin).addOperator(this.staker2);
+      it('should reflect in eligible account storage', async function () {
+        await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
+        await this.mock.connect(this.admin).addEligibleAccount(this.staker2);
 
-        await expect(this.mock.isOperator(this.staker1)).to.eventually.equal(true);
-        await expect(this.mock.isOperator(this.staker2)).to.eventually.equal(true);
-        await expect(this.mock.isOperator(this.admin)).to.eventually.equal(false);
+        await expect(this.mock.isEligibleAccount(this.staker1)).to.eventually.equal(true);
+        await expect(this.mock.isEligibleAccount(this.staker2)).to.eventually.equal(true);
+        await expect(this.mock.isEligibleAccount(this.admin)).to.eventually.equal(false);
       });
 
       it("can't add twice", async function () {
-        await this.mock.connect(this.admin).addOperator(this.staker1);
-        await expect(this.mock.connect(this.admin).addOperator(this.staker1))
-          .to.be.revertedWithCustomError(this.mock, 'OperatorAlreadyExists')
+        await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
+        await expect(this.mock.connect(this.admin).addEligibleAccount(this.staker1))
+          .to.be.revertedWithCustomError(this.mock, 'EligibleAccountAlreadyExists')
           .withArgs(this.staker1);
       });
 
       it('should add to totalStakedWeight', async function () {
         const weightBefore = await this.mock.totalStakedWeight();
         const staker1Weight = await this.mock.weight(await this.mock.balanceOf(this.staker1));
-        await this.mock.connect(this.admin).addOperator(this.staker1);
+        await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
 
         await expect(this.mock.totalStakedWeight()).to.eventually.eq(weightBefore + staker1Weight);
       });
     });
 
-    describe('Remove Operator', function () {
+    describe('Remove Eligible Account', function () {
       beforeEach(async function () {
-        await this.mock.connect(this.admin).addOperator(this.staker1);
-        await this.mock.connect(this.admin).addOperator(this.staker2);
+        await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
+        await this.mock.connect(this.admin).addEligibleAccount(this.staker2);
       });
 
       it('should emit event', async function () {
-        await expect(this.mock.connect(this.admin).removeOperator(this.staker1))
+        await expect(this.mock.connect(this.admin).removeEligibleAccount(this.staker1))
           .to.emit(this.mock, 'RoleRevoked')
-          .withArgs(ethers.id('operator-role'), this.staker1, this.admin);
+          .withArgs(ethers.id('eligible-account-role'), this.staker1, this.admin);
       });
 
-      it('should reflect in operator list', async function () {
-        await this.mock.connect(this.admin).removeOperator(this.staker1);
+      it('should reflect in eligible account list', async function () {
+        await this.mock.connect(this.admin).removeEligibleAccount(this.staker1);
 
-        await expect(this.mock.isOperator(this.staker1)).to.eventually.equal(false);
-        await expect(this.mock.isOperator(this.staker2)).to.eventually.equal(true);
+        await expect(this.mock.isEligibleAccount(this.staker1)).to.eventually.equal(false);
+        await expect(this.mock.isEligibleAccount(this.staker2)).to.eventually.equal(true);
       });
 
-      it('should revert if not an operator', async function () {
-        await expect(this.mock.connect(this.admin).removeOperator(this.admin))
-          .to.be.revertedWithCustomError(this.mock, 'OperatorDoesNotExist')
+      it('should revert if not an eligible account', async function () {
+        await expect(this.mock.connect(this.admin).removeEligibleAccount(this.admin))
+          .to.be.revertedWithCustomError(this.mock, 'EligibleAccountDoesNotExist')
           .withArgs(this.admin);
       });
 
       it('should deduct from totalStakedWeight', async function () {
         const weightBefore = await this.mock.totalStakedWeight();
         const staker1Weight = await this.mock.weight(await this.mock.balanceOf(this.staker1));
-        await this.mock.connect(this.admin).removeOperator(this.staker1);
+        await this.mock.connect(this.admin).removeEligibleAccount(this.staker1);
 
         await expect(this.mock.totalStakedWeight()).to.eventually.eq(weightBefore - staker1Weight);
       });
 
-      it('should retain rewards after removed as an operator', async function () {
+      it('should retain rewards after removed as an eligible account', async function () {
         await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
         await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
         await time.increase(9);
 
-        await this.mock.connect(this.admin).removeOperator(this.staker1);
+        await this.mock.connect(this.admin).removeEligibleAccount(this.staker1);
         await time.increase(100);
 
         await mine();
