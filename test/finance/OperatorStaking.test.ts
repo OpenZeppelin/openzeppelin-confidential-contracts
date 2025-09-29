@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 
 async function fixture() {
-  const [baseTokenOwner, protocolAdmin, operator, holder1, holder2, anyone] = await ethers.getSigners();
+  const [baseTokenOwner, protocolAdmin, operator, holder1, holder2, holder3, anyone] = await ethers.getSigners();
   const baseToken = (await ethers.deployContract(
     '$ERC20Mock',
     ['BaseStakingToken', 'BST', 18],
@@ -37,6 +37,7 @@ async function fixture() {
     operatorStakingRewarder,
     holder1,
     holder2,
+    holder3,
     anyone,
   };
 }
@@ -76,15 +77,16 @@ describe.only('Operator Staking', function () {
         operatorStakingRewarder,
         holder1,
         holder2,
+        holder3,
       } = await fixture();
-      const amount = 100;
+      const amount = 100n;
       const holders = [holder1, holder2];
       for (const holder of holders) {
         await baseToken.$_mint(holder.address, amount);
         await baseToken.connect(holder).approve(operatorStaking.target, amount);
         await operatorStaking.connect(holder).deposit(amount);
       }
-      await operatorStaking.connect(operator).stake(amount * holders.length);
+      await operatorStaking.connect(operator).stake(amount * BigInt(holders.length));
       await mine(1);
       await protocolStaking.connect(protocolAdmin).setRewardRate(0); // stop rewarding for easier accounting
       const earned = await protocolStaking.earned(operatorStaking.target);
@@ -93,14 +95,22 @@ describe.only('Operator Staking', function () {
       await expect(baseToken.balanceOf(operatorStaking.target)).to.eventually.equal(0);
       await expect(baseToken.balanceOf(operatorStakingRewarder.target)).to.eventually.equal(earned);
       await operatorStakingRewarder.claim(operator.address);
-      const expectedOperatorReward = earned / 2n;
+      const expectedOperatorReward = (earned * (await operatorStakingRewarder.operatorRewardRatio())) / 100n;
       const expectedHoldersReward = earned - expectedOperatorReward;
-      const expectedHolderReward = expectedHoldersReward / 2n;
+      const expectedHolderReward = expectedHoldersReward / BigInt(holders.length);
       await expect(baseToken.balanceOf(operator.address)).to.eventually.equal(expectedOperatorReward);
       await expect(baseToken.balanceOf(operatorStakingRewarder.target)).to.eventually.equal(expectedHoldersReward);
+      // holder3 claim should return zero since protocol all rewards were claimed before its deposit
+      await baseToken.$_mint(holder3.address, amount);
+      await baseToken.connect(holder3).approve(operatorStaking.target, amount);
+      await operatorStaking.connect(holder3).deposit(amount);
+      await operatorStakingRewarder.claim(holder3.address);
+      await expect(baseToken.balanceOf(holder3.address)).to.eventually.equal(0);
+      // holder1 claim
       await operatorStakingRewarder.claim(holder1.address);
       await expect(baseToken.balanceOf(holder1.address)).to.eventually.equal(expectedHolderReward);
       await expect(baseToken.balanceOf(operatorStakingRewarder.target)).to.eventually.equal(expectedHolderReward);
+      // holder1 claim
       await operatorStakingRewarder.claim(holder2.address);
       await expect(baseToken.balanceOf(holder2.address)).to.eventually.equal(expectedHolderReward);
       await expect(baseToken.balanceOf(operatorStakingRewarder.target)).to.eventually.equal(0);

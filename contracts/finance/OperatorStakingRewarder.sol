@@ -3,10 +3,13 @@
 pragma solidity ^0.8.27;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+interface IOperatorStaking {
+    function asset() external view returns (address);
+}
 
 /**
  * @dev A contract handling reward logic to holders having deposited tokens on an {OperatorStaking} contract.
@@ -17,8 +20,15 @@ contract OperatorStakingRewarder is Ownable {
     uint256 private _totalReleased;
     mapping(address => uint256) private _released;
 
+    error SenderNotOperatorStaking(address account);
+
     event HoldersRewardRatioSet(uint256 holdersRewardRatio);
     event RewardClaimed(address account, uint256 amount);
+
+    modifier onlyOperatorStaking() {
+        require(msg.sender == _operatorStaking, SenderNotOperatorStaking(msg.sender));
+        _;
+    }
 
     constructor(address owner, address operatorStaking) Ownable(owner) {
         _operatorStaking = operatorStaking;
@@ -26,7 +36,7 @@ contract OperatorStakingRewarder is Ownable {
 
     /// @dev Gets staking token.
     function stakingToken() public view virtual returns (address) {
-        return IERC4626(_operatorStaking).asset();
+        return IOperatorStaking(_operatorStaking).asset();
     }
 
     /// @dev Gets reward ratio for all holders.
@@ -45,24 +55,49 @@ contract OperatorStakingRewarder is Ownable {
         emit HoldersRewardRatioSet(holdersRewardRatio_);
     }
 
+    /// @dev
+    function released(address account) public view virtual returns (uint256) {
+        return _released[account];
+    }
+
     /// @dev Claim rewards for deposits made by holders.
     function claim(address account) public virtual {
-        uint256 ratio;
-        if (account == owner()) {
-            ratio = operatorRewardRatio();
-        } else {
-            uint256 shares = IERC4626(_operatorStaking).balanceOf(account);
-            uint256 totalShares = IERC4626(_operatorStaking).totalSupply();
-            ratio = Math.mulDiv(_holdersRewardRatio, shares, totalShares);
-        }
         address stakingToken_ = stakingToken();
-        uint256 balance = IERC20(stakingToken_).balanceOf(address(this));
-        uint256 released = _released[account];
-        // (totalReleased + balance) * ratio = released + releasable
-        uint256 releasable = Math.mulDiv(_totalReleased + balance, ratio, 100) - released;
+        uint256 totalBalance = IERC20(stakingToken_).balanceOf(address(this));
+        uint256 released_ = _released[account];
+        uint256 releasable; // (totalReleased + totalBalance) * ratio = released + releasable
+        if (account == owner()) {
+            // releasable = (totalReleased + totalBalance) * ownerRatio - released
+            releasable = Math.mulDiv(_totalReleased + totalBalance, operatorRewardRatio(), 100) - released_;
+        } else {
+            uint256 shares = IERC20(_operatorStaking).balanceOf(account);
+            uint256 totalShares = IERC20(_operatorStaking).totalSupply();
+            releasable =
+                Math.mulDiv(_totalReleased + totalBalance, _holdersRewardRatio * shares, 100 * totalShares) -
+                released_; // releasable = (totalReleased + totalBalance) * holdersRatio * (shares / totalShares) - released
+        }
         _totalReleased += releasable;
-        _released[account] = released + releasable;
+        _released[account] = released_ + releasable;
         require(IERC20(stakingToken_).transfer(account, releasable));
         emit RewardClaimed(msg.sender, releasable);
+    }
+
+    /// @dev Initialize reward state for a holder to prevent her/him claiming rewards landed before its deposit.
+    function initRewardState(address account, uint256 shares) public virtual onlyOperatorStaking {
+        uint256 totalShares = IERC20(_operatorStaking).totalSupply();
+        address stakingToken_ = stakingToken();
+        uint256 totalBalance = IERC20(stakingToken_).balanceOf(address(this));
+        uint256 holderVirtuallyReleased = totalShares > 0
+            ? Math.mulDiv(_totalReleased + totalBalance, Math.mulDiv(_holdersRewardRatio, shares, totalShares), 100)
+            : 0;
+        uint256 ownerVirtuallyReleased = Math.mulDiv(
+            holderVirtuallyReleased,
+            operatorRewardRatio(),
+            _holdersRewardRatio
+        );
+        _released[account] += holderVirtuallyReleased;
+        // Owner must be virtually updated too to maintain consistent reward ratios between holders and owner.
+        _released[owner()] += ownerVirtuallyReleased;
+        _totalReleased += holderVirtuallyReleased + ownerVirtuallyReleased;
     }
 }

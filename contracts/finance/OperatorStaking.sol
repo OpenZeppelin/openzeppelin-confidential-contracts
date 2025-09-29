@@ -21,6 +21,7 @@ interface IProtocolStaking {
 
 interface IOperatorStakingRewarder {
     function claim(address account) external;
+    function initRewardState(address account, uint256 shares) external;
 }
 
 /**
@@ -72,6 +73,7 @@ abstract contract OperatorStaking is ERC20, Ownable {
     /// @dev Deposits an amount of tokens that can be later staked by the operator on the protocol.
     function deposit(uint256 amount) public {
         require(IERC20(asset()).transferFrom(msg.sender, address(this), amount));
+        IOperatorStakingRewarder(rewarder()).initRewardState(msg.sender, amount);
         _mint(msg.sender, amount);
         emit Deposited(msg.sender, amount);
     }
@@ -87,15 +89,16 @@ abstract contract OperatorStaking is ERC20, Ownable {
      */
     function requestWithdraw(uint256 amount) public virtual {
         require(amount <= balanceOf(msg.sender), RequestingTooMuchWithdrawal());
+        claimRewards(msg.sender); // claim rewards before shares are burned
+        _burn(msg.sender, amount);
         IProtocolStaking(_protocolStaking).unstake(msg.sender, amount);
+        //TODO: Handle re-entry
         emit WithdrawRequested(msg.sender, amount);
     }
 
     /// @dev Withdraw an amount of deposited tokens. See {requestWithdraw}.
     function withdraw(uint256 amount) public virtual {
-        _burn(msg.sender, amount);
         IProtocolStaking(_protocolStaking).release(msg.sender);
-        // claim rewards?
         emit Withdrawn(msg.sender, amount);
     }
 
