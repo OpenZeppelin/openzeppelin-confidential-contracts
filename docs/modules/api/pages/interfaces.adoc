@@ -19,7 +19,7 @@ These interfaces are available as `.sol` files and are useful to interact with t
 :name: pass:normal[xref:#IERC7984-name--[`++name++`]]
 :symbol: pass:normal[xref:#IERC7984-symbol--[`++symbol++`]]
 :decimals: pass:normal[xref:#IERC7984-decimals--[`++decimals++`]]
-:tokenURI: pass:normal[xref:#IERC7984-tokenURI--[`++tokenURI++`]]
+:contractURI: pass:normal[xref:#IERC7984-contractURI--[`++contractURI++`]]
 :confidentialTotalSupply: pass:normal[xref:#IERC7984-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
 :confidentialBalanceOf: pass:normal[xref:#IERC7984-confidentialBalanceOf-address-[`++confidentialBalanceOf++`]]
 :isOperator: pass:normal[xref:#IERC7984-isOperator-address-address-[`++isOperator++`]]
@@ -36,7 +36,7 @@ These interfaces are available as `.sol` files and are useful to interact with t
 :name-: pass:normal[xref:#IERC7984-name--[`++name++`]]
 :symbol-: pass:normal[xref:#IERC7984-symbol--[`++symbol++`]]
 :decimals-: pass:normal[xref:#IERC7984-decimals--[`++decimals++`]]
-:tokenURI-: pass:normal[xref:#IERC7984-tokenURI--[`++tokenURI++`]]
+:contractURI-: pass:normal[xref:#IERC7984-contractURI--[`++contractURI++`]]
 :confidentialTotalSupply-: pass:normal[xref:#IERC7984-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
 :confidentialBalanceOf-address: pass:normal[xref:#IERC7984-confidentialBalanceOf-address-[`++confidentialBalanceOf++`]]
 :isOperator-address-address: pass:normal[xref:#IERC7984-isOperator-address-address-[`++isOperator++`]]
@@ -67,7 +67,7 @@ Draft interface for a confidential fungible token standard utilizing the Zama FH
 * `++name()++`
 * `++symbol()++`
 * `++decimals()++`
-* `++tokenURI()++`
+* `++contractURI()++`
 * `++confidentialTotalSupply()++`
 * `++confidentialBalanceOf(account)++`
 * `++isOperator(holder, spender)++`
@@ -111,10 +111,10 @@ Returns the symbol of the token.
 Returns the number of decimals of the token. Recommended to be 6.
 
 [.contract-item]
-[[IERC7984-tokenURI--]]
-==== `[.contract-item-name]#++tokenURI++#++() → string++` [.item-kind]#external#
+[[IERC7984-contractURI--]]
+==== `[.contract-item-name]#++contractURI++#++() → string++` [.item-kind]#external#
 
-Returns the token URI.
+Returns the contract URI. See [ERC-7572](https://eips.ethereum.org/EIPS/eip-7572) for details.
 
 [.contract-item]
 [[IERC7984-confidentialTotalSupply--]]

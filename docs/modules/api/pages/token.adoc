@@ -58,7 +58,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 :name: pass:normal[xref:#ERC7984-name--[`++name++`]]
 :symbol: pass:normal[xref:#ERC7984-symbol--[`++symbol++`]]
 :decimals: pass:normal[xref:#ERC7984-decimals--[`++decimals++`]]
-:tokenURI: pass:normal[xref:#ERC7984-tokenURI--[`++tokenURI++`]]
+:contractURI: pass:normal[xref:#ERC7984-contractURI--[`++contractURI++`]]
 :confidentialTotalSupply: pass:normal[xref:#ERC7984-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
 :confidentialBalanceOf: pass:normal[xref:#ERC7984-confidentialBalanceOf-address-[`++confidentialBalanceOf++`]]
 :isOperator: pass:normal[xref:#ERC7984-isOperator-address-address-[`++isOperator++`]]
@@ -84,7 +84,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 :name-: pass:normal[xref:#ERC7984-name--[`++name++`]]
 :symbol-: pass:normal[xref:#ERC7984-symbol--[`++symbol++`]]
 :decimals-: pass:normal[xref:#ERC7984-decimals--[`++decimals++`]]
-:tokenURI-: pass:normal[xref:#ERC7984-tokenURI--[`++tokenURI++`]]
+:contractURI-: pass:normal[xref:#ERC7984-contractURI--[`++contractURI++`]]
 :confidentialTotalSupply-: pass:normal[xref:#ERC7984-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
 :confidentialBalanceOf-address: pass:normal[xref:#ERC7984-confidentialBalanceOf-address-[`++confidentialBalanceOf++`]]
 :isOperator-address-address: pass:normal[xref:#ERC7984-isOperator-address-address-[`++isOperator++`]]
@@ -132,11 +132,11 @@ Key features:
 [.contract-index]
 .Functions
 --
-* `++constructor(name_, symbol_, tokenURI_)++`
+* `++constructor(name_, symbol_, contractURI_)++`
 * `++name()++`
 * `++symbol()++`
 * `++decimals()++`
-* `++tokenURI()++`
+* `++contractURI()++`
 * `++confidentialTotalSupply()++`
 * `++confidentialBalanceOf(account)++`
 * `++isOperator(holder, spender)++`
@@ -193,7 +193,7 @@ Key features:
 
 [.contract-item]
 [[ERC7984-constructor-string-string-string-]]
-==== `[.contract-item-name]#++constructor++#++(string name_, string symbol_, string tokenURI_)++` [.item-kind]#internal#
+==== `[.contract-item-name]#++constructor++#++(string name_, string symbol_, string contractURI_)++` [.item-kind]#internal#
 
 [.contract-item]
 [[ERC7984-name--]]
@@ -214,10 +214,10 @@ Returns the symbol of the token.
 Returns the number of decimals of the token. Recommended to be 6.
 
 [.contract-item]
-[[ERC7984-tokenURI--]]
-==== `[.contract-item-name]#++tokenURI++#++() → string++` [.item-kind]#public#
+[[ERC7984-contractURI--]]
+==== `[.contract-item-name]#++contractURI++#++() → string++` [.item-kind]#public#
 
-Returns the token URI.
+Returns the contract URI. See [ERC-7572](https://eips.ethereum.org/EIPS/eip-7572) for details.
 
 [.contract-item]
 [[ERC7984-confidentialTotalSupply--]]
@@ -465,7 +465,7 @@ tokens such as fee-on-transfer or other deflationary-type tokens are not support
 .ERC7984
 * `++name()++`
 * `++symbol()++`
-* `++tokenURI()++`
+* `++contractURI()++`
 * `++confidentialTotalSupply()++`
 * `++confidentialBalanceOf(account)++`
 * `++isOperator(holder, spender)++`
@@ -657,7 +657,7 @@ Inspired by https://github.com/OpenZeppelin/openzeppelin-community-contracts/blo
 * `++name()++`
 * `++symbol()++`
 * `++decimals()++`
-* `++tokenURI()++`
+* `++contractURI()++`
 * `++confidentialTotalSupply()++`
 * `++confidentialBalanceOf(account)++`
 * `++isOperator(holder, spender)++`
@@ -787,7 +787,7 @@ permanent ACL access to its transfer and balance amounts. A observer can be adde
 * `++name()++`
 * `++symbol()++`
 * `++decimals()++`
-* `++tokenURI()++`
+* `++contractURI()++`
 * `++confidentialTotalSupply()++`
 * `++confidentialBalanceOf(account)++`
 * `++isOperator(holder, spender)++`
@@ -939,7 +939,7 @@ to implement an allowlist.
 * `++name()++`
 * `++symbol()++`
 * `++decimals()++`
-* `++tokenURI()++`
+* `++contractURI()++`
 * `++confidentialTotalSupply()++`
 * `++confidentialBalanceOf(account)++`
 * `++isOperator(holder, spender)++`
@@ -1151,7 +1151,7 @@ balances externally.
 * `++name()++`
 * `++symbol()++`
 * `++decimals()++`
-* `++tokenURI()++`
+* `++contractURI()++`
 * `++confidentialTotalSupply()++`
 * `++confidentialBalanceOf(account)++`
 * `++isOperator(holder, spender)++`
@@ -1444,7 +1444,7 @@ This interface provides compliance checks, transfer controls and enforcement act
 * `++name()++`
 * `++symbol()++`
 * `++decimals()++`
-* `++tokenURI()++`
+* `++contractURI()++`
 * `++confidentialTotalSupply()++`
 * `++confidentialBalanceOf(account)++`
 * `++isOperator(holder, spender)++`

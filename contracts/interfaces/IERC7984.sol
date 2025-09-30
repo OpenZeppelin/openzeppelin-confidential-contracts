@@ -32,8 +32,8 @@ interface IERC7984 {
     /// @dev Returns the number of decimals of the token. Recommended to be 6.
     function decimals() external view returns (uint8);
 
-    /// @dev Returns the token URI.
-    function tokenURI() external view returns (string memory);
+    /// @dev Returns the contract URI. See [ERC-7572](https://eips.ethereum.org/EIPS/eip-7572) for details.
+    function contractURI() external view returns (string memory);
 
     /// @dev Returns the confidential total supply of the token.
     function confidentialTotalSupply() external view returns (euint64);
