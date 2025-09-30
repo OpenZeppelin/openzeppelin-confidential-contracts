@@ -127,13 +127,17 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     /**
      * @dev Fills an unwrap request for a given request id related to a decrypted unwrap amount.
      */
-    function finalizeUnwrap(uint256 requestID, uint64 amount, bytes[] memory signatures) public virtual {
-        FHE.checkSignatures(requestID, signatures);
+    function finalizeUnwrap(
+        uint256 requestID,
+        bytes calldata cleartexts,
+        bytes calldata decryptionProof
+    ) public virtual {
+        FHE.checkSignatures(requestID, cleartexts, decryptionProof);
         address to = _receivers[requestID];
         require(to != address(0), ERC7984InvalidGatewayRequest(requestID));
         delete _receivers[requestID];
 
-        SafeERC20.safeTransfer(underlying(), to, amount * rate());
+        SafeERC20.safeTransfer(underlying(), to, abi.decode(cleartexts, (uint64)) * rate());
     }
 
     function _unwrap(address from, address to, euint64 amount) internal virtual {

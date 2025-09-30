@@ -2,13 +2,15 @@
 
 pragma solidity ^0.8.27;
 
-import {FHE, ebool, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC7984} from "./../../../interfaces/IERC7984.sol";
-import {IERC7984RwaBase} from "./../../../interfaces/IERC7984Rwa.sol";
+import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
+import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984} from "./../ERC7984.sol";
 import {ERC7984Freezable} from "./ERC7984Freezable.sol";
 import {ERC7984Restricted} from "./ERC7984Restricted.sol";
@@ -18,7 +20,7 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
 abstract contract ERC7984Rwa is
-    ERC7984,
+    IERC7984Rwa,
     ERC7984Freezable,
     ERC7984Restricted,
     Pausable,
@@ -40,26 +42,18 @@ abstract contract ERC7984Rwa is
         _;
     }
 
-    constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984(name, symbol, tokenUri) {
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    constructor(address admin) {
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
     /// @inheritdoc ERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(IERC165, ERC165, AccessControl) returns (bool) {
         return
-            interfaceId == type(IERC7984RwaBase).interfaceId ||
+            interfaceId == type(IERC7984Rwa).interfaceId ||
             interfaceId == type(IERC7984).interfaceId ||
             super.supportsInterface(interfaceId);
-    }
-
-    /// @dev Pauses contract.
-    function pause() public virtual onlyAgent {
-        _pause();
-    }
-
-    /// @dev Unpauses contract.
-    function unpause() public virtual onlyAgent {
-        _unpause();
     }
 
     /// @dev Returns true if has admin role, false otherwise.
@@ -87,6 +81,16 @@ abstract contract ERC7984Rwa is
         _revokeRole(AGENT_ROLE, account);
     }
 
+    /// @dev Pauses contract.
+    function pause() public virtual onlyAgent {
+        _pause();
+    }
+
+    /// @dev Unpauses contract.
+    function unpause() public virtual onlyAgent {
+        _unpause();
+    }
+
     /// @dev Blocks a user account.
     function blockUser(address account) public virtual onlyAgent {
         _blockUser(account);
@@ -97,16 +101,7 @@ abstract contract ERC7984Rwa is
         _allowUser(account);
     }
 
-    /// @dev Sets confidential frozen with proof.
-    function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual onlyAgent {
-        require(
-            FHE.isAllowed(encryptedAmount, account),
-            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
-        );
-        _setConfidentialFrozen(account, encryptedAmount);
-    }
-
-    /// @dev Sets confidential frozen.
+    /// @dev Sets confidential frozen for an account.
     function setConfidentialFrozen(
         address account,
         externalEuint64 encryptedAmount,
@@ -115,18 +110,31 @@ abstract contract ERC7984Rwa is
         _setConfidentialFrozen(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
+    /// @dev Sets confidential frozen for an account with proof.
+    function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual onlyAgent {
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
+        _setConfidentialFrozen(account, encryptedAmount);
+    }
+
     /// @dev Mints confidential amount of tokens to account with proof.
     function confidentialMint(
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _confidentialMint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Mints confidential amount of tokens to account.
     function confidentialMint(address to, euint64 encryptedAmount) public virtual onlyAgent returns (euint64) {
-        return _confidentialMint(to, encryptedAmount);
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
+        return _mint(to, encryptedAmount);
     }
 
     /// @dev Burns confidential amount of tokens from account with proof.
@@ -135,12 +143,16 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _confidentialBurn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        return _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Burns confidential amount of tokens from account.
     function confidentialBurn(address account, euint64 encryptedAmount) public virtual onlyAgent returns (euint64) {
-        return _confidentialBurn(account, encryptedAmount);
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+        );
+        return _burn(account, encryptedAmount);
     }
 
     /// @dev Forces transfer of confidential amount of tokens from account to account with proof by skipping compliance checks.
@@ -150,7 +162,7 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _forceConfidentialTransferFrom(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
@@ -159,72 +171,70 @@ abstract contract ERC7984Rwa is
         address to,
         euint64 encryptedAmount
     ) public virtual onlyAgent returns (euint64 transferred) {
-        return _forceConfidentialTransferFrom(from, to, encryptedAmount);
-    }
-
-    /// @dev Internal function which mints confidential amount of tokens to account.
-    function _confidentialMint(address to, euint64 encryptedAmount) internal virtual returns (euint64) {
-        return _mint(to, encryptedAmount);
-    }
-
-    /// @dev Internal function which burns confidential amount of tokens from account.
-    function _confidentialBurn(address account, euint64 encryptedAmount) internal virtual returns (euint64) {
-        return _burn(account, encryptedAmount);
-    }
-
-    /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
-    function _forceConfidentialTransferFrom(
-        address from,
-        address to,
-        euint64 encryptedAmount
-    ) internal virtual returns (euint64 transferred) {
-        if (!FHE.isInitialized(encryptedAmount)) {
-            return encryptedAmount;
-        }
-        encryptedAmount = FHE.select(
-            _preCheckForceTransfer(from, to, encryptedAmount),
-            encryptedAmount,
-            FHE.asEuint64(0)
+        require(
+            FHE.isAllowed(encryptedAmount, msg.sender),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        _disableERC7984FreezableUpdateCheck(); // bypass frozen check
-        _disableERC7984RestrictedUpdateCheck(); // bypass default restriction check
-        if (to != address(0)) _checkRestriction(to); // only perform restriction check on `to`
-        transferred = super._update(from, to, encryptedAmount); // bypass compliance check
-        _postForceTransfer(from, to, encryptedAmount);
-        _restoreERC7984FreezableUpdateCheck();
-        _restoreERC7984RestrictedUpdateCheck();
+        return _forceUpdate(from, to, encryptedAmount);
     }
 
-    /// @dev Internal function which updates confidential balances while performing frozen, restriction and compliance checks.
+    /// @inheritdoc ERC7984Freezable
+    function confidentialAvailable(
+        address account
+    ) public virtual override(IERC7984Rwa, ERC7984Freezable) returns (euint64) {
+        return super.confidentialAvailable(account);
+    }
+
+    /// @inheritdoc ERC7984Freezable
+    function confidentialFrozen(
+        address account
+    ) public view virtual override(IERC7984Rwa, ERC7984Freezable) returns (euint64) {
+        return super.confidentialFrozen(account);
+    }
+
+    /// @inheritdoc Pausable
+    function paused() public view virtual override(IERC7984Rwa, Pausable) returns (bool) {
+        return super.paused();
+    }
+
+    /// @inheritdoc ERC7984Restricted
+    function isUserAllowed(
+        address account
+    ) public view virtual override(IERC7984Rwa, ERC7984Restricted) returns (bool) {
+        return super.isUserAllowed(account);
+    }
+
+    /// @dev Internal function which updates confidential balances while performing frozen and restriction compliance checks.
     function _update(
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal override(ERC7984Freezable, ERC7984Restricted, ERC7984) whenNotPaused returns (euint64 transferred) {
-        if (!FHE.isInitialized(encryptedAmount)) {
-            return encryptedAmount;
-        }
-        encryptedAmount = FHE.select(_preCheckTransfer(from, to, encryptedAmount), encryptedAmount, FHE.asEuint64(0));
+    ) internal virtual override(ERC7984Freezable, ERC7984Restricted) whenNotPaused returns (euint64) {
         // frozen and restriction checks performed through inheritance
-        transferred = super._update(from, to, encryptedAmount);
-        _postTransfer(from, to, encryptedAmount);
+        return super._update(from, to, encryptedAmount);
+    }
+
+    /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
+    function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
+        // bypassing `from` restriction check with {_checkSenderRestriction}. Still performing `to` restriction check.
+        // bypassing paused state by directly calling `super._update`
+        return super._update(from, to, encryptedAmount);
     }
 
     /**
-     * @dev Internal function which reverts if `msg.sender` is not authorized as a freezer.
-     * This freezer role is only granted to admin or agent.
+     * @dev Bypasses the `from` restriction check when performing a {forceConfidentialTransferFrom}.
      */
-    function _checkFreezer() internal override onlyAgent {}
+    function _checkSenderRestriction(address account) internal view override {
+        if (_isForceTransfer()) {
+            return;
+        }
+        super._checkSenderRestriction(account);
+    }
 
-    /// @dev Checks if a transfer follows compliance.
-    function _preCheckTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);
-
-    /// @dev Checks if a force transfer follows compliance.
-    function _preCheckForceTransfer(address from, address to, euint64 encryptedAmount) internal virtual returns (ebool);
-
-    /// @dev Performs operation after transfer.
-    function _postTransfer(address from, address to, euint64 encryptedAmount) internal virtual {}
-
-    /// @dev Performs operation after force transfer.
-    function _postForceTransfer(address from, address to, euint64 encryptedAmount) internal virtual {}
+    /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
+    function _isForceTransfer() private pure returns (bool) {
+        return
+            msg.sig == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+            msg.sig == 0x44fd6e40; // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
+    }
 }

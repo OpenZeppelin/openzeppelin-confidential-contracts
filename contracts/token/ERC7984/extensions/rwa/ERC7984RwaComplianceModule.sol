@@ -75,7 +75,7 @@ abstract contract ERC7984RwaComplianceModule is IERC7984RwaComplianceModule, Han
         euint64 /*encryptedAmount*/
     ) internal virtual returns (ebool);
 
-    /// @dev Internal function which Performs operation after transfer.
+    /// @dev Internal function which performs operation after transfer.
     function _postTransfer(address /*from*/, address /*to*/, euint64 /*encryptedAmount*/) internal virtual {
         // default to no-op
     }

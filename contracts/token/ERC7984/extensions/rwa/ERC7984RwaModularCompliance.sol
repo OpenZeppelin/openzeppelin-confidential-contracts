@@ -102,30 +102,46 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         return false;
     }
 
-    /// @dev Checks if a transfer follows compliance.
-    function _preCheckTransfer(address from, address to, euint64 encryptedAmount) internal override returns (ebool) {
-        return
-            FHE.and(_checkAlwaysBefore(from, to, encryptedAmount), _checkOnlyBeforeTransfer(from, to, encryptedAmount));
-    }
-
-    /// @dev Checks if a force transfer follows compliance.
-    function _preCheckForceTransfer(
+    /**
+     * @dev Updates confidential balances. It transfers zero if it does not follow
+     * transfer compliance. Runs hooks after the transfer.
+     */
+    function _update(
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal override returns (ebool) {
-        return _checkAlwaysBefore(from, to, encryptedAmount);
+    ) internal virtual override returns (euint64 transferred) {
+        transferred = super._update(
+            from,
+            to,
+            FHE.select(
+                FHE.and(
+                    _checkAlwaysBefore(from, to, encryptedAmount),
+                    _checkOnlyBeforeTransfer(from, to, encryptedAmount)
+                ),
+                encryptedAmount,
+                FHE.asEuint64(0)
+            )
+        );
+        _runAlwaysAfter(from, to, transferred);
+        _runOnlyAfterTransfer(from, to, transferred);
     }
 
-    /// @dev Performs operations after transfer.
-    function _postTransfer(address from, address to, euint64 encryptedAmount) internal override {
-        _runAlwaysAfter(from, to, encryptedAmount);
-        _runOnlyAfterTransfer(from, to, encryptedAmount);
-    }
-
-    /// @dev Performs operations after force transfer.
-    function _postForceTransfer(address from, address to, euint64 encryptedAmount) internal override {
-        _runAlwaysAfter(from, to, encryptedAmount);
+    /**
+     * @dev Forces the update of confidential balances. It transfers zero if it does not
+     * follow force transfer compliance. Runs hooks after the force transfer.
+     */
+    function _forceUpdate(
+        address from,
+        address to,
+        euint64 encryptedAmount
+    ) internal virtual override returns (euint64 transferred) {
+        transferred = super._update(
+            from,
+            to,
+            FHE.select(_checkAlwaysBefore(from, to, encryptedAmount), encryptedAmount, FHE.asEuint64(0))
+        );
+        _runAlwaysAfter(from, to, transferred);
     }
 
     /// @dev Checks always-on compliance.

@@ -1,6 +1,6 @@
 import { IACL__factory } from '../../../../types';
 import { $ERC7984OmnibusMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984OmnibusMock.sol/$ERC7984OmnibusMock';
-import { ACL_ADDRESS } from '../../../helpers/accounts';
+import { getAclAddress } from '../../../helpers/accounts';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
@@ -17,7 +17,7 @@ describe('ERC7984Omnibus', function () {
       symbol,
       uri,
     ])) as any as $ERC7984OmnibusMock;
-    const acl = IACL__factory.connect(ACL_ADDRESS, ethers.provider);
+    const acl = IACL__factory.connect(await getAclAddress(), ethers.provider);
     Object.assign(this, { token, acl, holder, recipient, operator, subaccount });
 
     await this.token['$_mint(address,uint64)'](this.holder.address, 1000);

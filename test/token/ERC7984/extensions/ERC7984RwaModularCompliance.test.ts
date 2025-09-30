@@ -17,9 +17,9 @@ const adminRole = ethers.ZeroHash;
 
 const fixture = async () => {
   const [admin, agent1, agent2, recipient, anyone] = await ethers.getSigners();
-  const token = (await ethers.deployContract('ERC7984RwaModularComplianceMock', ['name', 'symbol', 'uri'])).connect(
-    anyone,
-  );
+  const token = (
+    await ethers.deployContract('ERC7984RwaModularComplianceMock', ['name', 'symbol', 'uri', admin.address])
+  ).connect(anyone);
   await token.connect(admin).addAgent(agent1);
   const alwaysOnModule = await ethers.deployContract('ERC7984RwaModularComplianceModuleMock', [
     await token.getAddress(),

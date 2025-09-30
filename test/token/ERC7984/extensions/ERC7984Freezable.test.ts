@@ -1,7 +1,6 @@
 import { IACL__factory } from '../../../../types';
 import { $ERC7984FreezableMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984FreezableMock.sol/$ERC7984FreezableMock';
-import { ACL_ADDRESS } from '../../../helpers/accounts';
-import { callAndGetResult } from '../../../helpers/event';
+import { getAclAddress } from '../../../helpers/accounts';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { AddressLike, BytesLike, EventLog } from 'ethers';
@@ -10,7 +9,6 @@ import { ethers, fhevm } from 'hardhat';
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
-const confidentialTransferEventSignature = 'ConfidentialTransfer(address,address,bytes32)';
 
 describe('ERC7984Freezable', function () {
   async function deployFixture() {
@@ -19,9 +17,8 @@ describe('ERC7984Freezable', function () {
       name,
       symbol,
       uri,
-      freezer.address,
     ])) as any as $ERC7984FreezableMock;
-    const acl = IACL__factory.connect(ACL_ADDRESS, ethers.provider);
+    const acl = IACL__factory.connect(await getAclAddress(), ethers.provider);
     return { token, acl, holder, recipient, freezer, operator, anyone };
   }
 
@@ -71,37 +68,6 @@ describe('ERC7984Freezable', function () {
     await expect(
       fhevm.userDecryptEuint(FhevmType.euint64, availableHandle, await token.getAddress(), recipient),
     ).to.eventually.equal(900);
-  });
-
-  it('should not set confidential frozen if not called by freezer', async function () {
-    const { token, holder, recipient, anyone } = await deployFixture();
-    const encryptedRecipientMintInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), holder.address)
-      .add64(1000)
-      .encrypt();
-    await token
-      .connect(holder)
-      ['$_mint(address,bytes32,bytes)'](
-        recipient.address,
-        encryptedRecipientMintInput.handles[0],
-        encryptedRecipientMintInput.inputProof,
-      );
-    const encryptedInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), anyone.address)
-      .add64(100)
-      .encrypt();
-
-    await expect(
-      token
-        .connect(anyone)
-        ['$_setConfidentialFrozen(address,bytes32,bytes)'](
-          recipient.address,
-          encryptedInput.handles[0],
-          encryptedInput.inputProof,
-        ),
-    )
-      .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
-      .withArgs(anyone.address, ethers.id('FREEZER_ROLE'));
   });
 
   it('should transfer max available', async function () {
@@ -208,99 +174,5 @@ describe('ERC7984Freezable', function () {
         recipient,
       ),
     ).to.eventually.equal(1000);
-  });
-
-  it('should transfer all if transferring more than available but check disabled', async function () {
-    const { token, holder, recipient, freezer, anyone } = await deployFixture();
-    const encryptedRecipientMintInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), holder.address)
-      .add64(1000)
-      .encrypt();
-    await token
-      .connect(holder)
-      ['$_mint(address,bytes32,bytes)'](
-        recipient.address,
-        encryptedRecipientMintInput.handles[0],
-        encryptedRecipientMintInput.inputProof,
-      );
-    const encryptedInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), freezer.address)
-      .add64(500)
-      .encrypt();
-    await token
-      .connect(freezer)
-      ['$_setConfidentialFrozen(address,bytes32,bytes)'](
-        recipient.address,
-        encryptedInput.handles[0],
-        encryptedInput.inputProof,
-      );
-    await token.$_disableERC7984FreezableUpdateCheck();
-    const encryptedInput1 = await fhevm
-      .createEncryptedInput(await token.getAddress(), recipient.address)
-      .add64(501)
-      .encrypt();
-    const tx = token
-      .connect(recipient)
-      ['confidentialTransfer(address,bytes32,bytes)'](
-        anyone.address,
-        encryptedInput1.handles[0],
-        encryptedInput1.inputProof,
-      );
-    await expect(tx).to.emit(token, 'ConfidentialTransfer');
-    const [from, to, transferred1] = await callAndGetResult(tx, confidentialTransferEventSignature);
-    expect(from).to.equal(recipient.address);
-    expect(to).to.equal(anyone.address);
-    await expect(
-      fhevm.userDecryptEuint(FhevmType.euint64, transferred1, await token.getAddress(), recipient),
-    ).to.eventually.equal(501);
-    await expect(
-      fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await token.confidentialBalanceOf(recipient.address),
-        await token.getAddress(),
-        recipient,
-      ),
-    ).to.eventually.equal(499);
-    await expect(
-      fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await token.confidentialFrozen(recipient.address),
-        await token.getAddress(),
-        recipient,
-      ),
-    ).to.eventually.equal(499); // frozen got reset to balance
-
-    // should transfer zero if frozen check is restored
-    await token.$_restoreERC7984FreezableUpdateCheck();
-    const encryptedInput2 = await fhevm
-      .createEncryptedInput(await token.getAddress(), recipient.address)
-      .add64(499)
-      .encrypt();
-    const [, , transferred2] = await callAndGetResult(
-      token
-        .connect(recipient)
-        ['confidentialTransfer(address,bytes32,bytes)'](
-          anyone.address,
-          encryptedInput2.handles[0],
-          encryptedInput2.inputProof,
-        ),
-      confidentialTransferEventSignature,
-    );
-    await expect(
-      fhevm.userDecryptEuint(FhevmType.euint64, transferred2, await token.getAddress(), recipient),
-    ).to.eventually.equal(0);
-  });
-
-  it('should not set confidential frozen if unauthorized', async function () {
-    const { token, recipient, freezer, anyone } = await deployFixture();
-    const encryptedInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), freezer.address)
-      .add64(100)
-      .encrypt();
-    await expect(
-      token.connect(anyone)['$_setConfidentialFrozen(address,bytes32)'](recipient.address, encryptedInput.handles[0]),
-    )
-      .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
-      .withArgs(anyone.address, ethers.id('FREEZER_ROLE'));
   });
 });
