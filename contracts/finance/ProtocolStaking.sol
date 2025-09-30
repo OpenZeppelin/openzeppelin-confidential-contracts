@@ -184,7 +184,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
 
     /// @dev Gets the staking weight for a given raw amount.
     function weight(uint256 amount) public view virtual returns (uint256) {
-        return Math.log2(amount);
+        return Math.sqrt(amount);
     }
 
     /// @dev Returns the current total staked weight.
