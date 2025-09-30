@@ -2,25 +2,43 @@
 
 pragma solidity ^0.8.27;
 
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
+import {OperatorStakingRewarder} from "./OperatorStakingRewarder.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
 
-contract OperatorStaking is ERC4626 {
+contract OperatorStaking is ERC4626, Ownable {
     ProtocolStaking private _protocolStaking;
 
     constructor(
         string memory name,
         string memory symbol,
         ProtocolStaking protocolStaking
-    ) ERC20(name, symbol) ERC4626(IERC20(protocolStaking.stakingToken())) {
+    ) ERC20(name, symbol) ERC4626(IERC20(protocolStaking.stakingToken())) Ownable(msg.sender) {
         _protocolStaking = protocolStaking;
         IERC20(protocolStaking.stakingToken()).approve(address(protocolStaking), type(uint256).max);
+        setRewarder(address(new OperatorStakingRewarder(msg.sender, address(this))));
     }
 
-    function restake() public virtual {
-        _protocolStaking.stake(IERC20(asset()).balanceOf(address(this)));
+    /// @dev Gets rewarder address.
+    function rewarder() public view virtual returns (address) {
+        return _protocolStaking.rewardsRecipient(address(this));
+    }
+
+    /// @dev Sets rewarder address.
+    function setRewarder(address rewarder_) public virtual onlyOwner {
+        _protocolStaking.setRewardsRecipient(rewarder_);
+    }
+
+    /// @dev Helper to restake immediately withdrawn rewards.
+    function restakeRewards() public virtual {
+        uint256 balanceBefore = IERC20(_protocolStaking).balanceOf(msg.sender);
+        withdrawRewards(msg.sender);
+        uint256 balanceAfter = IERC20(_protocolStaking).balanceOf(msg.sender);
+        uint256 rewards = balanceAfter - balanceBefore;
+        deposit(rewards, msg.sender);
     }
 
     /**
@@ -50,5 +68,11 @@ contract OperatorStaking is ERC4626 {
         _protocolStaking.unstake(receiver, assets);
 
         emit Withdraw(caller, receiver, owner, assets, shares);
+    }
+
+    /// @dev Helper to withdraw latest rewards.
+    function withdrawRewards(address account) public virtual {
+        _protocolStaking.claimRewards(address(this)); // will transfer to rewarder
+        OperatorStakingRewarder(rewarder()).withdrawRewards(account);
     }
 }
