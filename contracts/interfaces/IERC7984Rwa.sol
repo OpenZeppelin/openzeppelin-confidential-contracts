@@ -71,16 +71,16 @@ interface IERC7984Rwa is IERC7984, IERC165 {
 /// @dev Interface for confidential RWA with modular compliance.
 interface IERC7984RwaModularCompliance {
     enum ComplianceModuleType {
-        ALWAYS_ON,
-        TRANSFER_ONLY
+        AlwaysOn,
+        TransferOnly
     }
 
+    /// @dev Checks if a compliance module is installed.
+    function isModuleInstalled(ComplianceModuleType moduleType, address module) external view returns (bool);
     /// @dev Installs a transfer compliance module.
     function installModule(ComplianceModuleType moduleType, address module) external;
     /// @dev Uninstalls a transfer compliance module.
     function uninstallModule(ComplianceModuleType moduleType, address module) external;
-    /// @dev Checks if a compliance module is installed.
-    function isModuleInstalled(ComplianceModuleType moduleType, address module) external view returns (bool);
 }
 
 /// @dev Interface for confidential RWA transfer compliance module.

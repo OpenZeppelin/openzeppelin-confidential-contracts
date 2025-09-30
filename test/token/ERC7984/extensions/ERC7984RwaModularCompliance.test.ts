@@ -9,8 +9,6 @@ const transferEventSignature = 'ConfidentialTransfer(address,address,bytes32)';
 const alwaysOnType = 0;
 const transferOnlyType = 1;
 const moduleTypes = [alwaysOnType, transferOnlyType];
-const alwaysOn = 'always-on';
-const transferOnly = 'transfer-only';
 const maxInverstor = 2;
 const maxBalance = 100;
 const adminRole = ethers.ZeroHash;
@@ -23,11 +21,9 @@ const fixture = async () => {
   await token.connect(admin).addAgent(agent1);
   const alwaysOnModule = await ethers.deployContract('ERC7984RwaModularComplianceModuleMock', [
     await token.getAddress(),
-    alwaysOn,
   ]);
   const transferOnlyModule = await ethers.deployContract('ERC7984RwaModularComplianceModuleMock', [
     await token.getAddress(),
-    transferOnly,
   ]);
   const investorCapModule = await ethers.deployContract('ERC7984RwaInvestorCapModuleMock', [
     await token.getAddress(),
@@ -175,21 +171,13 @@ describe('ERC7984RwaModularCompliance', function () {
           await expect(
             fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), recipient),
           ).to.eventually.equal(compliant ? amount : 0);
-          await expect(tx)
-            .to.emit(alwaysOnModule, 'PreTransfer')
-            .withArgs(alwaysOn)
-            .to.emit(alwaysOnModule, 'PostTransfer')
-            .withArgs(alwaysOn);
+          await expect(tx).to.emit(alwaysOnModule, 'PreTransfer').to.emit(alwaysOnModule, 'PostTransfer');
           if (forceTransfer) {
             await expect(tx)
               .to.not.emit(transferOnlyModule, 'PreTransfer')
               .to.not.emit(transferOnlyModule, 'PostTransfer');
           } else {
-            await expect(tx)
-              .to.emit(transferOnlyModule, 'PreTransfer')
-              .withArgs(transferOnly)
-              .to.emit(transferOnlyModule, 'PostTransfer')
-              .withArgs(transferOnly);
+            await expect(tx).to.emit(transferOnlyModule, 'PreTransfer').to.emit(transferOnlyModule, 'PostTransfer');
           }
         });
       }

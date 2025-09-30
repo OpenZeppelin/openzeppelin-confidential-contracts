@@ -43,7 +43,12 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
      * * Force transfer compliance module
      */
     function supportsModule(ComplianceModuleType moduleType) public view virtual returns (bool) {
-        return moduleType == ComplianceModuleType.ALWAYS_ON || moduleType == ComplianceModuleType.TRANSFER_ONLY;
+        return moduleType == ComplianceModuleType.AlwaysOn || moduleType == ComplianceModuleType.TransferOnly;
+    }
+
+    /// @inheritdoc IERC7984RwaModularCompliance
+    function isModuleInstalled(ComplianceModuleType moduleType, address module) public view virtual returns (bool) {
+        return _isModuleInstalled(moduleType, module);
     }
 
     /**
@@ -60,9 +65,13 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         _uninstallModule(moduleType, module);
     }
 
-    /// @inheritdoc IERC7984RwaModularCompliance
-    function isModuleInstalled(ComplianceModuleType moduleType, address module) public view virtual returns (bool) {
-        return _isModuleInstalled(moduleType, module);
+    /// @dev Checks if a compliance module is installed.
+    function _isModuleInstalled(
+        ComplianceModuleType moduleType,
+        address module
+    ) internal view virtual returns (bool installed) {
+        if (moduleType == ComplianceModuleType.AlwaysOn) return _alwaysOnModules.contains(module);
+        if (moduleType == ComplianceModuleType.TransferOnly) return _transferOnlyModules.contains(module);
     }
 
     /// @dev Internal function which installs a transfer compliance module.
@@ -76,9 +85,9 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
             ERC7984RwaNotTransferComplianceModule(module)
         );
 
-        if (moduleType == ComplianceModuleType.ALWAYS_ON) {
+        if (moduleType == ComplianceModuleType.AlwaysOn) {
             require(_alwaysOnModules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
-        } else if (moduleType == ComplianceModuleType.TRANSFER_ONLY) {
+        } else if (moduleType == ComplianceModuleType.TransferOnly) {
             require(_transferOnlyModules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
         }
         emit ModuleInstalled(moduleType, module);
@@ -87,19 +96,12 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
     /// @dev Internal function which uninstalls a transfer compliance module.
     function _uninstallModule(ComplianceModuleType moduleType, address module) internal virtual {
         require(supportsModule(moduleType), ERC7984RwaUnsupportedModuleType(moduleType));
-        if (moduleType == ComplianceModuleType.ALWAYS_ON) {
+        if (moduleType == ComplianceModuleType.AlwaysOn) {
             require(_alwaysOnModules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
-        } else if (moduleType == ComplianceModuleType.TRANSFER_ONLY) {
+        } else if (moduleType == ComplianceModuleType.TransferOnly) {
             require(_transferOnlyModules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
         }
         emit ModuleUninstalled(moduleType, module);
-    }
-
-    /// @dev Checks if a compliance module is installed.
-    function _isModuleInstalled(ComplianceModuleType moduleType, address module) internal view virtual returns (bool) {
-        if (moduleType == ComplianceModuleType.ALWAYS_ON) return _alwaysOnModules.contains(module);
-        if (moduleType == ComplianceModuleType.TRANSFER_ONLY) return _transferOnlyModules.contains(module);
-        return false;
     }
 
     /**

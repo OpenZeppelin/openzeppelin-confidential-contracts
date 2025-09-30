@@ -9,14 +9,11 @@ import {ERC7984RwaComplianceModule} from "../../token/ERC7984/extensions/rwa/ERC
 // solhint-disable func-name-mixedcase
 contract ERC7984RwaModularComplianceModuleMock is ERC7984RwaComplianceModule, SepoliaConfig {
     bool private _compliant = false;
-    string private _name;
 
-    event PostTransfer(string name);
-    event PreTransfer(string name);
+    event PostTransfer();
+    event PreTransfer();
 
-    constructor(address compliance, string memory name) ERC7984RwaComplianceModule(compliance) {
-        _name = name;
-    }
+    constructor(address compliance) ERC7984RwaComplianceModule(compliance) {}
 
     function $_setCompliant() public {
         _compliant = true;
@@ -31,11 +28,11 @@ contract ERC7984RwaModularComplianceModuleMock is ERC7984RwaComplianceModule, Se
         address /*to*/,
         euint64 /*encryptedAmount*/
     ) internal override returns (ebool) {
-        emit PreTransfer(_name);
+        emit PreTransfer();
         return FHE.asEbool(_compliant);
     }
 
     function _postTransfer(address /*from*/, address /*to*/, euint64 /*encryptedAmount*/) internal override {
-        emit PostTransfer(_name);
+        emit PostTransfer();
     }
 }
