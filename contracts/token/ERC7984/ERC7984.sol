@@ -223,9 +223,8 @@ abstract contract ERC7984 is IERC7984 {
         bytes calldata decryptionProof
     ) public virtual {
         FHE.checkSignatures(requestId, cleartexts, decryptionProof);
-        uint64 amount = abi.decode(cleartexts, (uint64));
         euint64 requestHandle = euint64.wrap(FHE.loadRequestedHandles(requestId)[0]);
-        emit AmountDisclosed(requestHandle, amount);
+        emit AmountDisclosed(requestHandle, abi.decode(cleartexts, (uint64)));
     }
 
     function _setOperator(address holder, address operator, uint48 until) internal virtual {
