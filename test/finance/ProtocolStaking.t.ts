@@ -67,7 +67,7 @@ describe.only('Protocol Staking', function () {
       expect(await this.mock.earned(this.staker1)).to.be.equal(ethers.parseEther('5'));
     });
 
-    it('Two users should split rewards according to logarithm', async function () {
+    it('Two users should split rewards according to sqrt', async function () {
       await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
       await this.mock.connect(this.staker2).stake(ethers.parseEther('1000'));
 
@@ -84,8 +84,7 @@ describe.only('Protocol Staking', function () {
       expect(earned1 + earned2).to.be.lessThanOrEqual(ethers.parseEther('5'));
       expect(earned1 + earned2).to.be.closeTo(ethers.parseEther('5'), 1n);
 
-      // Should come back to this. Checking that ratio is correct
-      expect((1000n * earned2) / earned1).to.be.closeTo(1050n, 5n);
+      expect((1000n * earned2) / earned1).to.be.closeTo(Math.round((1000 * Math.sqrt(1000)) / Math.sqrt(100)), 5n);
     });
 
     it('Second staker should not get reward from previous period', async function () {
