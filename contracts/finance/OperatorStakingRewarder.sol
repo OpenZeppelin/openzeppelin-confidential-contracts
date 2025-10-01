@@ -12,17 +12,17 @@ interface IOperatorStaking {
 }
 
 /**
- * @dev A contract handling reward logic to holders having deposited tokens on an {OperatorStaking} contract.
+ * @dev A contract handling reward logic to stakers having deposited tokens on an {OperatorStaking} contract.
  */
 contract OperatorStakingRewarder is Ownable {
     address private immutable _operatorStaking;
-    uint256 private _holdersRewardRatio = 50;
+    uint256 private _stakersRewardRatio = 50;
     uint256 private _totalReleased;
     mapping(address => uint256) private _released;
 
     error SenderNotOperatorStaking(address account);
 
-    event HoldersRewardRatioSet(uint256 holdersRewardRatio);
+    event HoldersRewardRatioSet(uint256 stakersRewardRatio);
     event RewardClaimed(address account, uint256 amount);
 
     modifier onlyOperatorStaking() {
@@ -39,20 +39,25 @@ contract OperatorStakingRewarder is Ownable {
         return IOperatorStaking(_operatorStaking).asset();
     }
 
-    /// @dev Gets reward ratio for all holders.
-    function holdersRewardRatio() public view virtual returns (uint256) {
-        return _holdersRewardRatio;
+    /// @dev Gets reward ratio for all stakers.
+    function stakersRewardRatio() public view virtual returns (uint256) {
+        return _stakersRewardRatio;
     }
 
     /// @dev Gets reward ratio for operator.
     function operatorRewardRatio() public view virtual returns (uint256) {
-        return 100 - _holdersRewardRatio;
+        return 100 - _stakersRewardRatio;
     }
 
-    /// @dev Sets reward ratio for all holders.
-    function setHoldersRewardRatio(uint256 holdersRewardRatio_) public virtual onlyOwner {
-        _holdersRewardRatio = holdersRewardRatio_;
-        emit HoldersRewardRatioSet(holdersRewardRatio_);
+    /// @dev Sets reward ratio for all stakers.
+    function setHoldersRewardRatio(uint256 stakersRewardRatio_) public virtual onlyOwner {
+        _stakersRewardRatio = stakersRewardRatio_;
+        emit HoldersRewardRatioSet(stakersRewardRatio_);
+    }
+
+    /// @dev
+    function totalReleased() public view virtual returns (uint256) {
+        return _totalReleased;
     }
 
     /// @dev
@@ -60,25 +65,30 @@ contract OperatorStakingRewarder is Ownable {
         return _released[account];
     }
 
-    /// @dev Claim rewards for deposits made by holders.
-    function withdrawRewards(address account) public virtual {
+    /// @dev Withdraw rewards for deposits made by stakers.
+    function withdrawRewards(address account, uint256 shares, uint256 totalShares) public virtual onlyOperatorStaking {
         address stakingToken_ = stakingToken();
         uint256 totalBalance = IERC20(stakingToken_).balanceOf(address(this));
         uint256 released_ = _released[account];
-        uint256 releasable; // (totalReleased + totalBalance) * ratio = released + releasable
-        if (account == owner()) {
-            // releasable = (totalReleased + totalBalance) * ownerRatio - released
-            releasable = Math.mulDiv(_totalReleased + totalBalance, operatorRewardRatio(), 100) - released_;
-        } else {
-            uint256 shares = IERC20(_operatorStaking).balanceOf(account);
-            uint256 totalShares = IERC20(_operatorStaking).totalSupply();
-            releasable =
-                Math.mulDiv(_totalReleased + totalBalance, _holdersRewardRatio * shares, 100 * totalShares) -
-                released_; // releasable = (totalReleased + totalBalance) * holdersRatio * (shares / totalShares) - released
-        }
+        uint256 releasable = Math.mulDiv(_totalReleased + totalBalance, shares, totalShares) - released_;
         _totalReleased += releasable;
         _released[account] = released_ + releasable;
-        require(IERC20(stakingToken_).transfer(account, releasable));
+        uint256 operatorReward = Math.mulDiv(releasable, _stakersRewardRatio, 100);
+        uint256 stakerReward = releasable - operatorReward;
+        require(IERC20(stakingToken_).transfer(owner(), operatorReward));
+        require(IERC20(stakingToken_).transfer(account, stakerReward));
         emit RewardClaimed(msg.sender, releasable);
+    }
+
+    function vituallyWithdrawRewards(
+        address account,
+        uint256 burnShares,
+        uint256 totalShares
+    ) public virtual onlyOperatorStaking {
+        address stakingToken_ = stakingToken();
+        uint256 totalBalance = IERC20(stakingToken_).balanceOf(address(this));
+        uint256 virtuallyReleased = Math.mulDiv(_totalReleased + totalBalance, burnShares, totalShares);
+        _totalReleased -= virtuallyReleased;
+        _released[account] -= virtuallyReleased;
     }
 }

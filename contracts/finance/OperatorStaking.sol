@@ -64,6 +64,8 @@ contract OperatorStaking is ERC4626, Ownable {
         if (caller != owner) {
             _spendAllowance(owner, caller, shares);
         }
+        withdrawRewards(owner); // withdraw rewards before burning shares (will reward operator and staker)
+        OperatorStakingRewarder(rewarder()).vituallyWithdrawRewards(owner, shares, totalSupply());
         _burn(owner, shares);
         _protocolStaking.unstake(receiver, assets);
 
@@ -73,6 +75,6 @@ contract OperatorStaking is ERC4626, Ownable {
     /// @dev Helper to withdraw latest rewards.
     function withdrawRewards(address account) public virtual {
         _protocolStaking.claimRewards(address(this)); // will transfer to rewarder
-        OperatorStakingRewarder(rewarder()).withdrawRewards(account);
+        OperatorStakingRewarder(rewarder()).withdrawRewards(account, balanceOf(account), totalSupply());
     }
 }

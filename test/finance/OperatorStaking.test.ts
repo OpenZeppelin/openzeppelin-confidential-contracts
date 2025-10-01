@@ -58,23 +58,56 @@ describe.only('OperatorStaking', function () {
     await this.protocolStaking.claimRewards(this.operatorStaking.target);
     await expect(this.token.balanceOf(this.operatorStaking.target)).to.eventually.equal(0);
     await expect(this.token.balanceOf(this.operatorStakingRewarder.target)).to.eventually.equal(earned);
-    await this.operatorStakingRewarder.withdrawRewards(this.operator.address);
-    const expectedOperatorReward = (earned * (await this.operatorStakingRewarder.operatorRewardRatio())) / 100n;
-    const expectedHoldersReward = earned - expectedOperatorReward;
-    const holdersLength = 2;
-    const expectedHolderReward = expectedHoldersReward / BigInt(holdersLength);
-    await expect(this.token.balanceOf(this.operator.address)).to.eventually.equal(expectedOperatorReward);
-    await expect(this.token.balanceOf(this.operatorStakingRewarder.target)).to.eventually.equal(expectedHoldersReward);
-    // holder1 claim
+    const stakersLength = 2;
+    const expectedReward = earned / BigInt(stakersLength);
+    const expectedOperatorReward = (expectedReward * (await this.operatorStakingRewarder.operatorRewardRatio())) / 100n;
+    const expectedStakerReward = expectedReward - expectedOperatorReward;
+    // staker1 claim
     const staker1BalanceBefore = await this.token.balanceOf(this.staker1.address);
-    await this.operatorStakingRewarder.withdrawRewards(this.staker1.address);
+    const operatorBalanceBefore1 = await this.token.balanceOf(this.operator.address);
+    await this.operatorStaking.withdrawRewards(this.staker1.address);
     const staker1BalanceAfter = await this.token.balanceOf(this.staker1.address);
-    expect(staker1BalanceAfter - staker1BalanceBefore).to.equal(expectedHolderReward);
-    // holder2 claim
+    expect(staker1BalanceAfter - staker1BalanceBefore).to.equal(expectedStakerReward);
+    expect((await this.token.balanceOf(this.operator.address)) - operatorBalanceBefore1).to.equal(
+      expectedOperatorReward,
+    );
+    // staker2 claim
     const staker2BalanceBefore = await this.token.balanceOf(this.staker2.address);
-    await this.operatorStakingRewarder.withdrawRewards(this.staker2.address);
+    const operatorBalanceBefore2 = await this.token.balanceOf(this.operator.address);
+    await this.operatorStaking.withdrawRewards(this.staker2.address);
     const staker2BalanceAfter = await this.token.balanceOf(this.staker2.address);
-    expect(staker2BalanceAfter - staker2BalanceBefore).to.equal(expectedHolderReward);
+    expect(staker2BalanceAfter - staker2BalanceBefore).to.equal(expectedStakerReward);
+    expect((await this.token.balanceOf(this.operator.address)) - operatorBalanceBefore2).to.equal(
+      expectedOperatorReward,
+    );
     await expect(this.token.balanceOf(this.operatorStakingRewarder.target)).to.eventually.equal(0);
+  });
+
+  it('withdraw', async function () {
+    await this.protocolStaking.connect(this.admin).addEligibleAccount(this.operatorStaking);
+    await this.protocolStaking.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
+    const depositAmount = ethers.parseEther('1');
+    await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+    await this.operatorStaking.connect(this.staker2).deposit(depositAmount, this.staker2);
+    await mine(1);
+    await this.protocolStaking.connect(this.admin).setRewardRate(0); // stop rewarding for easier accounting
+    const earned: bigint = await this.protocolStaking.earned(this.operatorStaking.target);
+    expect(earned).greaterThan(0);
+    await this.protocolStaking.claimRewards(this.operatorStaking.target);
+    await expect(this.token.balanceOf(this.operatorStaking.target)).to.eventually.equal(0);
+    await expect(this.token.balanceOf(this.operatorStakingRewarder.target)).to.eventually.equal(earned);
+    const stakersLength = 2;
+    const expectedReward = earned / BigInt(stakersLength);
+    const expectedOperatorReward = (expectedReward * (await this.operatorStakingRewarder.operatorRewardRatio())) / 100n;
+    const expectedStakerReward = expectedReward - expectedOperatorReward;
+    // staker1 claim
+    const staker1BalanceBefore = await this.token.balanceOf(this.staker1.address);
+    await this.operatorStaking
+      .connect(this.staker1)
+      .withdraw(depositAmount, this.staker1.address, this.staker1.address);
+    const staker1BalanceAfter = await this.token.balanceOf(this.staker1.address);
+    expect(staker1BalanceAfter - staker1BalanceBefore).to.equal(expectedStakerReward + depositAmount); // automatic reward and instant withdraw (cooldown=0)
+    expect(this.operatorStakingRewarder.released(this.staker1.address)).to.eventually.equal(0);
+    expect(this.operatorStakingRewarder.totalReleased()).to.eventually.equal(0); //skater1 doesnt exists anymore & staker2 has not withdraw rewards yet
   });
 });
