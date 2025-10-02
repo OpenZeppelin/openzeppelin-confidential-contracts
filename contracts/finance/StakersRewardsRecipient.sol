@@ -19,6 +19,7 @@ interface IPaymentSplitter {
 
 /**
  * @dev A contract handling reward logic to stakers having deposited tokens on an {OperatorStaking} contract.
+ * Rewards are pulled from a global {IPaymentSplitter} in charge of performing the split between the operator and stakers.
  */
 contract StakersRewardsRecipient is Ownable {
     IOperatorStaking private _operatorStaking;
@@ -44,56 +45,59 @@ contract StakersRewardsRecipient is Ownable {
         return IERC20(_operatorStaking.asset());
     }
 
-    /// @dev
+    /// @dev Gets total released tokens.
     function totalReleased() public view virtual returns (uint256) {
         return _totalReleased;
     }
 
-    /// @dev
+    /// @dev Gets released tokens of an account.
     function released(address account) public view virtual returns (uint256) {
         return _released[account];
     }
 
-    /// @dev Withdraw rewards for deposits made by stakers.
+    /// @dev Withdraw rewards of a staker account.
     function withdrawRewards(address account, uint256 shares, uint256 totalShares) public virtual onlyOperatorStaking {
         IERC20 stakingToken_ = stakingToken();
         IPaymentSplitter globalRewardsRecipient = IPaymentSplitter(_operatorStaking.globalRewardsRecipient());
         if (globalRewardsRecipient.releasable(stakingToken_, address(this)) > 0) {
             globalRewardsRecipient.release(stakingToken_, address(this));
         }
-        uint256 totalBalance = stakingToken_.balanceOf(address(this));
         uint256 released_ = _released[account];
-        uint256 releasable = (totalShares > 0 ? Math.mulDiv(_totalReleased + totalBalance, shares, totalShares) : 0) -
-            released_;
+        uint256 releasable = _allocation(shares, totalShares) - released_;
         _totalReleased += releasable;
         _released[account] = released_ + releasable;
         require(stakingToken_.transfer(account, releasable));
         emit RewardClaimed(account, releasable);
     }
 
+    /// @dev Virtually increases account released rewards when shares are mint for an account.
     function increaseReleasedRewards(
         address account,
         uint256 addedShares,
         uint256 totalShares
     ) public virtual onlyOperatorStaking {
-        uint256 totalBalance = stakingToken().balanceOf(address(this));
-        uint256 virtuallyReleased = totalShares > 0
-            ? Math.mulDiv(_totalReleased + totalBalance, addedShares, totalShares)
-            : 0;
+        uint256 virtuallyReleased = _allocation(addedShares, totalShares);
         _totalReleased += virtuallyReleased;
         _released[account] += virtuallyReleased;
     }
 
+    /// @dev Virtually decreases account released rewards when shares are burn for an account.
     function decreaseReleasedRewards(
         address account,
         uint256 burnShares,
         uint256 totalShares
     ) public virtual onlyOperatorStaking {
-        uint256 totalBalance = stakingToken().balanceOf(address(this));
-        uint256 virtuallyReleased = totalShares > 0
-            ? Math.mulDiv(_totalReleased + totalBalance, burnShares, totalShares)
-            : 0;
+        uint256 virtuallyReleased = _allocation(burnShares, totalShares);
         _totalReleased -= virtuallyReleased;
         _released[account] -= virtuallyReleased;
+    }
+
+    /// @dev Gets rewards allocation of a staker.
+    function _allocation(uint256 shares, uint256 totalShares) internal virtual returns (uint256) {
+        return (
+            totalShares > 0
+                ? Math.mulDiv(_totalReleased + stakingToken().balanceOf(address(this)), shares, totalShares)
+                : 0
+        );
     }
 }

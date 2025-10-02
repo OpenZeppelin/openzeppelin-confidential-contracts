@@ -79,22 +79,13 @@ describe.only('OperatorStaking', function () {
     const expectedStakerReward = (earned - expectedOperatorReward) / stakersLength;
     // staker1 claim
     const staker1BalanceBefore = await this.token.balanceOf(this.staker1.address);
-    const operatorBalanceBefore1 = await this.token.balanceOf(this.operator.address);
     await this.operatorStaking.withdrawRewards(this.staker1.address);
     const staker1BalanceAfter = await this.token.balanceOf(this.staker1.address);
     expect(staker1BalanceAfter - staker1BalanceBefore).to.equal(expectedStakerReward);
-    // expect((await this.token.balanceOf(this.operator.address)) - operatorBalanceBefore1).to.equal(
-    //   expectedOperatorReward,
-    // );
-    // staker2 claim
     const staker2BalanceBefore = await this.token.balanceOf(this.staker2.address);
-    const operatorBalanceBefore2 = await this.token.balanceOf(this.operator.address);
     await this.operatorStaking.withdrawRewards(this.staker2.address);
     const staker2BalanceAfter = await this.token.balanceOf(this.staker2.address);
     expect(staker2BalanceAfter - staker2BalanceBefore).to.equal(expectedStakerReward);
-    // expect((await this.token.balanceOf(this.operator.address)) - operatorBalanceBefore2).to.equal(
-    //   expectedOperatorReward,
-    // );
     await expect(this.token.balanceOf(this.stakersRewardsRecipient.target)).to.eventually.equal(0);
   });
 
