@@ -52,6 +52,7 @@
     "@nomicfoundation/hardhat-network-helpers": "^1.0.3",
     "@openzeppelin/contracts": "file:lib/openzeppelin-contracts",
     "@openzeppelin/contracts-upgradeable": "file:lib/openzeppelin-contracts-upgradeable/contracts",
+    "@openzeppelin/contracts-v4": "npm:@openzeppelin/contracts@^4.9.6",
     "@openzeppelin/docs-utils": "^0.1.5",
     "@openzeppelin/hardhat-upgrades": "^3.9.1",
     "@trivago/prettier-plugin-sort-imports": "^4.0.0",

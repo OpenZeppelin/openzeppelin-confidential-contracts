@@ -256,7 +256,7 @@ describe.only('Protocol Staking', function () {
 
     it('should be able to set recipient', async function () {
       await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
-      await this.mock.connect(this.staker1).setRewardsRecipient(this.staker2);
+      await this.mock.connect(this.staker1).setGlobalRewardsRecipient(this.staker2);
 
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await this.mock.connect(this.admin).addEligibleAccount(this.staker1);

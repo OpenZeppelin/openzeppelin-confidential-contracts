@@ -151,7 +151,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     }
 
     /// @dev Sets the reward recipient for `msg.sender` to `recipient`. All future rewards for `msg.sender` will be sent to `recipient`.
-    function setRewardsRecipient(address recipient) public virtual {
+    function setGlobalRewardsRecipient(address recipient) public virtual {
         _rewardsRecipient[msg.sender] = recipient;
 
         emit RewardsRecipientSet(msg.sender, recipient);

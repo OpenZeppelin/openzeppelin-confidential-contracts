@@ -6,11 +6,12 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import {OperatorStakingRewarder} from "./OperatorStakingRewarder.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
+import {StakersRewardsRecipient} from "./StakersRewardsRecipient.sol";
 
 contract OperatorStaking is ERC4626, Ownable {
     ProtocolStaking private _protocolStaking;
+    StakersRewardsRecipient private _stakersRewardsRecipient;
 
     constructor(
         string memory name,
@@ -19,17 +20,20 @@ contract OperatorStaking is ERC4626, Ownable {
     ) ERC20(name, symbol) ERC4626(IERC20(protocolStaking.stakingToken())) Ownable(msg.sender) {
         _protocolStaking = protocolStaking;
         IERC20(protocolStaking.stakingToken()).approve(address(protocolStaking), type(uint256).max);
-        setRewarder(address(new OperatorStakingRewarder(msg.sender, address(this))));
     }
 
     /// @dev Gets rewarder address.
-    function rewarder() public view virtual returns (address) {
+    function globalRewardsRecipient() public view virtual returns (address) {
         return _protocolStaking.rewardsRecipient(address(this));
     }
 
-    /// @dev Sets rewarder address.
-    function setRewarder(address rewarder_) public virtual onlyOwner {
-        _protocolStaking.setRewardsRecipient(rewarder_);
+    /// @dev Sets reward recipient.
+    function setGlobalRewardsRecipient(address globalRewardsRecipient_) public virtual onlyOwner {
+        _protocolStaking.setGlobalRewardsRecipient(globalRewardsRecipient_);
+    }
+
+    function setStakersRewardsRecipient(address stakersRewardsRecipient) public virtual onlyOwner {
+        _stakersRewardsRecipient = StakersRewardsRecipient(stakersRewardsRecipient);
     }
 
     /// @dev Helper to restake immediately withdrawn rewards.
@@ -50,6 +54,8 @@ contract OperatorStaking is ERC4626, Ownable {
     }
 
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual override {
+        // Cannot claim past rewards for these new shares, so we virtually release this delta for caller
+        _stakersRewardsRecipient.increaseReleasedRewards(caller, shares, totalSupply());
         super._deposit(caller, receiver, assets, shares);
         _protocolStaking.stake(assets);
     }
@@ -64,8 +70,9 @@ contract OperatorStaking is ERC4626, Ownable {
         if (caller != owner) {
             _spendAllowance(owner, caller, shares);
         }
-        withdrawRewards(owner); // withdraw rewards before burning shares (will reward operator and staker)
-        OperatorStakingRewarder(rewarder()).vituallyWithdrawRewards(owner, shares, totalSupply());
+        withdrawRewards(owner); // withdraw rewards before burning some shares (will reward global recipient)
+        // Allow future withdraws by removing previously claimed reward delta related to burn shares
+        _stakersRewardsRecipient.decreaseReleasedRewards(owner, shares, totalSupply());
         _burn(owner, shares);
         _protocolStaking.unstake(receiver, assets);
 
@@ -75,6 +82,6 @@ contract OperatorStaking is ERC4626, Ownable {
     /// @dev Helper to withdraw latest rewards.
     function withdrawRewards(address account) public virtual {
         _protocolStaking.claimRewards(address(this)); // will transfer to rewarder
-        OperatorStakingRewarder(rewarder()).withdrawRewards(account, balanceOf(account), totalSupply());
+        _stakersRewardsRecipient.withdrawRewards(account, balanceOf(account), totalSupply());
     }
 }
