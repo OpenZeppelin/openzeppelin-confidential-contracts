@@ -49,17 +49,17 @@ contract OperatorStaking is ERC4626, Ownable {
 
     /// @dev Withdraw rewards.
     function withdrawRewards(address account) public virtual {
+        _protocolStaking.claimRewards(address(this)); // Transfer all rewards to global rewards recipient
         if (account == owner()) {
             // Withdraw operator rewards
             IPaymentSplitter globalRewardsRecipient_ = IPaymentSplitter(globalRewardsRecipient());
             IERC20 stakingToken_ = IERC20(_protocolStaking.stakingToken());
-            if (globalRewardsRecipient_.releasable(stakingToken_, address(this)) > 0) {
-                globalRewardsRecipient_.release(stakingToken_, address(this));
+            if (globalRewardsRecipient_.releasable(stakingToken_, owner()) > 0) {
+                globalRewardsRecipient_.release(stakingToken_, owner());
             }
         } else {
             // Withdraw staker rewards
-            _protocolStaking.claimRewards(address(this)); // Transfer all rewards to global rewards recipient
-            _stakersRewardsRecipient.withdrawRewards(account, balanceOf(account), totalSupply()); // Get staker rewards
+            _stakersRewardsRecipient.withdrawRewards(account, balanceOf(account), totalSupply());
         }
     }
 
