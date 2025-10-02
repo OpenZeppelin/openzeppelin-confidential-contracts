@@ -1,6 +1,4 @@
-import { StakersRewardsRecipient__factory } from '../../types';
 import { OperatorStaking } from '../../types';
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { mine, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
@@ -18,7 +16,7 @@ describe.only('OperatorStaking', function () {
       .then(factory => upgrades.deployProxy(factory, ['StakedToken', 'SST', '1', token.target, admin.address]));
     const operatorStaking = (await ethers.deployContract(
       '$OperatorStaking',
-      ['OPStake', 'OP', protocolStaking],
+      ['OPStake', 'OP', protocolStaking, operator],
       operator,
     )) as OperatorStaking;
     const stakersRewardsRecipient = await ethers.deployContract(

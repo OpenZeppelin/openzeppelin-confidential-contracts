@@ -20,8 +20,9 @@ contract OperatorStaking is ERC4626, Ownable {
     constructor(
         string memory name,
         string memory symbol,
-        ProtocolStaking protocolStaking
-    ) ERC20(name, symbol) ERC4626(IERC20(protocolStaking.stakingToken())) Ownable(msg.sender) {
+        ProtocolStaking protocolStaking,
+        address admin
+    ) ERC20(name, symbol) ERC4626(IERC20(protocolStaking.stakingToken())) Ownable(admin) {
         _protocolStaking = protocolStaking;
         IERC20(protocolStaking.stakingToken()).approve(address(protocolStaking), type(uint256).max);
     }
@@ -33,7 +34,7 @@ contract OperatorStaking is ERC4626, Ownable {
 
     /// @dev Sets global rewards recipient address.
     function setGlobalRewardsRecipient(address globalRewardsRecipient_) public virtual onlyOwner {
-        _protocolStaking.setGlobalRewardsRecipient(globalRewardsRecipient_);
+        _protocolStaking.setRewardsRecipient(globalRewardsRecipient_);
     }
 
     /// @dev Gets stakers rewards recipient address.
