@@ -27,6 +27,11 @@ contract OperatorStaking is ERC4626, Ownable {
         IERC20(protocolStaking.stakingToken()).approve(address(protocolStaking), type(uint256).max);
     }
 
+    /// @dev Gets protocol staking address.
+    function protocolStaking() public view virtual returns (address) {
+        return address(_protocolStaking);
+    }
+
     /// @dev Gets global rewards recipient address.
     function globalRewardsRecipient() public view virtual returns (address) {
         return _protocolStaking.rewardsRecipient(address(this));

@@ -7,8 +7,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+interface IProtocolStaking {
+    function claimRewards(address account) external;
+}
+
 interface IOperatorStaking {
     function asset() external view returns (address);
+    function protocolStaking() external view returns (address);
     function globalRewardsRecipient() external view returns (address);
 }
 
@@ -26,13 +31,18 @@ contract StakersRewardsRecipient is Ownable {
     uint256 private _totalReleased;
     mapping(address => uint256) private _released;
 
-    error SenderNotOperatorStaking(address account);
-
     event HoldersRewardRatioSet(uint256 stakersRewardRatio);
-    event RewardClaimed(address account, uint256 amount);
+    event RewardWithdrawn(address account, uint256 amount);
+
+    error SenderNotOperatorStaking(address account);
 
     modifier onlyOperatorStaking() {
         require(msg.sender == address(_operatorStaking), SenderNotOperatorStaking(msg.sender));
+        _;
+    }
+
+    modifier pullRewards() {
+        _pullRewards();
         _;
     }
 
@@ -55,19 +65,27 @@ contract StakersRewardsRecipient is Ownable {
         return _released[account];
     }
 
+    /// @dev Gets releasable tokens of an account. It is recommended to call {pullRewards} before.
+    function releaseable(address account) public view virtual returns (uint256) {
+        return
+            _allocation(
+                IERC20(address(_operatorStaking)).balanceOf(account),
+                IERC20(address(_operatorStaking)).totalSupply()
+            ) - _released[account];
+    }
+
     /// @dev Withdraw rewards of a staker account.
-    function withdrawRewards(address account, uint256 shares, uint256 totalShares) public virtual onlyOperatorStaking {
-        IERC20 stakingToken_ = stakingToken();
-        IPaymentSplitter globalRewardsRecipient = IPaymentSplitter(_operatorStaking.globalRewardsRecipient());
-        if (globalRewardsRecipient.releasable(stakingToken_, address(this)) > 0) {
-            globalRewardsRecipient.release(stakingToken_, address(this));
-        }
+    function withdrawRewards(
+        address account,
+        uint256 shares,
+        uint256 totalShares
+    ) public virtual onlyOperatorStaking pullRewards {
         uint256 released_ = _released[account];
         uint256 releasable = _allocation(shares, totalShares) - released_;
         _totalReleased += releasable;
         _released[account] = released_ + releasable;
-        require(stakingToken_.transfer(account, releasable));
-        emit RewardClaimed(account, releasable);
+        require(stakingToken().transfer(account, releasable));
+        emit RewardWithdrawn(account, releasable);
     }
 
     /// @dev Virtually increases account released rewards when shares are mint for an account.
@@ -75,7 +93,7 @@ contract StakersRewardsRecipient is Ownable {
         address account,
         uint256 addedShares,
         uint256 totalShares
-    ) public virtual onlyOperatorStaking {
+    ) public virtual onlyOperatorStaking pullRewards {
         uint256 virtuallyReleased = _allocation(addedShares, totalShares);
         _totalReleased += virtuallyReleased;
         _released[account] += virtuallyReleased;
@@ -86,14 +104,26 @@ contract StakersRewardsRecipient is Ownable {
         address account,
         uint256 burnShares,
         uint256 totalShares
-    ) public virtual onlyOperatorStaking {
+    ) public virtual onlyOperatorStaking pullRewards {
         uint256 virtuallyReleased = _allocation(burnShares, totalShares);
         _totalReleased -= virtuallyReleased;
         _released[account] -= virtuallyReleased;
     }
 
-    /// @dev Gets rewards allocation of a staker.
-    function _allocation(uint256 shares, uint256 totalShares) internal virtual returns (uint256) {
+    /// @dev Pull all rewards from global rewards recipient.
+    function _pullRewards() public virtual {
+        // Transfer global rewards to the global rewards recipient contract
+        IProtocolStaking(_operatorStaking.protocolStaking()).claimRewards((address(_operatorStaking)));
+        IERC20 stakingToken_ = stakingToken();
+        IPaymentSplitter globalRewardsRecipient = IPaymentSplitter(_operatorStaking.globalRewardsRecipient());
+        if (globalRewardsRecipient.releasable(stakingToken_, address(this)) > 0) {
+            // Transfer stakers rewards to this stakers rewards recipient contract
+            globalRewardsRecipient.release(stakingToken_, address(this));
+        }
+    }
+
+    /// @dev Gets rewards allocation of a staker. It is recommended to call {pullRewards} before.
+    function _allocation(uint256 shares, uint256 totalShares) internal view virtual returns (uint256) {
         return (
             totalShares > 0
                 ? Math.mulDiv(_totalReleased + stakingToken().balanceOf(address(this)), shares, totalShares)
