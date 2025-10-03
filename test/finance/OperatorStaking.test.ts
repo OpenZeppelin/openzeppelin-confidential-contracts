@@ -6,7 +6,7 @@ import { ethers, upgrades } from 'hardhat';
 const timeIncreaseNoMine = (duration: number) =>
   time.latest().then(clock => time.setNextBlockTimestamp(clock + duration));
 
-describe.only('OperatorStaking', function () {
+describe('OperatorStaking', function () {
   beforeEach(async function () {
     const [staker1, staker2, staker3, admin, operator, anyone, ...accounts] = await ethers.getSigners();
 
