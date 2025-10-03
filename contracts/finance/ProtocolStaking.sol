@@ -39,6 +39,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         // Reward - payment tracking
         mapping(address => int256) _paid;
         int256 _totalVirtualPaid;
+        mapping(address => uint256) _slashedAmount;
     }
 
     // keccak256(abi.encode(uint256(keccak256("zama.storage.ProtocolStaking")) - 1)) & ~bytes32(uint256(0xff))
@@ -114,11 +115,9 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
      * different address should be reconsidered.
      */
     function release(address account) public virtual {
-        ProtocolStakingStorage storage $ = _getProtocolStakingStorage();
-        uint256 totalAmountCooledDown = $._unstakeRequests[account].upperLookup(Time.timestamp());
-        uint256 amountToRelease = totalAmountCooledDown - $._released[account];
+        uint256 amountToRelease = tokensToReleaseAt(account, Time.timestamp());
         if (amountToRelease > 0) {
-            $._released[account] = totalAmountCooledDown;
+            _getProtocolStakingStorage()._released[account] += amountToRelease;
             IERC20(stakingToken()).safeTransfer(account, amountToRelease);
         }
     }
@@ -201,8 +200,20 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
 
     /// @dev Returns the amount of tokens cooling down for the given account `account`.
     function tokensInCooldown(address account) public view virtual returns (uint256) {
+        return tokensToReleaseAt(account, type(uint48).max);
+    }
+
+    function tokensToReleaseAt(address account, uint48 timestamp) public view virtual returns (uint256) {
         ProtocolStakingStorage storage $ = _getProtocolStakingStorage();
-        return $._unstakeRequests[account].latest() - $._released[account];
+        return $._unstakeRequests[account].upperLookup(timestamp) - $._released[account] - $._slashedAmount[account];
+    }
+
+    function slash(address account, uint256 amount) public {
+        _burn(account, amount);
+    }
+
+    function slashWithdrawal(address account, uint256 amount) public {
+        _getProtocolStakingStorage()._slashedAmount[account] += amount;
     }
 
     /// @dev Returns the recipient for rewards earned by `account`.

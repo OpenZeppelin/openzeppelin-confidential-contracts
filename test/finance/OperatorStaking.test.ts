@@ -13,8 +13,10 @@ describe.only('OperatorStaking', function () {
     const token = await ethers.deployContract('$ERC20Mock', ['StakingToken', 'ST', 18]);
     const protocolStaking = await ethers
       .getContractFactory('ProtocolStaking')
-      .then(factory => upgrades.deployProxy(factory, ['StakedToken', 'SST', '1', token.target, admin.address]));
-    const mock = await ethers.deployContract('$OperatorStaking', ['OPStake', 'OP', protocolStaking]);
+      .then(factory =>
+        upgrades.deployProxy(factory, ['StakedToken', 'SST', '1', token.target, admin.address, 60 /* 1 min */]),
+      );
+    const mock = await ethers.deployContract('$OperatorStaking', ['OPStake', 'OP', protocolStaking, admin.address]);
 
     await Promise.all(
       [staker1, staker2].flatMap(account => [
@@ -26,17 +28,82 @@ describe.only('OperatorStaking', function () {
     Object.assign(this, { staker1, staker2, admin, accounts, token, protocolStaking, mock });
   });
 
-  it('passes on earnings', async function () {
-    await this.protocolStaking.connect(this.admin).addEligibleAccount(this.mock);
-    await this.protocolStaking.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-
+  it('simple withdrawal', async function () {
     await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
-    await timeIncreaseNoMine(9);
-
-    await this.protocolStaking.claimRewards(this.mock);
-    await this.mock.restake();
     await this.mock.connect(this.staker1).redeem(await this.mock.balanceOf(this.staker1), this.staker1, this.staker1);
-    expect(await this.token.balanceOf(this.staker1)).to.be.closeTo(ethers.parseEther('1005'), 10n);
+
+    await timeIncreaseNoMine(60);
+    await this.protocolStaking.release(this.mock);
+    await this.mock.release(this.staker1);
+    expect(await this.token.balanceOf(this.staker1)).to.be.eq(ethers.parseEther('1000'));
     await expect(this.token.balanceOf(this.mock)).to.eventually.be.eq(0);
+  });
+
+  it('symmetrically passes on losses from staked balance without pending withdrawal', async function () {
+    await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+    await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
+
+    await this.protocolStaking.slash(this.mock, ethers.parseEther('1.5'));
+    await expect(this.mock.maxWithdraw(this.staker1)).to.eventually.eq(ethers.parseEther('0.5'));
+    await expect(this.mock.maxWithdraw(this.staker2)).to.eventually.eq(ethers.parseEther('1'));
+  });
+
+  it('symmetrically passes on losses from staked balance with pending withdrawal', async function () {
+    await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+    await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
+
+    await this.mock.connect(this.staker1).redeem(ethers.parseEther('0.5'), this.staker1, this.staker1);
+    // 50% slashing
+    await this.protocolStaking.slash(this.mock, ethers.parseEther('1.5'));
+
+    await timeIncreaseNoMine(60);
+    await this.protocolStaking.release(this.mock);
+
+    await expect(this.mock.release(this.staker1)).to.changeTokenBalance(
+      this.token,
+      this.staker1,
+      ethers.parseEther('0.25'),
+    );
+  });
+
+  it('restake excess raw assets after slashing', async function () {
+    await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+    await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
+
+    await this.mock.connect(this.staker1).redeem(ethers.parseEther('1'), this.staker1, this.staker1);
+    await this.protocolStaking.slash(this.mock, ethers.parseEther('1.5'));
+
+    await timeIncreaseNoMine(60);
+    await this.protocolStaking.release(this.mock);
+    await expect(this.mock.connect(this.staker2).redeem(ethers.parseEther('2'), this.staker2, this.staker2)).to.be
+      .reverted;
+    await this.mock.restake();
+    await this.mock.connect(this.staker2).redeem(ethers.parseEther('2'), this.staker2, this.staker2);
+
+    await this.mock.release(this.staker1);
+  });
+
+  it('symmetrically passes on losses from withdrawal balance', async function () {
+    await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+    await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
+
+    await this.mock.connect(this.staker1).redeem(ethers.parseEther('1'), this.staker1, this.staker1);
+    await this.mock.connect(this.staker2).redeem(ethers.parseEther('2'), this.staker2, this.staker2);
+
+    await this.protocolStaking.slashWithdrawal(this.mock, ethers.parseEther('1.5'));
+
+    await timeIncreaseNoMine(60);
+
+    await this.protocolStaking.release(this.mock);
+    await expect(this.mock.release(this.staker1)).to.changeTokenBalance(
+      this.token,
+      this.staker1,
+      ethers.parseEther('0.5'),
+    );
+    await expect(this.mock.release(this.staker2)).to.changeTokenBalance(
+      this.token,
+      this.staker2,
+      ethers.parseEther('1'),
+    );
   });
 });
