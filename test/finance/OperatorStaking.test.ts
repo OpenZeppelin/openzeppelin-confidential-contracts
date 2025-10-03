@@ -13,7 +13,7 @@ describe('OperatorStaking', function () {
     const token = await ethers.deployContract('$ERC20Mock', ['StakingToken', 'ST', 18]);
     const protocolStaking = await ethers
       .getContractFactory('ProtocolStaking')
-      .then(factory => upgrades.deployProxy(factory, ['StakedToken', 'SST', '1', token.target, admin.address]));
+      .then(factory => upgrades.deployProxy(factory, ['StakedToken', 'SST', '1', token.target, admin.address, 1]));
     const operatorStaking = (await ethers.deployContract(
       '$OperatorStaking',
       ['OPStake', 'OP', protocolStaking, operator],
@@ -112,12 +112,13 @@ describe('OperatorStaking', function () {
     const staker1BalanceAfter = await this.token.balanceOf(this.staker1.address);
     const staker2BalanceAfter = await this.token.balanceOf(this.staker2.address);
     const staker3BalanceAfter = await this.token.balanceOf(this.staker3.address);
-    // Each staker should get back their deposit and their rewards
-    expect(staker1BalanceAfter - staker1BalanceBefore).to.equal(
-      deposit + stakerRewards1 + stakerRewards2 + stakerRewards3,
-    );
-    expect(staker2BalanceAfter - staker2BalanceBefore).to.equal(deposit + stakerRewards2 + stakerRewards3);
-    expect(staker3BalanceAfter - staker3BalanceBefore).to.closeTo(deposit + stakerRewards3, 1);
+    // Each staker should get back their deposit in cooldown and their rewards
+    expect(staker1BalanceAfter - staker1BalanceBefore).to.equal(stakerRewards1 + stakerRewards2 + stakerRewards3);
+    expect(staker2BalanceAfter - staker2BalanceBefore).to.equal(stakerRewards2 + stakerRewards3);
+    expect(staker3BalanceAfter - staker3BalanceBefore).to.closeTo(stakerRewards3, 1);
+    expect(this.protocolStaking.tokensInCooldown(this.staker1.address)).to.eventually.equal(deposit);
+    expect(this.protocolStaking.tokensInCooldown(this.staker2.address)).to.eventually.equal(deposit);
+    expect(this.protocolStaking.tokensInCooldown(this.staker3.address)).to.eventually.equal(deposit);
   });
 
   it('Restake rewards', async function () {
