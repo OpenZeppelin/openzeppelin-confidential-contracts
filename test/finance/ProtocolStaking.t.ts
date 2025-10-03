@@ -7,7 +7,7 @@ const timeIncreaseNoMine = (duration: number) =>
   time.latest().then(clock => time.setNextBlockTimestamp(clock + duration));
 
 /* eslint-disable no-unexpected-multiline */
-describe.only('Protocol Staking', function () {
+describe('Protocol Staking', function () {
   beforeEach(async function () {
     const [staker1, staker2, admin, ...accounts] = await ethers.getSigners();
 
