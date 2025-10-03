@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
-describe.only('ProtocolOperatorRegistry', function () {
+describe('ProtocolOperatorRegistry', function () {
   beforeEach(async function () {
     const [owner, receiver, thief, ...accounts] = await ethers.getSigners();
 
