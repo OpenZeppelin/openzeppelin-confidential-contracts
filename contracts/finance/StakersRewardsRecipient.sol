@@ -111,7 +111,7 @@ contract StakersRewardsRecipient is Ownable {
     }
 
     /// @dev Pull all rewards from global rewards recipient.
-    function _pullRewards() public virtual {
+    function _pullRewards() internal virtual {
         // Transfer global rewards to the global rewards recipient contract
         IProtocolStaking(_operatorStaking.protocolStaking()).claimRewards((address(_operatorStaking)));
         IERC20 stakingToken_ = stakingToken();

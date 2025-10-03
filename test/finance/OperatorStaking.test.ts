@@ -69,9 +69,9 @@ describe.only('OperatorStaking', function () {
     await this.operatorStaking.connect(this.staker2).deposit(ethers.parseEther('1'), this.staker2);
     await this.operatorStaking.connect(this.staker3).deposit(ethers.parseEther('1'), this.staker3);
     await this.protocolStaking.connect(this.admin).setRewardRate(0); // stop rewarding for easier accounting
-    const stakerRewards1 = stakersRewardPerSec / 1n; // 1st second
-    const stakerRewards2 = stakersRewardPerSec / 2n; // 2nd second
-    const stakerRewards3 = stakersRewardPerSec / 3n; // 3rd second
+    const stakerRewards1 = stakersRewardPerSec / 1n; // 1st second reward
+    const stakerRewards2 = stakersRewardPerSec / 2n; // 2nd second reward
+    const stakerRewards3 = stakersRewardPerSec / 3n; // 3rd second reward
     const operatorBalanceBefore = await this.token.balanceOf(this.operator.address);
     const staker1BalanceBefore = await this.token.balanceOf(this.staker1.address);
     const staker2BalanceBefore = await this.token.balanceOf(this.staker2.address);
@@ -100,9 +100,9 @@ describe.only('OperatorStaking', function () {
     await this.operatorStaking.connect(this.staker2).deposit(deposit, this.staker2);
     await this.operatorStaking.connect(this.staker3).deposit(deposit, this.staker3);
     await this.protocolStaking.connect(this.admin).setRewardRate(0); // stop rewarding for easier accounting
-    const stakerRewards1 = stakersRewardPerSec / 1n; // 1st second
-    const stakerRewards2 = stakersRewardPerSec / 2n; // 2nd second
-    const stakerRewards3 = stakersRewardPerSec / 3n; // 3rd second
+    const stakerRewards1 = stakersRewardPerSec / 1n; // 1st second reward
+    const stakerRewards2 = stakersRewardPerSec / 2n; // 2nd second reward
+    const stakerRewards3 = stakersRewardPerSec / 3n; // 3rd second reward
     const staker1BalanceBefore = await this.token.balanceOf(this.staker1.address);
     const staker2BalanceBefore = await this.token.balanceOf(this.staker2.address);
     const staker3BalanceBefore = await this.token.balanceOf(this.staker3.address);
@@ -118,5 +118,20 @@ describe.only('OperatorStaking', function () {
     );
     expect(staker2BalanceAfter - staker2BalanceBefore).to.equal(deposit + stakerRewards2 + stakerRewards3);
     expect(staker3BalanceAfter - staker3BalanceBefore).to.closeTo(deposit + stakerRewards3, 1);
+  });
+
+  it('Restake rewards', async function () {
+    const globalRewardsPerSec = ethers.parseEther('0.5');
+    const stakersRewardPerSec = (globalRewardsPerSec * 50n) / 100n; // 50% to stakers, other 50% to operator
+    await this.protocolStaking.connect(this.admin).addEligibleAccount(this.operatorStaking);
+    const deposit = ethers.parseEther('1');
+    await this.operatorStaking.connect(this.staker1).deposit(deposit, this.staker1);
+    await this.protocolStaking.connect(this.admin).setRewardRate(globalRewardsPerSec); // only start rewarding after staker1 deposit
+    await this.protocolStaking.connect(this.admin).setRewardRate(0); // stop rewarding for easier accounting
+    const stakerRewards1 = stakersRewardPerSec / 1n; // 1st second reward
+    const stakerSharesBefore = await this.operatorStaking.balanceOf(this.staker1.address);
+    await this.operatorStaking.connect(this.staker1).restakeRewards();
+    const stakerSharesAfter = await this.operatorStaking.balanceOf(this.staker1.address);
+    expect(stakerSharesAfter - stakerSharesBefore).to.equal(stakerRewards1);
   });
 });

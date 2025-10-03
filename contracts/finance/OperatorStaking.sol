@@ -70,9 +70,10 @@ contract OperatorStaking is ERC4626, Ownable {
 
     /// @dev Restake pending rewards of staker.
     function restakeRewards() public virtual {
-        uint256 balanceBefore = _protocolStaking.balanceOf(msg.sender);
+        IERC20 stakingToken = IERC20(_protocolStaking.stakingToken());
+        uint256 balanceBefore = stakingToken.balanceOf(msg.sender);
         withdrawRewards(msg.sender);
-        deposit(_protocolStaking.balanceOf(msg.sender) - balanceBefore, msg.sender);
+        deposit(stakingToken.balanceOf(msg.sender) - balanceBefore, msg.sender);
     }
 
     /**
