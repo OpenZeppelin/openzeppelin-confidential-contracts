@@ -35,6 +35,7 @@ describe('OperatorStaking', function () {
 
     await operatorStaking.connect(operator).setGlobalRewardsRecipient(globalRewardsRecipient);
     await operatorStaking.connect(operator).setStakersRewardsRecipient(stakersRewardsRecipient);
+    await expect(operatorStaking.stakersRewardsRecipient()).to.eventually.equal(stakersRewardsRecipient.target);
 
     await Promise.all(
       [staker1, staker2, staker3].flatMap(account => [
@@ -160,5 +161,18 @@ describe('OperatorStaking', function () {
     await this.operatorStaking.connect(this.staker1).restakeRewards();
     const stakerSharesAfter = await this.operatorStaking.balanceOf(this.staker1.address);
     expect(stakerSharesAfter - stakerSharesBefore).to.equal(stakerRewards1);
+  });
+
+  it('Transfer staking shares', async function () {
+    const globalRewardsPerSec = ethers.parseEther('0.5');
+    const stakersRewardPerSec = (globalRewardsPerSec * 50n) / 100n; // 50% to stakers, other 50% to operator
+    await this.protocolStaking.connect(this.admin).addEligibleAccount(this.operatorStaking);
+    const deposit = ethers.parseEther('1');
+    await this.operatorStaking.connect(this.staker1).deposit(deposit, this.staker1);
+    await this.protocolStaking.connect(this.admin).setRewardRate(globalRewardsPerSec); // only start rewarding after staker1 deposit
+    await this.protocolStaking.connect(this.admin).setRewardRate(0); // stop rewarding for easier accounting
+    const shares = await this.operatorStaking.balanceOf(this.staker1.address);
+    await this.operatorStaking.connect(this.staker1).transfer(this.staker2.address, shares);
+    await expect(this.stakersRewardsRecipient.released(this.staker2.address)).to.eventually.equal(stakersRewardPerSec);
   });
 });

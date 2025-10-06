@@ -8,6 +8,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
@@ -21,7 +22,7 @@ contract OperatorStaking is ERC4626, Ownable {
     using Checkpoints for Checkpoints.Trace208;
     using SafeERC20 for IERC20;
 
-    ProtocolStaking private _protocolStaking;
+    ProtocolStaking private immutable _protocolStaking;
     StakersRewardsRecipient private _stakersRewardsRecipient;
     mapping(address => Checkpoints.Trace208) private _unstakeRequests;
     mapping(address => uint256) private _released;
@@ -143,5 +144,14 @@ contract OperatorStaking is ERC4626, Ownable {
         );
 
         emit Withdraw(caller, receiver, owner, assets, shares);
+    }
+
+    /// @dev Updates shares by virtually realeasing rewards related to new shares of `to` to prevent reward claim.
+    function _update(address from, address to, uint256 value) internal virtual override {
+        if (from != address(0) && to != address(0)) {
+            withdrawRewards(from); // Withdraw pending rewards before these shares are transferred
+            _stakersRewardsRecipient.increaseReleasedRewards(to, value, totalSupply());
+        }
+        super._update(from, to, value);
     }
 }

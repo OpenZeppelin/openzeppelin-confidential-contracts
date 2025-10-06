@@ -29,7 +29,7 @@ interface IPaymentSplitter {
 contract StakersRewardsRecipient is Ownable {
     using SafeERC20 for IERC20;
 
-    IOperatorStaking private _operatorStaking;
+    IOperatorStaking private immutable _operatorStaking;
     uint256 private _totalReleased;
     mapping(address => uint256) private _released;
 
