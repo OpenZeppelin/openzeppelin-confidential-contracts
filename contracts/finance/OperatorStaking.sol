@@ -8,15 +8,11 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC4626, IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
-
-interface IRewarder {
-    function transferHook(address from, address to, uint256 amount) external;
-
-    function shutdown() external;
-}
+import {Rewarder} from "./Rewarder.sol";
 
 contract OperatorStaking is ERC20, Ownable {
     using Math for uint256;
@@ -72,7 +68,7 @@ contract OperatorStaking is ERC20, Ownable {
         _protocolStaking.unstake(address(this), assetsToWithdraw);
 
         (, uint48 lastReleaseTime, uint208 totalSharesRedeemed) = _unstakeRequests[controller].latestCheckpoint();
-        uint48 releaseTime = uint48(
+        uint48 releaseTime = SafeCast.toUint48(
             Math.max(Time.timestamp() + _protocolStaking.unstakeCooldownPeriod(), lastReleaseTime)
         );
         _unstakeRequests[controller].push(releaseTime, totalSharesRedeemed + shares);
@@ -107,7 +103,7 @@ contract OperatorStaking is ERC20, Ownable {
     }
 
     function setRewarder(address rewarder) public virtual onlyOwner {
-        IRewarder(_rewarder).shutdown();
+        Rewarder(_rewarder).shutdown();
         _rewarder = rewarder;
         _protocolStaking.setRewardsRecipient(rewarder);
     }
