@@ -27,6 +27,8 @@ interface IPaymentSplitter {
  * Rewards are pulled from a global {IPaymentSplitter} in charge of performing the split between the operator and stakers.
  */
 contract StakersRewardsRecipient is Ownable {
+    using SafeERC20 for IERC20;
+
     IOperatorStaking private _operatorStaking;
     uint256 private _totalReleased;
     mapping(address => uint256) private _released;
@@ -84,7 +86,7 @@ contract StakersRewardsRecipient is Ownable {
         uint256 releasable = _allocation(shares, totalShares) - released_;
         _totalReleased += releasable;
         _released[account] = released_ + releasable;
-        require(stakingToken().transfer(account, releasable));
+        stakingToken().safeTransfer(account, releasable);
         emit RewardWithdrawn(account, releasable);
     }
 
