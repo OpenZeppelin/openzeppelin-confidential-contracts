@@ -12,15 +12,25 @@ import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
 
+interface IRewarder {
+    function transferHook(address from, address to, uint256 amount) external;
+
+    function shutdown() external;
+}
+
 contract OperatorStaking is ERC20, Ownable {
     using Math for uint256;
     using Checkpoints for Checkpoints.Trace208;
 
     ProtocolStaking private immutable _protocolStaking;
     IERC20 private immutable _asset;
+    address private _rewarder;
     uint256 private _totalSharesInRedemption;
     mapping(address => uint256) private _sharesReleased;
     mapping(address => Checkpoints.Trace208) private _unstakeRequests;
+    mapping(address => mapping(address => bool)) private _operator;
+
+    event OperatorSet(address controller, address operator, bool approved);
 
     error InsufficientClaimableShares(uint256 requested, uint256 claimable);
 
@@ -28,11 +38,16 @@ contract OperatorStaking is ERC20, Ownable {
         string memory name,
         string memory symbol,
         ProtocolStaking protocolStaking,
-        address owner
+        address owner,
+        address rewarder
     ) ERC20(name, symbol) Ownable(owner) {
         _asset = IERC20(protocolStaking.stakingToken());
         _protocolStaking = protocolStaking;
+
         IERC20(asset()).approve(address(protocolStaking), type(uint256).max);
+
+        protocolStaking.setRewardsRecipient(rewarder);
+        _rewarder = rewarder;
     }
 
     function deposit(uint256 assets, address receiver) public virtual returns (uint256) {
@@ -67,6 +82,8 @@ contract OperatorStaking is ERC20, Ownable {
     function redeem(uint256 shares, address receiver, address controller) public virtual returns (uint256) {
         uint256 maxShares = maxRedeem(controller);
 
+        require(msg.sender == controller || isOperator(controller, msg.sender), "Not authorized");
+
         if (shares == type(uint256).max) {
             shares = maxShares;
         } else if (shares > maxShares) {
@@ -87,6 +104,18 @@ contract OperatorStaking is ERC20, Ownable {
             _protocolStaking.tokensInCooldown(address(this)) -
             previewRedeem(totalSharesInRedemption());
         _protocolStaking.stake(amountToRestake);
+    }
+
+    function setRewarder(address rewarder) public virtual onlyOwner {
+        IRewarder(_rewarder).shutdown();
+        _rewarder = rewarder;
+        _protocolStaking.setRewardsRecipient(rewarder);
+    }
+
+    function setOperator(address operator, bool approved) public virtual {
+        _operator[msg.sender][operator] = approved;
+
+        emit OperatorSet(msg.sender, operator, approved);
     }
 
     function asset() public view virtual returns (address) {
@@ -131,6 +160,16 @@ contract OperatorStaking is ERC20, Ownable {
 
     function previewRedeem(uint256 shares) public view virtual returns (uint256) {
         return _convertToAssets(shares, Math.Rounding.Floor);
+    }
+
+    function isOperator(address controller, address operator) public view virtual returns (bool) {
+        return _operator[controller][operator];
+    }
+
+    function _update(address from, address to, uint256 amount) internal virtual override {
+        super._update(from, to, amount);
+
+        // Rewarder(_rewarder).transferHook(from, to, amount);
     }
 
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual {
