@@ -90,6 +90,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
      * @dev Unstake `amount` tokens from `msg.sender`'s staked balance to `recipient`.
      *
      * NOTE: Unstaked tokens will not be sent immediately if {unstakeCooldownPeriod} is non-zero.
+     * TODO: Change `account` param for `msg.sender`.
      */
     function unstake(address recipient, uint256 amount) public virtual {
         _burn(msg.sender, amount);
