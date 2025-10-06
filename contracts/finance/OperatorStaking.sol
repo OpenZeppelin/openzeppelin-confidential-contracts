@@ -146,7 +146,7 @@ contract OperatorStaking is ERC4626, Ownable {
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
 
-    /// @dev Updates shares by virtually realeasing rewards related to new shares of `to` to prevent reward claim.
+    /// @dev Updates shares by virtually releasing rewards related to new shares of `to` to prevent reward claim.
     function _update(address from, address to, uint256 value) internal virtual override {
         if (from != address(0) && to != address(0)) {
             withdrawRewards(from); // Withdraw pending rewards before these shares are transferred
