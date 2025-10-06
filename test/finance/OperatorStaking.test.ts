@@ -1,5 +1,5 @@
 import { OperatorStaking } from '../../types';
-import { time } from '@nomicfoundation/hardhat-network-helpers';
+import { mine, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 
@@ -106,9 +106,9 @@ describe('OperatorStaking', function () {
     const staker1BalanceBefore = await this.token.balanceOf(this.staker1.address);
     const staker2BalanceBefore = await this.token.balanceOf(this.staker2.address);
     const staker3BalanceBefore = await this.token.balanceOf(this.staker3.address);
-    await this.operatorStaking.connect(this.staker1).redeem(deposit, this.staker1.address, this.staker1.address);
-    await this.operatorStaking.connect(this.staker2).redeem(deposit, this.staker2.address, this.staker2.address);
-    await this.operatorStaking.connect(this.staker3).redeem(deposit, this.staker3.address, this.staker3.address);
+    await this.operatorStaking.connect(this.staker1).withdraw(deposit, this.staker1.address, this.staker1.address);
+    await this.operatorStaking.connect(this.staker2).withdraw(deposit, this.staker2.address, this.staker2.address);
+    await this.operatorStaking.connect(this.staker3).withdraw(deposit, this.staker3.address, this.staker3.address);
     const staker1BalanceAfter = await this.token.balanceOf(this.staker1.address);
     const staker2BalanceAfter = await this.token.balanceOf(this.staker2.address);
     const staker3BalanceAfter = await this.token.balanceOf(this.staker3.address);
@@ -116,9 +116,22 @@ describe('OperatorStaking', function () {
     expect(staker1BalanceAfter - staker1BalanceBefore).to.equal(stakerRewards1 + stakerRewards2 + stakerRewards3);
     expect(staker2BalanceAfter - staker2BalanceBefore).to.equal(stakerRewards2 + stakerRewards3);
     expect(staker3BalanceAfter - staker3BalanceBefore).to.closeTo(stakerRewards3, 1);
-    expect(this.protocolStaking.tokensInCooldown(this.staker1.address)).to.eventually.equal(deposit);
-    expect(this.protocolStaking.tokensInCooldown(this.staker2.address)).to.eventually.equal(deposit);
-    expect(this.protocolStaking.tokensInCooldown(this.staker3.address)).to.eventually.equal(deposit);
+    expect(this.operatorStaking.tokensInCooldown(this.staker1.address)).to.eventually.equal(deposit);
+    expect(this.operatorStaking.tokensInCooldown(this.staker2.address)).to.eventually.equal(deposit);
+    expect(this.operatorStaking.tokensInCooldown(this.staker3.address)).to.eventually.equal(deposit);
+    await mine(1);
+    await this.operatorStaking.release(this.staker1.address);
+    await this.operatorStaking.release(this.staker2.address);
+    await this.operatorStaking.release(this.staker3.address);
+    const staker1BalanceBeforeRelease = staker1BalanceAfter;
+    const staker2BalanceBeforeRelease = staker2BalanceAfter;
+    const staker3BalanceBeforeRelease = staker3BalanceAfter;
+    expect((await this.token.balanceOf(this.staker1.address)) - staker1BalanceBeforeRelease).to.equal(deposit);
+    expect((await this.token.balanceOf(this.staker2.address)) - staker2BalanceBeforeRelease).to.equal(deposit);
+    expect((await this.token.balanceOf(this.staker3.address)) - staker3BalanceBeforeRelease).to.equal(deposit);
+    expect(this.operatorStaking.tokensInCooldown(this.staker1.address)).to.eventually.equal(0);
+    expect(this.operatorStaking.tokensInCooldown(this.staker2.address)).to.eventually.equal(0);
+    expect(this.operatorStaking.tokensInCooldown(this.staker3.address)).to.eventually.equal(0);
   });
 
   it('Restake rewards', async function () {

@@ -6,6 +6,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
+import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
 import {IPaymentSplitter, StakersRewardsRecipient} from "./StakersRewardsRecipient.sol";
 
@@ -14,8 +18,13 @@ import {IPaymentSplitter, StakersRewardsRecipient} from "./StakersRewardsRecipie
  * Deposits from stakers are restaked by this operator contract on the related {ProtocolStaking} contract.
  */
 contract OperatorStaking is ERC4626, Ownable {
+    using Checkpoints for Checkpoints.Trace208;
+    using SafeERC20 for IERC20;
+
     ProtocolStaking private _protocolStaking;
     StakersRewardsRecipient private _stakersRewardsRecipient;
+    mapping(address => Checkpoints.Trace208) private _unstakeRequests;
+    mapping(address => uint256) private _released;
 
     constructor(
         string memory name,
@@ -52,13 +61,28 @@ contract OperatorStaking is ERC4626, Ownable {
         _stakersRewardsRecipient = StakersRewardsRecipient(stakersRewardsRecipient);
     }
 
+    /// @dev Returns the amount of tokens cooling down for the given account `account`.
+    function tokensInCooldown(address account) public view virtual returns (uint256) {
+        return _unstakeRequests[account].latest() - _released[account];
+    }
+
+    /// @dev Releases tokens after unstake cooldown period.
+    function release(address account) public virtual {
+        uint256 amountToRelease = _unstakeRequests[account].upperLookup(Time.timestamp()) - _released[account];
+        if (amountToRelease > 0) {
+            _protocolStaking.release(address(this));
+            _released[account] += amountToRelease;
+            IERC20(asset()).safeTransfer(account, amountToRelease);
+        }
+    }
+
     /// @dev Withdraw rewards.
     function withdrawRewards(address account) public virtual {
         _protocolStaking.claimRewards(address(this)); // Transfer all rewards to global rewards recipient
         if (account == owner()) {
             // Withdraw operator rewards
             IPaymentSplitter globalRewardsRecipient_ = IPaymentSplitter(globalRewardsRecipient());
-            IERC20 stakingToken_ = IERC20(_protocolStaking.stakingToken());
+            IERC20 stakingToken_ = IERC20(asset());
             if (globalRewardsRecipient_.releasable(stakingToken_, owner()) > 0) {
                 globalRewardsRecipient_.release(stakingToken_, owner());
             }
@@ -70,7 +94,7 @@ contract OperatorStaking is ERC4626, Ownable {
 
     /// @dev Restake pending rewards of staker.
     function restakeRewards() public virtual {
-        IERC20 stakingToken = IERC20(_protocolStaking.stakingToken());
+        IERC20 stakingToken = IERC20(asset());
         uint256 balanceBefore = stakingToken.balanceOf(msg.sender);
         withdrawRewards(msg.sender);
         deposit(stakingToken.balanceOf(msg.sender) - balanceBefore, msg.sender);
@@ -81,7 +105,10 @@ contract OperatorStaking is ERC4626, Ownable {
      * upon claiming and disbursing rewards can't be gamed. If the cooldown period is small, `totalAssets` must count unclaimed rewards.
      */
     function totalAssets() public view virtual override returns (uint256) {
-        return super.totalAssets() + _protocolStaking.balanceOf(address(this));
+        return
+            super.totalAssets() +
+            _protocolStaking.balanceOf(address(this)) +
+            _protocolStaking.tokensInCooldown(address(this));
     }
 
     /// @inheritdoc ERC4626
@@ -107,7 +134,13 @@ contract OperatorStaking is ERC4626, Ownable {
         // Allow future withdraws by removing previously claimed rewards delta related to burn shares
         _stakersRewardsRecipient.decreaseReleasedRewards(owner, shares, totalSupply());
         _burn(owner, shares);
-        _protocolStaking.unstake(receiver, assets);
+        _protocolStaking.unstake(address(this), assets);
+        (, uint256 lastReleaseTime, uint256 totalRequestedToWithdraw) = _unstakeRequests[receiver].latestCheckpoint();
+        uint256 releaseTime = Time.timestamp() + _protocolStaking.unstakeCooldownPeriod();
+        _unstakeRequests[receiver].push(
+            uint48(Math.max(releaseTime, lastReleaseTime)),
+            uint208(totalRequestedToWithdraw + assets)
+        );
 
         emit Withdraw(caller, receiver, owner, assets, shares);
     }
