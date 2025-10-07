@@ -46,8 +46,13 @@ contract Rewarder is Ownable {
 
     function transferHook(address from, address to, uint256 amount) public virtual {
         require(msg.sender == address(_operatorStaking));
-        _updateRewards(from, -SafeCast.toInt256(amount));
-        _updateRewards(to, SafeCast.toInt256(amount));
+
+        if (from != address(0)) {
+            _updateRewards(from, -SafeCast.toInt256(amount));
+        }
+        if (to != address(0)) {
+            _updateRewards(to, SafeCast.toInt256(amount));
+        }
     }
 
     function shutdown() public virtual {
