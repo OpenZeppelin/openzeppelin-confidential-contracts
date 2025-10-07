@@ -34,12 +34,12 @@ contract Rewarder is Ownable {
     function claimRewards(address account) public virtual {
         uint256 rewards = earned(account);
         if (rewards > 0) {
+            _paid[account] += SafeCast.toInt256(rewards);
+            _totalPaid += rewards;
+
             if (rewards > token().balanceOf(address(this))) {
                 _protocolStaking.claimRewards(address(_operatorStaking));
             }
-
-            _paid[account] += SafeCast.toInt256(rewards);
-            _totalPaid += rewards;
             IERC20(token()).safeTransfer(account, rewards);
         }
     }
