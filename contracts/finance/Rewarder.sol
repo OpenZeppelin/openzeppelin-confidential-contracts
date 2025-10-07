@@ -20,9 +20,10 @@ contract Rewarder is Ownable {
 
     ProtocolStaking private immutable _protocolStaking;
     OperatorStaking private immutable _operatorStaking;
+    uint16 private _ownerFeeBasisPoints;
+    bool private _isShutdown = false;
     IERC20 private immutable _token;
     uint256 private _totalPaid;
-    bool private _isShutdown = false;
     int256 private _totalVirtualPaid;
     mapping(address => int256) private _paid;
 
@@ -44,21 +45,24 @@ contract Rewarder is Ownable {
         }
     }
 
-    function transferHook(address from, address to, uint256 amount) public virtual {
-        require(msg.sender == address(_operatorStaking));
+    function claimOwnerRewards() public virtual {}
 
-        if (from != address(0)) {
-            _updateRewards(from, -SafeCast.toInt256(amount));
-        }
-        if (to != address(0)) {
-            _updateRewards(to, SafeCast.toInt256(amount));
-        }
+    /// @dev Sets the owner basis points fee to `basisPoints`.
+    function setOwnerFee(uint8 basisPoints) public virtual {
+        _ownerFeeBasisPoints = basisPoints;
     }
 
     function shutdown() public virtual {
         require(msg.sender == address(_operatorStaking) && _isShutdown == false);
         _isShutdown = true;
         _protocolStaking.claimRewards(address(_operatorStaking));
+    }
+
+    function transferHook(address from, address to, uint256 amount) public virtual {
+        require(msg.sender == address(_operatorStaking));
+
+        _updateRewards(from, -SafeCast.toInt256(amount));
+        _updateRewards(to, SafeCast.toInt256(amount));
     }
 
     function earned(address account) public view virtual returns (uint256) {
@@ -75,12 +79,11 @@ contract Rewarder is Ownable {
     function _updateRewards(address user, int256 diff) internal virtual {
         int256 virtualAmount = SafeCast.toInt256(
             _allocation(SafeCast.toUint256(diff < 0 ? -diff : diff), _operatorStaking.totalSupply())
-        );
-        if (diff < 0) {
-            _paid[user] -= virtualAmount;
-            _totalVirtualPaid -= virtualAmount;
-        } else {
+        ) * (diff < 0 ? -1 : int256(1));
+
+        if (user != address(0)) {
             _paid[user] += virtualAmount;
+        } else {
             _totalVirtualPaid += virtualAmount;
         }
     }
