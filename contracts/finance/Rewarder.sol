@@ -13,6 +13,7 @@ import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
 import {OperatorStaking} from "./OperatorStaking.sol";
+import {console} from "hardhat/console.sol";
 
 contract Rewarder is Ownable {
     using SafeERC20 for IERC20;
@@ -22,6 +23,7 @@ contract Rewarder is Ownable {
     OperatorStaking private immutable _operatorStaking;
     uint16 private _ownerFeeBasisPoints;
     bool private _isShutdown = false;
+    uint256 _lastFeeClaimedTotalRewards;
     IERC20 private immutable _token;
     uint256 private _totalPaid;
     int256 private _totalVirtualPaid;
@@ -30,6 +32,7 @@ contract Rewarder is Ownable {
     constructor(address owner, ProtocolStaking protocolStaking, OperatorStaking operatorStaking) Ownable(owner) {
         _protocolStaking = protocolStaking;
         _operatorStaking = operatorStaking;
+        _token = IERC20(protocolStaking.stakingToken());
     }
 
     function claimRewards(address account) public virtual {
@@ -45,10 +48,22 @@ contract Rewarder is Ownable {
         }
     }
 
-    function claimOwnerRewards() public virtual {}
+    function pendingOwnerFee() public view virtual returns (uint256) {
+        uint256 deltaRewards = _totalPaid + unpaidRewards() - _lastFeeClaimedTotalRewards;
+        return (deltaRewards * _ownerFeeBasisPoints) / 1000;
+    }
+
+    function claimOwnerFee() public virtual {
+        uint256 pendingOwnerFee_ = pendingOwnerFee();
+        uint256 currentTotalRewards = _totalPaid + unpaidRewards();
+        _lastFeeClaimedTotalRewards = currentTotalRewards - pendingOwnerFee_;
+
+        IERC20(token()).safeTransfer(owner(), pendingOwnerFee_);
+    }
 
     /// @dev Sets the owner basis points fee to `basisPoints`.
     function setOwnerFee(uint8 basisPoints) public virtual {
+        claimOwnerFee();
         _ownerFeeBasisPoints = basisPoints;
     }
 
@@ -59,10 +74,13 @@ contract Rewarder is Ownable {
     }
 
     function transferHook(address from, address to, uint256 amount) public virtual {
-        require(msg.sender == address(_operatorStaking));
+        require(msg.sender == address(_operatorStaking), "Not operator staking");
 
-        _updateRewards(from, -SafeCast.toInt256(amount));
-        _updateRewards(to, SafeCast.toInt256(amount));
+        uint256 oldTotalSupply = _operatorStaking.totalSupply();
+        if (oldTotalSupply == 0) return;
+
+        _updateRewards(from, -SafeCast.toInt256(amount), oldTotalSupply);
+        _updateRewards(to, SafeCast.toInt256(amount), oldTotalSupply);
     }
 
     function earned(address account) public view virtual returns (uint256) {
@@ -76,9 +94,14 @@ contract Rewarder is Ownable {
         return _token;
     }
 
-    function _updateRewards(address user, int256 diff) internal virtual {
+    function unpaidRewards() public view returns (uint256) {
+        return
+            token().balanceOf(address(this)) + (_isShutdown ? 0 : _protocolStaking.earned(address(_operatorStaking)));
+    }
+
+    function _updateRewards(address user, int256 diff, uint256 oldTotalSupply) internal virtual {
         int256 virtualAmount = SafeCast.toInt256(
-            _allocation(SafeCast.toUint256(diff < 0 ? -diff : diff), _operatorStaking.totalSupply())
+            _allocation(SafeCast.toUint256(diff < 0 ? -diff : diff), oldTotalSupply)
         ) * (diff < 0 ? -1 : int256(1));
 
         if (user != address(0)) {
@@ -93,6 +116,7 @@ contract Rewarder is Ownable {
         if (!_isShutdown) {
             counter += _protocolStaking.earned(address(_operatorStaking));
         }
+        counter -= pendingOwnerFee();
 
         return counter;
     }

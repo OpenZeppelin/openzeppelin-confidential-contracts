@@ -34,16 +34,16 @@ contract OperatorStaking is ERC20, Ownable {
         string memory name,
         string memory symbol,
         ProtocolStaking protocolStaking,
-        address owner,
-        address rewarder
+        address owner
     ) ERC20(name, symbol) Ownable(owner) {
         _asset = IERC20(protocolStaking.stakingToken());
         _protocolStaking = protocolStaking;
 
         IERC20(asset()).approve(address(protocolStaking), type(uint256).max);
 
-        protocolStaking.setRewardsRecipient(rewarder);
-        _rewarder = rewarder;
+        address rewarder_ = address(new Rewarder(owner, protocolStaking, this));
+        protocolStaking.setRewardsRecipient(rewarder_);
+        _rewarder = rewarder_;
     }
 
     function deposit(uint256 assets, address receiver) public virtual returns (uint256) {
@@ -102,10 +102,10 @@ contract OperatorStaking is ERC20, Ownable {
         _protocolStaking.stake(amountToRestake);
     }
 
-    function setRewarder(address rewarder) public virtual onlyOwner {
-        Rewarder(_rewarder).shutdown();
-        _rewarder = rewarder;
-        _protocolStaking.setRewardsRecipient(rewarder);
+    function setRewarder(address rewarder_) public virtual onlyOwner {
+        Rewarder(rewarder()).shutdown();
+        _rewarder = rewarder_;
+        _protocolStaking.setRewardsRecipient(rewarder());
     }
 
     function setOperator(address operator, bool approved) public virtual {
@@ -116,6 +116,10 @@ contract OperatorStaking is ERC20, Ownable {
 
     function asset() public view virtual returns (address) {
         return address(_asset);
+    }
+
+    function rewarder() public view virtual returns (address) {
+        return _rewarder;
     }
 
     function totalSupply() public view virtual override returns (uint256) {
@@ -163,9 +167,8 @@ contract OperatorStaking is ERC20, Ownable {
     }
 
     function _update(address from, address to, uint256 amount) internal virtual override {
+        Rewarder(rewarder()).transferHook(from, to, amount);
         super._update(from, to, amount);
-
-        // Rewarder(_rewarder).transferHook(from, to, amount);
     }
 
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual {

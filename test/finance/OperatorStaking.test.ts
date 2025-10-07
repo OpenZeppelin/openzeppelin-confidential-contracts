@@ -16,13 +16,7 @@ describe.only('OperatorStaking', function () {
       .then(factory =>
         upgrades.deployProxy(factory, ['StakedToken', 'SST', '1', token.target, admin.address, 60 /* 1 min */]),
       );
-    const mock = await ethers.deployContract('$OperatorStaking', [
-      'OPStake',
-      'OP',
-      protocolStaking,
-      admin.address,
-      ethers.ZeroAddress,
-    ]);
+    const mock = await ethers.deployContract('$OperatorStaking', ['OPStake', 'OP', protocolStaking, admin.address]);
 
     await Promise.all(
       [staker1, staker2].flatMap(account => [
