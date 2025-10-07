@@ -52,8 +52,8 @@ contract Rewarder is Ownable {
 
     function shutdown() public virtual {
         require(msg.sender == address(_operatorStaking) && _isShutdown == false);
-        _protocolStaking.claimRewards(address(_operatorStaking));
         _isShutdown = true;
+        _protocolStaking.claimRewards(address(_operatorStaking));
     }
 
     function earned(address account) public view virtual returns (uint256) {
