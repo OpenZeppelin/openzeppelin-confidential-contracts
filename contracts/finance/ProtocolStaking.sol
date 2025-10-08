@@ -254,18 +254,22 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
                 $._paid[user] += virtualAmount;
                 $._totalVirtualPaid += virtualAmount;
             }
+        } else if (oldTotalWeight == 0) {
+            $._lastUpdateReward = 0;
+            $._totalVirtualPaid = 0;
+            $._lastUpdateTimestamp = Time.timestamp();
         }
     }
 
     function _update(address from, address to, uint256 value) internal virtual override {
         // Disable Transfers
         require(from == address(0) || to == address(0), TransferDisabled());
-        if (isEligibleAccount(from)) {
+        if (from != address(0) && isEligibleAccount(from)) {
             uint256 balanceBefore = balanceOf(from);
             uint256 balanceAfter = balanceBefore - value;
             _updateRewards(from, weight(balanceBefore), weight(balanceAfter));
         }
-        if (isEligibleAccount(to)) {
+        if (to != address(0) && isEligibleAccount(to)) {
             uint256 balanceBefore = balanceOf(to);
             uint256 balanceAfter = balanceBefore + value;
             _updateRewards(to, weight(balanceBefore), weight(balanceAfter));

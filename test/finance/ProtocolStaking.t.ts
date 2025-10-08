@@ -7,7 +7,7 @@ const timeIncreaseNoMine = (duration: number) =>
   time.latest().then(clock => time.setNextBlockTimestamp(clock + duration));
 
 /* eslint-disable no-unexpected-multiline */
-describe.only('Protocol Staking', function () {
+describe('Protocol Staking', function () {
   beforeEach(async function () {
     const [staker1, staker2, admin, ...accounts] = await ethers.getSigners();
 
@@ -59,7 +59,7 @@ describe.only('Protocol Staking', function () {
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
-      await timeIncreaseNoMine(9);
+      await timeIncreaseNoMine(10);
       await this.mock.connect(this.admin).setRewardRate(0);
       await expect(this.mock.totalStakedWeight()).to.eventually.equal(
         await this.mock.weight(await this.mock.balanceOf(this.staker1)),
@@ -95,10 +95,10 @@ describe.only('Protocol Staking', function () {
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       // staker1 stakes early and stars accumulating rewards
       await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
-      await timeIncreaseNoMine(9);
+      await timeIncreaseNoMine(10);
       // staker2 stakes late
       await this.mock.connect(this.staker2).stake(ethers.parseEther('100'));
-      await time.increase(9);
+      await timeIncreaseNoMine(10);
       // stop rewards
       await this.mock.connect(this.admin).setRewardRate(0);
 
@@ -241,7 +241,7 @@ describe.only('Protocol Staking', function () {
       // Reward 0.5 tokens per block in aggregate
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
-      await timeIncreaseNoMine(9);
+      await timeIncreaseNoMine(10);
       await this.mock.connect(this.admin).setRewardRate(0);
       const earned = await this.mock.earned(this.staker1);
       await expect(this.mock.claimRewards(this.staker1))
@@ -255,11 +255,63 @@ describe.only('Protocol Staking', function () {
 
       await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
       await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
-      await timeIncreaseNoMine(9);
+      await timeIncreaseNoMine(10);
 
       await expect(this.mock.claimRewards(this.staker1))
         .to.emit(this.token, 'Transfer')
         .withArgs(ethers.ZeroAddress, this.staker2, anyValue);
+    });
+  });
+
+  describe('all stakers unstake', function () {
+    it('then new staker stakes', async function () {
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker2);
+
+      await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
+      await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
+      await timeIncreaseNoMine(10);
+
+      await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('100'));
+      await timeIncreaseNoMine(10);
+      await this.mock.release(this.staker1);
+
+      await this.mock.connect(this.staker2).stake(ethers.parseEther('100'));
+      await timeIncreaseNoMine(1);
+      await mine();
+      await expect(this.mock.earned(this.staker2)).to.eventually.eq(ethers.parseEther('0.5'));
+
+      await expect(this.mock.earned(this.staker1)).to.eventually.eq(ethers.parseEther('5'));
+    });
+
+    it('then old staker returns', async function () {
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker1);
+      await this.mock.connect(this.admin).addEligibleAccount(this.staker2);
+
+      await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
+      await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
+      await this.mock.connect(this.staker2).stake(ethers.parseEther('100'));
+      await timeIncreaseNoMine(10);
+
+      // 3 in rewards for 1 (since 1 block at the beginning alone)
+      await this.mock.connect(this.staker1).unstake(this.staker1, ethers.parseEther('100'));
+      // 3 in rewards for 2 (since 1 block at the end alone)
+      await this.mock.connect(this.staker2).unstake(this.staker2, ethers.parseEther('100'));
+
+      await timeIncreaseNoMine(10);
+      await this.mock.release(this.staker1);
+      await this.mock.release(this.staker2);
+
+      await timeIncreaseNoMine(100);
+
+      await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
+      await timeIncreaseNoMine(1);
+      await mine();
+      // Only earn 0.5 more
+      await expect(this.mock.earned(this.staker1)).to.eventually.eq(ethers.parseEther('3.5'));
+
+      // pervious staker retains reward
+      await expect(this.mock.earned(this.staker2)).to.eventually.eq(ethers.parseEther('3'));
     });
   });
 
@@ -332,10 +384,10 @@ describe.only('Protocol Staking', function () {
       it('should retain rewards after removed as an eligible account', async function () {
         await this.mock.connect(this.staker1).stake(ethers.parseEther('100'));
         await this.mock.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
-        await time.increase(9);
+        await timeIncreaseNoMine(10);
 
         await this.mock.connect(this.admin).removeEligibleAccount(this.staker1);
-        await time.increase(100);
+        await timeIncreaseNoMine(100);
 
         await mine();
         expect(await this.mock.earned(this.staker1)).to.be.equal(ethers.parseEther('5'));
