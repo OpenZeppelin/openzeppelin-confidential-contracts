@@ -32,6 +32,7 @@ describe.only('Rewarder', function () {
     );
 
     await protocolStaking.connect(admin).addEligibleAccount(operatorStaking);
+    await protocolStaking.connect(admin).setRewardRate(ethers.parseEther('0.5'));
 
     Object.assign(this, { staker1, staker2, admin, accounts, token, operatorStaking, protocolStaking, mock });
   });
@@ -39,7 +40,6 @@ describe.only('Rewarder', function () {
   describe('Earned', async function () {
     it('should give all to solo staker', async function () {
       await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
-      await this.protocolStaking.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
 
       await timeIncreaseNoMine(10);
       await this.protocolStaking.connect(this.admin).setRewardRate(ethers.parseEther('0'));
@@ -47,12 +47,62 @@ describe.only('Rewarder', function () {
       await expect(this.mock.pendingOwnerFee()).to.eventually.eq(0);
       await expect(this.mock.earned(this.staker1)).to.eventually.eq(ethers.parseEther('5'));
       await expect(this.mock.unpaidRewards(this.staker1)).to.eventually.eq(ethers.parseEther('5'));
+    });
 
-      await expect(this.mock.claimRewards(this.staker1)).to.changeTokenBalance(
-        this.token,
-        this.staker1,
-        ethers.parseEther('5'),
-      );
+    it('should split between two equal stakers', async function () {
+      await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+      await this.operatorStaking.connect(this.staker2).deposit(ethers.parseEther('1'), this.staker2);
+
+      await timeIncreaseNoMine(9);
+      await this.protocolStaking.connect(this.admin).setRewardRate(0);
+
+      await expect(this.mock.pendingOwnerFee()).to.eventually.eq(0);
+      await expect(this.mock.unpaidRewards()).to.eventually.eq(ethers.parseEther('5'));
+      await expect(this.mock.earned(this.staker2)).to.eventually.eq(ethers.parseEther('2.25'));
+      await expect(this.mock.earned(this.staker1)).to.eventually.eq(ethers.parseEther('2.75'));
+    });
+
+    it('should decrease rewards appropriately for owner fee', async function () {
+      await this.mock.connect(this.admin).setOwnerFee('1000'); // 10% owner fee
+      await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+
+      await time.increase(10);
+
+      await expect(this.mock.earned(this.staker1)).to.eventually.eq(ethers.parseEther('4.5'));
+      await expect(this.mock.pendingOwnerFee()).to.eventually.eq(ethers.parseEther('0.5'));
+    });
+  });
+
+  describe('claimOwnerFee', async function () {
+    beforeEach(async function () {
+      await this.mock.connect(this.admin).setOwnerFee(1000);
+      await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+    });
+
+    it('should send tokens', async function () {
+      await time.increase(20);
+
+      await expect(this.mock.pendingOwnerFee()).to.eventually.eq(ethers.parseEther('1'));
+      await expect(this.mock.earned(this.staker1)).to.eventually.eq(ethers.parseEther('9'));
+
+      // 1 more second goes by
+      await expect(this.mock.claimOwnerFee())
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.admin, ethers.parseEther('1.05'));
+    });
+
+    it('should reset pending owner fee', async function () {
+      await timeIncreaseNoMine(10);
+      await this.mock.claimOwnerFee();
+
+      await expect(this.mock.pendingOwnerFee()).to.eventually.eq(0);
+    });
+
+    it('should not effect staker earned amount', async function () {
+      await timeIncreaseNoMine(10);
+      await this.mock.claimOwnerFee();
+
+      await expect(this.mock.earned(this.staker1)).to.eventually.eq(ethers.parseEther('4.5'));
     });
   });
 });

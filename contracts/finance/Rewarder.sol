@@ -50,7 +50,7 @@ contract Rewarder is Ownable {
 
     function pendingOwnerFee() public view virtual returns (uint256) {
         uint256 deltaRewards = _totalPaid + unpaidRewards() - _lastFeeClaimedTotalRewards;
-        return (deltaRewards * _ownerFeeBasisPoints) / 1000;
+        return (deltaRewards * _ownerFeeBasisPoints) / 10000;
     }
 
     function claimOwnerFee() public virtual {
@@ -58,11 +58,14 @@ contract Rewarder is Ownable {
         uint256 currentTotalRewards = _totalPaid + unpaidRewards();
         _lastFeeClaimedTotalRewards = currentTotalRewards - pendingOwnerFee_;
 
+        if (pendingOwnerFee_ > token().balanceOf(address(this))) {
+            _protocolStaking.claimRewards(address(_operatorStaking));
+        }
         IERC20(token()).safeTransfer(owner(), pendingOwnerFee_);
     }
 
     /// @dev Sets the owner basis points fee to `basisPoints`.
-    function setOwnerFee(uint8 basisPoints) public virtual {
+    function setOwnerFee(uint16 basisPoints) public virtual {
         claimOwnerFee();
         _ownerFeeBasisPoints = basisPoints;
     }
@@ -79,8 +82,10 @@ contract Rewarder is Ownable {
         uint256 oldTotalSupply = _operatorStaking.totalSupply();
         if (oldTotalSupply == 0) return;
 
-        _updateRewards(from, -SafeCast.toInt256(amount), oldTotalSupply);
-        _updateRewards(to, SafeCast.toInt256(amount), oldTotalSupply);
+        int256 totalVirtualPaidDiff;
+        totalVirtualPaidDiff += _updateRewards(from, -SafeCast.toInt256(amount), oldTotalSupply);
+        totalVirtualPaidDiff += _updateRewards(to, SafeCast.toInt256(amount), oldTotalSupply);
+        _totalVirtualPaid += totalVirtualPaidDiff;
     }
 
     function earned(address account) public view virtual returns (uint256) {
@@ -99,7 +104,7 @@ contract Rewarder is Ownable {
             token().balanceOf(address(this)) + (_isShutdown ? 0 : _protocolStaking.earned(address(_operatorStaking)));
     }
 
-    function _updateRewards(address user, int256 diff, uint256 oldTotalSupply) internal virtual {
+    function _updateRewards(address user, int256 diff, uint256 oldTotalSupply) internal virtual returns (int256) {
         int256 virtualAmount = SafeCast.toInt256(
             _allocation(SafeCast.toUint256(diff < 0 ? -diff : diff), oldTotalSupply)
         ) * (diff < 0 ? -1 : int256(1));
@@ -107,8 +112,9 @@ contract Rewarder is Ownable {
         if (user != address(0)) {
             _paid[user] += virtualAmount;
         } else {
-            _totalVirtualPaid += virtualAmount;
+            return -virtualAmount;
         }
+        return 0;
     }
 
     function _historicalReward() internal view virtual returns (uint256) {
