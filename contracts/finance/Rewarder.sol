@@ -4,16 +4,11 @@ pragma solidity ^0.8.27;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {ERC4626, IERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
-import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
-import {ProtocolStaking} from "./ProtocolStaking.sol";
 import {OperatorStaking} from "./OperatorStaking.sol";
-import {console} from "hardhat/console.sol";
+import {ProtocolStaking} from "./ProtocolStaking.sol";
 
 contract Rewarder is Ownable {
     using SafeERC20 for IERC20;
@@ -22,8 +17,8 @@ contract Rewarder is Ownable {
     ProtocolStaking private immutable _protocolStaking;
     OperatorStaking private immutable _operatorStaking;
     uint16 private _ownerFeeBasisPoints;
-    bool private _isShutdown = false;
-    uint256 _lastFeeClaimedTotalRewards;
+    bool private _isShutdown;
+    uint256 private _lastFeeClaimedTotalRewards;
     IERC20 private immutable _token;
     uint256 private _totalPaid;
     int256 private _totalVirtualPaid;
@@ -50,7 +45,7 @@ contract Rewarder is Ownable {
 
     function pendingOwnerFee() public view virtual returns (uint256) {
         uint256 deltaRewards = _totalPaid + unpaidRewards() - _lastFeeClaimedTotalRewards;
-        return (deltaRewards * _ownerFeeBasisPoints) / 10000;
+        return (deltaRewards * ownerFeeBasisPoints()) / 10000;
     }
 
     function claimOwnerFee() public virtual {
@@ -65,7 +60,7 @@ contract Rewarder is Ownable {
     }
 
     /// @dev Sets the owner basis points fee to `basisPoints`.
-    function setOwnerFee(uint16 basisPoints) public virtual {
+    function setOwnerFee(uint16 basisPoints) public virtual onlyOwner {
         claimOwnerFee();
         _ownerFeeBasisPoints = basisPoints;
     }
@@ -102,6 +97,10 @@ contract Rewarder is Ownable {
     function unpaidRewards() public view returns (uint256) {
         return
             token().balanceOf(address(this)) + (_isShutdown ? 0 : _protocolStaking.earned(address(_operatorStaking)));
+    }
+
+    function ownerFeeBasisPoints() public view returns (uint16) {
+        return _ownerFeeBasisPoints;
     }
 
     function _updateRewards(address user, int256 diff, uint256 oldTotalSupply) internal virtual returns (int256) {
