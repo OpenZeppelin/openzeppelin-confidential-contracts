@@ -6,7 +6,7 @@ import { ethers, upgrades } from 'hardhat';
 const timeIncreaseNoMine = (duration: number) =>
   time.latest().then(clock => time.setNextBlockTimestamp(clock + duration));
 
-describe.only('Rewarder', function () {
+describe.only('OperatorRewarder', function () {
   beforeEach(async function () {
     const [staker1, staker2, admin, ...accounts] = await ethers.getSigners();
 
@@ -22,7 +22,7 @@ describe.only('Rewarder', function () {
       protocolStaking,
       admin.address,
     ]);
-    const mock = await ethers.getContractAt('Rewarder', await operatorStaking.rewarder());
+    const mock = await ethers.getContractAt('OperatorRewarder', await operatorStaking.rewarder());
 
     await Promise.all(
       [staker1, staker2].flatMap(account => [

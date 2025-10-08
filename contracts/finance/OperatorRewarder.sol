@@ -10,7 +10,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {OperatorStaking} from "./OperatorStaking.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
 
-contract Rewarder is Ownable {
+contract OperatorRewarder is Ownable {
     using SafeERC20 for IERC20;
     using Math for uint256;
 

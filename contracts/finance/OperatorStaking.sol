@@ -11,8 +11,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
+import {OperatorRewarder} from "./OperatorRewarder.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
-import {Rewarder} from "./Rewarder.sol";
 
 contract OperatorStaking is ERC20, Ownable {
     using Math for uint256;
@@ -41,7 +41,7 @@ contract OperatorStaking is ERC20, Ownable {
 
         IERC20(asset()).approve(address(protocolStaking), type(uint256).max);
 
-        address rewarder_ = address(new Rewarder(owner, protocolStaking, this));
+        address rewarder_ = address(new OperatorRewarder(owner, protocolStaking, this));
         protocolStaking.setRewardsRecipient(rewarder_);
         _rewarder = rewarder_;
     }
@@ -103,7 +103,7 @@ contract OperatorStaking is ERC20, Ownable {
     }
 
     function setRewarder(address rewarder_) public virtual onlyOwner {
-        Rewarder(rewarder()).shutdown();
+        OperatorRewarder(rewarder()).shutdown();
         _rewarder = rewarder_;
         _protocolStaking.setRewardsRecipient(rewarder());
     }
@@ -167,7 +167,7 @@ contract OperatorStaking is ERC20, Ownable {
     }
 
     function _update(address from, address to, uint256 amount) internal virtual override {
-        Rewarder(rewarder()).transferHook(from, to, amount);
+        OperatorRewarder(rewarder()).transferHook(from, to, amount);
         super._update(from, to, amount);
     }
 
