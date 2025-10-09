@@ -46,6 +46,74 @@ contract OperatorStaking is ERC20, Ownable {
         _rewarder = rewarder_;
     }
 
+    function asset() public view virtual returns (address) {
+        return address(_asset);
+    }
+
+    function protocolStaking() public view virtual returns (address) {
+        return address(_protocolStaking);
+    }
+
+    function rewarder() public view virtual returns (address) {
+        return _rewarder;
+    }
+
+    function totalSupply() public view virtual override returns (uint256) {
+        return super.totalSupply() + totalSharesInRedemption();
+    }
+
+    // Can there be reentry such that assets in cooldown and balanceOf are double counted?
+    function totalAssets() public view virtual returns (uint256) {
+        return
+            IERC20(asset()).balanceOf(address(this)) +
+            _protocolStaking.balanceOf(address(this)) +
+            _protocolStaking.tokensInCooldown(address(this));
+    }
+
+    function pendingRedeemRequest(uint256, address controller) public view virtual returns (uint256) {
+        return _unstakeRequests[controller].latest() - _unstakeRequests[controller].upperLookup(Time.timestamp());
+    }
+
+    function claimableRedeemRequest(uint256, address controller) public view virtual returns (uint256) {
+        return _unstakeRequests[controller].upperLookup(Time.timestamp()) - _sharesReleased[controller];
+    }
+
+    function totalSharesInRedemption() public view virtual returns (uint256) {
+        return _totalSharesInRedemption;
+    }
+
+    function maxDeposit(address) public view virtual returns (uint256) {
+        return type(uint256).max;
+    }
+
+    function maxRedeem(address owner) public view virtual returns (uint256) {
+        return claimableRedeemRequest(0, owner);
+    }
+
+    function previewDeposit(uint256 assets) public view virtual returns (uint256) {
+        return _convertToShares(assets, Math.Rounding.Floor);
+    }
+
+    function previewRedeem(uint256 shares) public view virtual returns (uint256) {
+        return _convertToAssets(shares, Math.Rounding.Floor);
+    }
+
+    function isOperator(address controller, address operator) public view virtual returns (bool) {
+        return _operator[controller][operator];
+    }
+
+    function setRewarder(address rewarder_) public virtual onlyOwner {
+        OperatorRewarder(rewarder()).shutdown();
+        _rewarder = rewarder_;
+        _protocolStaking.setRewardsRecipient(rewarder());
+    }
+
+    function setOperator(address operator, bool approved) public virtual {
+        _operator[msg.sender][operator] = approved;
+
+        emit OperatorSet(msg.sender, operator, approved);
+    }
+
     function deposit(uint256 assets, address receiver) public virtual returns (uint256) {
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
@@ -100,70 +168,6 @@ contract OperatorStaking is ERC20, Ownable {
             _protocolStaking.tokensInCooldown(address(this)) -
             previewRedeem(totalSharesInRedemption());
         _protocolStaking.stake(amountToRestake);
-    }
-
-    function setRewarder(address rewarder_) public virtual onlyOwner {
-        OperatorRewarder(rewarder()).shutdown();
-        _rewarder = rewarder_;
-        _protocolStaking.setRewardsRecipient(rewarder());
-    }
-
-    function setOperator(address operator, bool approved) public virtual {
-        _operator[msg.sender][operator] = approved;
-
-        emit OperatorSet(msg.sender, operator, approved);
-    }
-
-    function asset() public view virtual returns (address) {
-        return address(_asset);
-    }
-
-    function rewarder() public view virtual returns (address) {
-        return _rewarder;
-    }
-
-    function totalSupply() public view virtual override returns (uint256) {
-        return super.totalSupply() + totalSharesInRedemption();
-    }
-
-    // Can there be reentry such that assets in cooldown and balanceOf are double counted?
-    function totalAssets() public view virtual returns (uint256) {
-        return
-            IERC20(asset()).balanceOf(address(this)) +
-            _protocolStaking.balanceOf(address(this)) +
-            _protocolStaking.tokensInCooldown(address(this));
-    }
-
-    function pendingRedeemRequest(uint256, address controller) public view virtual returns (uint256) {
-        return _unstakeRequests[controller].latest() - _unstakeRequests[controller].upperLookup(Time.timestamp());
-    }
-
-    function claimableRedeemRequest(uint256, address controller) public view virtual returns (uint256) {
-        return _unstakeRequests[controller].upperLookup(Time.timestamp()) - _sharesReleased[controller];
-    }
-
-    function totalSharesInRedemption() public view virtual returns (uint256) {
-        return _totalSharesInRedemption;
-    }
-
-    function maxDeposit(address) public view virtual returns (uint256) {
-        return type(uint256).max;
-    }
-
-    function maxRedeem(address owner) public view virtual returns (uint256) {
-        return claimableRedeemRequest(0, owner);
-    }
-
-    function previewDeposit(uint256 assets) public view virtual returns (uint256) {
-        return _convertToShares(assets, Math.Rounding.Floor);
-    }
-
-    function previewRedeem(uint256 shares) public view virtual returns (uint256) {
-        return _convertToAssets(shares, Math.Rounding.Floor);
-    }
-
-    function isOperator(address controller, address operator) public view virtual returns (bool) {
-        return _operator[controller][operator];
     }
 
     function _update(address from, address to, uint256 amount) internal virtual override {
