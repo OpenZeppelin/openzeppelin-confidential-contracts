@@ -147,4 +147,38 @@ describe.only('OperatorRewarder', function () {
       await expect(this.mock.ownerUnpaidReward()).to.eventually.eq(ethers.parseEther('1')); // 0.5 already sent
     });
   });
+
+  describe('shutdown', function () {
+    beforeEach(async function () {
+      await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+      await timeIncreaseNoMine(10);
+
+      this.tx = this.operatorStaking.connect(this.admin).setRewarder(ethers.ZeroAddress);
+    });
+
+    it('should emit event', async function () {
+      await expect(this.tx).to.emit(this.mock, 'Shutdown');
+    });
+
+    it('should set shutdown flag', async function () {
+      await expect(this.mock.isShutdown()).to.eventually.eq(false);
+      await this.tx;
+      await expect(this.mock.isShutdown()).to.eventually.eq(true);
+    });
+
+    it('should stop accruing rewards after shutdown', async function () {
+      await this.tx;
+
+      await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('5'));
+
+      await timeIncreaseNoMine(10);
+      await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('5'));
+    });
+
+    it('only callable by protocolStaking', async function () {
+      await expect(this.mock.connect(this.admin).shutdown())
+        .to.be.revertedWithCustomError(this.mock, 'CallerNotOperatorStaking')
+        .withArgs(this.admin);
+    });
+  });
 });

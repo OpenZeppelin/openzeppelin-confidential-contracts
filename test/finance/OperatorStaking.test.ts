@@ -117,4 +117,52 @@ describe('OperatorStaking', function () {
       this.mock.connect(this.staker2).redeem(ethers.MaxUint256, this.staker2, this.staker2),
     ).to.changeTokenBalance(this.token, this.staker2, ethers.parseEther('1'));
   });
+
+  describe('setRewarder', async function () {
+    it('only owner can set rewarder', async function () {
+      await expect(this.mock.connect(this.staker1).setRewarder(ethers.ZeroAddress)).to.be.revertedWithCustomError(
+        this.mock,
+        'OwnableUnauthorizedAccount',
+      );
+    });
+
+    describe('with new rewarder', async function () {
+      beforeEach(async function () {
+        const newRewarder = await ethers.deployContract('OperatorRewarder', [
+          this.admin,
+          this.protocolStaking,
+          this.mock,
+        ]);
+        const oldRewarder = await ethers.getContractAt('OperatorRewarder', await this.mock.rewarder());
+
+        await this.protocolStaking.connect(this.admin).addEligibleAccount(this.mock);
+        await this.protocolStaking.connect(this.admin).setRewardRate(ethers.parseEther('0.5'));
+
+        await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+        await this.mock.connect(this.staker2).deposit(ethers.parseEther('3'), this.staker2);
+        await timeIncreaseNoMine(10);
+
+        await this.mock.connect(this.admin).setRewarder(newRewarder);
+        Object.assign(this, { oldRewarder, newRewarder });
+      });
+
+      it('old rewards should remain on old rewarder', async function () {
+        await expect(this.oldRewarder.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('1.75'));
+        await expect(this.newRewarder.stakerUnpaidReward(this.staker1)).to.eventually.eq(0);
+        await expect(this.token.balanceOf(this.oldRewarder)).to.eventually.eq(ethers.parseEther('5.5'));
+      });
+
+      it('new rewarder should start accruing rewards properly', async function () {
+        await time.increase(10);
+
+        await expect(this.newRewarder.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('1.25'));
+        await expect(this.newRewarder.stakerUnpaidReward(this.staker2)).to.eventually.eq(ethers.parseEther('3.75'));
+        await expect(this.newRewarder.ownerUnpaidReward()).to.eventually.eq(0);
+
+        await expect(this.newRewarder.claimStakerReward(this.staker1))
+          .to.emit(this.token, 'Transfer')
+          .withArgs(this.newRewarder, this.staker1, ethers.parseEther('1.375'));
+      });
+    });
+  });
 });
