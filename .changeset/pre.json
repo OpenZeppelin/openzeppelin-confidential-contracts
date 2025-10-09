@@ -4,5 +4,17 @@
   "initialVersions": {
     "openzeppelin-confidential-contracts": "0.2.0"
   },
-  "changesets": []
+  "changesets": [
+    "beige-fans-call",
+    "fast-ravens-lose",
+    "floppy-otters-dance",
+    "floppy-wasps-clap",
+    "fruity-bananas-smile",
+    "new-crews-boil",
+    "public-dolls-lose",
+    "seven-books-dig",
+    "six-maps-follow",
+    "sour-ties-warn",
+    "stupid-fans-bow"
+  ]
 }

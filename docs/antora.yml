@@ -1,7 +1,7 @@
 name: confidential-contracts
 title: Confidential Contracts
-version: '0.2'
-prerelease: false
+version: 0.3-rc
+prerelease: true
 nav:
   - modules/ROOT/nav.adoc
   - modules/api/nav.adoc
