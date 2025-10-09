@@ -1,0 +1,8 @@
+{
+  "mode": "pre",
+  "tag": "rc",
+  "initialVersions": {
+    "openzeppelin-confidential-contracts": "0.2.0"
+  },
+  "changesets": []
+}
