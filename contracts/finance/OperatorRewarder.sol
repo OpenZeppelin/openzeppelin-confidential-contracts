@@ -10,6 +10,9 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {OperatorStaking} from "./OperatorStaking.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
 
+/**
+ * A rewarder contract to split rewards between the owner and the stakers.
+ */
 contract OperatorRewarder is Ownable {
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -18,13 +21,17 @@ contract OperatorRewarder is Ownable {
     ProtocolStaking private immutable _protocolStaking;
     OperatorStaking private immutable _operatorStaking;
     uint16 private _ownerFeeBasisPoints;
-    bool private _isShutdown;
-    uint256 private _lastFeeClaimedTotalRewards;
-    uint256 private _totalPaid;
-    int256 private _totalVirtualPaid;
-    mapping(address => int256) private _paid;
+    bool private _shutdown;
+    uint256 private _lastAllTimeReward; // last owner reward claim
+    uint256 private _ownerPaidReward;
+    uint256 private _stakersPaidReward;
+    int256 private _stakersVirtualPaidReward;
+    mapping(address => int256) private _stakerPaidReward;
+
+    event Shutdown();
 
     error CallerNotOperatorStaking(address caller);
+    error AlreadyShutdown();
 
     modifier onlyOperatorStaking() {
         require(msg.sender == address(_operatorStaking), CallerNotOperatorStaking(msg.sender));
@@ -37,43 +44,87 @@ contract OperatorRewarder is Ownable {
         _operatorStaking = operatorStaking;
     }
 
+    /// @dev Gets staking token address.
     function token() public view returns (IERC20) {
         return _token;
     }
 
+    /// @dev Gets owner fee basis points.
     function ownerFeeBasisPoints() public view returns (uint16) {
         return _ownerFeeBasisPoints;
     }
 
-    function earned(address account) public view virtual returns (uint256) {
-        // if stakedBalance == 0, there is a risk of totalSupply == 0. To avoid div by 0 just return 0
-        uint256 stakedBalance = _operatorStaking.balanceOf(account);
-        uint256 allocation = stakedBalance > 0 ? _allocation(stakedBalance, _operatorStaking.totalSupply()) : 0;
-        return SafeCast.toUint256(SafeCast.toInt256(allocation) - _paid[account]);
+    /// @dev Returns true if shutdown.
+    function isShutdown() public view returns (bool) {
+        return _shutdown;
     }
 
-    function unpaidRewards() public view returns (uint256) {
-        return
-            token().balanceOf(address(this)) + (_isShutdown ? 0 : _protocolStaking.earned(address(_operatorStaking)));
+    /// @dev Gets unpaid reward.
+    function unpaidReward() public view returns (uint256) {
+        return _token.balanceOf(address(this)) + (_shutdown ? 0 : _protocolStaking.earned(address(_operatorStaking)));
     }
 
-    function pendingOwnerFee() public view virtual returns (uint256) {
-        uint256 deltaRewards = _totalPaid + unpaidRewards() - _lastFeeClaimedTotalRewards;
-        return (deltaRewards * ownerFeeBasisPoints()) / 10000;
+    /// @dev Gets all time reward.
+    function allTimeReward() public view virtual returns (uint256) {
+        return unpaidReward() + _ownerPaidReward + _stakersPaidReward;
+    }
+
+    /// @dev Gets all time reward of owner.
+    function ownerAllTimeReward() public view virtual returns (uint256) {
+        return ownerUnpaidReward() + _ownerPaidReward;
+    }
+
+    /// @dev Gets all time reward of stakers.
+    function stakersAllTimeReward() public view virtual returns (uint256) {
+        return stakersUnpaidReward() + _stakersPaidReward;
+    }
+
+    /// @dev Gets unpaid reward of owner.
+    function ownerUnpaidReward() public view virtual returns (uint256) {
+        return ((allTimeReward() - _lastAllTimeReward) * ownerFeeBasisPoints()) / 10000;
+    }
+
+    /// @dev Gets unpaid reward of stakers.
+    function stakersUnpaidReward() public view virtual returns (uint256) {
+        return unpaidReward() - ownerUnpaidReward();
+    }
+
+    /// @dev Gets unpaid reward of a staker.
+    function stakerUnpaidReward(address account) public view virtual returns (uint256) {
+        uint256 allocation = _stakerAllocation(_operatorStaking.balanceOf(account), _operatorStaking.totalSupply());
+        return SafeCast.toUint256(SafeCast.toInt256(allocation) - _stakerPaidReward[account]);
+    }
+
+    /// @dev Gets paid reward of owner.
+    function ownerPaidReward() public view virtual returns (uint256) {
+        return _ownerPaidReward;
+    }
+
+    /// @dev Gets paid reward of stakers.
+    function stakersPaidReward() public view virtual returns (uint256) {
+        return _stakersPaidReward;
+    }
+
+    /// @dev Gets paid reward of staker.
+    function stakerPaidReward(address account) public view virtual returns (int256) {
+        return _stakerPaidReward[account];
     }
 
     /// @dev Sets the owner basis points fee to `basisPoints`.
     function setOwnerFee(uint16 basisPoints) public virtual onlyOwner {
-        claimOwnerFee();
+        claimOwnerReward();
         _ownerFeeBasisPoints = basisPoints;
     }
 
+    /// @dev Shutdowns current rewarder.
     function shutdown() public virtual onlyOperatorStaking {
-        require(_isShutdown == false);
-        _isShutdown = true;
+        require(!_shutdown, AlreadyShutdown());
+        _shutdown = true;
         _protocolStaking.claimRewards(address(_operatorStaking));
+        emit Shutdown();
     }
 
+    /// @dev Virtually updates reward of `to` and `from` on each transfer.
     function transferHook(address from, address to, uint256 amount) public virtual onlyOperatorStaking {
         uint256 oldTotalSupply = _operatorStaking.totalSupply();
         if (oldTotalSupply == 0) return;
@@ -81,57 +132,59 @@ contract OperatorRewarder is Ownable {
         int256 totalVirtualPaidDiff;
         totalVirtualPaidDiff += _updateRewards(from, -SafeCast.toInt256(amount), oldTotalSupply);
         totalVirtualPaidDiff += _updateRewards(to, SafeCast.toInt256(amount), oldTotalSupply);
-        _totalVirtualPaid += totalVirtualPaidDiff;
+        _stakersVirtualPaidReward += totalVirtualPaidDiff;
     }
 
-    function claimRewards(address account) public virtual {
-        uint256 rewards = earned(account);
-        if (rewards > 0) {
-            _paid[account] += SafeCast.toInt256(rewards);
-            _totalPaid += rewards;
-
-            if (rewards > token().balanceOf(address(this))) {
-                _protocolStaking.claimRewards(address(_operatorStaking));
-            }
-            IERC20(token()).safeTransfer(account, rewards);
+    /// @dev Claims reward of the owner.
+    function claimOwnerReward() public virtual {
+        uint256 unpaidReward = ownerUnpaidReward();
+        if (unpaidReward > 0) {
+            _lastAllTimeReward = allTimeReward();
+            _ownerPaidReward += unpaidReward;
+            _fetchReward(unpaidReward);
+            _token.safeTransfer(owner(), unpaidReward);
         }
     }
 
-    function claimOwnerFee() public virtual {
-        uint256 pendingOwnerFee_ = pendingOwnerFee();
-        uint256 currentTotalRewards = _totalPaid + unpaidRewards();
-        _lastFeeClaimedTotalRewards = currentTotalRewards - pendingOwnerFee_;
-
-        if (pendingOwnerFee_ > token().balanceOf(address(this))) {
-            _protocolStaking.claimRewards(address(_operatorStaking));
+    /// @dev Claims reward of a staker.
+    function claimStakerReward(address account) public virtual {
+        uint256 unpaidReward = stakerUnpaidReward(account);
+        if (unpaidReward > 0) {
+            _stakerPaidReward[account] += SafeCast.toInt256(unpaidReward);
+            _stakersPaidReward += unpaidReward;
+            _fetchReward(unpaidReward);
+            _token.safeTransfer(account, unpaidReward);
         }
-        IERC20(token()).safeTransfer(owner(), pendingOwnerFee_);
     }
 
     function _updateRewards(address user, int256 diff, uint256 oldTotalSupply) internal virtual returns (int256) {
         int256 virtualAmount = SafeCast.toInt256(
-            _allocation(SafeCast.toUint256(diff < 0 ? -diff : diff), oldTotalSupply)
+            _stakerAllocation(SafeCast.toUint256(diff < 0 ? -diff : diff), oldTotalSupply)
         ) * (diff < 0 ? -1 : int256(1));
 
         if (user != address(0)) {
-            _paid[user] += virtualAmount;
+            _stakerPaidReward[user] += virtualAmount;
         } else {
             return -virtualAmount;
         }
         return 0;
     }
 
-    function _historicalReward() internal view virtual returns (uint256) {
-        uint256 counter = token().balanceOf(address(this)) + _totalPaid;
-        if (!_isShutdown) {
-            counter += _protocolStaking.earned(address(_operatorStaking));
+    /// @dev Eventually claims reward on protocol if current contract does not have enough tokens.
+    function _fetchReward(uint256 unpaidReward_) private {
+        if (unpaidReward_ > _token.balanceOf(address(this))) {
+            _protocolStaking.claimRewards(address(_operatorStaking));
         }
-        counter -= pendingOwnerFee();
-
-        return counter;
     }
 
-    function _allocation(uint256 share, uint256 total) private view returns (uint256) {
-        return SafeCast.toUint256(SafeCast.toInt256(_historicalReward()) + _totalVirtualPaid).mulDiv(share, total);
+    /// @dev Compute allocation of a staker.
+    function _stakerAllocation(uint256 share, uint256 total) private view returns (uint256) {
+        return
+            total > 0
+                ? SafeCast.toUint256(SafeCast.toInt256(stakersAllTimeReward()) + _stakersVirtualPaidReward).mulDiv(
+                    share,
+                    total
+                )
+                : 0;
     }
 }
