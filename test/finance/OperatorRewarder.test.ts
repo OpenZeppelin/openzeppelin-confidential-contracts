@@ -146,6 +146,19 @@ describe.only('OperatorRewarder', function () {
       await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('8.5'));
       await expect(this.mock.ownerUnpaidReward()).to.eventually.eq(ethers.parseEther('1')); // 0.5 already sent
     });
+
+    it('should not take fees from past rewards', async function () {
+      await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+
+      await timeIncreaseNoMine(10);
+      await this.mock.connect(this.admin).setOwnerFee(1000);
+      await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('5'));
+      await expect(this.mock.ownerUnpaidReward()).to.eventually.eq(0);
+
+      await time.increase(10);
+      await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('9.5'));
+      await expect(this.mock.ownerUnpaidReward()).to.eventually.eq(ethers.parseEther('0.5'));
+    });
   });
 
   describe('shutdown', function () {
