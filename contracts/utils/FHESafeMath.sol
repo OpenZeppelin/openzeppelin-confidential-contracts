@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (utils/FHESafeMath.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.3.0-rc.0) (utils/FHESafeMath.sol)
 pragma solidity ^0.8.24;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
