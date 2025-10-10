@@ -84,6 +84,23 @@ describe.only('OperatorRewarder', function () {
       await expect(this.mock.stakersPaidReward()).to.eventually.eq(ethers.parseEther('5'));
     });
 
+    it('should not claim fictitious past reward after receiving new shares on transfer', async function () {
+      await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+      await timeIncreaseNoMine(10);
+      await this.protocolStaking.connect(this.admin).setRewardRate(0);
+      await expect(this.mock.unpaidReward()).to.eventually.eq(ethers.parseEther('5'));
+      await this.mock.claimStakerReward(this.staker1); // claims past rewards before not being able to
+      await expect(this.mock.stakerPaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('5'));
+      await expect(this.mock.stakerPaidReward(this.staker2)).to.eventually.eq(0);
+      await this.operatorStaking.connect(this.staker1).transfer(this.staker2, ethers.parseEther('1'));
+      // staker1 will be able deposit and claim reward again
+      await expect(this.mock.stakerPaidReward(this.staker1)).to.eventually.eq(0);
+      await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(0);
+      // staker2 cannot claim any reward
+      await expect(this.mock.stakerPaidReward(this.staker2)).to.eventually.eq(ethers.parseEther('5')); // virtual paid
+      await expect(this.mock.stakerUnpaidReward(this.staker2)).to.eventually.eq(0);
+    });
+
     it('should decrease rewards appropriately for owner fee', async function () {
       await this.mock.connect(this.admin).setOwnerFee('1000'); // 10% owner fee
       await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);

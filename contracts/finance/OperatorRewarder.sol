@@ -11,7 +11,7 @@ import {OperatorStaking} from "./OperatorStaking.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
 
 /**
- * A rewarder contract to split rewards between the owner and the stakers.
+ * @dev A rewarder contract to split rewards between the owner and the stakers.
  */
 contract OperatorRewarder is Ownable {
     using SafeERC20 for IERC20;
@@ -62,14 +62,18 @@ contract OperatorRewarder is Ownable {
     }
 
     /// @dev Virtually updates reward of `to` and `from` on each transfer.
-    function transferHook(address from, address to, uint256 amount) public virtual onlyOperatorStaking {
-        uint256 oldTotalSupply = _operatorStaking.totalSupply();
-        if (oldTotalSupply == 0) return;
-
-        int256 totalVirtualPaidDiff;
-        totalVirtualPaidDiff += _updateRewards(from, -SafeCast.toInt256(amount), oldTotalSupply);
-        totalVirtualPaidDiff += _updateRewards(to, SafeCast.toInt256(amount), oldTotalSupply);
-        _stakersVirtualPaidReward += totalVirtualPaidDiff;
+    function transferHook(address from, address to, uint256 shares) public virtual onlyOperatorStaking {
+        int256 virtualAmount = SafeCast.toInt256(_stakerAllocation(shares, _operatorStaking.totalSupply()));
+        int256 stakersVirtualPaidReward_ = _stakersVirtualPaidReward;
+        if (from != address(0)) {
+            _stakerPaidReward[from] -= virtualAmount;
+            stakersVirtualPaidReward_ -= virtualAmount;
+        }
+        if (to != address(0)) {
+            _stakerPaidReward[to] += virtualAmount;
+            stakersVirtualPaidReward_ += virtualAmount;
+        }
+        _stakersVirtualPaidReward = stakersVirtualPaidReward_;
     }
 
     /// @dev Claims reward of the owner.
@@ -158,19 +162,6 @@ contract OperatorRewarder is Ownable {
     /// @dev Gets paid reward of staker.
     function stakerPaidReward(address account) public view virtual returns (int256) {
         return _stakerPaidReward[account];
-    }
-
-    function _updateRewards(address user, int256 diff, uint256 oldTotalSupply) internal virtual returns (int256) {
-        int256 virtualAmount = SafeCast.toInt256(
-            _stakerAllocation(SafeCast.toUint256(diff < 0 ? -diff : diff), oldTotalSupply)
-        ) * (diff < 0 ? -1 : int256(1));
-
-        if (user != address(0)) {
-            _stakerPaidReward[user] += virtualAmount;
-        } else {
-            return -virtualAmount;
-        }
-        return 0;
     }
 
     /// @dev Eventually claims reward on protocol if current contract does not have enough tokens.

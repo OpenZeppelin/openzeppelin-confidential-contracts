@@ -173,6 +173,10 @@ contract OperatorStaking is ERC20, Ownable {
         _protocolStaking.stake(amountToRestake);
     }
 
+    /**
+     * @dev Updates shares while notifying the rewarder that shares were transferred.
+     * The `from` account should claim unpaid reward before transferring its shares.
+     */
     function _update(address from, address to, uint256 amount) internal virtual override {
         OperatorRewarder(rewarder()).transferHook(from, to, amount);
         super._update(from, to, amount);
