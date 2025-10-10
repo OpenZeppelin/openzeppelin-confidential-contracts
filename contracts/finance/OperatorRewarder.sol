@@ -138,8 +138,8 @@ contract OperatorRewarder is Ownable {
     /// @dev Claims reward of the owner.
     function claimOwnerReward() public virtual {
         uint256 unpaidReward = ownerUnpaidReward();
+        _lastAllTimeReward = allTimeReward();
         if (unpaidReward > 0) {
-            _lastAllTimeReward = allTimeReward();
             _ownerPaidReward += unpaidReward;
             _fetchReward(unpaidReward);
             _token.safeTransfer(owner(), unpaidReward);
