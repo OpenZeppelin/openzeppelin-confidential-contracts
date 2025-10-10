@@ -44,6 +44,53 @@ contract OperatorRewarder is Ownable {
         _operatorStaking = operatorStaking;
     }
 
+    /// @dev Sets the owner basis points fee to `basisPoints`.
+    function setOwnerFee(uint16 basisPoints) public virtual onlyOwner {
+        claimOwnerReward();
+        _ownerFeeBasisPoints = basisPoints;
+    }
+
+    /// @dev Shutdowns current rewarder.
+    function shutdown() public virtual onlyOperatorStaking {
+        require(!_shutdown, AlreadyShutdown());
+        _shutdown = true;
+        _protocolStaking.claimRewards(address(_operatorStaking));
+        emit Shutdown();
+    }
+
+    /// @dev Virtually updates reward of `to` and `from` on each transfer.
+    function transferHook(address from, address to, uint256 amount) public virtual onlyOperatorStaking {
+        uint256 oldTotalSupply = _operatorStaking.totalSupply();
+        if (oldTotalSupply == 0) return;
+
+        int256 totalVirtualPaidDiff;
+        totalVirtualPaidDiff += _updateRewards(from, -SafeCast.toInt256(amount), oldTotalSupply);
+        totalVirtualPaidDiff += _updateRewards(to, SafeCast.toInt256(amount), oldTotalSupply);
+        _stakersVirtualPaidReward += totalVirtualPaidDiff;
+    }
+
+    /// @dev Claims reward of the owner.
+    function claimOwnerReward() public virtual {
+        uint256 unpaidReward = ownerUnpaidReward();
+        _lastAllTimeReward = allTimeReward();
+        if (unpaidReward > 0) {
+            _ownerPaidReward += unpaidReward;
+            _fetchReward(unpaidReward);
+            _token.safeTransfer(owner(), unpaidReward);
+        }
+    }
+
+    /// @dev Claims reward of a staker.
+    function claimStakerReward(address account) public virtual {
+        uint256 unpaidReward = stakerUnpaidReward(account);
+        if (unpaidReward > 0) {
+            _stakerPaidReward[account] += SafeCast.toInt256(unpaidReward);
+            _stakersPaidReward += unpaidReward;
+            _fetchReward(unpaidReward);
+            _token.safeTransfer(account, unpaidReward);
+        }
+    }
+
     /// @dev Gets staking token address.
     function token() public view returns (IERC20) {
         return _token;
@@ -108,53 +155,6 @@ contract OperatorRewarder is Ownable {
     /// @dev Gets paid reward of staker.
     function stakerPaidReward(address account) public view virtual returns (int256) {
         return _stakerPaidReward[account];
-    }
-
-    /// @dev Sets the owner basis points fee to `basisPoints`.
-    function setOwnerFee(uint16 basisPoints) public virtual onlyOwner {
-        claimOwnerReward();
-        _ownerFeeBasisPoints = basisPoints;
-    }
-
-    /// @dev Shutdowns current rewarder.
-    function shutdown() public virtual onlyOperatorStaking {
-        require(!_shutdown, AlreadyShutdown());
-        _shutdown = true;
-        _protocolStaking.claimRewards(address(_operatorStaking));
-        emit Shutdown();
-    }
-
-    /// @dev Virtually updates reward of `to` and `from` on each transfer.
-    function transferHook(address from, address to, uint256 amount) public virtual onlyOperatorStaking {
-        uint256 oldTotalSupply = _operatorStaking.totalSupply();
-        if (oldTotalSupply == 0) return;
-
-        int256 totalVirtualPaidDiff;
-        totalVirtualPaidDiff += _updateRewards(from, -SafeCast.toInt256(amount), oldTotalSupply);
-        totalVirtualPaidDiff += _updateRewards(to, SafeCast.toInt256(amount), oldTotalSupply);
-        _stakersVirtualPaidReward += totalVirtualPaidDiff;
-    }
-
-    /// @dev Claims reward of the owner.
-    function claimOwnerReward() public virtual {
-        uint256 unpaidReward = ownerUnpaidReward();
-        _lastAllTimeReward = allTimeReward();
-        if (unpaidReward > 0) {
-            _ownerPaidReward += unpaidReward;
-            _fetchReward(unpaidReward);
-            _token.safeTransfer(owner(), unpaidReward);
-        }
-    }
-
-    /// @dev Claims reward of a staker.
-    function claimStakerReward(address account) public virtual {
-        uint256 unpaidReward = stakerUnpaidReward(account);
-        if (unpaidReward > 0) {
-            _stakerPaidReward[account] += SafeCast.toInt256(unpaidReward);
-            _stakersPaidReward += unpaidReward;
-            _fetchReward(unpaidReward);
-            _token.safeTransfer(account, unpaidReward);
-        }
     }
 
     function _updateRewards(address user, int256 diff, uint256 oldTotalSupply) internal virtual returns (int256) {
