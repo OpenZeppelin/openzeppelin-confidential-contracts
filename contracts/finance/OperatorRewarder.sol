@@ -29,6 +29,7 @@ contract OperatorRewarder is Ownable {
     mapping(address => int256) private _stakerPaidReward;
 
     event Shutdown();
+    event OwnerFeeUpdated(uint16 oldFee, uint16 newFee);
 
     error CallerNotOperatorStaking(address caller);
     error AlreadyShutdown();
@@ -47,7 +48,9 @@ contract OperatorRewarder is Ownable {
     /// @dev Sets the owner basis points fee to `basisPoints`.
     function setOwnerFee(uint16 basisPoints) public virtual onlyOwner {
         claimOwnerReward();
+        uint16 oldFee = _ownerFeeBasisPoints;
         _ownerFeeBasisPoints = basisPoints;
+        emit OwnerFeeUpdated(oldFee, basisPoints);
     }
 
     /// @dev Shutdowns current rewarder.
@@ -71,23 +74,23 @@ contract OperatorRewarder is Ownable {
 
     /// @dev Claims reward of the owner.
     function claimOwnerReward() public virtual {
-        uint256 unpaidReward = ownerUnpaidReward();
+        uint256 ownerUnpaidReward_ = ownerUnpaidReward();
         _lastAllTimeReward = allTimeReward();
-        if (unpaidReward > 0) {
-            _ownerPaidReward += unpaidReward;
-            _fetchReward(unpaidReward);
-            _token.safeTransfer(owner(), unpaidReward);
+        if (ownerUnpaidReward_ > 0) {
+            _ownerPaidReward += ownerUnpaidReward_;
+            _fetchReward(ownerUnpaidReward_);
+            _token.safeTransfer(owner(), ownerUnpaidReward_);
         }
     }
 
     /// @dev Claims reward of a staker.
     function claimStakerReward(address account) public virtual {
-        uint256 unpaidReward = stakerUnpaidReward(account);
-        if (unpaidReward > 0) {
-            _stakerPaidReward[account] += SafeCast.toInt256(unpaidReward);
-            _stakersPaidReward += unpaidReward;
-            _fetchReward(unpaidReward);
-            _token.safeTransfer(account, unpaidReward);
+        uint256 stakerUnpaidReward_ = stakerUnpaidReward(account);
+        if (stakerUnpaidReward_ > 0) {
+            _stakerPaidReward[account] += SafeCast.toInt256(stakerUnpaidReward_);
+            _stakersPaidReward += stakerUnpaidReward_;
+            _fetchReward(stakerUnpaidReward_);
+            _token.safeTransfer(account, stakerUnpaidReward_);
         }
     }
 

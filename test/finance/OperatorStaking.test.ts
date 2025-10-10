@@ -126,6 +126,13 @@ describe('OperatorStaking', function () {
       );
     });
 
+    it('should set same rewarder', async function () {
+      await expect(this.mock.connect(this.admin).setRewarder(await this.mock.rewarder())).to.be.revertedWithCustomError(
+        this.mock,
+        'SameRewarderAlreadySet',
+      );
+    });
+
     describe('with new rewarder', async function () {
       beforeEach(async function () {
         const newRewarder = await ethers.deployContract('OperatorRewarder', [

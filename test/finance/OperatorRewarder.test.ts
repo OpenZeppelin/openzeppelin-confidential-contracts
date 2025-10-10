@@ -8,7 +8,7 @@ const timeIncreaseNoMine = (duration: number) =>
 
 describe.only('OperatorRewarder', function () {
   beforeEach(async function () {
-    const [staker1, staker2, admin, ...accounts] = await ethers.getSigners();
+    const [staker1, staker2, admin, anyone, ...accounts] = await ethers.getSigners();
 
     const token = await ethers.deployContract('$ERC20Mock', ['StakingToken', 'ST', 18]);
     const protocolStaking = await ethers
@@ -23,6 +23,7 @@ describe.only('OperatorRewarder', function () {
       admin.address,
     ]);
     const mock = await ethers.getContractAt('OperatorRewarder', await operatorStaking.rewarder());
+    await expect(mock.token()).to.eventually.eq(token.target);
 
     await Promise.all(
       [staker1, staker2].flatMap(account => [
@@ -34,10 +35,10 @@ describe.only('OperatorRewarder', function () {
     await protocolStaking.connect(admin).addEligibleAccount(operatorStaking);
     await protocolStaking.connect(admin).setRewardRate(ethers.parseEther('0.5'));
 
-    Object.assign(this, { staker1, staker2, admin, accounts, token, operatorStaking, protocolStaking, mock });
+    Object.assign(this, { staker1, staker2, admin, anyone, accounts, token, operatorStaking, protocolStaking, mock });
   });
 
-  describe('Earned', async function () {
+  describe('View and claim staker reward', async function () {
     it('should give all to solo staker', async function () {
       await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
 
@@ -47,6 +48,14 @@ describe.only('OperatorRewarder', function () {
       await expect(this.mock.ownerUnpaidReward()).to.eventually.eq(0);
       await expect(this.mock.unpaidReward()).to.eventually.eq(ethers.parseEther('5'));
       await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('5'));
+      const staker1BalanceBefore = await this.token.balanceOf(this.staker1);
+      await expect(this.mock.claimStakerReward(this.staker1))
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.staker1, ethers.parseEther('5'));
+      expect((await this.token.balanceOf(this.staker1)) - staker1BalanceBefore).to.eq(ethers.parseEther('5'));
+      await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(0);
+      await expect(this.mock.stakerPaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('5'));
+      await expect(this.mock.stakersPaidReward()).to.eventually.eq(ethers.parseEther('5'));
     });
 
     it('should split between two equal stakers', async function () {
@@ -60,20 +69,51 @@ describe.only('OperatorRewarder', function () {
       await expect(this.mock.unpaidReward()).to.eventually.eq(ethers.parseEther('5'));
       await expect(this.mock.stakerUnpaidReward(this.staker2)).to.eventually.eq(ethers.parseEther('2.25'));
       await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('2.75'));
+      const staker1BalanceBefore = await this.token.balanceOf(this.staker1);
+      await this.mock.claimStakerReward(this.staker1);
+      expect((await this.token.balanceOf(this.staker1)) - staker1BalanceBefore).to.eq(ethers.parseEther('2.75'));
+      await expect(this.mock.stakerPaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('2.75'));
+      await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(0);
+      const staker2BalanceBefore = await this.token.balanceOf(this.staker2);
+      await this.mock.claimStakerReward(this.staker2);
+      expect((await this.token.balanceOf(this.staker2)) - staker2BalanceBefore).to.eq(ethers.parseEther('2.25'));
+      await expect(this.mock.stakerPaidReward(this.staker2)).to.eventually.eq(
+        ethers.parseEther('2.25') + ethers.parseEther('0.5'), // actually paid + virtual paid when staker2 deposited
+      );
+      await expect(this.mock.stakerUnpaidReward(this.staker2)).to.eventually.eq(0);
+      await expect(this.mock.stakersPaidReward()).to.eventually.eq(ethers.parseEther('5'));
     });
 
     it('should decrease rewards appropriately for owner fee', async function () {
       await this.mock.connect(this.admin).setOwnerFee('1000'); // 10% owner fee
       await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
 
-      await time.increase(10);
+      await time.increase(9);
+      await this.protocolStaking.connect(this.admin).setRewardRate(0);
 
       await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('4.5'));
       await expect(this.mock.ownerUnpaidReward()).to.eventually.eq(ethers.parseEther('0.5'));
+      const staker1BalanceBefore = await this.token.balanceOf(this.staker1);
+      await this.mock.claimStakerReward(this.staker1);
+      expect((await this.token.balanceOf(this.staker1)) - staker1BalanceBefore).to.eq(ethers.parseEther('4.5'));
+      await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(0);
+      const ownerBalanceBefore = await this.token.balanceOf(this.admin);
+      await this.mock.claimOwnerReward();
+      expect((await this.token.balanceOf(this.admin)) - ownerBalanceBefore).to.eq(ethers.parseEther('0.5'));
+      await expect(this.mock.ownerUnpaidReward()).to.eventually.eq(0);
+    });
+
+    it('should not trigger payment if no staker reward', async function () {
+      await this.protocolStaking.connect(this.admin).setRewardRate(0);
+      await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+      await time.increase(9);
+      const staker1BalanceBefore = await this.token.balanceOf(this.staker1);
+      await expect(this.mock.claimStakerReward(this.staker1)).to.not.emit(this.token, 'Transfer');
+      await expect(this.token.balanceOf(this.staker1)).to.eventually.eq(staker1BalanceBefore);
     });
   });
 
-  describe('claimOwnerReward', async function () {
+  describe('View and claim owner reward', async function () {
     beforeEach(async function () {
       await this.mock.connect(this.admin).setOwnerFee(1000);
       await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
@@ -85,10 +125,13 @@ describe.only('OperatorRewarder', function () {
       await expect(this.mock.ownerUnpaidReward()).to.eventually.eq(ethers.parseEther('1'));
       await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('9'));
 
+      const ownerBalanceBefore = await this.token.balanceOf(this.admin);
       // 1 more second goes by
       await expect(this.mock.claimOwnerReward())
         .to.emit(this.token, 'Transfer')
         .withArgs(this.mock, this.admin, ethers.parseEther('1.05'));
+      expect((await this.token.balanceOf(this.admin)) - ownerBalanceBefore).to.eq(ethers.parseEther('1.05'));
+      await expect(this.mock.ownerUnpaidReward()).to.eventually.eq(0);
     });
 
     it('should reset pending owner fee', async function () {
@@ -121,7 +164,9 @@ describe.only('OperatorRewarder', function () {
   describe('setOwnerFee', async function () {
     it('should update storage', async function () {
       await expect(this.mock.ownerFeeBasisPoints()).to.eventually.eq(0);
-      await this.mock.connect(this.admin).setOwnerFee(1234);
+      await expect(this.mock.connect(this.admin).setOwnerFee(1234))
+        .to.emit(this.mock, 'OwnerFeeUpdated')
+        .withArgs(0, 1234);
       await expect(this.mock.ownerFeeBasisPoints()).to.eventually.eq(1234);
     });
 
@@ -159,6 +204,12 @@ describe.only('OperatorRewarder', function () {
       await expect(this.mock.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('9.5'));
       await expect(this.mock.ownerUnpaidReward()).to.eventually.eq(ethers.parseEther('0.5'));
     });
+
+    it('should not set owner fee if not owner', async function () {
+      await expect(this.mock.connect(this.anyone).setOwnerFee(1234))
+        .to.be.revertedWithCustomError(this.mock, 'OwnableUnauthorizedAccount')
+        .withArgs(this.anyone);
+    });
   });
 
   describe('shutdown', function () {
@@ -192,6 +243,14 @@ describe.only('OperatorRewarder', function () {
       await expect(this.mock.connect(this.admin).shutdown())
         .to.be.revertedWithCustomError(this.mock, 'CallerNotOperatorStaking')
         .withArgs(this.admin);
+    });
+  });
+
+  describe('transferHook', function () {
+    it('should revert if not called by operatorStaking contract', async function () {
+      await expect(this.mock.connect(this.anyone).transferHook(this.staker1, this.staker1, ethers.parseEther('1')))
+        .to.be.revertedWithCustomError(this.mock, 'CallerNotOperatorStaking')
+        .withArgs(this.anyone);
     });
   });
 });

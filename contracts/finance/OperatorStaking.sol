@@ -29,20 +29,21 @@ contract OperatorStaking is ERC20, Ownable {
     event OperatorSet(address controller, address operator, bool approved);
 
     error InsufficientClaimableShares(uint256 requested, uint256 claimable);
+    error SameRewarderAlreadySet(address rewarder);
 
     constructor(
         string memory name,
         string memory symbol,
-        ProtocolStaking protocolStaking,
+        ProtocolStaking protocolStaking_,
         address owner
     ) ERC20(name, symbol) Ownable(owner) {
-        _asset = IERC20(protocolStaking.stakingToken());
-        _protocolStaking = protocolStaking;
+        _asset = IERC20(protocolStaking_.stakingToken());
+        _protocolStaking = protocolStaking_;
 
-        IERC20(asset()).approve(address(protocolStaking), type(uint256).max);
+        IERC20(asset()).approve(address(protocolStaking_), type(uint256).max);
 
-        address rewarder_ = address(new OperatorRewarder(owner, protocolStaking, this));
-        protocolStaking.setRewardsRecipient(rewarder_);
+        address rewarder_ = address(new OperatorRewarder(owner, protocolStaking_, this));
+        protocolStaking_.setRewardsRecipient(rewarder_);
         _rewarder = rewarder_;
     }
 
@@ -102,10 +103,12 @@ contract OperatorStaking is ERC20, Ownable {
         return _operator[controller][operator];
     }
 
-    function setRewarder(address rewarder_) public virtual onlyOwner {
-        OperatorRewarder(rewarder()).shutdown();
-        _rewarder = rewarder_;
-        _protocolStaking.setRewardsRecipient(rewarder());
+    function setRewarder(address newRewarder) public virtual onlyOwner {
+        address oldRewarder = rewarder();
+        require(newRewarder != oldRewarder, SameRewarderAlreadySet(oldRewarder));
+        OperatorRewarder(oldRewarder).shutdown();
+        _rewarder = newRewarder;
+        _protocolStaking.setRewardsRecipient(newRewarder);
     }
 
     function setOperator(address operator, bool approved) public virtual {
