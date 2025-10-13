@@ -16,6 +16,7 @@ interface IERC20Mintable is IERC20 {
     function mint(address to, uint256 amount) external;
 }
 
+/// @dev Rewards eligible accounts staking tokens on this contract.
 contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20VotesUpgradeable, UUPSUpgradeable {
     using Checkpoints for Checkpoints.Trace208;
     using SafeERC20 for IERC20;
@@ -46,16 +47,25 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         0x6867237db38693700f305f18dff1dbf600e282237f7d452b4c792e6b019c6b00;
     bytes32 private constant ELIGIBLE_ACCOUNT_ROLE = keccak256("eligible-account-role");
 
+    /// @dev Emitted when tokens are staked by an account.
     event TokensStaked(address indexed account, uint256 amount);
+    /// @dev Emitted when tokens are unstaked by an account.
     event TokensUnstaked(address indexed account, address indexed recipient, uint256 amount);
+    /// @dev Emitted when the reward rate is updated.
     event RewardRateSet(uint256 rewardRate);
+    /// @dev Emitted when the unstake cooldown is updated.
     event UnstakeCooldownPeriodSet(uint256 unstakeCooldownPeriod);
+    /// @dev Emitted when the reward recipient of an account is updated.
     event RewardsRecipientSet(address indexed account, address indexed recipient);
 
     error InvalidAmount();
+    /// @dev The account is already an eligible accounts.
     error EligibleAccountAlreadyExists(address account);
+    /// @dev The account is not an eligible accounts.
     error EligibleAccountDoesNotExist(address account);
+    /// @dev The tokens cannot be transferred.
     error TransferDisabled();
+    /// @dev The unstake cooldown period is invalid.
     error InvalidUnstakeCooldownPeriod();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -63,6 +73,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         _disableInitializers();
     }
 
+    /// @dev Initializes this upgradeable protocol staking contract.
     function initialize(
         string memory name,
         string memory symbol,
