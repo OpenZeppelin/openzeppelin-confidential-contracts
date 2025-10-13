@@ -52,6 +52,8 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     event UnstakeCooldownPeriodSet(uint256 unstakeCooldownPeriod);
     event RewardsRecipientSet(address indexed account, address indexed recipient);
 
+    /// @dev Emitted when an account unstakes to the zero address.
+    error InvalidUnstakeRecipient();
     error InvalidAmount();
     error EligibleAccountAlreadyExists(address account);
     error EligibleAccountDoesNotExist(address account);
@@ -92,6 +94,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
      * NOTE: Unstaked tokens will not be sent immediately if {unstakeCooldownPeriod} is non-zero.
      */
     function unstake(address recipient, uint256 amount) public virtual {
+        require(recipient != address(0), InvalidUnstakeRecipient());
         _burn(msg.sender, amount);
 
         ProtocolStakingStorage storage $ = _getProtocolStakingStorage();
