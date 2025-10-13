@@ -37,14 +37,17 @@ describe.only('ProtocolOperatorRegistry', function () {
     await expect(this.mock.stakedTokens(this.owner)).to.eventually.eq(ethers.ZeroAddress);
   });
 
-  it('should reject claim to already registered tokens', async function () {
+  it('should register as operator of staking token by new owner', async function () {
     await this.mock.connect(this.owner).setStakedTokensAccount(this.ownable);
     await this.ownable.$_transferOwnership(this.receiver);
 
-    await expect(this.mock.connect(this.receiver).setStakedTokensAccount(this.ownable)).to.be.revertedWithCustomError(
-      this.mock,
-      'StakingAccountAlreadyRegistered',
-    );
+    await expect(this.mock.connect(this.receiver).setStakedTokensAccount(this.ownable))
+      .to.emit(this.mock, 'StakedTokensAccountSet')
+      .withArgs(this.receiver, ethers.ZeroAddress, this.ownable);
+
+    await expect(this.mock.operator(this.ownable)).to.eventually.eq(this.receiver);
+    await expect(this.mock.stakedTokens(this.receiver)).to.eventually.eq(this.ownable);
+    await expect(this.mock.stakedTokens(this.owner)).to.eventually.eq(ethers.ZeroAddress);
   });
 
   it('should be able to transfer staked tokens account', async function () {

@@ -19,7 +19,6 @@ contract ProtocolOperatorRegistry {
     event StakedTokensAccountSet(address operator, address previousStakedTokensAccount, address newStakedTokensAccount);
 
     error StakingAccountNotOwnedByCaller();
-    error StakingAccountAlreadyRegistered();
 
     /**
      * @dev Sets the staked tokens account for an operator `msg.sender`. Operators may unset their
@@ -28,14 +27,15 @@ contract ProtocolOperatorRegistry {
      * Requirements:
      *
      * - `msg.sender` must be the {Ownable-owner} of `account`.
-     * - `account` must not already be claimed by another operator.
      */
     function setStakedTokensAccount(address account) public virtual {
         ProtocolOperatorRegistryStorage storage $ = _getProtocolOperatorRegistryStorage();
         if (account != address(0)) {
             require(Ownable(account).owner() == msg.sender, StakingAccountNotOwnedByCaller());
-            require(operator(account) == address(0), StakingAccountAlreadyRegistered());
-
+            address oldOwner = operator(account);
+            if (oldOwner != address(0)) {
+                $._operatorToStakedTokens[oldOwner] = address(0); // unset stake tokens account of old owner
+            }
             $._stakedTokensToOperator[account] = msg.sender;
         }
 
