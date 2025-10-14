@@ -26,6 +26,7 @@ contract ProtocolOperatorRegistry {
     /**
      * @dev Sets the staked tokens account for an operator `msg.sender`. Operators may unset their
      * staked tokens account by calling this function with `address(0)`.
+     * @param account The staking account being set by the owner.
      *
      * Requirements:
      *
@@ -50,12 +51,20 @@ contract ProtocolOperatorRegistry {
         emit StakedTokensAccountSet(msg.sender, currentStakedTokensAccount, account);
     }
 
-    /// @dev Staked tokens account associated with a given operator account.
+    /**
+     * @dev Gets the staking account address of an operator account.
+     * @param account The operator account.
+     * @return The staked tokens.
+     */
     function stakedTokens(address account) public view returns (address) {
         return _getProtocolOperatorRegistryStorage()._operatorToStakedTokens[account];
     }
 
-    /// @dev Gets operator account associated with a given staked tokens account.
+    /**
+     * @dev Gets operator account associated with a given staked tokens account.
+     * @param account The staking account.
+     * @return The operator.
+     */
     function operator(address account) public view returns (address) {
         return _getProtocolOperatorRegistryStorage()._stakedTokensToOperator[account];
     }

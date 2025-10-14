@@ -89,7 +89,10 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         _setUnstakeCooldownPeriod(initialUnstakeCooldownPeriod);
     }
 
-    /// @dev Stake `amount` tokens from `msg.sender`.
+    /**
+     * @dev Stake `amount` tokens from `msg.sender`.
+     * @param amount The amount of tokens to stake.
+     */
     function stake(uint256 amount) public virtual {
         _mint(msg.sender, amount);
         IERC20(stakingToken()).safeTransferFrom(msg.sender, address(this), amount);
@@ -99,6 +102,8 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
 
     /**
      * @dev Unstake `amount` tokens from `msg.sender`'s staked balance to `recipient`.
+     * @param recipient The recipient where unstaked tokens should be sent.
+     * @param amount The amount of tokens to unstake.
      *
      * NOTE: Unstaked tokens will not be sent immediately if {unstakeCooldownPeriod} is non-zero.
      */
@@ -120,6 +125,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
 
     /**
      * @dev Releases tokens requested for unstaking after the cooldown period to `account`.
+     * @param account The account whose tokens can be released after the cooldown period.
      *
      * WARNING: If this contract is upgraded to add slashing, the ability to withdraw to a
      * different address should be reconsidered.
@@ -134,7 +140,10 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         }
     }
 
-    /// @dev Claim staking rewards for `account`. Can be called by anyone.
+    /**
+     * @dev Claim staking rewards for `account`. Can be called by anyone.
+     * @param account The account from which earned rewards can be claimed.
+     */
     function claimRewards(address account) public virtual {
         uint256 rewards = earned(account);
         if (rewards > 0) {
@@ -143,7 +152,10 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         }
     }
 
-    /// @dev Sets the reward rate in tokens per second. Only callable by {owner}.
+    /**
+     * @dev Sets the reward rate in tokens per second. Only callable by {owner}.
+     * @param rewardRate The new reward rate.
+     */
     function setRewardRate(uint256 rewardRate) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
         ProtocolStakingStorage storage $ = _getProtocolStakingStorage();
         $._lastUpdateReward = _historicalReward();
@@ -156,6 +168,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     /**
      * @dev Adds the eligible account role to `account`. Only accounts with the eligible account role earn rewards for staked tokens.
      * Only callable by the `ELIGIBLE_ACCOUNT_ROLE` role admin (by default {owner}).
+     * @param account The account requested to be eligible.
      */
     function addEligibleAccount(address account) public virtual onlyRole(getRoleAdmin(ELIGIBLE_ACCOUNT_ROLE)) {
         require(_grantRole(ELIGIBLE_ACCOUNT_ROLE, account), EligibleAccountAlreadyExists(account));
@@ -164,24 +177,35 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
     /**
      * @dev Removes the eligible account role from `account`. `account` stops to earn rewards but maintains all existing rewards.
      * Only callable by the `ELIGIBLE_ACCOUNT_ROLE` role admin (by default {owner}).
+     * @param account The account requested to be ineligible.
      */
     function removeEligibleAccount(address account) public virtual onlyRole(getRoleAdmin(ELIGIBLE_ACCOUNT_ROLE)) {
         require(_revokeRole(ELIGIBLE_ACCOUNT_ROLE, account), EligibleAccountDoesNotExist(account));
     }
 
-    /// @dev Sets the {unstake} cooldown period in seconds to `unstakeCooldownPeriod`. Only callable by {owner}.
+    /**
+     * @dev Sets the {unstake} cooldown period in seconds to `unstakeCooldownPeriod`. Only callable by {owner}.
+     * @param unstakeCooldownPeriod_ The new unstake cooldown period.
+     */
     function setUnstakeCooldownPeriod(uint256 unstakeCooldownPeriod_) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
         _setUnstakeCooldownPeriod(unstakeCooldownPeriod_);
     }
 
-    /// @dev Sets the reward recipient for `msg.sender` to `recipient`. All future rewards for `msg.sender` will be sent to `recipient`.
+    /**
+     * @dev Sets the reward recipient for `msg.sender` to `recipient`. All future rewards for `msg.sender` will be sent to `recipient`.
+     * @param recipient The recipient that will receive future rewards of the `msg.sender`.
+     */
     function setRewardsRecipient(address recipient) public virtual {
         _getProtocolStakingStorage()._rewardsRecipient[msg.sender] = recipient;
 
         emit RewardsRecipientSet(msg.sender, recipient);
     }
 
-    /// @dev Returns the amount of rewards earned by `account` at the current `block.timestamp`.
+    /**
+     * @dev Gets the amount of rewards earned by `account` at the current `block.timestamp`.
+     * @param account The account that earned rewards.
+     * @return The earned amount.
+     */
     function earned(address account) public view virtual returns (uint256) {
         ProtocolStakingStorage storage $ = _getProtocolStakingStorage();
         uint256 stakedWeight = isEligibleAccount(account) ? weight(balanceOf(account)) : 0;
@@ -190,39 +214,65 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
         return SafeCast.toUint256(SafeCast.toInt256(allocation) - $._paid[account]);
     }
 
-    /// @dev Returns the staking token which is used for staking and rewards.
+    /**
+     * @dev Gets the staking token which is used for staking and rewards.
+     * @return The staking token.
+     */
     function stakingToken() public view virtual returns (address) {
         return _getProtocolStakingStorage()._stakingToken;
     }
 
-    /// @dev Gets the staking weight for a given raw amount.
+    /**
+     * @dev Gets the staking weight for a given raw amount.
+     * @param amount The amount being wheighted.
+     * @return The staking weight.
+     */
     function weight(uint256 amount) public view virtual returns (uint256) {
         return Math.sqrt(amount);
     }
 
-    /// @dev Returns the current total staked weight.
+    /**
+     * @dev Gets the current total staked weight.
+     * @return The total staked weight.
+     */
     function totalStakedWeight() public view virtual returns (uint256) {
         return _getProtocolStakingStorage()._totalEligibleStakedWeight;
     }
 
-    /// @dev Returns the current unstake cooldown period in seconds.
+    /**
+     * @dev Returns the current unstake cooldown period in seconds.
+     * @return The unstake cooldown period.
+     */
     function unstakeCooldownPeriod() public view virtual returns (uint256) {
         return _getProtocolStakingStorage()._unstakeCooldownPeriod;
     }
 
-    /// @dev Returns the amount of tokens cooling down for the given account `account`.
+    /**
+     * @dev Gets the amount of tokens that can be released at the end of the cooldown period
+     * for a given account `account`.
+     * @param account The account having tokens cooling down.
+     * @return The releasable amount of tokens after the cooldown period.
+     */
     function tokensInCooldown(address account) public view virtual returns (uint256) {
         ProtocolStakingStorage storage $ = _getProtocolStakingStorage();
         return $._unstakeRequests[account].latest() - $._released[account];
     }
 
-    /// @dev Returns the recipient for rewards earned by `account`.
+    /**
+     * @dev Gets the recipient for rewards earned by `account`.
+     * @param account The account that earned rewards.
+     * @return The rewards recipient.
+     */
     function rewardsRecipient(address account) public view virtual returns (address) {
         address storedRewardsRecipient = _getProtocolStakingStorage()._rewardsRecipient[account];
         return storedRewardsRecipient == address(0) ? account : storedRewardsRecipient;
     }
 
-    /// @dev Indicates if the given account `account` has the eligible account role.
+    /**
+     * @dev Indicates if the given account `account` has the eligible account role.
+     * @param account The account being checked for eligibility.
+     * @return True if eligible.
+     */
     function isEligibleAccount(address account) public view virtual returns (bool) {
         return hasRole(ELIGIBLE_ACCOUNT_ROLE, account);
     }
