@@ -142,11 +142,9 @@ describe.only('Protocol Staking', function () {
 
         await timeIncreaseNoMine(60);
 
-        await expect(this.mock.release(this.staker1)).to.changeTokenBalance(
-          this.token,
-          this.staker1,
-          ethers.parseEther('50'),
-        );
+        const tx = await this.mock.release(this.staker1);
+        await expect(tx).to.changeTokenBalance(this.token, this.staker1, ethers.parseEther('50'));
+        await expect(tx).to.emit(this.mock, 'TokensReleased').withArgs(this.staker1, ethers.parseEther('50'));
         await expect(this.mock.tokensInCooldown(this.staker1)).to.eventually.eq(ethers.parseEther('0'));
       });
 
@@ -246,7 +244,9 @@ describe.only('Protocol Staking', function () {
       const earned = await this.mock.earned(this.staker1);
       await expect(this.mock.claimRewards(this.staker1))
         .to.emit(this.token, 'Transfer')
-        .withArgs(ethers.ZeroAddress, this.staker1, earned);
+        .withArgs(ethers.ZeroAddress, this.staker1, earned)
+        .to.emit(this.mock, 'RewardsClaimed')
+        .withArgs(this.staker1, this.staker1, earned);
     });
 
     it('should be able to set recipient', async function () {
@@ -259,7 +259,9 @@ describe.only('Protocol Staking', function () {
 
       await expect(this.mock.claimRewards(this.staker1))
         .to.emit(this.token, 'Transfer')
-        .withArgs(ethers.ZeroAddress, this.staker2, anyValue);
+        .withArgs(ethers.ZeroAddress, this.staker2, anyValue)
+        .to.emit(this.mock, 'RewardsClaimed')
+        .withArgs(this.staker1, this.staker2, anyValue);
     });
   });
 
