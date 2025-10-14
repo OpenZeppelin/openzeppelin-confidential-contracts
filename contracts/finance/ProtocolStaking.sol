@@ -252,7 +252,7 @@ contract ProtocolStaking is AccessControlDefaultAdminRulesUpgradeable, ERC20Vote
      * @param account The account having tokens cooling down.
      * @return The releasable amount of tokens after the cooldown period.
      */
-    function tokensInCooldown(address account) public view virtual returns (uint256) {
+    function releasableAfterCooldown(address account) public view virtual returns (uint256) {
         ProtocolStakingStorage storage $ = _getProtocolStakingStorage();
         return $._unstakeRequests[account].latest() - $._released[account];
     }
