@@ -117,7 +117,6 @@ contract OperatorStaking is ERC20, Ownable {
         emit OperatorSet(msg.sender, operator, approved);
     }
 
-
     function asset() public view virtual returns (address) {
         return address(_asset);
     }
