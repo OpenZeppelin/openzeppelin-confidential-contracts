@@ -267,5 +267,29 @@ describe.only('OperatorRewarder', function () {
         .to.be.revertedWithCustomError(this.mock, 'CallerNotOperatorStaking')
         .withArgs(this.anyone);
     });
+
+    describe('should handle transfers properly', function () {
+      it('one staker to a new staker full balance', async function () {
+        await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+        await timeIncreaseNoMine(10);
+
+        await this.operatorStaking.connect(this.staker1).transfer(this.staker2, ethers.parseEther('1'));
+        await time.increase(10);
+
+        await expect(this.mock.earned(this.staker1)).to.eventually.eq(ethers.parseEther('5'));
+        await expect(this.mock.earned(this.staker2)).to.eventually.eq(ethers.parseEther('5'));
+      });
+
+      it('one staker to a new staker partial balance', async function () {
+        await this.operatorStaking.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+        await timeIncreaseNoMine(10);
+
+        await this.operatorStaking.connect(this.staker1).transfer(this.staker2, ethers.parseEther('0.5'));
+        await time.increase(10);
+
+        await expect(this.mock.earned(this.staker1)).to.eventually.eq(ethers.parseEther('7.5'));
+        await expect(this.mock.earned(this.staker2)).to.eventually.eq(ethers.parseEther('2.5'));
+      });
+    });
   });
 });

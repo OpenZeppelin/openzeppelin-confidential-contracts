@@ -66,7 +66,12 @@ contract OperatorRewarder is Ownable {
         }
     }
 
-    /// @dev Sets the owner basis points fee to `basisPoints`.
+    /**
+     * @dev Sets the owner fee to `basisPoints`. Each basis point represents 1/100th of a percent
+     * of future earnings which will go to the owner.
+     *
+     * NOTE: `basisPoints` must be less than or equal to 10000.
+     */
     function setOwnerFee(uint16 basisPoints) public virtual onlyOwner {
         require(basisPoints <= 10000, InvalidBasisPoints(basisPoints));
 
@@ -75,7 +80,10 @@ contract OperatorRewarder is Ownable {
         _ownerFeeBasisPoints = basisPoints;
     }
 
-    /// @dev Shutdowns current rewarder.
+    /**
+     * @dev Shutdown the rewarder contract. Practically, this means the contract no longer considers unclaimed
+     * earnings from the `ProtocolStaking` contract as an asset.
+     */
     function shutdown() public virtual onlyOperatorStaking {
         require(!_shutdown, AlreadyShutdown());
         _shutdown = true;
@@ -83,7 +91,7 @@ contract OperatorRewarder is Ownable {
         emit Shutdown();
     }
 
-    /// @dev Virtually updates reward of `to` and `from` on each transfer.
+    /// @dev Handle required account on the transfer of `OperatorStaking` shares.
     function transferHook(address from, address to, uint256 shares) public virtual onlyOperatorStaking {
         uint256 oldTotalSupply = operatorStaking().totalSupply();
         if (oldTotalSupply == 0) return;
@@ -93,7 +101,6 @@ contract OperatorRewarder is Ownable {
 
         if (from != address(0)) {
             _rewardsPaid[from] -= virtualAmount;
-            totalVirtualRewardsPaid -= virtualAmount;
         } else {
             totalVirtualRewardsPaid += virtualAmount;
         }
