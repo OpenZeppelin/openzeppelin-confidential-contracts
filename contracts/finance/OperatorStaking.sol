@@ -103,7 +103,7 @@ contract OperatorStaking is ERC20, Ownable {
         _protocolStaking.stake(amountToRestake);
     }
 
-     function setRewarder(address newRewarder) public virtual onlyOwner {
+    function setRewarder(address newRewarder) public virtual onlyOwner {
         address oldRewarder = rewarder();
         require(newRewarder != oldRewarder && newRewarder.code.length > 0, InvalidRewarder(newRewarder));
         OperatorRewarder(oldRewarder).shutdown();

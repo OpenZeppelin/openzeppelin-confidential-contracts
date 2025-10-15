@@ -11,7 +11,9 @@ import {OperatorStaking} from "./OperatorStaking.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
 
 /**
- * @dev A rewarder contract to split rewards between the owner and the stakers.
+ * @dev A rewarder contract that works in tandem with `OperatorStaking` and `ProtocolStaking` contracts.
+ * This contract receives rewards directly from `ProtocolStaking` and distributes them to `OperatorStaking` staker.
+ * The owner of this contract can opt to take a fee on the rewards.
  */
 contract OperatorRewarder is Ownable {
     using SafeERC20 for IERC20;
@@ -45,7 +47,7 @@ contract OperatorRewarder is Ownable {
         _operatorStaking = operatorStaking_;
     }
 
-     /// @dev Claims reward of a staker.
+    /// @dev Claims reward of a staker.
     function claimRewards(address account) public virtual {
         uint256 earned_ = earned(account);
         if (earned_ > 0) {
@@ -84,7 +86,7 @@ contract OperatorRewarder is Ownable {
     /// @dev Virtually updates reward of `to` and `from` on each transfer.
     function transferHook(address from, address to, uint256 shares) public virtual onlyOperatorStaking {
         uint256 oldTotalSupply = operatorStaking().totalSupply();
-        if(oldTotalSupply == 0) return;
+        if (oldTotalSupply == 0) return;
 
         int256 virtualAmount = SafeCast.toInt256(_allocation(shares, oldTotalSupply));
         int256 totalVirtualRewardsPaid = _totalVirtualRewardsPaid;
@@ -130,9 +132,11 @@ contract OperatorRewarder is Ownable {
     /// @dev Gets unpaid reward of a staker.
     function earned(address account) public view virtual returns (uint256) {
         uint256 stakedBalance = operatorStaking().balanceOf(account);
-        int256 allocation = SafeCast.toInt256(stakedBalance > 0 ? _allocation(stakedBalance, operatorStaking().totalSupply()) : 0);
+        int256 allocation = SafeCast.toInt256(
+            stakedBalance > 0 ? _allocation(stakedBalance, operatorStaking().totalSupply()) : 0
+        );
         int256 paid = _rewardsPaid[account];
-        if(paid >= allocation) {
+        if (paid >= allocation) {
             return 0;
         }
         return SafeCast.toUint256(allocation - paid);
@@ -140,7 +144,7 @@ contract OperatorRewarder is Ownable {
 
     /// @dev Gets unpaid reward of owner.
     function unpaidOwnerFee() public view virtual returns (uint256) {
-       return _unpaidOwnerFee(_totalAssetsPlusPaidRewards());
+        return _unpaidOwnerFee(_totalAssetsPlusPaidRewards());
     }
 
     function _doTransferOut(address to, uint256 amount) internal {
@@ -151,7 +155,10 @@ contract OperatorRewarder is Ownable {
     }
 
     function _totalAssetsPlusPaidRewards() internal view returns (uint256) {
-        return token().balanceOf(address(this)) + (isShutdown() ? 0 : protocolStaking().earned(address(operatorStaking()))) + _totalRewardsPaid;
+        return
+            token().balanceOf(address(this)) +
+            (isShutdown() ? 0 : protocolStaking().earned(address(operatorStaking()))) +
+            _totalRewardsPaid;
     }
 
     function _historicalReward() internal view returns (uint256) {
@@ -161,11 +168,12 @@ contract OperatorRewarder is Ownable {
 
     function _unpaidOwnerFee(uint256 totalAssetsPlusPaidRewards) internal view returns (uint256) {
         uint256 totalAssetsPlusPaidRewardsDelta = totalAssetsPlusPaidRewards - _lastClaimTotalAssetsPlusPaidRewards;
-        return totalAssetsPlusPaidRewardsDelta * ownerFeeBasisPoints() / 10_000;
+        return (totalAssetsPlusPaidRewardsDelta * ownerFeeBasisPoints()) / 10_000;
     }
 
     /// @dev Compute total allocation based on number of shares and total shares. Must take paid rewards into account after.
     function _allocation(uint256 share, uint256 total) private view returns (uint256) {
-        return SafeCast.toUint256(SafeCast.toInt256(_historicalReward()) + _totalVirtualRewardsPaid).mulDiv(share, total);
+        return
+            SafeCast.toUint256(SafeCast.toInt256(_historicalReward()) + _totalVirtualRewardsPaid).mulDiv(share, total);
     }
 }
