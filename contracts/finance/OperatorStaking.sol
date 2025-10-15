@@ -29,7 +29,7 @@ contract OperatorStaking is ERC20, Ownable {
     event OperatorSet(address controller, address operator, bool approved);
 
     error InsufficientClaimableShares(uint256 requested, uint256 claimable);
-    error SameRewarderAlreadySet(address rewarder);
+    error InvalidRewarder(address rewarder);
 
     constructor(
         string memory name,
@@ -105,7 +105,7 @@ contract OperatorStaking is ERC20, Ownable {
 
      function setRewarder(address newRewarder) public virtual onlyOwner {
         address oldRewarder = rewarder();
-        require(newRewarder != oldRewarder, SameRewarderAlreadySet(oldRewarder));
+        require(newRewarder != oldRewarder && newRewarder.code.length > 0, InvalidRewarder(newRewarder));
         OperatorRewarder(oldRewarder).shutdown();
         _rewarder = newRewarder;
         _protocolStaking.setRewardsRecipient(newRewarder);

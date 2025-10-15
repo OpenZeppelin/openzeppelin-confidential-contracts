@@ -6,7 +6,7 @@ import { ethers, upgrades } from 'hardhat';
 const timeIncreaseNoMine = (duration: number) =>
   time.latest().then(clock => time.setNextBlockTimestamp(clock + duration));
 
-describe('OperatorStaking', function () {
+describe.only('OperatorStaking', function () {
   beforeEach(async function () {
     const [staker1, staker2, admin, ...accounts] = await ethers.getSigners();
 
@@ -126,11 +126,17 @@ describe('OperatorStaking', function () {
       );
     });
 
-    it('should set same rewarder', async function () {
-      await expect(this.mock.connect(this.admin).setRewarder(await this.mock.rewarder())).to.be.revertedWithCustomError(
-        this.mock,
-        'SameRewarderAlreadySet',
-      );
+    it('should revert same rewarder', async function () {
+      const currentRewarder = await this.mock.rewarder();
+      await expect(this.mock.connect(this.admin).setRewarder(currentRewarder))
+        .to.be.revertedWithCustomError(this.mock, 'InvalidRewarder')
+        .withArgs(currentRewarder);
+    });
+
+    it('should revert with no code rewarder', async function () {
+      await expect(this.mock.connect(this.admin).setRewarder(this.staker1.address))
+        .to.be.revertedWithCustomError(this.mock, 'InvalidRewarder')
+        .withArgs(this.staker1);
     });
 
     describe('with new rewarder', async function () {
@@ -154,19 +160,19 @@ describe('OperatorStaking', function () {
       });
 
       it('old rewards should remain on old rewarder', async function () {
-        await expect(this.oldRewarder.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('1.75'));
-        await expect(this.newRewarder.stakerUnpaidReward(this.staker1)).to.eventually.eq(0);
+        await expect(this.oldRewarder.earned(this.staker1)).to.eventually.eq(ethers.parseEther('1.75'));
+        await expect(this.newRewarder.earned(this.staker1)).to.eventually.eq(0);
         await expect(this.token.balanceOf(this.oldRewarder)).to.eventually.eq(ethers.parseEther('5.5'));
       });
 
       it('new rewarder should start accruing rewards properly', async function () {
         await time.increase(10);
 
-        await expect(this.newRewarder.stakerUnpaidReward(this.staker1)).to.eventually.eq(ethers.parseEther('1.25'));
-        await expect(this.newRewarder.stakerUnpaidReward(this.staker2)).to.eventually.eq(ethers.parseEther('3.75'));
-        await expect(this.newRewarder.ownerUnpaidReward()).to.eventually.eq(0);
+        await expect(this.newRewarder.earned(this.staker1)).to.eventually.eq(ethers.parseEther('1.25'));
+        await expect(this.newRewarder.earned(this.staker2)).to.eventually.eq(ethers.parseEther('3.75'));
+        await expect(this.newRewarder.unpaidOwnerFee()).to.eventually.eq(0);
 
-        await expect(this.newRewarder.claimStakerReward(this.staker1))
+        await expect(this.newRewarder.claimRewards(this.staker1))
           .to.emit(this.token, 'Transfer')
           .withArgs(this.newRewarder, this.staker1, ethers.parseEther('1.375'));
       });
