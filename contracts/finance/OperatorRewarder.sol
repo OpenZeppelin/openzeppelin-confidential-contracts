@@ -59,8 +59,9 @@ contract OperatorRewarder is Ownable {
 
     /// @dev Claims owner fee.
     function claimOwnerFee() public virtual {
-        uint256 unpaidOwnerFee_ = unpaidOwnerFee();
-        _lastClaimTotalAssetsPlusPaidRewards = _totalAssetsPlusPaidRewards() - unpaidOwnerFee_;
+        uint256 totalAssetsPlusPaidRewards = _totalAssetsPlusPaidRewards();
+        uint256 unpaidOwnerFee_ = _unpaidOwnerFee(totalAssetsPlusPaidRewards);
+        _lastClaimTotalAssetsPlusPaidRewards = totalAssetsPlusPaidRewards - unpaidOwnerFee_;
         if (unpaidOwnerFee_ > 0) {
             _doTransferOut(owner(), unpaidOwnerFee_);
         }
