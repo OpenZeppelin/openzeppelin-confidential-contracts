@@ -82,7 +82,7 @@ describe.only('OperatorStaking', function () {
     ).to.changeTokenBalance(this.token, this.staker1, ethers.parseEther('0.25'));
   });
 
-  it('restake excess raw assets after slashing', async function () {
+  it('restake excess assets after slashing', async function () {
     await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
     await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
 
@@ -94,7 +94,10 @@ describe.only('OperatorStaking', function () {
     await expect(this.mock.connect(this.staker2).requestRedeem(ethers.parseEther('2'), this.staker2, this.staker2))
       .reverted;
 
-    await this.mock.restake();
+    // There will be excess from the withdrawal in mock.
+    await expect(this.mock.restake())
+      .to.emit(this.token, 'Transfer')
+      .withArgs(this.mock, this.protocolStaking, anyValue);
     this.mock.connect(this.staker2).requestRedeem(ethers.parseEther('2'), this.staker2, this.staker2);
   });
 
