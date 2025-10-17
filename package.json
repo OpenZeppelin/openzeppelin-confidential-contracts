@@ -53,6 +53,7 @@
     "@openzeppelin/contracts": "file:lib/openzeppelin-contracts",
     "@openzeppelin/contracts-upgradeable": "file:lib/openzeppelin-contracts-upgradeable/contracts",
     "@openzeppelin/docs-utils": "^0.1.5",
+    "@openzeppelin/hardhat-upgrades": "^3.9.1",
     "@trivago/prettier-plugin-sort-imports": "^4.0.0",
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
