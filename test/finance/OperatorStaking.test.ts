@@ -28,97 +28,269 @@ describe.only('OperatorStaking', function () {
     Object.assign(this, { staker1, staker2, admin, accounts, token, protocolStaking, mock });
   });
 
-  it('simple withdrawal', async function () {
-    await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
-    await this.mock
-      .connect(this.staker1)
-      .requestRedeem(await this.mock.balanceOf(this.staker1), this.staker1, this.staker1);
+  describe('deposit', async function () {
+    it('should stake into protocol staking', async function () {
+      await expect(this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1))
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.protocolStaking, ethers.parseEther('1'));
+    });
 
-    await timeIncreaseNoMine(60);
-    await this.protocolStaking.release(this.mock);
-    await this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1);
-    expect(await this.token.balanceOf(this.staker1)).to.be.eq(ethers.parseEther('1000'));
-    await expect(this.token.balanceOf(this.mock)).to.eventually.be.eq(0);
+    it('should mint shares', async function () {
+      await expect(this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1))
+        .to.emit(this.mock, 'Transfer')
+        .withArgs(ethers.ZeroAddress, this.staker1, ethers.parseEther('1'));
+    });
+
+    it('should pull tokens', async function () {
+      await expect(this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1))
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.staker1, this.mock, ethers.parseEther('1'));
+    });
   });
 
-  it('symmetrically passes on losses from staked balance without pending withdrawal', async function () {
-    await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
-    await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
+  describe('redeem', async function () {
+    it('simple redemption', async function () {
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+      await this.mock
+        .connect(this.staker1)
+        .requestRedeem(await this.mock.balanceOf(this.staker1), this.staker1, this.staker1);
 
-    await this.protocolStaking.slash(this.mock, ethers.parseEther('1.5'));
+      await expect(this.mock.pendingRedeemRequest(0, this.staker1)).to.eventually.eq(ethers.parseEther('1'));
+      await expect(this.mock.claimableRedeemRequest(0, this.staker1)).to.eventually.eq(0);
 
-    // Request redemption of all shares and verify actual withdrawal amounts
-    await this.mock
-      .connect(this.staker1)
-      .requestRedeem(await this.mock.balanceOf(this.staker1), this.staker1, this.staker1);
-    await this.mock
-      .connect(this.staker2)
-      .requestRedeem(await this.mock.balanceOf(this.staker2), this.staker2, this.staker2);
+      await time.increase(60);
 
-    await timeIncreaseNoMine(60);
-    await this.protocolStaking.release(this.mock);
+      await expect(this.mock.pendingRedeemRequest(0, this.staker1)).to.eventually.eq(0);
+      await expect(this.mock.claimableRedeemRequest(0, this.staker1)).to.eventually.eq(ethers.parseEther('1'));
 
-    await expect(
-      this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1),
-    ).to.changeTokenBalance(this.token, this.staker1, ethers.parseEther('0.5'));
-    await expect(
-      this.mock.connect(this.staker2).redeem(ethers.MaxUint256, this.staker2, this.staker2),
-    ).to.changeTokenBalance(this.token, this.staker2, ethers.parseEther('1'));
+      await this.protocolStaking.release(this.mock);
+      await expect(this.mock.connect(this.staker1).redeem(ethers.parseEther('1'), this.staker1, this.staker1))
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.staker1, ethers.parseEther('1'));
+      await expect(this.token.balanceOf(this.mock)).to.eventually.be.eq(0);
+    });
+
+    it('should not redeem twice', async function () {
+      await this.mock.connect(this.staker2).deposit(ethers.parseEther('5'), this.staker2);
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('10'), this.staker1);
+      await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('1'), this.staker1, this.staker1);
+      await this.mock.connect(this.staker2).requestRedeem(ethers.parseEther('1'), this.staker2, this.staker2);
+
+      await timeIncreaseNoMine(60);
+      await this.protocolStaking.release(this.mock);
+
+      await expect(this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1))
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.staker1, ethers.parseEther('1'));
+      await expect(this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1)).to.not.emit(
+        this.token,
+        'Transfer',
+      );
+    });
+
+    it('should revert on redeem more than available', async function () {
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('10'), this.staker1);
+      await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('1'), this.staker1, this.staker1);
+
+      await timeIncreaseNoMine(10);
+      await expect(this.mock.connect(this.staker1).redeem(ethers.parseEther('1'), this.staker1, this.staker1))
+        .to.be.revertedWithCustomError(this.mock, 'ERC4626ExceededMaxRedeem')
+        .withArgs(this.staker1, ethers.parseEther('1'), 0);
+    });
+
+    it('should be able to redeem a second time', async function () {
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('10'), this.staker1);
+      await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('1'), this.staker1, this.staker1);
+
+      await timeIncreaseNoMine(60);
+      await this.protocolStaking.release(this.mock);
+
+      await expect(this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1))
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.staker1, ethers.parseEther('1'));
+
+      await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('2'), this.staker1, this.staker1);
+
+      await timeIncreaseNoMine(60);
+      await this.protocolStaking.release(this.mock);
+
+      await expect(this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1))
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.staker1, ethers.parseEther('2'));
+    });
+
+    it('via separate controller', async function () {
+      const controller = this.accounts[0];
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('10'), this.staker1);
+      await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('1'), controller, this.staker1);
+
+      await timeIncreaseNoMine(60);
+      await this.protocolStaking.release(this.mock);
+
+      await expect(this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1)).to.not.emit(
+        this.token,
+        'Transfer',
+      );
+      await expect(
+        this.mock.connect(this.staker1).redeem(ethers.MaxUint256, controller, controller),
+      ).to.be.revertedWithCustomError(this.mock, 'Unauthorized');
+      await expect(this.mock.connect(controller).redeem(ethers.MaxUint256, controller, controller))
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, controller, ethers.parseEther('1'));
+    });
+
+    it('via approved contract', async function () {
+      const approvedActor = this.accounts[0];
+
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+      await this.mock.connect(this.staker1).approve(approvedActor, ethers.parseEther('1'));
+
+      await this.mock.connect(approvedActor).requestRedeem(ethers.parseEther('1'), this.staker1, this.staker1);
+    });
+
+    it('should fail via unapproved actor', async function () {
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+
+      await expect(
+        this.mock.connect(this.accounts[0]).requestRedeem(ethers.parseEther('1'), this.staker1, this.staker1),
+      ).to.be.reverted;
+    });
+
+    describe('with operator', async function () {
+      beforeEach(async function () {
+        this.operator = this.accounts[0];
+        await this.mock.connect(this.staker1).setOperator(this.operator, true);
+        await this.mock.connect(this.staker1).deposit(ethers.parseEther('10'), this.staker1);
+      });
+
+      it('should be allowed to redeem on behalf of authorized controller', async function () {
+        await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('1'), this.staker1, this.staker1);
+
+        await timeIncreaseNoMine(60);
+        await this.protocolStaking.release(this.mock);
+        await expect(this.mock.connect(this.operator).redeem(ethers.MaxUint256, this.operator, this.staker1))
+          .to.emit(this.token, 'Transfer')
+          .withArgs(this.mock, this.operator, ethers.parseEther('1'));
+      });
+
+      it('should not be allowed to redeem on behalf of other controller', async function () {
+        await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('1'), this.staker2, this.staker1);
+
+        await timeIncreaseNoMine(60);
+        await this.protocolStaking.release(this.mock);
+        await expect(
+          this.mock.connect(this.operator).redeem(ethers.MaxUint256, this.operator, this.staker2),
+        ).to.be.revertedWithCustomError(this.mock, 'Unauthorized');
+      });
+    });
   });
 
-  it('symmetrically passes on losses from staked balance with pending withdrawal', async function () {
-    await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
-    await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
+  describe('restake', async function () {
+    it('should restake in protocol staking', async function () {
+      await this.token.connect(this.staker1).transfer(this.mock, ethers.parseEther('10'));
+      await expect(this.mock.restake())
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.protocolStaking, ethers.parseEther('10'));
+    });
 
-    await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('0.5'), this.staker1, this.staker1);
-    // 50% slashing
-    await this.protocolStaking.slash(this.mock, ethers.parseEther('1.5'));
+    it('should not transfer required tokens', async function () {
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('10'), this.staker1);
+      await this.mock.connect(this.staker2).deposit(ethers.parseEther('1'), this.staker2);
+      await this.mock.connect(this.staker2).requestRedeem(ethers.parseEther('1'), this.staker2, this.staker2);
 
-    await timeIncreaseNoMine(60);
-    await this.protocolStaking.release(this.mock);
+      // Increase the value of each share by 10%
+      await this.token.connect(this.staker1).transfer(this.mock, ethers.parseEther('1.1'));
 
-    await expect(
-      this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1),
-    ).to.changeTokenBalance(this.token, this.staker1, ethers.parseEther('0.25'));
+      await timeIncreaseNoMine(60);
+      await this.protocolStaking.release(this.mock);
+
+      const restakeAmount = BigInt(ethers.parseEther('1')) + 1n;
+      await expect(this.mock.restake())
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.protocolStaking, restakeAmount);
+    });
   });
 
-  it('restake excess assets after slashing', async function () {
-    await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
-    await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
+  describe('slashing', async function () {
+    it('symmetrically passes on losses from staked balance without pending withdrawal', async function () {
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+      await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
 
-    await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('1'), this.staker1, this.staker1);
-    await this.protocolStaking.slash(this.mock, ethers.parseEther('1.5'));
+      await this.protocolStaking.slash(this.mock, ethers.parseEther('1.5'));
 
-    await timeIncreaseNoMine(60);
-    await this.protocolStaking.release(this.mock);
-    await expect(this.mock.connect(this.staker2).requestRedeem(ethers.parseEther('2'), this.staker2, this.staker2))
-      .reverted;
+      // Request redemption of all shares and verify actual withdrawal amounts
+      await this.mock
+        .connect(this.staker1)
+        .requestRedeem(await this.mock.balanceOf(this.staker1), this.staker1, this.staker1);
+      await this.mock
+        .connect(this.staker2)
+        .requestRedeem(await this.mock.balanceOf(this.staker2), this.staker2, this.staker2);
 
-    // There will be excess from the withdrawal in mock.
-    await expect(this.mock.restake())
-      .to.emit(this.token, 'Transfer')
-      .withArgs(this.mock, this.protocolStaking, anyValue);
-    this.mock.connect(this.staker2).requestRedeem(ethers.parseEther('2'), this.staker2, this.staker2);
-  });
+      await timeIncreaseNoMine(60);
+      await this.protocolStaking.release(this.mock);
 
-  it('symmetrically passes on losses from withdrawal balance', async function () {
-    await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
-    await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
+      await expect(
+        this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1),
+      ).to.changeTokenBalance(this.token, this.staker1, ethers.parseEther('0.5'));
+      await expect(
+        this.mock.connect(this.staker2).redeem(ethers.MaxUint256, this.staker2, this.staker2),
+      ).to.changeTokenBalance(this.token, this.staker2, ethers.parseEther('1'));
+    });
 
-    await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('1'), this.staker1, this.staker1);
-    await this.mock.connect(this.staker2).requestRedeem(ethers.parseEther('2'), this.staker2, this.staker2);
+    it('symmetrically passes on losses from staked balance with pending withdrawal', async function () {
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+      await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
 
-    await this.protocolStaking.slashWithdrawal(this.mock, ethers.parseEther('1.5'));
+      await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('0.5'), this.staker1, this.staker1);
+      // 50% slashing
+      await this.protocolStaking.slash(this.mock, ethers.parseEther('1.5'));
 
-    await timeIncreaseNoMine(60);
+      await timeIncreaseNoMine(60);
+      await this.protocolStaking.release(this.mock);
 
-    await this.protocolStaking.release(this.mock);
-    await expect(
-      this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1),
-    ).to.changeTokenBalance(this.token, this.staker1, ethers.parseEther('0.5'));
-    await expect(
-      this.mock.connect(this.staker2).redeem(ethers.MaxUint256, this.staker2, this.staker2),
-    ).to.changeTokenBalance(this.token, this.staker2, ethers.parseEther('1'));
+      await expect(
+        this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1),
+      ).to.changeTokenBalance(this.token, this.staker1, ethers.parseEther('0.25'));
+    });
+
+    it('restake excess assets after slashing', async function () {
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+      await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
+
+      await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('1'), this.staker1, this.staker1);
+      await this.protocolStaking.slash(this.mock, ethers.parseEther('1.5'));
+
+      await timeIncreaseNoMine(60);
+      await this.protocolStaking.release(this.mock);
+      await expect(this.mock.connect(this.staker2).requestRedeem(ethers.parseEther('2'), this.staker2, this.staker2))
+        .reverted;
+
+      // There will be excess from the withdrawal in mock.
+      await expect(this.mock.restake())
+        .to.emit(this.token, 'Transfer')
+        .withArgs(this.mock, this.protocolStaking, anyValue);
+      this.mock.connect(this.staker2).requestRedeem(ethers.parseEther('2'), this.staker2, this.staker2);
+    });
+
+    it('symmetrically passes on losses from withdrawal balance', async function () {
+      await this.mock.connect(this.staker1).deposit(ethers.parseEther('1'), this.staker1);
+      await this.mock.connect(this.staker2).deposit(ethers.parseEther('2'), this.staker2);
+
+      await this.mock.connect(this.staker1).requestRedeem(ethers.parseEther('1'), this.staker1, this.staker1);
+      await this.mock.connect(this.staker2).requestRedeem(ethers.parseEther('2'), this.staker2, this.staker2);
+
+      await this.protocolStaking.slashWithdrawal(this.mock, ethers.parseEther('1.5'));
+
+      await timeIncreaseNoMine(60);
+
+      await this.protocolStaking.release(this.mock);
+      await expect(
+        this.mock.connect(this.staker1).redeem(ethers.MaxUint256, this.staker1, this.staker1),
+      ).to.changeTokenBalance(this.token, this.staker1, ethers.parseEther('0.5'));
+      await expect(
+        this.mock.connect(this.staker2).redeem(ethers.MaxUint256, this.staker2, this.staker2),
+      ).to.changeTokenBalance(this.token, this.staker2, ethers.parseEther('1'));
+    });
   });
 
   describe('setRewarder', async function () {
@@ -179,6 +351,21 @@ describe.only('OperatorStaking', function () {
           .to.emit(this.token, 'Transfer')
           .withArgs(this.newRewarder, this.staker1, ethers.parseEther('1.375'));
       });
+    });
+  });
+
+  describe('setOperator', function () {
+    beforeEach(async function () {
+      this.tx = this.mock.connect(this.staker1).setOperator(this.staker2, true);
+    });
+
+    it('emits event', async function () {
+      await expect(this.tx).to.emit(this.mock, 'OperatorSet').withArgs(this.staker1, this.staker2, true);
+    });
+
+    it('sets operator', async function () {
+      await this.tx;
+      await expect(this.mock.isOperator(this.staker1, this.staker2)).to.eventually.eq(true);
     });
   });
 });

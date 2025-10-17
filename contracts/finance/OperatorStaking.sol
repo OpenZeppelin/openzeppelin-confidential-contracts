@@ -18,7 +18,7 @@ import {ProtocolStaking} from "./ProtocolStaking.sol";
  * @title OperatorStaking
  * @custom:security-contact security@zama.ai
  * @notice Allows users to stake assets and receive shares, with support for reward distribution.
- * @dev Integrates with ProtocolStaking and OperatorRewarder contracts. Supports ERC4626-like flows and operator delegation.
+ * @dev Integrates with ProtocolStaking and OperatorRewarder contracts. Inspired by ERC7540 but not fully compliant.
  */
 contract OperatorStaking is ERC20, Ownable {
     using Math for uint256;
@@ -32,14 +32,26 @@ contract OperatorStaking is ERC20, Ownable {
     mapping(address => Checkpoints.Trace208) private _unstakeRequests;
     mapping(address => mapping(address => bool)) private _operator;
 
-    /// @notice Emitted when an operator is set or unset for a controller.
-    event OperatorSet(address controller, address operator, bool approved);
+    /// @dev Emitted when an operator is set or unset for a controller.
+    event OperatorSet(address indexed controller, address indexed operator, bool approved);
 
-    /// @notice Error for insufficient claimable shares during redeem.
-    error InsufficientClaimableShares(uint256 requested, uint256 claimable);
+    /// @dev Emitted when a redeem request is made.
+    event RedeemRequest(
+        address indexed controller,
+        address indexed owner,
+        uint256 indexed requestId,
+        address sender,
+        uint256 shares
+    );
 
-    /// @notice Error for invalid rewarder address.
+    /// @dev Emitted when the rewarder contract is set.
+    event RewarderSet(address oldRewarder, address newRewarder);
+
+    /// @dev Throw when the rewarder address is not valid during {setRewarder}.
     error InvalidRewarder(address rewarder);
+
+    /// @dev Thrown when the sender does not have authorization to perform an action.
+    error Unauthorized();
 
     /**
      * @notice Initializes the OperatorStaking contract.
@@ -62,6 +74,8 @@ contract OperatorStaking is ERC20, Ownable {
         address rewarder_ = address(new OperatorRewarder(owner, protocolStaking_, this));
         protocolStaking_.setRewardsRecipient(rewarder_);
         _rewarder = rewarder_;
+
+        emit RewarderSet(address(0), rewarder_);
     }
 
     /**
@@ -72,9 +86,7 @@ contract OperatorStaking is ERC20, Ownable {
      */
     function deposit(uint256 assets, address receiver) public virtual returns (uint256) {
         uint256 maxAssets = maxDeposit(receiver);
-        if (assets > maxAssets) {
-            revert ERC4626.ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
-        }
+        require(assets <= maxAssets, ERC4626.ERC4626ExceededMaxDeposit(receiver, assets, maxAssets));
 
         uint256 shares = previewDeposit(assets);
         _deposit(_msgSender(), receiver, assets, shares);
@@ -94,15 +106,19 @@ contract OperatorStaking is ERC20, Ownable {
         }
 
         uint256 assetsToWithdraw = previewRedeem(shares);
+        ProtocolStaking protocolStaking_ = protocolStaking();
         _burn(owner, shares);
-        _protocolStaking.unstake(address(this), assetsToWithdraw);
 
         (, uint48 lastReleaseTime, uint208 totalSharesRedeemed) = _unstakeRequests[controller].latestCheckpoint();
         uint48 releaseTime = SafeCast.toUint48(
-            Math.max(Time.timestamp() + _protocolStaking.unstakeCooldownPeriod(), lastReleaseTime)
+            Math.max(Time.timestamp() + protocolStaking_.unstakeCooldownPeriod(), lastReleaseTime)
         );
         _unstakeRequests[controller].push(releaseTime, totalSharesRedeemed + shares);
         _totalSharesInRedemption += shares;
+
+        protocolStaking_.unstake(address(this), assetsToWithdraw);
+
+        emit RedeemRequest(controller, owner, 0, msg.sender, shares);
     }
 
     /**
@@ -113,10 +129,9 @@ contract OperatorStaking is ERC20, Ownable {
      * @return assets Amount of assets received.
      */
     function redeem(uint256 shares, address receiver, address controller) public virtual returns (uint256) {
+        require(msg.sender == controller || isOperator(controller, msg.sender), Unauthorized());
+
         uint256 maxShares = maxRedeem(controller);
-
-        require(msg.sender == controller || isOperator(controller, msg.sender), "Not authorized");
-
         if (shares == type(uint256).max) {
             shares = maxShares;
         } else if (shares > maxShares) {
@@ -124,34 +139,45 @@ contract OperatorStaking is ERC20, Ownable {
         }
 
         uint256 assets = previewRedeem(shares);
-        _totalSharesInRedemption -= shares;
-        SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
 
-        emit IERC4626.Withdraw(msg.sender, receiver, controller, shares, assets);
+        if (assets > 0) {
+            _totalSharesInRedemption -= shares;
+            _sharesReleased[controller] += shares;
+            SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
+
+            emit IERC4626.Withdraw(msg.sender, receiver, controller, shares, assets);
+        }
 
         return assets;
     }
 
     /**
-     * @notice Restake available assets and tokens in cooldown.
+     * @dev Restake excess tokens held by this contract.
+     *
+     * NOTE: Excess tokens will be in the `OperatorStaking` contract the operator is slashed
+     * during a redemption flow. Anyone can call this function to restake those tokens.
      */
     function restake() public virtual {
+        ProtocolStaking protocolStaking_ = protocolStaking();
         uint256 amountToRestake = IERC20(asset()).balanceOf(address(this)) +
-            _protocolStaking.tokensInCooldown(address(this)) -
+            protocolStaking_.tokensInCooldown(address(this)) -
             previewRedeem(totalSharesInRedemption());
-        _protocolStaking.stake(amountToRestake);
+        protocolStaking_.stake(amountToRestake);
     }
 
     /**
-     * @notice Set a new rewarder contract.
-     * @param newRewarder The address of the new rewarder contract.
+     * @dev Set a new rewarder contract.
+     * @param newRewarder The new rewarder contract address. This contract must not be the same as the current
+     * and must have code.
      */
     function setRewarder(address newRewarder) public virtual onlyOwner {
         address oldRewarder = rewarder();
         require(newRewarder != oldRewarder && newRewarder.code.length > 0, InvalidRewarder(newRewarder));
         OperatorRewarder(oldRewarder).shutdown();
         _rewarder = newRewarder;
-        _protocolStaking.setRewardsRecipient(newRewarder);
+        protocolStaking().setRewardsRecipient(newRewarder);
+
+        emit RewarderSet(oldRewarder, newRewarder);
     }
 
     /**
@@ -177,8 +203,8 @@ contract OperatorStaking is ERC20, Ownable {
      * @notice Returns the ProtocolStaking contract address.
      * @return The ProtocolStaking contract address.
      */
-    function protocolStaking() public view virtual returns (address) {
-        return address(_protocolStaking);
+    function protocolStaking() public view virtual returns (ProtocolStaking) {
+        return _protocolStaking;
     }
 
     /**
@@ -203,10 +229,11 @@ contract OperatorStaking is ERC20, Ownable {
      * @return The total assets.
      */
     function totalAssets() public view virtual returns (uint256) {
+        ProtocolStaking protocolStaking_ = protocolStaking();
         return
             IERC20(asset()).balanceOf(address(this)) +
-            _protocolStaking.balanceOf(address(this)) +
-            _protocolStaking.tokensInCooldown(address(this));
+            protocolStaking_.balanceOf(address(this)) +
+            protocolStaking_.tokensInCooldown(address(this));
     }
 
     /**
@@ -299,7 +326,7 @@ contract OperatorStaking is ERC20, Ownable {
         // slither-disable-next-line reentrancy-no-eth
         SafeERC20.safeTransferFrom(IERC20(asset()), caller, address(this), assets);
         _mint(receiver, shares);
-        _protocolStaking.stake(assets);
+        protocolStaking().stake(assets);
 
         emit IERC4626.Deposit(caller, receiver, assets, shares);
     }

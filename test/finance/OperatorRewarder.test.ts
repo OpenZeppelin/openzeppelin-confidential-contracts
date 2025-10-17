@@ -1,7 +1,9 @@
+import { impersonate } from '../helpers/accounts';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { mine, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
+import hre from 'hardhat';
 
 const timeIncreaseNoMine = (duration: number) =>
   time.latest().then(clock => time.setNextBlockTimestamp(clock + duration));
@@ -257,6 +259,12 @@ describe.only('OperatorRewarder', function () {
       await expect(this.mock.connect(this.admin).shutdown())
         .to.be.revertedWithCustomError(this.mock, 'CallerNotOperatorStaking')
         .withArgs(this.admin);
+    });
+
+    it("can't be called twice", async function () {
+      await this.tx;
+      const signer = await impersonate(hre, this.operatorStaking.target);
+      await expect(this.mock.connect(signer).shutdown()).to.be.revertedWithCustomError(this.mock, 'AlreadyShutdown');
     });
   });
 
