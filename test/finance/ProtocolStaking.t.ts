@@ -310,7 +310,7 @@ describe('Protocol Staking', function () {
       // Only earn 0.5 more
       await expect(this.mock.earned(this.staker1)).to.eventually.eq(ethers.parseEther('3.5'));
 
-      // pervious staker retains reward
+      // previous staker retains reward
       await expect(this.mock.earned(this.staker2)).to.eventually.eq(ethers.parseEther('3'));
     });
   });

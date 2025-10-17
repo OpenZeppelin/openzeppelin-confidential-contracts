@@ -14,6 +14,12 @@ import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
 import {OperatorRewarder} from "./OperatorRewarder.sol";
 import {ProtocolStaking} from "./ProtocolStaking.sol";
 
+/**
+ * @title OperatorStaking
+ * @custom:security-contact security@zama.ai
+ * @notice Allows users to stake assets and receive shares, with support for reward distribution.
+ * @dev Integrates with ProtocolStaking and OperatorRewarder contracts. Supports ERC4626-like flows and operator delegation.
+ */
 contract OperatorStaking is ERC20, Ownable {
     using Math for uint256;
     using Checkpoints for Checkpoints.Trace208;
@@ -26,11 +32,22 @@ contract OperatorStaking is ERC20, Ownable {
     mapping(address => Checkpoints.Trace208) private _unstakeRequests;
     mapping(address => mapping(address => bool)) private _operator;
 
+    /// @notice Emitted when an operator is set or unset for a controller.
     event OperatorSet(address controller, address operator, bool approved);
 
+    /// @notice Error for insufficient claimable shares during redeem.
     error InsufficientClaimableShares(uint256 requested, uint256 claimable);
+
+    /// @notice Error for invalid rewarder address.
     error InvalidRewarder(address rewarder);
 
+    /**
+     * @notice Initializes the OperatorStaking contract.
+     * @param name The name of the ERC20 token.
+     * @param symbol The symbol of the ERC20 token.
+     * @param protocolStaking_ The ProtocolStaking contract address.
+     * @param owner The owner address.
+     */
     constructor(
         string memory name,
         string memory symbol,
@@ -47,6 +64,12 @@ contract OperatorStaking is ERC20, Ownable {
         _rewarder = rewarder_;
     }
 
+    /**
+     * @notice Deposit assets and receive shares.
+     * @param assets Amount of assets to deposit.
+     * @param receiver Address to receive the minted shares.
+     * @return shares Amount of shares minted.
+     */
     function deposit(uint256 assets, address receiver) public virtual returns (uint256) {
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
@@ -59,6 +82,12 @@ contract OperatorStaking is ERC20, Ownable {
         return shares;
     }
 
+    /**
+     * @notice Request to redeem shares for assets, subject to cooldown.
+     * @param shares Amount of shares to redeem.
+     * @param controller The controller address for the request.
+     * @param owner The owner of the shares.
+     */
     function requestRedeem(uint208 shares, address controller, address owner) public virtual {
         if (msg.sender != owner) {
             _spendAllowance(owner, msg.sender, shares);
@@ -76,6 +105,13 @@ contract OperatorStaking is ERC20, Ownable {
         _totalSharesInRedemption += shares;
     }
 
+    /**
+     * @notice Redeem shares for assets after cooldown.
+     * @param shares Amount of shares to redeem (use max uint256 for all claimable).
+     * @param receiver Address to receive the assets.
+     * @param controller The controller address for the redeem.
+     * @return assets Amount of assets received.
+     */
     function redeem(uint256 shares, address receiver, address controller) public virtual returns (uint256) {
         uint256 maxShares = maxRedeem(controller);
 
@@ -96,6 +132,9 @@ contract OperatorStaking is ERC20, Ownable {
         return assets;
     }
 
+    /**
+     * @notice Restake available assets and tokens in cooldown.
+     */
     function restake() public virtual {
         uint256 amountToRestake = IERC20(asset()).balanceOf(address(this)) +
             _protocolStaking.tokensInCooldown(address(this)) -
@@ -103,6 +142,10 @@ contract OperatorStaking is ERC20, Ownable {
         _protocolStaking.stake(amountToRestake);
     }
 
+    /**
+     * @notice Set a new rewarder contract.
+     * @param newRewarder The address of the new rewarder contract.
+     */
     function setRewarder(address newRewarder) public virtual onlyOwner {
         address oldRewarder = rewarder();
         require(newRewarder != oldRewarder && newRewarder.code.length > 0, InvalidRewarder(newRewarder));
@@ -111,29 +154,54 @@ contract OperatorStaking is ERC20, Ownable {
         _protocolStaking.setRewardsRecipient(newRewarder);
     }
 
+    /**
+     * @notice Set or unset an operator for the caller.
+     * @param operator The address to set as operator.
+     * @param approved True to approve, false to revoke.
+     */
     function setOperator(address operator, bool approved) public virtual {
         _operator[msg.sender][operator] = approved;
 
         emit OperatorSet(msg.sender, operator, approved);
     }
 
+    /**
+     * @notice Returns the address of the staking asset.
+     * @return The asset address.
+     */
     function asset() public view virtual returns (address) {
         return address(_asset);
     }
 
+    /**
+     * @notice Returns the ProtocolStaking contract address.
+     * @return The ProtocolStaking contract address.
+     */
     function protocolStaking() public view virtual returns (address) {
         return address(_protocolStaking);
     }
 
+    /**
+     * @notice Returns the rewarder contract address.
+     * @return The rewarder contract address.
+     */
     function rewarder() public view virtual returns (address) {
         return _rewarder;
     }
 
+    /**
+     * @notice Returns the total supply including shares in redemption.
+     * @return The total supply.
+     */
     function totalSupply() public view virtual override returns (uint256) {
         return super.totalSupply() + totalSharesInRedemption();
     }
 
     // Can there be reentry such that assets in cooldown and balanceOf are double counted?
+    /**
+     * @notice Returns the total assets managed by the contract.
+     * @return The total assets.
+     */
     function totalAssets() public view virtual returns (uint256) {
         return
             IERC20(asset()).balanceOf(address(this)) +
@@ -141,34 +209,73 @@ contract OperatorStaking is ERC20, Ownable {
             _protocolStaking.tokensInCooldown(address(this));
     }
 
+    /**
+     * @notice Returns the number of shares pending for redeem for a controller.
+     * @param controller The controller address.
+     * @return Amount of shares pending redeem.
+     */
     function pendingRedeemRequest(uint256, address controller) public view virtual returns (uint256) {
         return _unstakeRequests[controller].latest() - _unstakeRequests[controller].upperLookup(Time.timestamp());
     }
 
+    /**
+     * @notice Returns the number of claimable shares for redeem for a controller.
+     * @param controller The controller address.
+     * @return Amount of claimable shares.
+     */
     function claimableRedeemRequest(uint256, address controller) public view virtual returns (uint256) {
         return _unstakeRequests[controller].upperLookup(Time.timestamp()) - _sharesReleased[controller];
     }
 
+    /**
+     * @notice Returns the total shares in redemption.
+     * @return The total shares in redemption.
+     */
     function totalSharesInRedemption() public view virtual returns (uint256) {
         return _totalSharesInRedemption;
     }
 
+    /**
+     * @notice Returns the maximum deposit allowed for an address.
+     * @return The maximum deposit amount.
+     */
     function maxDeposit(address) public view virtual returns (uint256) {
         return type(uint256).max;
     }
 
+    /**
+     * @notice Returns the maximum redeemable shares for an owner.
+     * @param owner The owner address.
+     * @return The maximum redeemable shares.
+     */
     function maxRedeem(address owner) public view virtual returns (uint256) {
         return claimableRedeemRequest(0, owner);
     }
 
+    /**
+     * @notice Returns the number of shares that would be minted for a given deposit.
+     * @param assets Amount of assets to deposit.
+     * @return Amount of shares that would be minted.
+     */
     function previewDeposit(uint256 assets) public view virtual returns (uint256) {
         return _convertToShares(assets, Math.Rounding.Floor);
     }
 
+    /**
+     * @notice Returns the amount of assets that would be received for redeeming shares.
+     * @param shares Amount of shares to redeem.
+     * @return Amount of assets that would be received.
+     */
     function previewRedeem(uint256 shares) public view virtual returns (uint256) {
         return _convertToAssets(shares, Math.Rounding.Floor);
     }
 
+    /**
+     * @notice Returns true if the operator is approved for the controller.
+     * @param controller The controller address.
+     * @param operator The operator address.
+     * @return True if operator is approved, false otherwise.
+     */
     function isOperator(address controller, address operator) public view virtual returns (bool) {
         return _operator[controller][operator];
     }
