@@ -11,16 +11,13 @@ const tryRead = cmd => {
   }
 };
 
-// For the time being, the confidential contracts repo will undergo rapid development. We will want docs to update live.
-// The master branch is used for development, and the docs are updated from there.
-// Use /^release-v(?<version>(?<major>\d+)\.(?<minor>\d+)(?:\.(?<patch>\d+))?)$/ for a release branch
-const masterBranch = /^master$/;
+const releaseBranchRegex = /^release-v(?<version>(?<major>\d+)\.(?<minor>\d+)(?:\.(?<patch>\d+))?)$/;
 
 const currentBranch = read('git rev-parse --abbrev-ref HEAD');
-const match = currentBranch.match(masterBranch);
+const match = currentBranch.match(releaseBranchRegex);
 
 if (!match) {
-  console.error('Not currently on master branch');
+  console.error('Not currently on a release branch');
   process.exit(1);
 }
 
@@ -34,7 +31,13 @@ if (pkgVersion.includes('-') && !pkgVersion.includes('.0.0-')) {
 const current = match.groups;
 const major = current?.major ?? pkgVersion.split('.')[0];
 const minor = current?.minor ?? pkgVersion.split('.')[1];
-const docsBranch = `docs-v${major}.x`;
+
+let docsBranch;
+if (major == '0') {
+  docsBranch = `docs-v0.${minor}.x`;
+} else {
+  docsBranch = `docs-v${major}.x`;
+}
 
 // Fetch remotes and find the docs branch if it exists
 run('git fetch --all --no-tags');
