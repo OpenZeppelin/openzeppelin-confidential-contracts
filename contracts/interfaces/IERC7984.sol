@@ -16,6 +16,14 @@ interface IERC7984 {
     event ConfidentialTransfer(address indexed from, address indexed to, euint64 indexed amount);
 
     /**
+     * @dev Emitted when an encrypted amount is requested for disclosure by `requester`.
+     *
+     * Both `requester` and contract must have permission to access the encrypted amount `encryptedAmount`
+     * to request disclosure of the encrypted amount `encryptedAmount`
+     */
+    event AmountDiscloseRequested(euint64 indexed encryptedAmount, address indexed requester);
+
+    /**
      * @dev Emitted when an encrypted amount is disclosed.
      *
      * Accounts with access to the encrypted amount `encryptedAmount` that is also accessible to this contract

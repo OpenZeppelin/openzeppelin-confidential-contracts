@@ -1,5 +1,6 @@
 import { allowHandle } from '../../helpers/accounts';
 import { FhevmType } from '@fhevm/hardhat-plugin';
+import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
 import hre, { ethers, fhevm } from 'hardhat';
 
@@ -519,10 +520,12 @@ describe('ERC7984', function () {
   describe('disclose', function () {
     let expectedAmount: any;
     let expectedHandle: any;
+    let requester: any;
 
     beforeEach(async function () {
       expectedAmount = undefined;
       expectedHandle = undefined;
+      requester = undefined;
     });
 
     it('user balance', async function () {
@@ -530,6 +533,7 @@ describe('ERC7984', function () {
 
       await this.token.connect(this.holder).discloseEncryptedAmount(holderBalanceHandle);
 
+      requester = this.holder.address;
       expectedAmount = 1000n;
       expectedHandle = holderBalanceHandle;
     });
@@ -551,6 +555,7 @@ describe('ERC7984', function () {
 
       await this.token.connect(this.recipient).discloseEncryptedAmount(transferAmount);
 
+      requester = this.recipient.address;
       expectedAmount = 400n;
       expectedHandle = transferAmount;
     });
@@ -567,13 +572,30 @@ describe('ERC7984', function () {
       const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
       await this.token.connect(this.holder).discloseEncryptedAmount(holderBalanceHandle);
 
-      await expect(this.token.connect(this.holder).finalizeDiscloseEncryptedAmount(0, '0x', '0x')).to.be.reverted;
+      await expect(this.token.connect(this.holder).finalizeDiscloseEncryptedAmount(holderBalanceHandle, '0x', '0x')).to
+        .be.reverted;
     });
 
     afterEach(async function () {
       if (expectedHandle === undefined || expectedAmount === undefined) return;
 
-      await fhevm.awaitDecryptionOracle();
+      const amountDiscloseRequestedEvent = (
+        await this.token.queryFilter(this.token.filters.AmountDiscloseRequested())
+      )[0];
+
+      expect(expectedHandle).to.equal(amountDiscloseRequestedEvent.args[0]);
+      expect(requester).to.equal(amountDiscloseRequestedEvent.args[1]);
+
+      const publicDecryptResults = await fhevm.publicDecrypt([expectedHandle]);
+
+      const tx = await this.token
+        .connect(this.holder)
+        .finalizeDiscloseEncryptedAmount(
+          expectedHandle,
+          publicDecryptResults.abiEncodedClearValues,
+          publicDecryptResults.decryptionProof,
+        );
+      await tx.wait();
 
       // Check that event was correctly emitted
       const eventFilter = this.token.filters.AmountDisclosed();

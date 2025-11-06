@@ -131,10 +131,23 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    function nextUnwrapRequestId() public view returns (uint256) {
-        return _counterUnwrapRequestId + 1;
+    /**
+     * @notice Returns the total number of unwrap requests that have been initiated so far.
+     * @dev This count can be used by dApps to keep track of the overall number of requests
+     * and to check the status of a specific request ID.
+     * @return The current total number of unwrap requests.
+     */
+    function getUnwrapRequestCount() public view returns (uint256) {
+        return _counterUnwrapRequestId;
     }
 
+    /**
+     * @notice Checks the status of a specific unwrap request ID.
+     * @dev An unwrap request is considered finalized if its ID is within the valid range (i.e., less than the total count)
+     * AND its `UnwrapRequest` struct has been deleted after processing.
+     * @param requestID The ID of the unwrap request to check (requestID > 0).
+     * @return true if the unwrap request has been successfully finalized; false otherwise.
+     */
     function unwrapFinalized(uint256 requestID) public view returns (bool) {
         return (requestID <= _counterUnwrapRequestId && _unwrapRequests[requestID].receiver == address(0));
     }

@@ -1,4 +1,6 @@
+import { ERC7984ERC20WrapperMock } from '../../../../types';
 import { FhevmType } from '@fhevm/hardhat-plugin';
+import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
@@ -26,6 +28,29 @@ describe('ERC7984Wrapper', function () {
     await this.token.$_mint(this.holder.address, ethers.parseUnits('1000', 18));
     await this.token.connect(this.holder).approve(this.wrapper, ethers.MaxUint256);
   });
+
+  async function publicDecryptAndFinalizeUnwrap(
+    caller: HardhatEthersSigner,
+    receiverAddress: string,
+    wrapper: ERC7984ERC20WrapperMock,
+  ) {
+    const unwrapEventFilter = wrapper.filters.UnwrapRequested();
+    const unwrapEvent = (await wrapper.queryFilter(unwrapEventFilter))[0];
+
+    const requestId = unwrapEvent.args[0];
+    const receiver = unwrapEvent.args[1];
+    const amount = unwrapEvent.args[2];
+
+    expect(requestId).to.equal(1n);
+    expect(receiver).to.equal(receiverAddress);
+
+    const publicDecryptResults = await fhevm.publicDecrypt([amount]);
+
+    const tx = await wrapper
+      .connect(caller)
+      .finalizeUnwrap(requestId, publicDecryptResults.abiEncodedClearValues, publicDecryptResults.decryptionProof);
+    await tx.wait();
+  }
 
   describe('Wrap', async function () {
     for (const viaCallback of [false, true]) {
@@ -122,7 +147,7 @@ describe('ERC7984Wrapper', function () {
         .add64(withdrawalAmount)
         .encrypt();
 
-      await this.wrapper
+      const tx = await this.wrapper
         .connect(this.holder)
         ['unwrap(address,address,bytes32,bytes)'](
           this.holder,
@@ -130,9 +155,9 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.handles[0],
           encryptedInput.inputProof,
         );
+      await tx.wait();
 
-      // wait for gateway to process the request
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.accounts[0], this.holder.address, this.wrapper);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(
         withdrawalAmount * 10n ** 12n + ethers.parseUnits('900', 18),
@@ -143,7 +168,7 @@ describe('ERC7984Wrapper', function () {
       await this.wrapper
         .connect(this.holder)
         .unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.accounts[0], this.holder.address, this.wrapper);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
     });
@@ -163,7 +188,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.accounts[0], this.holder.address, this.wrapper);
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
     });
 
@@ -205,8 +230,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      // wait for gateway to process the request
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.accounts[0], this.holder.address, this.wrapper);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
     });
