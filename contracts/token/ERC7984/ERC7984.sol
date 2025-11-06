@@ -188,23 +188,23 @@ abstract contract ERC7984 is IERC7984 {
         FHE.allowTransient(transferred, msg.sender);
     }
 
-    /**
-     * @dev Discloses an encrypted amount `encryptedAmount` publicly via an {IERC7984-AmountDisclosed}
-     * event. The caller and this contract must be authorized to use the encrypted amount on the ACL.
-     *
-     * NOTE: This is an asynchronous operation where the actual decryption happens off-chain and
-     * {finalizeDiscloseEncryptedAmount} is called with the result.
-     */
-    function discloseEncryptedAmount(euint64 encryptedAmount) public virtual {
-        require(
-            FHE.isAllowed(encryptedAmount, msg.sender),
-            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
-        );
+    // /**
+    //  * @dev Discloses an encrypted amount `encryptedAmount` publicly via an {IERC7984-AmountDisclosed}
+    //  * event. The caller and this contract must be authorized to use the encrypted amount on the ACL.
+    //  *
+    //  * NOTE: This is an asynchronous operation where the actual decryption happens off-chain and
+    //  * {finalizeDiscloseEncryptedAmount} is called with the result.
+    //  */
+    // function discloseEncryptedAmount(euint64 encryptedAmount) public virtual {
+    //     require(
+    //         FHE.isAllowed(encryptedAmount, msg.sender),
+    //         ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+    //     );
 
-        bytes32[] memory cts = new bytes32[](1);
-        cts[0] = euint64.unwrap(encryptedAmount);
-        FHE.requestDecryption(cts, this.finalizeDiscloseEncryptedAmount.selector);
-    }
+    //     bytes32[] memory cts = new bytes32[](1);
+    //     cts[0] = euint64.unwrap(encryptedAmount);
+    //     FHE.requestDecryption(cts, this.finalizeDiscloseEncryptedAmount.selector);
+    // }
 
     /**
      * @dev Finalizes a disclose encrypted amount request.
@@ -217,15 +217,17 @@ abstract contract ERC7984 is IERC7984 {
      * The downside of this behavior is that a {finalizeDiscloseEncryptedAmount} watcher might observe
      * unexpected `AmountDisclosed` events.
      */
-    function finalizeDiscloseEncryptedAmount(
-        uint256 requestId,
-        bytes calldata cleartexts,
-        bytes calldata decryptionProof
-    ) public virtual {
-        FHE.checkSignatures(requestId, cleartexts, decryptionProof);
-        euint64 requestHandle = euint64.wrap(FHE.loadRequestedHandles(requestId)[0]);
-        emit AmountDisclosed(requestHandle, abi.decode(cleartexts, (uint64)));
-    }
+    // function finalizeDiscloseEncryptedAmount(
+    //     euint64 encryptedAmount,
+    //     bytes calldata cleartexts,
+    //     bytes calldata decryptionProof
+    // ) public virtual {
+    //     //ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+    //     bytes32[] memory cts = new bytes32[](1);
+    //     cts[0] = euint64.unwrap(encryptedAmount);
+    //     FHE.verifySignatures(cts, cleartexts, decryptionProof);
+    //     emit AmountDisclosed(encryptedAmount, abi.decode(cleartexts, (uint64)));
+    // }
 
     function _setOperator(address holder, address operator, uint48 until) internal virtual {
         _operators[holder][operator] = until;

@@ -18,28 +18,28 @@ contract SwapConfidentialToERC20 {
         _toToken = toToken;
     }
 
-    function swapConfidentialToERC20(externalEuint64 encryptedInput, bytes memory inputProof) public {
-        euint64 amount = FHE.fromExternal(encryptedInput, inputProof);
-        FHE.allowTransient(amount, address(_fromToken));
-        euint64 amountTransferred = _fromToken.confidentialTransferFrom(msg.sender, address(this), amount);
+    // function swapConfidentialToERC20(externalEuint64 encryptedInput, bytes memory inputProof) public {
+    //     euint64 amount = FHE.fromExternal(encryptedInput, inputProof);
+    //     FHE.allowTransient(amount, address(_fromToken));
+    //     euint64 amountTransferred = _fromToken.confidentialTransferFrom(msg.sender, address(this), amount);
 
-        bytes32[] memory cts = new bytes32[](1);
-        cts[0] = euint64.unwrap(amountTransferred);
-        uint256 requestID = FHE.requestDecryption(cts, this.finalizeSwap.selector);
+    //     bytes32[] memory cts = new bytes32[](1);
+    //     cts[0] = euint64.unwrap(amountTransferred);
+    //     uint256 requestID = FHE.requestDecryption(cts, this.finalizeSwap.selector);
 
-        // register who is getting the tokens
-        _receivers[requestID] = msg.sender;
-    }
+    //     // register who is getting the tokens
+    //     _receivers[requestID] = msg.sender;
+    // }
 
-    function finalizeSwap(uint256 requestID, bytes calldata cleartexts, bytes calldata decryptionProof) public virtual {
-        FHE.checkSignatures(requestID, cleartexts, decryptionProof);
-        uint64 amount = abi.decode(cleartexts, (uint64));
-        address to = _receivers[requestID];
-        require(to != address(0), SwapConfidentialToERC20InvalidGatewayRequest(requestID));
-        delete _receivers[requestID];
+    // function finalizeSwap(uint256 requestID, bytes calldata cleartexts, bytes calldata decryptionProof) public virtual {
+    //     FHE.checkSignatures(requestID, cleartexts, decryptionProof);
+    //     uint64 amount = abi.decode(cleartexts, (uint64));
+    //     address to = _receivers[requestID];
+    //     require(to != address(0), SwapConfidentialToERC20InvalidGatewayRequest(requestID));
+    //     delete _receivers[requestID];
 
-        if (amount != 0) {
-            SafeERC20.safeTransfer(_toToken, to, amount);
-        }
-    }
+    //     if (amount != 0) {
+    //         SafeERC20.safeTransfer(_toToken, to, amount);
+    //     }
+    // }
 }

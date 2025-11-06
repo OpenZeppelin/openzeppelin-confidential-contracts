@@ -24,8 +24,15 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     uint8 private immutable _decimals;
     uint256 private immutable _rate;
 
-    /// @dev Mapping from gateway decryption request ID to the address that will receive the tokens
-    mapping(uint256 decryptionRequest => address) private _receivers;
+    uint256 private _counterUnwrapRequestId;
+    mapping(uint256 unwrapRequestId => UnwrapRequest unwrapRequest) private _unwrapRequests;
+
+    struct UnwrapRequest {
+        address receiver;
+        euint64 amount;
+    }
+
+    event UnwrapRequested(uint256 indexed requestID, address receiver, euint64 amount);
 
     constructor(IERC20 underlying_) {
         _underlying = underlying_;
@@ -124,6 +131,14 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
+    function nextUnwrapRequestId() public view returns (uint256) {
+        return _counterUnwrapRequestId + 1;
+    }
+
+    function unwrapFinalized(uint256 requestID) public view returns (bool) {
+        return (requestID <= _counterUnwrapRequestId && _unwrapRequests[requestID].receiver == address(0));
+    }
+
     /**
      * @dev Fills an unwrap request for a given request id related to a decrypted unwrap amount.
      */
@@ -132,10 +147,18 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         bytes calldata cleartexts,
         bytes calldata decryptionProof
     ) public virtual {
-        FHE.checkSignatures(requestID, cleartexts, decryptionProof);
-        address to = _receivers[requestID];
+        address to = _unwrapRequests[requestID].receiver;
         require(to != address(0), ERC7984InvalidGatewayRequest(requestID));
-        delete _receivers[requestID];
+
+        bytes32 handle = FHE.toBytes32(_unwrapRequests[requestID].amount);
+        require(handle != bytes32(0), ERC7984InvalidGatewayRequest(requestID));
+
+        delete _unwrapRequests[requestID];
+        // From now on: unwrapFinalized(requestID) == true
+
+        bytes32[] memory handlesList = new bytes32[](1);
+        handlesList[0] = handle;
+        FHE.verifySignatures(handlesList, cleartexts, decryptionProof);
 
         SafeERC20.safeTransfer(underlying(), to, abi.decode(cleartexts, (uint64)) * rate());
     }
@@ -144,16 +167,20 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         require(to != address(0), ERC7984InvalidReceiver(to));
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
+        _counterUnwrapRequestId++;
+
+        // Starts at 1, requestID > 0
+        uint256 requestID = _counterUnwrapRequestId;
+
         // try to burn, see how much we actually got
         euint64 burntAmount = _burn(from, amount);
 
-        // decrypt that burntAmount
-        bytes32[] memory cts = new bytes32[](1);
-        cts[0] = euint64.unwrap(burntAmount);
-        uint256 requestID = FHE.requestDecryption(cts, this.finalizeUnwrap.selector);
+        FHE.makePubliclyDecryptable(burntAmount);
 
         // register who is getting the tokens
-        _receivers[requestID] = to;
+        _unwrapRequests[requestID] = UnwrapRequest({receiver: to, amount: burntAmount});
+
+        emit UnwrapRequested(requestID, to, burntAmount);
     }
 
     /**

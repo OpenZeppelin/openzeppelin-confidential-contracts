@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.27;
 
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {EthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, eaddress, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984} from "../../token/ERC7984/ERC7984.sol";
 
 // solhint-disable func-name-mixedcase
-contract ERC7984Mock is ERC7984, SepoliaConfig {
+contract ERC7984Mock is ERC7984, EthereumConfig {
     address private immutable _OWNER;
 
     event EncryptedAmountCreated(euint64 amount);

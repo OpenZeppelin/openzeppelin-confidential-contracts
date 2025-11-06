@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.27;
 
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {EthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984ObserverAccess} from "../../token/ERC7984/extensions/ERC7984ObserverAccess.sol";
 import {ERC7984Mock} from "./ERC7984Mock.sol";

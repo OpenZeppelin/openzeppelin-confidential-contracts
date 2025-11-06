@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {EthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
 
-contract HandleAccessManagerMock is HandleAccessManager, SepoliaConfig {
+contract HandleAccessManagerMock is HandleAccessManager, EthereumConfig {
     event HandleCreated(euint64 handle);
 
     function _validateHandleAllowance(bytes32 handle) internal view override {}
