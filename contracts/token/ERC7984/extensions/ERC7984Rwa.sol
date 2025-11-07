@@ -120,7 +120,9 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 mintedAmount = _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(mintedAmount, msg.sender);
+        return mintedAmount;
     }
 
     /// @dev Mints confidential amount of tokens to account.
@@ -129,7 +131,9 @@ abstract contract ERC7984Rwa is
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _mint(to, encryptedAmount);
+        euint64 mintedAmount = _mint(to, encryptedAmount);
+        FHE.allow(mintedAmount, msg.sender);
+        return mintedAmount;
     }
 
     /// @dev Burns confidential amount of tokens from account with proof.
@@ -138,7 +142,9 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 burnedAmount = _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(burnedAmount, msg.sender);
+        return burnedAmount;
     }
 
     /// @dev Burns confidential amount of tokens from account.
@@ -147,7 +153,9 @@ abstract contract ERC7984Rwa is
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _burn(account, encryptedAmount);
+        euint64 burnedAmount = _burn(account, encryptedAmount);
+        FHE.allow(burnedAmount, msg.sender);
+        return burnedAmount;
     }
 
     /// @dev Forces transfer of confidential amount of tokens from account to account with proof by skipping compliance checks.
@@ -157,7 +165,9 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 forceTransferAmount = _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(forceTransferAmount, msg.sender);
+        return forceTransferAmount;
     }
 
     /// @dev Forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
@@ -170,7 +180,9 @@ abstract contract ERC7984Rwa is
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _forceUpdate(from, to, encryptedAmount);
+        euint64 forceTransferAmount = _forceUpdate(from, to, encryptedAmount);
+        FHE.allow(forceTransferAmount, msg.sender);
+        return forceTransferAmount;
     }
 
     /// @inheritdoc ERC7984Freezable
