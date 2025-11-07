@@ -24,15 +24,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     uint8 private immutable _decimals;
     uint256 private immutable _rate;
 
-    uint256 private _counterUnwrapRequestId;
-    mapping(uint256 unwrapRequestId => UnwrapRequest unwrapRequest) private _unwrapRequests;
+    mapping(bytes32 unwrapRequestId => bool valid) private _unwrapRequests;
 
-    struct UnwrapRequest {
-        address receiver;
-        euint64 amount;
-    }
+    event UnwrapRequested(address indexed receiver, euint64 amount);
+    event UnwrapFinalized(address indexed receiver, euint64 encryptedAmount, uint64 cleartextAmount);
 
-    event UnwrapRequested(uint256 indexed requestID, address receiver, euint64 amount);
+    error InvalidUnwrapRequest(address to, euint64 amount);
 
     constructor(IERC20 underlying_) {
         _underlying = underlying_;
@@ -132,68 +129,42 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     }
 
     /**
-     * @notice Returns the total number of unwrap requests that have been initiated so far.
-     * @dev This count can be used by dApps to keep track of the overall number of requests
-     * and to check the status of a specific request ID.
-     * @return The current total number of unwrap requests.
-     */
-    function getUnwrapRequestCount() public view returns (uint256) {
-        return _counterUnwrapRequestId;
-    }
-
-    /**
-     * @notice Checks the status of a specific unwrap request ID.
-     * @dev An unwrap request is considered finalized if its ID is within the valid range (i.e., less than the total count)
-     * AND its `UnwrapRequest` struct has been deleted after processing.
-     * @param requestID The ID of the unwrap request to check (requestID > 0).
-     * @return true if the unwrap request has been successfully finalized; false otherwise.
-     */
-    function unwrapFinalized(uint256 requestID) public view returns (bool) {
-        return (requestID <= _counterUnwrapRequestId && _unwrapRequests[requestID].receiver == address(0));
-    }
-
-    /**
      * @dev Fills an unwrap request for a given request id related to a decrypted unwrap amount.
      */
     function finalizeUnwrap(
-        uint256 requestID,
-        bytes calldata cleartexts,
+        address to,
+        euint64 burntAmount,
+        uint64 burntAmountCleartext,
         bytes calldata decryptionProof
     ) public virtual {
-        address to = _unwrapRequests[requestID].receiver;
-        require(to != address(0), ERC7984InvalidGatewayRequest(requestID));
-
-        bytes32 handle = FHE.toBytes32(_unwrapRequests[requestID].amount);
-        require(handle != bytes32(0), ERC7984InvalidGatewayRequest(requestID));
-
-        delete _unwrapRequests[requestID];
-        // From now on: unwrapFinalized(requestID) == true
+        bytes32 requestId = keccak256(abi.encodePacked(block.number, burntAmount, to));
+        require(_unwrapRequests[requestId], InvalidUnwrapRequest(to, burntAmount));
+        delete _unwrapRequests[requestId];
 
         bytes32[] memory handlesList = new bytes32[](1);
-        handlesList[0] = handle;
-        FHE.verifySignatures(handlesList, cleartexts, decryptionProof);
+        handlesList[0] = euint64.unwrap(burntAmount);
 
-        SafeERC20.safeTransfer(underlying(), to, abi.decode(cleartexts, (uint64)) * rate());
+        bytes memory clearTexts = abi.encode(burntAmountCleartext);
+
+        FHE.verifySignatures(handlesList, clearTexts, decryptionProof);
+
+        SafeERC20.safeTransfer(underlying(), to, burntAmountCleartext * rate());
+
+        emit UnwrapFinalized(to, burntAmount, burntAmountCleartext);
     }
 
     function _unwrap(address from, address to, euint64 amount) internal virtual {
         require(to != address(0), ERC7984InvalidReceiver(to));
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
-        _counterUnwrapRequestId++;
-
-        // Starts at 1, requestID > 0
-        uint256 requestID = _counterUnwrapRequestId;
-
         // try to burn, see how much we actually got
         euint64 burntAmount = _burn(from, amount);
-
         FHE.makePubliclyDecryptable(burntAmount);
 
-        // register who is getting the tokens
-        _unwrapRequests[requestID] = UnwrapRequest({receiver: to, amount: burntAmount});
+        bytes32 requestId = keccak256(abi.encodePacked(block.number, burntAmount, to));
+        _unwrapRequests[requestId] = true;
 
-        emit UnwrapRequested(requestID, to, burntAmount);
+        emit UnwrapRequested(to, burntAmount);
     }
 
     /**
