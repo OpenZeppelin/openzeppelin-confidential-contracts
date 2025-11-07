@@ -93,7 +93,7 @@ abstract contract ERC7984Rwa is
 
     /// @dev Unblocks a user account.
     function unblockUser(address account) public virtual onlyAgent {
-        _allowUser(account);
+        _resetUser(account);
     }
 
     /// @dev Sets confidential frozen for an account.
