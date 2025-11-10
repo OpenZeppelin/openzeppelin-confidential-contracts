@@ -3,6 +3,8 @@
 pragma solidity ^0.8.27;
 
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC7984} from "./../../interfaces/IERC7984.sol";
 import {FHESafeMath} from "./../../utils/FHESafeMath.sol";
 import {ERC7984Utils} from "./utils/ERC7984Utils.sol";
@@ -22,7 +24,7 @@ import {ERC7984Utils} from "./utils/ERC7984Utils.sol";
  * - Transfer and call pattern
  * - Safe overflow/underflow handling for FHE operations
  */
-abstract contract ERC7984 is IERC7984 {
+abstract contract ERC7984 is IERC7984, ERC165 {
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
     euint64 private _totalSupply;
@@ -59,6 +61,11 @@ abstract contract ERC7984 is IERC7984 {
         _name = name_;
         _symbol = symbol_;
         _contractURI = contractURI_;
+    }
+
+    /// @inheritdoc ERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC165) returns (bool) {
+        return interfaceId == type(IERC7984).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @inheritdoc IERC7984

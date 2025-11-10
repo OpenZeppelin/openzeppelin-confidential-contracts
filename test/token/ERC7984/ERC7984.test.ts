@@ -1,4 +1,6 @@
+import { IERC165__factory, IERC7984__factory } from '../../../types';
 import { allowHandle } from '../../helpers/accounts';
+import { getFunctions, getInterfaceId } from '../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import hre, { ethers, fhevm } from 'hardhat';
@@ -45,6 +47,21 @@ describe('ERC7984', function () {
 
     it('decimals is 6', async function () {
       await expect(this.token.decimals()).to.eventually.equal(6);
+    });
+  });
+
+  describe('ERC165', async function () {
+    it('should support interface', async function () {
+      const erc7984Functions = [IERC7984__factory, IERC165__factory].flatMap(interfaceFactory =>
+        getFunctions(interfaceFactory),
+      );
+      const erc165Functions = getFunctions(IERC165__factory);
+      for (let functions of [erc7984Functions, erc165Functions]) {
+        expect(await this.token.supportsInterface(getInterfaceId(functions))).is.true;
+      }
+    });
+    it('should not support interface', async function () {
+      expect(await this.token.supportsInterface('0xbadbadba')).is.false;
     });
   });
 

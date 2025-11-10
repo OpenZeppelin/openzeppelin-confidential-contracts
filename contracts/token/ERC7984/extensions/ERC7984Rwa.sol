@@ -19,15 +19,7 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  * @dev Extension of {ERC7984} that supports confidential Real World Assets (RWAs).
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
-abstract contract ERC7984Rwa is
-    IERC7984Rwa,
-    ERC7984Freezable,
-    ERC7984Restricted,
-    Pausable,
-    Multicall,
-    ERC165,
-    AccessControl
-{
+abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, AccessControl {
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
     /// @dev Checks if the sender is an admin.
@@ -49,11 +41,8 @@ abstract contract ERC7984Rwa is
     /// @inheritdoc ERC165
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(IERC165, ERC165, AccessControl) returns (bool) {
-        return
-            interfaceId == type(IERC7984Rwa).interfaceId ||
-            interfaceId == type(IERC7984).interfaceId ||
-            super.supportsInterface(interfaceId);
+    ) public view virtual override(IERC165, ERC7984, AccessControl) returns (bool) {
+        return interfaceId == type(IERC7984Rwa).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @dev Returns true if has admin role, false otherwise.
