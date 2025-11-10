@@ -11,7 +11,6 @@ import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC7984} from "./../../../interfaces/IERC7984.sol";
 import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
-import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984} from "./../ERC7984.sol";
 import {ERC7984Freezable} from "./ERC7984Freezable.sol";
 import {ERC7984Restricted} from "./ERC7984Restricted.sol";
