@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.27;
 
 import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC7984} from "../../interfaces/IERC7984.sol";
 
-contract SwapConfidentialToERC20 {
-    error SwapConfidentialToERC20InvalidGatewayRequest(uint256 requestId);
+contract SwapERC7984ToERC20 {
+    error SwapERC7984ToERC20InvalidFinalization(euint64 amount);
 
-    mapping(uint256 requestId => address) private _receivers;
+    mapping(euint64 amount => address) private _receivers;
     IERC7984 private _fromToken;
     IERC20 private _toToken;
 
@@ -18,28 +18,26 @@ contract SwapConfidentialToERC20 {
         _toToken = toToken;
     }
 
-    // function swapConfidentialToERC20(externalEuint64 encryptedInput, bytes memory inputProof) public {
-    //     euint64 amount = FHE.fromExternal(encryptedInput, inputProof);
-    //     FHE.allowTransient(amount, address(_fromToken));
-    //     euint64 amountTransferred = _fromToken.confidentialTransferFrom(msg.sender, address(this), amount);
+    function swapConfidentialToERC20(externalEuint64 encryptedInput, bytes memory inputProof) public {
+        euint64 amount = FHE.fromExternal(encryptedInput, inputProof);
+        FHE.allowTransient(amount, address(_fromToken));
+        euint64 amountTransferred = _fromToken.confidentialTransferFrom(msg.sender, address(this), amount);
 
-    //     bytes32[] memory cts = new bytes32[](1);
-    //     cts[0] = euint64.unwrap(amountTransferred);
-    //     uint256 requestID = FHE.requestDecryption(cts, this.finalizeSwap.selector);
+        FHE.makePubliclyDecryptable(amountTransferred);
+        _receivers[amountTransferred] = msg.sender;
+    }
 
-    //     // register who is getting the tokens
-    //     _receivers[requestID] = msg.sender;
-    // }
+    function finalizeSwap(euint64 amount, uint64 cleartext, bytes calldata decryptionProof) public virtual {
+        bytes32[] memory handlesList = new bytes32[](1);
+        handlesList[0] = euint64.unwrap(amount);
 
-    // function finalizeSwap(uint256 requestID, bytes calldata cleartexts, bytes calldata decryptionProof) public virtual {
-    //     FHE.checkSignatures(requestID, cleartexts, decryptionProof);
-    //     uint64 amount = abi.decode(cleartexts, (uint64));
-    //     address to = _receivers[requestID];
-    //     require(to != address(0), SwapConfidentialToERC20InvalidGatewayRequest(requestID));
-    //     delete _receivers[requestID];
+        FHE.verifySignatures(handlesList, abi.encode(cleartext), decryptionProof);
+        address to = _receivers[amount];
+        require(to != address(0), SwapERC7984ToERC20InvalidFinalization(amount));
+        delete _receivers[amount];
 
-    //     if (amount != 0) {
-    //         SafeERC20.safeTransfer(_toToken, to, amount);
-    //     }
-    // }
+        if (cleartext != 0) {
+            SafeERC20.safeTransfer(_toToken, to, cleartext);
+        }
+    }
 }
