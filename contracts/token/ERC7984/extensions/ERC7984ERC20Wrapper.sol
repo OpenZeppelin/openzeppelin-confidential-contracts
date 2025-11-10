@@ -137,7 +137,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         uint64 burntAmountCleartext,
         bytes calldata decryptionProof
     ) public virtual {
-        bytes32 requestId = keccak256(abi.encodePacked(block.number, burntAmount, to));
+        bytes32 requestId = keccak256(abi.encodePacked(burntAmount, to));
         require(_unwrapRequests[requestId], InvalidUnwrapRequest(to, burntAmount));
         delete _unwrapRequests[requestId];
 
@@ -161,7 +161,8 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         euint64 burntAmount = _burn(from, amount);
         FHE.makePubliclyDecryptable(burntAmount);
 
-        bytes32 requestId = keccak256(abi.encodePacked(block.number, burntAmount, to));
+        bytes32 requestId = keccak256(abi.encodePacked(burntAmount, to));
+        assert(!_unwrapRequests[requestId]);
         _unwrapRequests[requestId] = true;
 
         emit UnwrapRequested(to, burntAmount);
