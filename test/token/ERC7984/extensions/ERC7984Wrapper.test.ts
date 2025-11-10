@@ -3,6 +3,7 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
+import { AddressLike } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
@@ -28,29 +29,6 @@ describe('ERC7984Wrapper', function () {
     await this.token.$_mint(this.holder.address, ethers.parseUnits('1000', 18));
     await this.token.connect(this.holder).approve(this.wrapper, ethers.MaxUint256);
   });
-
-  async function publicDecryptAndFinalizeUnwrap(
-    caller: HardhatEthersSigner,
-    receiverAddress: string,
-    wrapper: ERC7984ERC20WrapperMock,
-  ) {
-    const unwrapEventFilter = wrapper.filters.UnwrapRequested();
-    const unwrapEvent = (await wrapper.queryFilter(unwrapEventFilter))[0];
-
-    const requestId = unwrapEvent.args[0];
-    const receiver = unwrapEvent.args[1];
-    const amount = unwrapEvent.args[2];
-
-    expect(requestId).to.equal(1n);
-    expect(receiver).to.equal(receiverAddress);
-
-    const publicDecryptResults = await fhevm.publicDecrypt([amount]);
-
-    const tx = await wrapper
-      .connect(caller)
-      .finalizeUnwrap(requestId, publicDecryptResults.abiEncodedClearValues, publicDecryptResults.decryptionProof);
-    await tx.wait();
-  }
 
   describe('Wrap', async function () {
     for (const viaCallback of [false, true]) {
@@ -147,7 +125,7 @@ describe('ERC7984Wrapper', function () {
         .add64(withdrawalAmount)
         .encrypt();
 
-      const tx = await this.wrapper
+      await this.wrapper
         .connect(this.holder)
         ['unwrap(address,address,bytes32,bytes)'](
           this.holder,
@@ -155,9 +133,8 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.handles[0],
           encryptedInput.inputProof,
         );
-      await tx.wait();
 
-      await publicDecryptAndFinalizeUnwrap(this.accounts[0], this.holder.address, this.wrapper);
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder, this.holder);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(
         withdrawalAmount * 10n ** 12n + ethers.parseUnits('900', 18),
@@ -168,7 +145,7 @@ describe('ERC7984Wrapper', function () {
       await this.wrapper
         .connect(this.holder)
         .unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
-      await publicDecryptAndFinalizeUnwrap(this.accounts[0], this.holder.address, this.wrapper);
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder, this.holder);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
     });
@@ -188,7 +165,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      await publicDecryptAndFinalizeUnwrap(this.accounts[0], this.holder.address, this.wrapper);
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder, this.holder);
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
     });
 
@@ -230,7 +207,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      await publicDecryptAndFinalizeUnwrap(this.accounts[0], this.holder.address, this.wrapper);
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.operator, this.holder);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
     });
@@ -264,7 +241,41 @@ describe('ERC7984Wrapper', function () {
     });
 
     it('finalized with invalid signature', async function () {
-      await expect(this.wrapper.connect(this.holder).finalizeUnwrap(0, '0x', '0x')).to.be.reverted;
+      const withdrawalAmount = ethers.parseUnits('10', 6);
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.wrapper.target, this.holder.address)
+        .add64(withdrawalAmount)
+        .encrypt();
+
+      await this.wrapper
+        .connect(this.holder)
+        ['unwrap(address,address,bytes32,bytes)'](
+          this.holder,
+          this.holder,
+          encryptedInput.handles[0],
+          encryptedInput.inputProof,
+        );
+
+      const event = (await this.wrapper.queryFilter(this.wrapper.filters.UnwrapRequested()))[0];
+      const unwrapAmount = event.args[1];
+      const publicDecryptResults = await fhevm.publicDecrypt([unwrapAmount]);
+
+      await expect(
+        this.wrapper
+          .connect(this.holder)
+          .finalizeUnwrap(
+            this.holder,
+            unwrapAmount,
+            publicDecryptResults.abiEncodedClearValues,
+            publicDecryptResults.decryptionProof.slice(0, publicDecryptResults.decryptionProof.length - 2),
+          ),
+      ).to.be.reverted;
+    });
+
+    it('finalize invalid unwrap request', async function () {
+      await expect(
+        this.wrapper.connect(this.holder).finalizeUnwrap(this.holder, ethers.ZeroHash, 0, '0x'),
+      ).to.be.revertedWithCustomError(this.wrapper, 'InvalidUnwrapRequest');
     });
   });
 
@@ -310,3 +321,30 @@ describe('ERC7984Wrapper', function () {
   });
 });
 /* eslint-disable no-unexpected-multiline */
+
+async function publicDecryptAndFinalizeUnwrap(
+  wrapper: ERC7984ERC20WrapperMock,
+  caller: HardhatEthersSigner,
+  to: AddressLike,
+) {
+  const unwrapEventFilter = wrapper.filters.UnwrapRequested();
+  const unwrapEvent = (await wrapper.queryFilter(unwrapEventFilter))[0];
+
+  const to_ = unwrapEvent.args[0];
+  const amount = unwrapEvent.args[1];
+
+  expect(to_).to.equal(to);
+
+  const publicDecryptResults = await fhevm.publicDecrypt([amount]);
+
+  await wrapper
+    .connect(caller)
+    .finalizeUnwrap(to, amount, publicDecryptResults.abiEncodedClearValues, publicDecryptResults.decryptionProof);
+
+  const unwrapFinalizedEventFilter = wrapper.filters.UnwrapFinalized();
+  const unwrapFinalizedEvent = (await wrapper.queryFilter(unwrapFinalizedEventFilter))[0];
+
+  expect(unwrapFinalizedEvent.args[0]).to.eq(to);
+  expect(unwrapFinalizedEvent.args[1]).to.eq(amount);
+  expect(unwrapFinalizedEvent.args[2]).to.eq(publicDecryptResults.abiEncodedClearValues);
+}
