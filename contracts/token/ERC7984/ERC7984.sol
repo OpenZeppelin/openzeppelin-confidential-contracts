@@ -30,12 +30,7 @@ abstract contract ERC7984 is IERC7984 {
     string private _symbol;
     string private _contractURI;
 
-    /**
-     * @dev Emitted when an encrypted amount is requested for disclosure by `requester`.
-     *
-     * Both `requester` and contract must have permission to access the encrypted amount `encryptedAmount`
-     * to request disclosure of the encrypted amount `encryptedAmount`.
-     */
+    /// @dev Emitted when an encrypted amount `encryptedAmount` is requested for disclosure by `requester`.
     event AmountDiscloseRequested(euint64 indexed encryptedAmount, address indexed requester);
 
     /// @dev The given receiver `receiver` is invalid for transfers.
@@ -199,6 +194,9 @@ abstract contract ERC7984 is IERC7984 {
     /**
      * @dev Starts the process to disclose an encrypted amount `encryptedAmount` publicly by making it
      * publicly decryptable. Emits the {AmountDiscloseRequested} event.
+     *
+     * NOTE: Both `msg.sender` and `address(this)` must have permission to access the encrypted amount
+     * `encryptedAmount` to request disclosure of the encrypted amount `encryptedAmount`.
      */
     function requestDiscloseEncryptedAmount(euint64 encryptedAmount) public virtual {
         require(
