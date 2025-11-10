@@ -16,7 +16,7 @@ abstract contract ERC7821WithExecutor is Initializable, ERC7821 {
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC7821WithExecutor")) - 1)) & ~bytes32(uint256(0xff))
     // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant ERC7821WithExecutorStorageLocation =
+    bytes32 private constant ERC7821_WITH_EXECUTOR_STORAGE_LOCATION =
         0x246106ffca67a7d3806ba14f6748826b9c39c9fa594b14f83fe454e8e9d0dc00;
 
     /// @dev Trusted address that is able to execute arbitrary calls from the vesting wallet via `ERC7821.execute`.
@@ -40,7 +40,7 @@ abstract contract ERC7821WithExecutor is Initializable, ERC7821 {
 
     function _getERC7821WithExecutorStorage() private pure returns (ERC7821WithExecutorStorage storage $) {
         assembly ("memory-safe") {
-            $.slot := ERC7821WithExecutorStorageLocation
+            $.slot := ERC7821_WITH_EXECUTOR_STORAGE_LOCATION
         }
     }
 }
