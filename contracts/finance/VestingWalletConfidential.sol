@@ -34,7 +34,6 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWalletConfidential")) - 1)) & ~bytes32(uint256(0xff))
-    // solhint-disable-next-line const-name-snakecase
     bytes32 private constant VESTING_WALLET_STORAGE_LOCATION =
         0x78ce9ee9eb65fa0cf5bf10e861c3a95cb7c3c713c96ab1e5323a21e846796800;
 

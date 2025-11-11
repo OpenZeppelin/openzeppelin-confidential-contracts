@@ -16,7 +16,6 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWalletCliffConfidential")) - 1)) & ~bytes32(uint256(0xff))
-    // solhint-disable-next-line const-name-snakecase
     bytes32 private constant VESTING_WALLET_CLIFF_STORAGE_LOCATION =
         0x3c715f77db997bdb68403fafb54820cd57dedce553ed6315028656b0d601c700;
 
