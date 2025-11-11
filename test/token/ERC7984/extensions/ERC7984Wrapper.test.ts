@@ -3,7 +3,6 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import { AddressLike } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
@@ -264,7 +263,6 @@ describe('ERC7984Wrapper', function () {
         this.wrapper
           .connect(this.holder)
           .finalizeUnwrap(
-            this.holder,
             unwrapAmount,
             publicDecryptResults.abiEncodedClearValues,
             publicDecryptResults.decryptionProof.slice(0, publicDecryptResults.decryptionProof.length - 2),
@@ -274,7 +272,7 @@ describe('ERC7984Wrapper', function () {
 
     it('finalize invalid unwrap request', async function () {
       await expect(
-        this.wrapper.connect(this.holder).finalizeUnwrap(this.holder, ethers.ZeroHash, 0, '0x'),
+        this.wrapper.connect(this.holder).finalizeUnwrap(ethers.ZeroHash, 0, '0x'),
       ).to.be.revertedWithCustomError(this.wrapper, 'InvalidUnwrapRequest');
     });
   });
@@ -322,29 +320,20 @@ describe('ERC7984Wrapper', function () {
 });
 /* eslint-disable no-unexpected-multiline */
 
-async function publicDecryptAndFinalizeUnwrap(
-  wrapper: ERC7984ERC20WrapperMock,
-  caller: HardhatEthersSigner,
-  to: AddressLike,
-) {
+async function publicDecryptAndFinalizeUnwrap(wrapper: ERC7984ERC20WrapperMock, caller: HardhatEthersSigner) {
   const unwrapEventFilter = wrapper.filters.UnwrapRequested();
   const unwrapEvent = (await wrapper.queryFilter(unwrapEventFilter))[0];
 
   const to_ = unwrapEvent.args[0];
   const amount = unwrapEvent.args[1];
 
-  expect(to_).to.equal(to);
-
   const publicDecryptResults = await fhevm.publicDecrypt([amount]);
 
-  await wrapper
-    .connect(caller)
-    .finalizeUnwrap(to, amount, publicDecryptResults.abiEncodedClearValues, publicDecryptResults.decryptionProof);
-
-  const unwrapFinalizedEventFilter = wrapper.filters.UnwrapFinalized();
-  const unwrapFinalizedEvent = (await wrapper.queryFilter(unwrapFinalizedEventFilter))[0];
-
-  expect(unwrapFinalizedEvent.args[0]).to.eq(to);
-  expect(unwrapFinalizedEvent.args[1]).to.eq(amount);
-  expect(unwrapFinalizedEvent.args[2]).to.eq(publicDecryptResults.abiEncodedClearValues);
+  await expect(
+    wrapper
+      .connect(caller)
+      .finalizeUnwrap(amount, publicDecryptResults.abiEncodedClearValues, publicDecryptResults.decryptionProof),
+  )
+    .to.emit(wrapper, 'UnwrapFinalized')
+    .withArgs(to_, amount, publicDecryptResults.abiEncodedClearValues);
 }

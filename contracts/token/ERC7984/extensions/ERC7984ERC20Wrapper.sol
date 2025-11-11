@@ -24,12 +24,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     uint8 private immutable _decimals;
     uint256 private immutable _rate;
 
-    mapping(bytes32 unwrapRequestId => bool valid) private _unwrapRequests;
+    mapping(euint64 unwrapAmount => address recipient) private _unwrapRequests;
 
     event UnwrapRequested(address indexed receiver, euint64 amount);
     event UnwrapFinalized(address indexed receiver, euint64 encryptedAmount, uint64 cleartextAmount);
 
-    error InvalidUnwrapRequest(address to, euint64 amount);
+    error InvalidUnwrapRequest(euint64 amount);
 
     constructor(IERC20 underlying_) {
         _underlying = underlying_;
@@ -106,8 +106,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
      * @dev Unwraps tokens from `from` and sends the underlying tokens to `to`. The caller must be `from`
      * or be an approved operator for `from`. `amount * rate()` underlying tokens are sent to `to`.
      *
-     * NOTE: This is an asynchronous function and waits for decryption to be completed off-chain before disbursing
-     * tokens.
+     * NOTE: The unwrap request created by this function must be finalized by calling `finalizeUnwrap`.
      * NOTE: The caller *must* already be approved by ACL for the given `amount`.
      */
     function unwrap(address from, address to, euint64 amount) public virtual {
@@ -128,18 +127,15 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /**
-     * @dev Fills an unwrap request for a given request id related to a decrypted unwrap amount.
-     */
+    /// @dev Fills an unwrap request for a given cipher-text `burntAmount` with the cleartext and decryption proof.
     function finalizeUnwrap(
-        address to,
         euint64 burntAmount,
         uint64 burntAmountCleartext,
         bytes calldata decryptionProof
     ) public virtual {
-        bytes32 requestId = keccak256(abi.encodePacked(burntAmount, to));
-        require(_unwrapRequests[requestId], InvalidUnwrapRequest(to, burntAmount));
-        delete _unwrapRequests[requestId];
+        address to = _unwrapRequests[burntAmount];
+        require(to != address(0), InvalidUnwrapRequest(burntAmount));
+        delete _unwrapRequests[burntAmount];
 
         bytes32[] memory handlesList = new bytes32[](1);
         handlesList[0] = euint64.unwrap(burntAmount);
@@ -161,9 +157,8 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         euint64 burntAmount = _burn(from, amount);
         FHE.makePubliclyDecryptable(burntAmount);
 
-        bytes32 requestId = keccak256(abi.encodePacked(burntAmount, to));
-        assert(!_unwrapRequests[requestId]);
-        _unwrapRequests[requestId] = true;
+        assert(_unwrapRequests[burntAmount] == address(0));
+        _unwrapRequests[burntAmount] = to;
 
         emit UnwrapRequested(to, burntAmount);
     }
