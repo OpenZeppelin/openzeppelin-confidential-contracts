@@ -27,6 +27,16 @@ abstract contract ERC7984Rwa is
     ERC165,
     AccessControl
 {
+    /**
+     * @dev Accounts granted the agent role have the following permissioned abilities:
+     *
+     * - Mint/Burn to/from a given address (does not require any permission)
+     * - Force transfer from a given address (does not require permission)
+     *   - Bypasses pause and restriction checks (not frozen)
+     * - Pause/Unpause the contract
+     * - Block/Unblock a given account
+     * - Set frozen amount of tokens for a given account.
+     */
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
     /// @dev Checks if the sender is an admin.
