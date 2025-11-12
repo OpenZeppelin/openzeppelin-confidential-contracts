@@ -106,7 +106,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
      * @dev Unwraps tokens from `from` and sends the underlying tokens to `to`. The caller must be `from`
      * or be an approved operator for `from`. `amount * rate()` underlying tokens are sent to `to`.
      *
-     * NOTE: The unwrap request created by this function must be finalized by calling `finalizeUnwrap`.
+     * NOTE: The unwrap request created by this function must be finalized by calling {finalizeUnwrap}.
      * NOTE: The caller *must* already be approved by ACL for the given `amount`.
      */
     function unwrap(address from, address to, euint64 amount) public virtual {
