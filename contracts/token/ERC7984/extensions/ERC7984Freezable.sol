@@ -31,8 +31,16 @@ abstract contract ERC7984Freezable is ERC7984 {
         return _frozenBalances[account];
     }
 
-    /// @dev Returns the confidential available (unfrozen) balance of an account. Up to {confidentialBalanceOf}.
+    /// @dev Returns the confidential available (unfrozen) balance of an account. Gives ACL allowance to `account`.
     function confidentialAvailable(address account) public virtual returns (euint64) {
+        euint64 amount = _confidentialAvailable(account);
+        FHE.allowThis(amount);
+        FHE.allow(amount, account);
+        return amount;
+    }
+
+    /// @dev Internal function to calculate the available balance of an account. Does not give any allowances.
+    function _confidentialAvailable(address account) internal virtual returns (euint64) {
         (ebool success, euint64 unfrozen) = FHESafeMath.tryDecrease(
             confidentialBalanceOf(account),
             confidentialFrozen(account)
@@ -54,11 +62,12 @@ abstract contract ERC7984Freezable is ERC7984 {
      * The `from` account must have sufficient unfrozen balance,
      * otherwise 0 tokens are transferred.
      * The default freezing behavior can be changed (for a pass-through for instance) by overriding
-     * {confidentialAvailable}.
+     * {_confidentialAvailable}. The internal function is used for actual gating (not the public function)
+     * to avoid unnecessarily granting ACL allowances.
      */
     function _update(address from, address to, euint64 encryptedAmount) internal virtual override returns (euint64) {
         if (from != address(0)) {
-            euint64 unfrozen = confidentialAvailable(from);
+            euint64 unfrozen = _confidentialAvailable(from);
             encryptedAmount = FHE.select(FHE.le(encryptedAmount, unfrozen), encryptedAmount, FHE.asEuint64(0));
         }
         return super._update(from, to, encryptedAmount);

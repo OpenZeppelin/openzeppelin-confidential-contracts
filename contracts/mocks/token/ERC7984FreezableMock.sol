@@ -32,7 +32,7 @@ contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, HandleAccessMana
     }
 
     function confidentialAvailableAccess(address account) public {
-        euint64 available = confidentialAvailable(account);
+        euint64 available = _confidentialAvailable(account);
         FHE.allowThis(available);
         getHandleAllowance(euint64.unwrap(available), account, true);
     }
