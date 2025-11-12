@@ -10,7 +10,7 @@ import {ERC7984} from "../ERC7984.sol";
  * permanent ACL access to its transfer and balance amounts. A observer can be added or removed at any point in time.
  */
 abstract contract ERC7984ObserverAccess is ERC7984 {
-    mapping(address => address) private _observers;
+    mapping(address account => address) private _observers;
 
     /// @dev Emitted when the observer is changed for the given account `account`.
     event ERC7984ObserverAccessObserverSet(address account, address oldObserver, address newObserver);
