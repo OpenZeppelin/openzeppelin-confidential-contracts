@@ -109,7 +109,9 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 mintedAmount = _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(mintedAmount, msg.sender);
+        return mintedAmount;
     }
 
     /// @dev Mints confidential amount of tokens to account.
@@ -118,7 +120,9 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _mint(to, encryptedAmount);
+        euint64 mintedAmount = _mint(to, encryptedAmount);
+        FHE.allow(mintedAmount, msg.sender);
+        return mintedAmount;
     }
 
     /// @dev Burns confidential amount of tokens from account with proof.
@@ -127,7 +131,9 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 burntAmount = _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(burntAmount, msg.sender);
+        return burntAmount;
     }
 
     /// @dev Burns confidential amount of tokens from account.
@@ -136,7 +142,9 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _burn(account, encryptedAmount);
+        euint64 burntAmount = _burn(account, encryptedAmount);
+        FHE.allow(burntAmount, msg.sender);
+        return burntAmount;
     }
 
     /// @dev Forces transfer of confidential amount of tokens from account to account with proof by skipping compliance checks.
@@ -202,7 +210,9 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
     function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
         // bypassing `from` restriction check with {_checkSenderRestriction}. Still performing `to` restriction check.
         // bypassing paused state by directly calling `super._update`
-        return super._update(from, to, encryptedAmount);
+        euint64 transferred = super._update(from, to, encryptedAmount);
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /**
