@@ -142,9 +142,9 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        euint64 burnedAmount = _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
-        FHE.allow(burnedAmount, msg.sender);
-        return burnedAmount;
+        euint64 burntAmount = _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(burntAmount, msg.sender);
+        return burntAmount;
     }
 
     /// @dev Burns confidential amount of tokens from account.
@@ -153,9 +153,9 @@ abstract contract ERC7984Rwa is
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        euint64 burnedAmount = _burn(account, encryptedAmount);
-        FHE.allow(burnedAmount, msg.sender);
-        return burnedAmount;
+        euint64 burntAmount = _burn(account, encryptedAmount);
+        FHE.allow(burntAmount, msg.sender);
+        return burntAmount;
     }
 
     /// @dev Forces transfer of confidential amount of tokens from account to account with proof by skipping compliance checks.
@@ -165,9 +165,7 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        euint64 forceTransferAmount = _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
-        FHE.allow(forceTransferAmount, msg.sender);
-        return forceTransferAmount;
+        return _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
@@ -180,9 +178,7 @@ abstract contract ERC7984Rwa is
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        euint64 forceTransferAmount = _forceUpdate(from, to, encryptedAmount);
-        FHE.allow(forceTransferAmount, msg.sender);
-        return forceTransferAmount;
+        return _forceUpdate(from, to, encryptedAmount);
     }
 
     /// @inheritdoc ERC7984Freezable
@@ -225,7 +221,9 @@ abstract contract ERC7984Rwa is
     function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
         // bypassing `from` restriction check with {_checkSenderRestriction}. Still performing `to` restriction check.
         // bypassing paused state by directly calling `super._update`
-        return super._update(from, to, encryptedAmount);
+        euint64 transferred = super._update(from, to, encryptedAmount);
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /**
