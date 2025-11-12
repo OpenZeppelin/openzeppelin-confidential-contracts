@@ -32,6 +32,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     string private _symbol;
     string private _contractURI;
 
+    /// @dev Emitted when an encrypted amount `encryptedAmount` is requested for disclosure by `requester`.
+    event AmountDiscloseRequested(euint64 indexed encryptedAmount, address indexed requester);
+
     /// @dev The given receiver `receiver` is invalid for transfers.
     error ERC7984InvalidReceiver(address receiver);
 
@@ -196,42 +199,39 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     }
 
     /**
-     * @dev Discloses an encrypted amount `encryptedAmount` publicly via an {IERC7984-AmountDisclosed}
-     * event. The caller and this contract must be authorized to use the encrypted amount on the ACL.
+     * @dev Starts the process to disclose an encrypted amount `encryptedAmount` publicly by making it
+     * publicly decryptable. Emits the {AmountDiscloseRequested} event.
      *
-     * NOTE: This is an asynchronous operation where the actual decryption happens off-chain and
-     * {finalizeDiscloseEncryptedAmount} is called with the result.
+     * NOTE: Both `msg.sender` and `address(this)` must have permission to access the encrypted amount
+     * `encryptedAmount` to request disclosure of the encrypted amount `encryptedAmount`.
      */
-    function discloseEncryptedAmount(euint64 encryptedAmount) public virtual {
+    function requestDiscloseEncryptedAmount(euint64 encryptedAmount) public virtual {
         require(
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
 
-        bytes32[] memory cts = new bytes32[](1);
-        cts[0] = euint64.unwrap(encryptedAmount);
-        FHE.requestDecryption(cts, this.finalizeDiscloseEncryptedAmount.selector);
+        FHE.makePubliclyDecryptable(encryptedAmount);
+        emit AmountDiscloseRequested(encryptedAmount, msg.sender);
     }
 
     /**
-     * @dev Finalizes a disclose encrypted amount request.
-     * For gas saving purposes, the `requestId` might not be related to a
-     * {discloseEncryptedAmount} request. As a result, the current {finalizeDiscloseEncryptedAmount}
-     * function might emit a disclosed amount related to another decryption request context.
-     * In this case it would only display public information
-     * since the handle would have already been allowed for public decryption through a previous
-     * `FHE.requestDecryption` call.
-     * The downside of this behavior is that a {finalizeDiscloseEncryptedAmount} watcher might observe
-     * unexpected `AmountDisclosed` events.
+     * @dev Publicly discloses an encrypted value with a given decryption proof. Emits the {AmountDisclosed} event.
+     *
+     * NOTE: May not be tied to a prior request via {requestDiscloseEncryptedAmount}.
      */
-    function finalizeDiscloseEncryptedAmount(
-        uint256 requestId,
-        bytes calldata cleartexts,
+    function discloseEncryptedAmount(
+        euint64 encryptedAmount,
+        uint64 cleartextAmount,
         bytes calldata decryptionProof
     ) public virtual {
-        FHE.checkSignatures(requestId, cleartexts, decryptionProof);
-        euint64 requestHandle = euint64.wrap(FHE.loadRequestedHandles(requestId)[0]);
-        emit AmountDisclosed(requestHandle, abi.decode(cleartexts, (uint64)));
+        bytes32[] memory handles = new bytes32[](1);
+        handles[0] = euint64.unwrap(encryptedAmount);
+
+        bytes memory cleartextMemory = abi.encode(cleartextAmount);
+
+        FHE.verifySignatures(handles, cleartextMemory, decryptionProof);
+        emit AmountDisclosed(encryptedAmount, cleartextAmount);
     }
 
     function _setOperator(address holder, address operator, uint48 until) internal virtual {
