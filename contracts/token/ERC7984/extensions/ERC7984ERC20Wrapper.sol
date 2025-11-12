@@ -127,7 +127,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /// @dev Fills an unwrap request for a given cipher-text `burntAmount` with the cleartext and decryption proof.
+    /// @dev Fills an unwrap request for a given cipher-text `burntAmount` with the `cleartextAmount` and `decryptionProof`.
     function finalizeUnwrap(
         euint64 burntAmount,
         uint64 burntAmountCleartext,

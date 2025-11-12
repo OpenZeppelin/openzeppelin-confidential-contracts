@@ -215,16 +215,16 @@ abstract contract ERC7984 is IERC7984 {
      */
     function discloseEncryptedAmount(
         euint64 encryptedAmount,
-        uint64 cleartext,
+        uint64 cleartextAmount,
         bytes calldata decryptionProof
     ) public virtual {
         bytes32[] memory handles = new bytes32[](1);
         handles[0] = euint64.unwrap(encryptedAmount);
 
-        bytes memory cleartextMemory = abi.encode(cleartext);
+        bytes memory cleartextMemory = abi.encode(cleartextAmount);
 
         FHE.verifySignatures(handles, cleartextMemory, decryptionProof);
-        emit AmountDisclosed(encryptedAmount, cleartext);
+        emit AmountDisclosed(encryptedAmount, cleartextAmount);
     }
 
     function _setOperator(address holder, address operator, uint48 until) internal virtual {

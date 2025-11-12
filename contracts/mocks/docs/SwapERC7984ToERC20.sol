@@ -27,17 +27,17 @@ contract SwapERC7984ToERC20 {
         _receivers[amountTransferred] = msg.sender;
     }
 
-    function finalizeSwap(euint64 amount, uint64 cleartext, bytes calldata decryptionProof) public virtual {
+    function finalizeSwap(euint64 amount, uint64 cleartextAmount, bytes calldata decryptionProof) public virtual {
         bytes32[] memory handlesList = new bytes32[](1);
         handlesList[0] = euint64.unwrap(amount);
 
-        FHE.verifySignatures(handlesList, abi.encode(cleartext), decryptionProof);
+        FHE.verifySignatures(handlesList, abi.encode(cleartextAmount), decryptionProof);
         address to = _receivers[amount];
         require(to != address(0), SwapERC7984ToERC20InvalidFinalization(amount));
         delete _receivers[amount];
 
-        if (cleartext != 0) {
-            SafeERC20.safeTransfer(_toToken, to, cleartext);
+        if (cleartextAmount != 0) {
+            SafeERC20.safeTransfer(_toToken, to, cleartextAmount);
         }
     }
 }
