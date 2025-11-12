@@ -30,7 +30,7 @@ abstract contract ERC7984Rwa is
     /**
      * @dev Accounts granted the agent role have the following permissioned abilities:
      *
-     * - Mint/Burn to/from a given address (does not require any permission)
+     * - Mint/Burn to/from a given address (does not require permission)
      * - Force transfer from a given address (does not require permission)
      *   - Bypasses pause and restriction checks (not frozen)
      * - Pause/Unpause the contract
