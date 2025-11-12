@@ -1,0 +1,264 @@
+:github-icon: pass:[<svg class="icon"><use href="#github-icon"/></svg>]
+:IERC7984: pass:normal[xref:interfaces.adoc#IERC7984[`IERC7984`]]
+:IERC7984Receiver: pass:normal[xref:interfaces.adoc#IERC7984Receiver[`IERC7984Receiver`]]
+:IERC7984Receiver-onConfidentialTransferReceived: pass:normal[xref:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`IERC7984Receiver.onConfidentialTransferReceived`]]
+= Interfaces
+
+[.readme-notice]
+NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api/interfaces
+
+These interfaces are available as `.sol` files and are useful to interact with third party contracts that implement them.
+
+- {IERC7984}
+- {IERC7984Receiver}
+
+== Core
+:OperatorSet: pass:normal[xref:#IERC7984-OperatorSet-address-address-uint48-[`++OperatorSet++`]]
+:ConfidentialTransfer: pass:normal[xref:#IERC7984-ConfidentialTransfer-address-address-euint64-[`++ConfidentialTransfer++`]]
+:AmountDisclosed: pass:normal[xref:#IERC7984-AmountDisclosed-euint64-uint64-[`++AmountDisclosed++`]]
+:name: pass:normal[xref:#IERC7984-name--[`++name++`]]
+:symbol: pass:normal[xref:#IERC7984-symbol--[`++symbol++`]]
+:decimals: pass:normal[xref:#IERC7984-decimals--[`++decimals++`]]
+:contractURI: pass:normal[xref:#IERC7984-contractURI--[`++contractURI++`]]
+:confidentialTotalSupply: pass:normal[xref:#IERC7984-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
+:confidentialBalanceOf: pass:normal[xref:#IERC7984-confidentialBalanceOf-address-[`++confidentialBalanceOf++`]]
+:isOperator: pass:normal[xref:#IERC7984-isOperator-address-address-[`++isOperator++`]]
+:setOperator: pass:normal[xref:#IERC7984-setOperator-address-uint48-[`++setOperator++`]]
+:confidentialTransfer: pass:normal[xref:#IERC7984-confidentialTransfer-address-externalEuint64-bytes-[`++confidentialTransfer++`]]
+:confidentialTransfer: pass:normal[xref:#IERC7984-confidentialTransfer-address-euint64-[`++confidentialTransfer++`]]
+:confidentialTransferFrom: pass:normal[xref:#IERC7984-confidentialTransferFrom-address-address-externalEuint64-bytes-[`++confidentialTransferFrom++`]]
+:confidentialTransferFrom: pass:normal[xref:#IERC7984-confidentialTransferFrom-address-address-euint64-[`++confidentialTransferFrom++`]]
+:confidentialTransferAndCall: pass:normal[xref:#IERC7984-confidentialTransferAndCall-address-externalEuint64-bytes-bytes-[`++confidentialTransferAndCall++`]]
+:confidentialTransferAndCall: pass:normal[xref:#IERC7984-confidentialTransferAndCall-address-euint64-bytes-[`++confidentialTransferAndCall++`]]
+:confidentialTransferFromAndCall: pass:normal[xref:#IERC7984-confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes-[`++confidentialTransferFromAndCall++`]]
+:confidentialTransferFromAndCall: pass:normal[xref:#IERC7984-confidentialTransferFromAndCall-address-address-euint64-bytes-[`++confidentialTransferFromAndCall++`]]
+
+:name-: pass:normal[xref:#IERC7984-name--[`++name++`]]
+:symbol-: pass:normal[xref:#IERC7984-symbol--[`++symbol++`]]
+:decimals-: pass:normal[xref:#IERC7984-decimals--[`++decimals++`]]
+:contractURI-: pass:normal[xref:#IERC7984-contractURI--[`++contractURI++`]]
+:confidentialTotalSupply-: pass:normal[xref:#IERC7984-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
+:confidentialBalanceOf-address: pass:normal[xref:#IERC7984-confidentialBalanceOf-address-[`++confidentialBalanceOf++`]]
+:isOperator-address-address: pass:normal[xref:#IERC7984-isOperator-address-address-[`++isOperator++`]]
+:setOperator-address-uint48: pass:normal[xref:#IERC7984-setOperator-address-uint48-[`++setOperator++`]]
+:confidentialTransfer-address-externalEuint64-bytes: pass:normal[xref:#IERC7984-confidentialTransfer-address-externalEuint64-bytes-[`++confidentialTransfer++`]]
+:confidentialTransfer-address-euint64: pass:normal[xref:#IERC7984-confidentialTransfer-address-euint64-[`++confidentialTransfer++`]]
+:confidentialTransferFrom-address-address-externalEuint64-bytes: pass:normal[xref:#IERC7984-confidentialTransferFrom-address-address-externalEuint64-bytes-[`++confidentialTransferFrom++`]]
+:confidentialTransferFrom-address-address-euint64: pass:normal[xref:#IERC7984-confidentialTransferFrom-address-address-euint64-[`++confidentialTransferFrom++`]]
+:confidentialTransferAndCall-address-externalEuint64-bytes-bytes: pass:normal[xref:#IERC7984-confidentialTransferAndCall-address-externalEuint64-bytes-bytes-[`++confidentialTransferAndCall++`]]
+:confidentialTransferAndCall-address-euint64-bytes: pass:normal[xref:#IERC7984-confidentialTransferAndCall-address-euint64-bytes-[`++confidentialTransferAndCall++`]]
+:confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes: pass:normal[xref:#IERC7984-confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes-[`++confidentialTransferFromAndCall++`]]
+:confidentialTransferFromAndCall-address-address-euint64-bytes: pass:normal[xref:#IERC7984-confidentialTransferFromAndCall-address-address-euint64-bytes-[`++confidentialTransferFromAndCall++`]]
+
+[.contract]
+[[IERC7984]]
+=== `++IERC7984++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/interfaces/IERC7984.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/interfaces/IERC7984.sol";
+```
+
+Draft interface for a confidential fungible token standard utilizing the Zama FHE library.
+
+[.contract-index]
+.Functions
+--
+* `++name()++`
+* `++symbol()++`
+* `++decimals()++`
+* `++contractURI()++`
+* `++confidentialTotalSupply()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+
+[.contract-subindex-inherited]
+.IERC165
+* `++supportsInterface(interfaceId)++`
+
+--
+
+[.contract-index]
+.Events
+--
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[IERC7984-name--]]
+==== `[.contract-item-name]#++name++#++() → string++` [.item-kind]#external#
+
+Returns the name of the token.
+
+[.contract-item]
+[[IERC7984-symbol--]]
+==== `[.contract-item-name]#++symbol++#++() → string++` [.item-kind]#external#
+
+Returns the symbol of the token.
+
+[.contract-item]
+[[IERC7984-decimals--]]
+==== `[.contract-item-name]#++decimals++#++() → uint8++` [.item-kind]#external#
+
+Returns the number of decimals of the token. Recommended to be 6.
+
+[.contract-item]
+[[IERC7984-contractURI--]]
+==== `[.contract-item-name]#++contractURI++#++() → string++` [.item-kind]#external#
+
+Returns the contract URI. See https://eips.ethereum.org/EIPS/eip-7572[ERC-7572] for details.
+
+[.contract-item]
+[[IERC7984-confidentialTotalSupply--]]
+==== `[.contract-item-name]#++confidentialTotalSupply++#++() → euint64++` [.item-kind]#external#
+
+Returns the confidential total supply of the token.
+
+[.contract-item]
+[[IERC7984-confidentialBalanceOf-address-]]
+==== `[.contract-item-name]#++confidentialBalanceOf++#++(address account) → euint64++` [.item-kind]#external#
+
+Returns the confidential balance of the account `account`.
+
+[.contract-item]
+[[IERC7984-isOperator-address-address-]]
+==== `[.contract-item-name]#++isOperator++#++(address holder, address spender) → bool++` [.item-kind]#external#
+
+Returns true if `spender` is currently an operator for `holder`.
+
+[.contract-item]
+[[IERC7984-setOperator-address-uint48-]]
+==== `[.contract-item-name]#++setOperator++#++(address operator, uint48 until)++` [.item-kind]#external#
+
+Sets `operator` as an operator for `holder` until the timestamp `until`.
+
+NOTE: An operator may transfer any amount of tokens on behalf of a holder while approved.
+
+[.contract-item]
+[[IERC7984-confidentialTransfer-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransfer++#++(address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#external#
+
+Transfers the encrypted amount `encryptedAmount` to `to` with the given input proof `inputProof`.
+
+Returns the encrypted amount that was actually transferred.
+
+[.contract-item]
+[[IERC7984-confidentialTransfer-address-euint64-]]
+==== `[.contract-item-name]#++confidentialTransfer++#++(address to, euint64 amount) → euint64 transferred++` [.item-kind]#external#
+
+Similar to {confidentialTransfer-address-externalEuint64-bytes} but without an input proof. The caller
+*must* already be allowed by ACL for the given `amount`.
+
+[.contract-item]
+[[IERC7984-confidentialTransferFrom-address-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferFrom++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#external#
+
+Transfers the encrypted amount `encryptedAmount` from `from` to `to` with the given input proof
+`inputProof`. `msg.sender` must be either `from` or an operator for `from`.
+
+Returns the encrypted amount that was actually transferred.
+
+[.contract-item]
+[[IERC7984-confidentialTransferFrom-address-address-euint64-]]
+==== `[.contract-item-name]#++confidentialTransferFrom++#++(address from, address to, euint64 amount) → euint64 transferred++` [.item-kind]#external#
+
+Similar to {confidentialTransferFrom-address-address-externalEuint64-bytes} but without an input proof.
+The caller *must* be already allowed by ACL for the given `amount`.
+
+[.contract-item]
+[[IERC7984-confidentialTransferAndCall-address-externalEuint64-bytes-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferAndCall++#++(address to, externalEuint64 encryptedAmount, bytes inputProof, bytes data) → euint64 transferred++` [.item-kind]#external#
+
+Similar to {confidentialTransfer-address-externalEuint64-bytes} but with a callback to `to` after
+the transfer.
+
+The callback is made to the {IERC7984Receiver-onConfidentialTransferReceived} function on the
+to address with the actual transferred amount (may differ from the given `encryptedAmount`) and the given
+data `data`.
+
+[.contract-item]
+[[IERC7984-confidentialTransferAndCall-address-euint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferAndCall++#++(address to, euint64 amount, bytes data) → euint64 transferred++` [.item-kind]#external#
+
+Similar to {confidentialTransfer-address-euint64} but with a callback to `to` after the transfer.
+
+[.contract-item]
+[[IERC7984-confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferFromAndCall++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof, bytes data) → euint64 transferred++` [.item-kind]#external#
+
+Similar to {confidentialTransferFrom-address-address-externalEuint64-bytes} but with a callback to `to`
+after the transfer.
+
+[.contract-item]
+[[IERC7984-confidentialTransferFromAndCall-address-address-euint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferFromAndCall++#++(address from, address to, euint64 amount, bytes data) → euint64 transferred++` [.item-kind]#external#
+
+Similar to {confidentialTransferFrom-address-address-euint64} but with a callback to `to`
+after the transfer.
+
+[.contract-item]
+[[IERC7984-OperatorSet-address-address-uint48-]]
+==== `[.contract-item-name]#++OperatorSet++#++(address indexed holder, address indexed operator, uint48 until)++` [.item-kind]#event#
+
+Emitted when the expiration timestamp for an operator `operator` is updated for a given `holder`.
+The operator may move any amount of tokens on behalf of the holder until the timestamp `until`.
+
+[.contract-item]
+[[IERC7984-ConfidentialTransfer-address-address-euint64-]]
+==== `[.contract-item-name]#++ConfidentialTransfer++#++(address indexed from, address indexed to, euint64 indexed amount)++` [.item-kind]#event#
+
+Emitted when a confidential transfer is made from `from` to `to` of encrypted amount `amount`.
+
+[.contract-item]
+[[IERC7984-AmountDisclosed-euint64-uint64-]]
+==== `[.contract-item-name]#++AmountDisclosed++#++(euint64 indexed encryptedAmount, uint64 amount)++` [.item-kind]#event#
+
+Emitted when an encrypted amount is disclosed.
+
+Accounts with access to the encrypted amount `encryptedAmount` that is also accessible to this contract
+should be able to disclose the amount. This functionality is implementation specific.
+
+:onConfidentialTransferReceived: pass:normal[xref:#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`++onConfidentialTransferReceived++`]]
+
+:onConfidentialTransferReceived-address-address-euint64-bytes: pass:normal[xref:#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`++onConfidentialTransferReceived++`]]
+
+[.contract]
+[[IERC7984Receiver]]
+=== `++IERC7984Receiver++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/interfaces/IERC7984Receiver.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/interfaces/IERC7984Receiver.sol";
+```
+
+Interface for contracts that can receive ERC7984 transfers with a callback.
+
+[.contract-index]
+.Functions
+--
+* `++onConfidentialTransferReceived(operator, from, amount, data)++`
+
+--
+
+[.contract-item]
+[[IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-]]
+==== `[.contract-item-name]#++onConfidentialTransferReceived++#++(address operator, address from, euint64 amount, bytes data) → ebool++` [.item-kind]#external#
+
+Called upon receiving a confidential token transfer. Returns an encrypted boolean indicating success
+of the callback. If false is returned, the transfer must be reversed.
+

@@ -1,0 +1,520 @@
+:github-icon: pass:[<svg class="icon"><use href="#github-icon"/></svg>]
+:VestingWalletConfidential: pass:normal[xref:finance.adoc#VestingWalletConfidential[`VestingWalletConfidential`]]
+:VestingWalletCliffConfidential: pass:normal[xref:finance.adoc#VestingWalletCliffConfidential[`VestingWalletCliffConfidential`]]
+:VestingWalletConfidential: pass:normal[xref:finance.adoc#VestingWalletConfidential[`VestingWalletConfidential`]]
+:VestingWalletConfidentialFactory: pass:normal[xref:finance.adoc#VestingWalletConfidentialFactory[`VestingWalletConfidentialFactory`]]
+:VestingWalletConfidentialFactory: pass:normal[xref:finance.adoc#VestingWalletConfidentialFactory[`VestingWalletConfidentialFactory`]]
+:IERC7984: pass:normal[xref:interfaces.adoc#IERC7984[`IERC7984`]]
+:VestingWalletConfidential: pass:normal[xref:finance.adoc#VestingWalletConfidential[`VestingWalletConfidential`]]
+:VestingWalletConfidential: pass:normal[xref:finance.adoc#VestingWalletConfidential[`VestingWalletConfidential`]]
+:VestingWalletConfidential-start: pass:normal[xref:finance.adoc#VestingWalletConfidential-start--[`VestingWalletConfidential.start`]]
+
+= Finance
+
+[.readme-notice]
+NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api#finance
+
+This directory includes primitives for on-chain confidential financial systems:
+
+- {VestingWalletConfidential}: Handles the vesting of confidential tokens for a given beneficiary. Custody of multiple tokens can be given to this contract, which will release the token to the beneficiary following a given, customizable, vesting schedule.
+- {VestingWalletCliffConfidential}: Variant of {VestingWalletConfidential} which adds a cliff period to the vesting schedule.
+
+For convenience, this directory also includes:
+
+- {VestingWalletConfidentialFactory}: A factory which enables batch funding of vesting wallets.
+
+== Contracts
+:VestingWalletStorage: pass:normal[xref:#VestingWalletConfidential-VestingWalletStorage[`++VestingWalletStorage++`]]
+:VestingWalletConfidentialTokenReleased: pass:normal[xref:#VestingWalletConfidential-VestingWalletConfidentialTokenReleased-address-euint64-[`++VestingWalletConfidentialTokenReleased++`]]
+:start: pass:normal[xref:#VestingWalletConfidential-start--[`++start++`]]
+:duration: pass:normal[xref:#VestingWalletConfidential-duration--[`++duration++`]]
+:end: pass:normal[xref:#VestingWalletConfidential-end--[`++end++`]]
+:released: pass:normal[xref:#VestingWalletConfidential-released-address-[`++released++`]]
+:releasable: pass:normal[xref:#VestingWalletConfidential-releasable-address-[`++releasable++`]]
+:release: pass:normal[xref:#VestingWalletConfidential-release-address-[`++release++`]]
+:vestedAmount: pass:normal[xref:#VestingWalletConfidential-vestedAmount-address-uint48-[`++vestedAmount++`]]
+:__VestingWalletConfidential_init: pass:normal[xref:#VestingWalletConfidential-__VestingWalletConfidential_init-address-uint48-uint48-[`++__VestingWalletConfidential_init++`]]
+:__VestingWalletConfidential_init_unchained: pass:normal[xref:#VestingWalletConfidential-__VestingWalletConfidential_init_unchained-uint48-uint48-[`++__VestingWalletConfidential_init_unchained++`]]
+:_vestingSchedule: pass:normal[xref:#VestingWalletConfidential-_vestingSchedule-euint128-uint48-[`++_vestingSchedule++`]]
+
+:start-: pass:normal[xref:#VestingWalletConfidential-start--[`++start++`]]
+:duration-: pass:normal[xref:#VestingWalletConfidential-duration--[`++duration++`]]
+:end-: pass:normal[xref:#VestingWalletConfidential-end--[`++end++`]]
+:released-address: pass:normal[xref:#VestingWalletConfidential-released-address-[`++released++`]]
+:releasable-address: pass:normal[xref:#VestingWalletConfidential-releasable-address-[`++releasable++`]]
+:release-address: pass:normal[xref:#VestingWalletConfidential-release-address-[`++release++`]]
+:vestedAmount-address-uint48: pass:normal[xref:#VestingWalletConfidential-vestedAmount-address-uint48-[`++vestedAmount++`]]
+:__VestingWalletConfidential_init-address-uint48-uint48: pass:normal[xref:#VestingWalletConfidential-__VestingWalletConfidential_init-address-uint48-uint48-[`++__VestingWalletConfidential_init++`]]
+:__VestingWalletConfidential_init_unchained-uint48-uint48: pass:normal[xref:#VestingWalletConfidential-__VestingWalletConfidential_init_unchained-uint48-uint48-[`++__VestingWalletConfidential_init_unchained++`]]
+:_vestingSchedule-euint128-uint48: pass:normal[xref:#VestingWalletConfidential-_vestingSchedule-euint128-uint48-[`++_vestingSchedule++`]]
+
+[.contract]
+[[VestingWalletConfidential]]
+=== `++VestingWalletConfidential++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/finance/VestingWalletConfidential.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/finance/VestingWalletConfidential.sol";
+```
+
+A vesting wallet is an ownable contract that can receive ERC7984 tokens, and release these
+assets to the wallet owner, also referred to as "beneficiary", according to a vesting schedule.
+
+Any assets transferred to this contract will follow the vesting schedule as if they were locked from the beginning.
+Consequently, if the vesting has already started, any amount of tokens sent to this contract will (at least partly)
+be immediately releasable.
+
+By setting the duration to 0, one can configure this contract to behave like an asset timelock that holds tokens for
+a beneficiary until a specified time.
+
+NOTE: Since the wallet is `Ownable`, and ownership can be transferred, it is possible to sell unvested tokens.
+
+NOTE: When using this contract with any token whose balance is adjusted automatically (i.e. a rebase token), make
+sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
+
+Confidential vesting wallet contracts can be deployed (as clones) using the {VestingWalletConfidentialFactory}.
+
+[.contract-index]
+.Functions
+--
+* `++start()++`
+* `++duration()++`
+* `++end()++`
+* `++released(token)++`
+* `++releasable(token)++`
+* `++release(token)++`
+* `++vestedAmount(token, timestamp)++`
+* `++__VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds)++`
+* `++__VestingWalletConfidential_init_unchained(startTimestamp, durationSeconds)++`
+* `++_vestingSchedule(totalAllocation, timestamp)++`
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+* `++_reentrancyGuardEntered()++`
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++__Ownable_init(initialOwner)++`
+* `++__Ownable_init_unchained(initialOwner)++`
+* `++owner()++`
+* `++_checkOwner()++`
+* `++renounceOwnership()++`
+* `++transferOwnership(newOwner)++`
+* `++_transferOwnership(newOwner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+* `++__Context_init()++`
+* `++__Context_init_unchained()++`
+* `++_msgSender()++`
+* `++_msgData()++`
+* `++_contextSuffixLength()++`
+
+[.contract-subindex-inherited]
+.Initializable
+* `++_checkInitializing()++`
+* `++_disableInitializers()++`
+* `++_getInitializedVersion()++`
+* `++_isInitializing()++`
+* `++_initializableStorageSlot()++`
+
+--
+
+[.contract-index]
+.Events
+--
+* `++VestingWalletConfidentialTokenReleased(token, amount)++`
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++OwnershipTransferred(previousOwner, newOwner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+
+[.contract-subindex-inherited]
+.Initializable
+* `++Initialized(version)++`
+
+--
+
+[.contract-index]
+.Errors
+--
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+* `++ReentrancyGuardReentrantCall()++`
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++OwnableUnauthorizedAccount(account)++`
+* `++OwnableInvalidOwner(owner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+
+[.contract-subindex-inherited]
+.Initializable
+* `++InvalidInitialization()++`
+* `++NotInitializing()++`
+
+--
+
+[.contract-item]
+[[VestingWalletConfidential-start--]]
+==== `[.contract-item-name]#++start++#++() → uint64++` [.item-kind]#public#
+
+Timestamp at which the vesting starts.
+
+[.contract-item]
+[[VestingWalletConfidential-duration--]]
+==== `[.contract-item-name]#++duration++#++() → uint64++` [.item-kind]#public#
+
+Duration of the vesting in seconds.
+
+[.contract-item]
+[[VestingWalletConfidential-end--]]
+==== `[.contract-item-name]#++end++#++() → uint64++` [.item-kind]#public#
+
+Timestamp at which the vesting ends.
+
+[.contract-item]
+[[VestingWalletConfidential-released-address-]]
+==== `[.contract-item-name]#++released++#++(address token) → euint128++` [.item-kind]#public#
+
+Amount of token already released
+
+[.contract-item]
+[[VestingWalletConfidential-releasable-address-]]
+==== `[.contract-item-name]#++releasable++#++(address token) → euint64++` [.item-kind]#public#
+
+Getter for the amount of releasable `token` tokens. `token` should be the address of an
+{IERC7984} contract.
+
+[.contract-item]
+[[VestingWalletConfidential-release-address-]]
+==== `[.contract-item-name]#++release++#++(address token)++` [.item-kind]#public#
+
+Release the tokens that have already vested.
+
+Emits a {VestingWalletConfidentialTokenReleased} event.
+
+[.contract-item]
+[[VestingWalletConfidential-vestedAmount-address-uint48-]]
+==== `[.contract-item-name]#++vestedAmount++#++(address token, uint48 timestamp) → euint128++` [.item-kind]#public#
+
+Calculates the amount of tokens that have been vested at the given timestamp.
+Default implementation is a linear vesting curve.
+
+[.contract-item]
+[[VestingWalletConfidential-__VestingWalletConfidential_init-address-uint48-uint48-]]
+==== `[.contract-item-name]#++__VestingWalletConfidential_init++#++(address beneficiary, uint48 startTimestamp, uint48 durationSeconds)++` [.item-kind]#internal#
+
+Initializes the vesting wallet for a given `beneficiary` with a start time of `startTimestamp`
+and an end time of `startTimestamp + durationSeconds`.
+
+[.contract-item]
+[[VestingWalletConfidential-__VestingWalletConfidential_init_unchained-uint48-uint48-]]
+==== `[.contract-item-name]#++__VestingWalletConfidential_init_unchained++#++(uint48 startTimestamp, uint48 durationSeconds)++` [.item-kind]#internal#
+
+[.contract-item]
+[[VestingWalletConfidential-_vestingSchedule-euint128-uint48-]]
+==== `[.contract-item-name]#++_vestingSchedule++#++(euint128 totalAllocation, uint48 timestamp) → euint128++` [.item-kind]#internal#
+
+This returns the amount vested, as a function of time, for an asset given its total historical allocation.
+
+[.contract-item]
+[[VestingWalletConfidential-VestingWalletConfidentialTokenReleased-address-euint64-]]
+==== `[.contract-item-name]#++VestingWalletConfidentialTokenReleased++#++(address indexed token, euint64 amount)++` [.item-kind]#event#
+
+Emitted when releasable vested tokens are released.
+
+:VestingWalletCliffStorage: pass:normal[xref:#VestingWalletCliffConfidential-VestingWalletCliffStorage[`++VestingWalletCliffStorage++`]]
+:VestingWalletCliffConfidentialInvalidCliffDuration: pass:normal[xref:#VestingWalletCliffConfidential-VestingWalletCliffConfidentialInvalidCliffDuration-uint64-uint64-[`++VestingWalletCliffConfidentialInvalidCliffDuration++`]]
+:cliff: pass:normal[xref:#VestingWalletCliffConfidential-cliff--[`++cliff++`]]
+:__VestingWalletCliffConfidential_init: pass:normal[xref:#VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init-address-uint48-uint48-uint48-[`++__VestingWalletCliffConfidential_init++`]]
+:__VestingWalletCliffConfidential_init_unchained: pass:normal[xref:#VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init_unchained-uint48-[`++__VestingWalletCliffConfidential_init_unchained++`]]
+:_vestingSchedule: pass:normal[xref:#VestingWalletCliffConfidential-_vestingSchedule-euint128-uint48-[`++_vestingSchedule++`]]
+
+:cliff-: pass:normal[xref:#VestingWalletCliffConfidential-cliff--[`++cliff++`]]
+:__VestingWalletCliffConfidential_init-address-uint48-uint48-uint48: pass:normal[xref:#VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init-address-uint48-uint48-uint48-[`++__VestingWalletCliffConfidential_init++`]]
+:__VestingWalletCliffConfidential_init_unchained-uint48: pass:normal[xref:#VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init_unchained-uint48-[`++__VestingWalletCliffConfidential_init_unchained++`]]
+:_vestingSchedule-euint128-uint48: pass:normal[xref:#VestingWalletCliffConfidential-_vestingSchedule-euint128-uint48-[`++_vestingSchedule++`]]
+
+[.contract]
+[[VestingWalletCliffConfidential]]
+=== `++VestingWalletCliffConfidential++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/finance/VestingWalletCliffConfidential.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/finance/VestingWalletCliffConfidential.sol";
+```
+
+An extension of {VestingWalletConfidential} that adds a cliff to the vesting schedule. The cliff is `cliffSeconds` long and
+starts at the vesting start timestamp (see {VestingWalletConfidential}).
+
+[.contract-index]
+.Functions
+--
+* `++cliff()++`
+* `++__VestingWalletCliffConfidential_init(beneficiary, startTimestamp, durationSeconds, cliffSeconds)++`
+* `++__VestingWalletCliffConfidential_init_unchained(cliffSeconds)++`
+* `++_vestingSchedule(totalAllocation, timestamp)++`
+
+[.contract-subindex-inherited]
+.VestingWalletConfidential
+* `++start()++`
+* `++duration()++`
+* `++end()++`
+* `++released(token)++`
+* `++releasable(token)++`
+* `++release(token)++`
+* `++vestedAmount(token, timestamp)++`
+* `++__VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds)++`
+* `++__VestingWalletConfidential_init_unchained(startTimestamp, durationSeconds)++`
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+* `++_reentrancyGuardEntered()++`
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++__Ownable_init(initialOwner)++`
+* `++__Ownable_init_unchained(initialOwner)++`
+* `++owner()++`
+* `++_checkOwner()++`
+* `++renounceOwnership()++`
+* `++transferOwnership(newOwner)++`
+* `++_transferOwnership(newOwner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+* `++__Context_init()++`
+* `++__Context_init_unchained()++`
+* `++_msgSender()++`
+* `++_msgData()++`
+* `++_contextSuffixLength()++`
+
+[.contract-subindex-inherited]
+.Initializable
+* `++_checkInitializing()++`
+* `++_disableInitializers()++`
+* `++_getInitializedVersion()++`
+* `++_isInitializing()++`
+* `++_initializableStorageSlot()++`
+
+--
+
+[.contract-index]
+.Events
+--
+
+[.contract-subindex-inherited]
+.VestingWalletConfidential
+* `++VestingWalletConfidentialTokenReleased(token, amount)++`
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++OwnershipTransferred(previousOwner, newOwner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+
+[.contract-subindex-inherited]
+.Initializable
+* `++Initialized(version)++`
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++VestingWalletCliffConfidentialInvalidCliffDuration(cliffSeconds, durationSeconds)++`
+
+[.contract-subindex-inherited]
+.VestingWalletConfidential
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+* `++ReentrancyGuardReentrantCall()++`
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++OwnableUnauthorizedAccount(account)++`
+* `++OwnableInvalidOwner(owner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+
+[.contract-subindex-inherited]
+.Initializable
+* `++InvalidInitialization()++`
+* `++NotInitializing()++`
+
+--
+
+[.contract-item]
+[[VestingWalletCliffConfidential-cliff--]]
+==== `[.contract-item-name]#++cliff++#++() → uint64++` [.item-kind]#public#
+
+The timestamp at which the cliff ends.
+
+[.contract-item]
+[[VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init-address-uint48-uint48-uint48-]]
+==== `[.contract-item-name]#++__VestingWalletCliffConfidential_init++#++(address beneficiary, uint48 startTimestamp, uint48 durationSeconds, uint48 cliffSeconds)++` [.item-kind]#internal#
+
+Set the duration of the cliff, in seconds. The cliff starts at the vesting
+start timestamp (see {VestingWalletConfidential-start}) and ends `cliffSeconds` later.
+
+[.contract-item]
+[[VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init_unchained-uint48-]]
+==== `[.contract-item-name]#++__VestingWalletCliffConfidential_init_unchained++#++(uint48 cliffSeconds)++` [.item-kind]#internal#
+
+[.contract-item]
+[[VestingWalletCliffConfidential-_vestingSchedule-euint128-uint48-]]
+==== `[.contract-item-name]#++_vestingSchedule++#++(euint128 totalAllocation, uint48 timestamp) → euint128++` [.item-kind]#internal#
+
+This function returns the amount vested, as a function of time, for
+an asset given its total historical allocation. Returns 0 if the {cliff} timestamp is not met.
+
+IMPORTANT: The cliff not only makes the schedule return 0, but it also ignores every possible side
+effect from calling the inherited implementation (i.e. `super._vestingSchedule`). Carefully consider
+this caveat if the overridden implementation of this function has any (e.g. writing to memory or reverting).
+
+[.contract-item]
+[[VestingWalletCliffConfidential-VestingWalletCliffConfidentialInvalidCliffDuration-uint64-uint64-]]
+==== `[.contract-item-name]#++VestingWalletCliffConfidentialInvalidCliffDuration++#++(uint64 cliffSeconds, uint64 durationSeconds)++` [.item-kind]#error#
+
+The specified cliff duration is larger than the vesting duration.
+
+:VestingPlan: pass:normal[xref:#VestingWalletConfidentialFactory-VestingPlan[`++VestingPlan++`]]
+:VestingWalletConfidentialFunded: pass:normal[xref:#VestingWalletConfidentialFactory-VestingWalletConfidentialFunded-address-address-euint64-bytes-[`++VestingWalletConfidentialFunded++`]]
+:VestingWalletConfidentialCreated: pass:normal[xref:#VestingWalletConfidentialFactory-VestingWalletConfidentialCreated-address-bytes-[`++VestingWalletConfidentialCreated++`]]
+:constructor: pass:normal[xref:#VestingWalletConfidentialFactory-constructor--[`++constructor++`]]
+:batchFundVestingWalletConfidential: pass:normal[xref:#VestingWalletConfidentialFactory-batchFundVestingWalletConfidential-address-struct-VestingWalletConfidentialFactory-VestingPlan---bytes-[`++batchFundVestingWalletConfidential++`]]
+:createVestingWalletConfidential: pass:normal[xref:#VestingWalletConfidentialFactory-createVestingWalletConfidential-bytes-[`++createVestingWalletConfidential++`]]
+:predictVestingWalletConfidential: pass:normal[xref:#VestingWalletConfidentialFactory-predictVestingWalletConfidential-bytes-[`++predictVestingWalletConfidential++`]]
+:_validateVestingWalletInitArgs: pass:normal[xref:#VestingWalletConfidentialFactory-_validateVestingWalletInitArgs-bytes-[`++_validateVestingWalletInitArgs++`]]
+:_initializeVestingWallet: pass:normal[xref:#VestingWalletConfidentialFactory-_initializeVestingWallet-address-bytes-[`++_initializeVestingWallet++`]]
+:_deployVestingWalletImplementation: pass:normal[xref:#VestingWalletConfidentialFactory-_deployVestingWalletImplementation--[`++_deployVestingWalletImplementation++`]]
+:_getCreate2VestingWalletConfidentialSalt: pass:normal[xref:#VestingWalletConfidentialFactory-_getCreate2VestingWalletConfidentialSalt-bytes-[`++_getCreate2VestingWalletConfidentialSalt++`]]
+
+:constructor-: pass:normal[xref:#VestingWalletConfidentialFactory-constructor--[`++constructor++`]]
+:batchFundVestingWalletConfidential-address-struct-VestingWalletConfidentialFactory-VestingPlan---bytes: pass:normal[xref:#VestingWalletConfidentialFactory-batchFundVestingWalletConfidential-address-struct-VestingWalletConfidentialFactory-VestingPlan---bytes-[`++batchFundVestingWalletConfidential++`]]
+:createVestingWalletConfidential-bytes: pass:normal[xref:#VestingWalletConfidentialFactory-createVestingWalletConfidential-bytes-[`++createVestingWalletConfidential++`]]
+:predictVestingWalletConfidential-bytes: pass:normal[xref:#VestingWalletConfidentialFactory-predictVestingWalletConfidential-bytes-[`++predictVestingWalletConfidential++`]]
+:_validateVestingWalletInitArgs-bytes: pass:normal[xref:#VestingWalletConfidentialFactory-_validateVestingWalletInitArgs-bytes-[`++_validateVestingWalletInitArgs++`]]
+:_initializeVestingWallet-address-bytes: pass:normal[xref:#VestingWalletConfidentialFactory-_initializeVestingWallet-address-bytes-[`++_initializeVestingWallet++`]]
+:_deployVestingWalletImplementation-: pass:normal[xref:#VestingWalletConfidentialFactory-_deployVestingWalletImplementation--[`++_deployVestingWalletImplementation++`]]
+:_getCreate2VestingWalletConfidentialSalt-bytes: pass:normal[xref:#VestingWalletConfidentialFactory-_getCreate2VestingWalletConfidentialSalt-bytes-[`++_getCreate2VestingWalletConfidentialSalt++`]]
+
+[.contract]
+[[VestingWalletConfidentialFactory]]
+=== `++VestingWalletConfidentialFactory++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/finance/VestingWalletConfidentialFactory.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/finance/VestingWalletConfidentialFactory.sol";
+```
+
+A factory which enables batch funding of vesting wallets.
+
+The {_deployVestingWalletImplementation}, {_initializeVestingWallet}, and {_validateVestingWalletInitArgs}
+functions remain unimplemented to allow for custom implementations of the vesting wallet to be used.
+
+[.contract-index]
+.Functions
+--
+* `++constructor()++`
+* `++batchFundVestingWalletConfidential(token, vestingPlans, inputProof)++`
+* `++createVestingWalletConfidential(initArgs)++`
+* `++predictVestingWalletConfidential(initArgs)++`
+* `++_validateVestingWalletInitArgs(initArgs)++`
+* `++_initializeVestingWallet(vestingWalletAddress, initArgs)++`
+* `++_deployVestingWalletImplementation()++`
+* `++_getCreate2VestingWalletConfidentialSalt(initArgs)++`
+
+--
+
+[.contract-index]
+.Events
+--
+* `++VestingWalletConfidentialFunded(vestingWalletConfidential, token, transferredAmount, initArgs)++`
+* `++VestingWalletConfidentialCreated(vestingWalletConfidential, initArgs)++`
+
+--
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-constructor--]]
+==== `[.contract-item-name]#++constructor++#++()++` [.item-kind]#internal#
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-batchFundVestingWalletConfidential-address-struct-VestingWalletConfidentialFactory-VestingPlan---bytes-]]
+==== `[.contract-item-name]#++batchFundVestingWalletConfidential++#++(address token, struct VestingWalletConfidentialFactory.VestingPlan[] vestingPlans, bytes inputProof)++` [.item-kind]#public#
+
+Batches the funding of multiple confidential vesting wallets.
+
+Funds are sent to deterministic wallet addresses. Wallets can be created either
+before or after this operation.
+
+Emits a {VestingWalletConfidentialFunded} event for each funded vesting plan.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-createVestingWalletConfidential-bytes-]]
+==== `[.contract-item-name]#++createVestingWalletConfidential++#++(bytes initArgs) → address++` [.item-kind]#public#
+
+Creates a confidential vesting wallet.
+
+Emits a {VestingWalletConfidentialCreated}.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-predictVestingWalletConfidential-bytes-]]
+==== `[.contract-item-name]#++predictVestingWalletConfidential++#++(bytes initArgs) → address++` [.item-kind]#public#
+
+Predicts the deterministic address for a confidential vesting wallet.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-_validateVestingWalletInitArgs-bytes-]]
+==== `[.contract-item-name]#++_validateVestingWalletInitArgs++#++(bytes initArgs)++` [.item-kind]#internal#
+
+Virtual function that must be implemented to validate the initArgs bytes.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-_initializeVestingWallet-address-bytes-]]
+==== `[.contract-item-name]#++_initializeVestingWallet++#++(address vestingWalletAddress, bytes initArgs)++` [.item-kind]#internal#
+
+Virtual function that must be implemented to initialize the vesting wallet at `vestingWalletAddress`.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-_deployVestingWalletImplementation--]]
+==== `[.contract-item-name]#++_deployVestingWalletImplementation++#++() → address++` [.item-kind]#internal#
+
+Internal function that is called once to deploy the vesting wallet implementation.
+
+Vesting wallet clones will be initialized by calls to the {_initializeVestingWallet} function.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-_getCreate2VestingWalletConfidentialSalt-bytes-]]
+==== `[.contract-item-name]#++_getCreate2VestingWalletConfidentialSalt++#++(bytes initArgs) → bytes32++` [.item-kind]#internal#
+
+Gets create2 salt for a confidential vesting wallet.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-VestingWalletConfidentialFunded-address-address-euint64-bytes-]]
+==== `[.contract-item-name]#++VestingWalletConfidentialFunded++#++(address indexed vestingWalletConfidential, address indexed token, euint64 transferredAmount, bytes initArgs)++` [.item-kind]#event#
+
+Emitted for each vesting wallet funded within a batch.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-VestingWalletConfidentialCreated-address-bytes-]]
+==== `[.contract-item-name]#++VestingWalletConfidentialCreated++#++(address indexed vestingWalletConfidential, bytes initArgs)++` [.item-kind]#event#
+
+Emitted when a vesting wallet is deployed.
+

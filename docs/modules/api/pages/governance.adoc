@@ -1,0 +1,301 @@
+:github-icon: pass:[<svg class="icon"><use href="#github-icon"/></svg>]
+:VotesConfidential: pass:normal[xref:governance.adoc#VotesConfidential[`VotesConfidential`]]
+:HandleAccessManager-_validateHandleAllowance: pass:normal[xref:utils.adoc#HandleAccessManager-_validateHandleAllowance-bytes32-[`HandleAccessManager._validateHandleAllowance`]]
+
+= Governance
+
+[.readme-notice]
+NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api#governance
+
+This directory includes primitives for on-chain confidential governance.
+
+- {VotesConfidential}: Abstract contract that keeps track of confidential voting units, enabling checkpointed voting through governance.
+
+== Utils
+:VotesExpiredSignature: pass:normal[xref:#VotesConfidential-VotesExpiredSignature-uint256-[`++VotesExpiredSignature++`]]
+:DelegateVotesChanged: pass:normal[xref:#VotesConfidential-DelegateVotesChanged-address-euint64-euint64-[`++DelegateVotesChanged++`]]
+:DelegateChanged: pass:normal[xref:#VotesConfidential-DelegateChanged-address-address-address-[`++DelegateChanged++`]]
+:ERC6372InconsistentClock: pass:normal[xref:#VotesConfidential-ERC6372InconsistentClock--[`++ERC6372InconsistentClock++`]]
+:ERC5805FutureLookup: pass:normal[xref:#VotesConfidential-ERC5805FutureLookup-uint256-uint48-[`++ERC5805FutureLookup++`]]
+:clock: pass:normal[xref:#VotesConfidential-clock--[`++clock++`]]
+:CLOCK_MODE: pass:normal[xref:#VotesConfidential-CLOCK_MODE--[`++CLOCK_MODE++`]]
+:getVotes: pass:normal[xref:#VotesConfidential-getVotes-address-[`++getVotes++`]]
+:getPastVotes: pass:normal[xref:#VotesConfidential-getPastVotes-address-uint256-[`++getPastVotes++`]]
+:getPastTotalSupply: pass:normal[xref:#VotesConfidential-getPastTotalSupply-uint256-[`++getPastTotalSupply++`]]
+:confidentialTotalSupply: pass:normal[xref:#VotesConfidential-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
+:delegates: pass:normal[xref:#VotesConfidential-delegates-address-[`++delegates++`]]
+:delegate: pass:normal[xref:#VotesConfidential-delegate-address-[`++delegate++`]]
+:delegateBySig: pass:normal[xref:#VotesConfidential-delegateBySig-address-uint256-uint256-uint8-bytes32-bytes32-[`++delegateBySig++`]]
+:_delegate: pass:normal[xref:#VotesConfidential-_delegate-address-address-[`++_delegate++`]]
+:_transferVotingUnits: pass:normal[xref:#VotesConfidential-_transferVotingUnits-address-address-euint64-[`++_transferVotingUnits++`]]
+:_moveDelegateVotes: pass:normal[xref:#VotesConfidential-_moveDelegateVotes-address-address-euint64-[`++_moveDelegateVotes++`]]
+:_validateTimepoint: pass:normal[xref:#VotesConfidential-_validateTimepoint-uint256-[`++_validateTimepoint++`]]
+:_getVotingUnits: pass:normal[xref:#VotesConfidential-_getVotingUnits-address-[`++_getVotingUnits++`]]
+
+:clock-: pass:normal[xref:#VotesConfidential-clock--[`++clock++`]]
+:CLOCK_MODE-: pass:normal[xref:#VotesConfidential-CLOCK_MODE--[`++CLOCK_MODE++`]]
+:getVotes-address: pass:normal[xref:#VotesConfidential-getVotes-address-[`++getVotes++`]]
+:getPastVotes-address-uint256: pass:normal[xref:#VotesConfidential-getPastVotes-address-uint256-[`++getPastVotes++`]]
+:getPastTotalSupply-uint256: pass:normal[xref:#VotesConfidential-getPastTotalSupply-uint256-[`++getPastTotalSupply++`]]
+:confidentialTotalSupply-: pass:normal[xref:#VotesConfidential-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
+:delegates-address: pass:normal[xref:#VotesConfidential-delegates-address-[`++delegates++`]]
+:delegate-address: pass:normal[xref:#VotesConfidential-delegate-address-[`++delegate++`]]
+:delegateBySig-address-uint256-uint256-uint8-bytes32-bytes32: pass:normal[xref:#VotesConfidential-delegateBySig-address-uint256-uint256-uint8-bytes32-bytes32-[`++delegateBySig++`]]
+:_delegate-address-address: pass:normal[xref:#VotesConfidential-_delegate-address-address-[`++_delegate++`]]
+:_transferVotingUnits-address-address-euint64: pass:normal[xref:#VotesConfidential-_transferVotingUnits-address-address-euint64-[`++_transferVotingUnits++`]]
+:_moveDelegateVotes-address-address-euint64: pass:normal[xref:#VotesConfidential-_moveDelegateVotes-address-address-euint64-[`++_moveDelegateVotes++`]]
+:_validateTimepoint-uint256: pass:normal[xref:#VotesConfidential-_validateTimepoint-uint256-[`++_validateTimepoint++`]]
+:_getVotingUnits-address: pass:normal[xref:#VotesConfidential-_getVotingUnits-address-[`++_getVotingUnits++`]]
+
+[.contract]
+[[VotesConfidential]]
+=== `++VotesConfidential++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/governance/utils/VotesConfidential.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/governance/utils/VotesConfidential.sol";
+```
+
+A confidential votes contract tracking confidential voting power of accounts over time.
+It features vote delegation to delegators.
+
+This contract keeps a history (checkpoints) of each account's confidential vote power. Confidential
+voting power can be delegated either by calling the {delegate} function directly, or by providing
+a signature to be used with {delegateBySig}. Confidential voting power handles can be queried
+through the public accessors {getVotes} and {getPastVotes} but can only be decrypted by accounts
+allowed to access them. Ensure that {HandleAccessManager-_validateHandleAllowance} is implemented properly, allowing all 
+necessary addresses to access voting power handles.
+
+By default, voting units does not account for voting power. This makes transfers of underlying
+voting units cheaper. The downside is that it requires users to delegate to themselves in order
+to activate checkpoints and have their voting power tracked.
+
+[.contract-index]
+.Functions
+--
+* `++clock()++`
+* `++CLOCK_MODE()++`
+* `++getVotes(account)++`
+* `++getPastVotes(account, timepoint)++`
+* `++getPastTotalSupply(timepoint)++`
+* `++confidentialTotalSupply()++`
+* `++delegates(account)++`
+* `++delegate(delegatee)++`
+* `++delegateBySig(delegatee, nonce, expiry, v, r, s)++`
+* `++_delegate(account, delegatee)++`
+* `++_transferVotingUnits(from, to, amount)++`
+* `++_moveDelegateVotes(from, to, amount)++`
+* `++_validateTimepoint(timepoint)++`
+* `++_getVotingUnits()++`
+
+[.contract-subindex-inherited]
+.HandleAccessManager
+* `++getHandleAllowance(handle, account, persistent)++`
+* `++_validateHandleAllowance(handle)++`
+
+[.contract-subindex-inherited]
+.IERC6372
+
+[.contract-subindex-inherited]
+.EIP712
+* `++_domainSeparatorV4()++`
+* `++_hashTypedDataV4(structHash)++`
+* `++eip712Domain()++`
+* `++_EIP712Name()++`
+* `++_EIP712Version()++`
+
+[.contract-subindex-inherited]
+.IERC5267
+
+[.contract-subindex-inherited]
+.Nonces
+* `++nonces(owner)++`
+* `++_useNonce(owner)++`
+* `++_useCheckedNonce(owner, nonce)++`
+
+--
+
+[.contract-index]
+.Events
+--
+* `++DelegateVotesChanged(delegate, previousVotes, newVotes)++`
+* `++DelegateChanged(delegator, fromDelegate, toDelegate)++`
+
+[.contract-subindex-inherited]
+.HandleAccessManager
+
+[.contract-subindex-inherited]
+.IERC6372
+
+[.contract-subindex-inherited]
+.EIP712
+
+[.contract-subindex-inherited]
+.IERC5267
+* `++EIP712DomainChanged()++`
+
+[.contract-subindex-inherited]
+.Nonces
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++VotesExpiredSignature(expiry)++`
+* `++ERC6372InconsistentClock()++`
+* `++ERC5805FutureLookup(timepoint, clock)++`
+
+[.contract-subindex-inherited]
+.HandleAccessManager
+
+[.contract-subindex-inherited]
+.IERC6372
+
+[.contract-subindex-inherited]
+.EIP712
+
+[.contract-subindex-inherited]
+.IERC5267
+
+[.contract-subindex-inherited]
+.Nonces
+* `++InvalidAccountNonce(account, currentNonce)++`
+
+--
+
+[.contract-item]
+[[VotesConfidential-clock--]]
+==== `[.contract-item-name]#++clock++#++() → uint48++` [.item-kind]#public#
+
+Clock used for flagging checkpoints. Can be overridden to implement timestamp based
+checkpoints (and voting), in which case {CLOCK_MODE} should be overridden as well to match.
+
+[.contract-item]
+[[VotesConfidential-CLOCK_MODE--]]
+==== `[.contract-item-name]#++CLOCK_MODE++#++() → string++` [.item-kind]#public#
+
+Machine-readable description of the clock as specified in ERC-6372.
+
+[.contract-item]
+[[VotesConfidential-getVotes-address-]]
+==== `[.contract-item-name]#++getVotes++#++(address account) → euint64++` [.item-kind]#public#
+
+Returns the current amount of votes that `account` has.
+
+[.contract-item]
+[[VotesConfidential-getPastVotes-address-uint256-]]
+==== `[.contract-item-name]#++getPastVotes++#++(address account, uint256 timepoint) → euint64++` [.item-kind]#public#
+
+Returns the amount of votes that `account` had at a specific moment in the past. If the {clock} is
+configured to use block numbers, this will return the value at the end of the corresponding block.
+
+Requirements:
+
+- `timepoint` must be in the past. If operating using block numbers, the block must be already mined.
+
+[.contract-item]
+[[VotesConfidential-getPastTotalSupply-uint256-]]
+==== `[.contract-item-name]#++getPastTotalSupply++#++(uint256 timepoint) → euint64++` [.item-kind]#public#
+
+Returns the total supply of votes available at a specific moment in the past. If the {clock} is
+configured to use block numbers, this will return the value at the end of the corresponding block.
+
+NOTE: This value is the sum of all available votes, which is not necessarily the sum of all delegated votes.
+Votes that have not been delegated are still part of total supply, even though they would not participate in a
+vote.
+
+Requirements:
+
+- `timepoint` must be in the past. If operating using block numbers, the block must be already mined.
+
+[.contract-item]
+[[VotesConfidential-confidentialTotalSupply--]]
+==== `[.contract-item-name]#++confidentialTotalSupply++#++() → euint64++` [.item-kind]#public#
+
+Returns the current total supply of votes as an encrypted uint64 (euint64). Must be implemented
+by the derived contract.
+
+[.contract-item]
+[[VotesConfidential-delegates-address-]]
+==== `[.contract-item-name]#++delegates++#++(address account) → address++` [.item-kind]#public#
+
+Returns the delegate that `account` has chosen.
+
+[.contract-item]
+[[VotesConfidential-delegate-address-]]
+==== `[.contract-item-name]#++delegate++#++(address delegatee)++` [.item-kind]#public#
+
+Delegates votes from the sender to `delegatee`.
+
+[.contract-item]
+[[VotesConfidential-delegateBySig-address-uint256-uint256-uint8-bytes32-bytes32-]]
+==== `[.contract-item-name]#++delegateBySig++#++(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s)++` [.item-kind]#public#
+
+Delegates votes from an EOA to `delegatee` via an ECDSA signature.
+
+[.contract-item]
+[[VotesConfidential-_delegate-address-address-]]
+==== `[.contract-item-name]#++_delegate++#++(address account, address delegatee)++` [.item-kind]#internal#
+
+Delegate all of `account`'s voting units to `delegatee`.
+
+Emits events {IVotes-DelegateChanged} and {IVotes-DelegateVotesChanged}.
+
+[.contract-item]
+[[VotesConfidential-_transferVotingUnits-address-address-euint64-]]
+==== `[.contract-item-name]#++_transferVotingUnits++#++(address from, address to, euint64 amount)++` [.item-kind]#internal#
+
+Transfers, mints, or burns voting units. To register a mint, `from` should be zero. To register a burn, `to`
+should be zero. Total supply of voting units will be adjusted with mints and burns.
+
+WARNING: Must be called after {confidentialTotalSupply} is updated.
+
+[.contract-item]
+[[VotesConfidential-_moveDelegateVotes-address-address-euint64-]]
+==== `[.contract-item-name]#++_moveDelegateVotes++#++(address from, address to, euint64 amount)++` [.item-kind]#internal#
+
+Moves delegated votes from one delegate to another.
+
+[.contract-item]
+[[VotesConfidential-_validateTimepoint-uint256-]]
+==== `[.contract-item-name]#++_validateTimepoint++#++(uint256 timepoint) → uint48++` [.item-kind]#internal#
+
+Validate that a timepoint is in the past, and return it as a uint48.
+
+[.contract-item]
+[[VotesConfidential-_getVotingUnits-address-]]
+==== `[.contract-item-name]#++_getVotingUnits++#++(address) → euint64++` [.item-kind]#internal#
+
+Must return the voting units held by an account.
+
+[.contract-item]
+[[VotesConfidential-DelegateVotesChanged-address-euint64-euint64-]]
+==== `[.contract-item-name]#++DelegateVotesChanged++#++(address indexed delegate, euint64 previousVotes, euint64 newVotes)++` [.item-kind]#event#
+
+Emitted when a token transfer or delegate change results in changes to a delegate's number of voting units.
+
+[.contract-item]
+[[VotesConfidential-DelegateChanged-address-address-address-]]
+==== `[.contract-item-name]#++DelegateChanged++#++(address indexed delegator, address indexed fromDelegate, address indexed toDelegate)++` [.item-kind]#event#
+
+Emitted when an account changes their delegate.
+
+[.contract-item]
+[[VotesConfidential-VotesExpiredSignature-uint256-]]
+==== `[.contract-item-name]#++VotesExpiredSignature++#++(uint256 expiry)++` [.item-kind]#error#
+
+The signature used has expired.
+
+[.contract-item]
+[[VotesConfidential-ERC6372InconsistentClock--]]
+==== `[.contract-item-name]#++ERC6372InconsistentClock++#++()++` [.item-kind]#error#
+
+The clock was incorrectly modified.
+
+[.contract-item]
+[[VotesConfidential-ERC5805FutureLookup-uint256-uint48-]]
+==== `[.contract-item-name]#++ERC5805FutureLookup++#++(uint256 timepoint, uint48 clock)++` [.item-kind]#error#
+
+Lookup to future votes is not available.
+

@@ -1,0 +1,1 @@
+../../lib/openzeppelin-contracts/docs/templates/properties.js

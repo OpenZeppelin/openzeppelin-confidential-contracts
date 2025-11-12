@@ -1,0 +1,12 @@
+
+= Governance
+
+[.readme-notice]
+NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api#governance
+
+This directory includes primitives for on-chain confidential governance.
+
+- {VotesConfidential}: Abstract contract that keeps track of confidential voting units, enabling checkpointed voting through governance.
+
+== Utils
+{{VotesConfidential}}
