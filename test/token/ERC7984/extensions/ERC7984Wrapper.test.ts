@@ -1,4 +1,6 @@
+import { ERC7984ERC20WrapperMock } from '../../../../types';
 import { FhevmType } from '@fhevm/hardhat-plugin';
+import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
@@ -131,8 +133,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      // wait for gateway to process the request
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(
         withdrawalAmount * 10n ** 12n + ethers.parseUnits('900', 18),
@@ -143,7 +144,7 @@ describe('ERC7984Wrapper', function () {
       await this.wrapper
         .connect(this.holder)
         .unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
     });
@@ -163,7 +164,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
     });
 
@@ -205,8 +206,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      // wait for gateway to process the request
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.operator);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
     });
@@ -240,7 +240,40 @@ describe('ERC7984Wrapper', function () {
     });
 
     it('finalized with invalid signature', async function () {
-      await expect(this.wrapper.connect(this.holder).finalizeUnwrap(0, '0x', '0x')).to.be.reverted;
+      const withdrawalAmount = ethers.parseUnits('10', 6);
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.wrapper.target, this.holder.address)
+        .add64(withdrawalAmount)
+        .encrypt();
+
+      await this.wrapper
+        .connect(this.holder)
+        ['unwrap(address,address,bytes32,bytes)'](
+          this.holder,
+          this.holder,
+          encryptedInput.handles[0],
+          encryptedInput.inputProof,
+        );
+
+      const event = (await this.wrapper.queryFilter(this.wrapper.filters.UnwrapRequested()))[0];
+      const unwrapAmount = event.args[1];
+      const publicDecryptResults = await fhevm.publicDecrypt([unwrapAmount]);
+
+      await expect(
+        this.wrapper
+          .connect(this.holder)
+          .finalizeUnwrap(
+            unwrapAmount,
+            publicDecryptResults.abiEncodedClearValues,
+            publicDecryptResults.decryptionProof.slice(0, publicDecryptResults.decryptionProof.length - 2),
+          ),
+      ).to.be.reverted;
+    });
+
+    it('finalize invalid unwrap request', async function () {
+      await expect(
+        this.wrapper.connect(this.holder).finalizeUnwrap(ethers.ZeroHash, 0, '0x'),
+      ).to.be.revertedWithCustomError(this.wrapper, 'InvalidUnwrapRequest');
     });
   });
 
@@ -286,3 +319,11 @@ describe('ERC7984Wrapper', function () {
   });
 });
 /* eslint-disable no-unexpected-multiline */
+
+async function publicDecryptAndFinalizeUnwrap(wrapper: ERC7984ERC20WrapperMock, caller: HardhatEthersSigner) {
+  const [to, amount] = (await wrapper.queryFilter(wrapper.filters.UnwrapRequested()))[0].args;
+  const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+  await expect(wrapper.connect(caller).finalizeUnwrap(amount, abiEncodedClearValues, decryptionProof))
+    .to.emit(wrapper, 'UnwrapFinalized')
+    .withArgs(to, amount, abiEncodedClearValues);
+}

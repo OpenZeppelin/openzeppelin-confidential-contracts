@@ -18,15 +18,7 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  * @dev Extension of {ERC7984} that supports confidential Real World Assets (RWAs).
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
-abstract contract ERC7984Rwa is
-    IERC7984Rwa,
-    ERC7984Freezable,
-    ERC7984Restricted,
-    Pausable,
-    Multicall,
-    ERC165,
-    AccessControl
-{
+abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, AccessControl {
     /**
      * @dev Accounts granted the agent role have the following permissioned abilities:
      *
@@ -58,11 +50,8 @@ abstract contract ERC7984Rwa is
     /// @inheritdoc ERC165
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(IERC165, ERC165, AccessControl) returns (bool) {
-        return
-            interfaceId == type(IERC7984Rwa).interfaceId ||
-            interfaceId == type(IERC7984).interfaceId ||
-            super.supportsInterface(interfaceId);
+    ) public view virtual override(IERC165, ERC7984, AccessControl) returns (bool) {
+        return interfaceId == type(IERC7984Rwa).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @dev Returns true if has admin role, false otherwise.
@@ -129,7 +118,9 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 mintedAmount = _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(mintedAmount, msg.sender);
+        return mintedAmount;
     }
 
     /// @dev Mints confidential amount of tokens to account.
@@ -138,7 +129,9 @@ abstract contract ERC7984Rwa is
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _mint(to, encryptedAmount);
+        euint64 mintedAmount = _mint(to, encryptedAmount);
+        FHE.allow(mintedAmount, msg.sender);
+        return mintedAmount;
     }
 
     /// @dev Burns confidential amount of tokens from account with proof.
@@ -147,7 +140,9 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 burntAmount = _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(burntAmount, msg.sender);
+        return burntAmount;
     }
 
     /// @dev Burns confidential amount of tokens from account.
@@ -156,7 +151,9 @@ abstract contract ERC7984Rwa is
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _burn(account, encryptedAmount);
+        euint64 burntAmount = _burn(account, encryptedAmount);
+        FHE.allow(burntAmount, msg.sender);
+        return burntAmount;
     }
 
     /// @dev Variant of {forceConfidentialTransferFrom-address-address-euint64} with an amount input proof.
@@ -226,7 +223,9 @@ abstract contract ERC7984Rwa is
     function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
         // bypassing `from` restriction check with {_checkSenderRestriction}. Still performing `to` restriction check.
         // bypassing paused state by directly calling `super._update`
-        return super._update(from, to, encryptedAmount);
+        euint64 transferred = super._update(from, to, encryptedAmount);
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /**
