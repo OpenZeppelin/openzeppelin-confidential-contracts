@@ -133,7 +133,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder, this.holder);
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(
         withdrawalAmount * 10n ** 12n + ethers.parseUnits('900', 18),
@@ -144,7 +144,7 @@ describe('ERC7984Wrapper', function () {
       await this.wrapper
         .connect(this.holder)
         .unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
-      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder, this.holder);
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
     });
@@ -164,7 +164,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder, this.holder);
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
     });
 
@@ -206,7 +206,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.operator, this.holder);
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.operator);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
     });
