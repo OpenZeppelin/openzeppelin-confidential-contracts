@@ -19,6 +19,16 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
 abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, AccessControl {
+    /**
+     * @dev Accounts granted the agent role have the following permissioned abilities:
+     *
+     * - Mint/Burn to/from a given address (does not require permission)
+     * - Force transfer from a given address (does not require permission)
+     *   - Bypasses pause and restriction checks (not frozen)
+     * - Pause/Unpause the contract
+     * - Block/Unblock a given account
+     * - Set frozen amount of tokens for a given account.
+     */
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
     /// @dev Checks if the sender is an admin.
@@ -84,7 +94,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         _resetUser(account);
     }
 
-    /// @dev Sets confidential frozen for an account.
+    /// @dev Sets confidential frozen for an account with proof.
     function setConfidentialFrozen(
         address account,
         externalEuint64 encryptedAmount,
@@ -93,7 +103,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         _setConfidentialFrozen(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /// @dev Sets confidential frozen for an account with proof.
+    /// @dev Sets confidential frozen for an account.
     function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual onlyAgent {
         require(
             FHE.isAllowed(encryptedAmount, msg.sender),
@@ -146,7 +156,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return burntAmount;
     }
 
-    /// @dev Forces transfer of confidential amount of tokens from account to account with proof by skipping compliance checks.
+    /// @dev Variant of {forceConfidentialTransferFrom-address-address-euint64} with an amount input proof.
     function forceConfidentialTransferFrom(
         address from,
         address to,
@@ -156,7 +166,11 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /// @dev Forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
+    /**
+     * @dev Force transfer callable by the role {AGENT_ROLE} which transfers tokens from `from` to `to` and
+     * bypasses the {ERC7984Restricted} and https://docs.openzeppelin.com/contracts/api/utils#pausable[`++Pausable++`]
+     * checks. Frozen tokens are not transferred and must be unfrozen first.
+     */
     function forceConfidentialTransferFrom(
         address from,
         address to,
