@@ -520,7 +520,7 @@ describe('ERC7984', function () {
   describe('disclose', function () {
     let expectedAmount: any;
     let expectedHandle: any;
-    let requester: any;
+    let requester: HardhatEthersSigner | undefined;
 
     beforeEach(async function () {
       expectedAmount = undefined;
