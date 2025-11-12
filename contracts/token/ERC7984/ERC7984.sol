@@ -218,12 +218,12 @@ abstract contract ERC7984 is IERC7984 {
         uint64 cleartext,
         bytes calldata decryptionProof
     ) public virtual {
-        bytes32[] memory cts = new bytes32[](1);
-        cts[0] = euint64.unwrap(encryptedAmount);
+        bytes32[] memory handles = new bytes32[](1);
+        handles[0] = euint64.unwrap(encryptedAmount);
 
         bytes memory cleartextMemory = abi.encode(cleartext);
 
-        FHE.verifySignatures(cts, cleartextMemory, decryptionProof);
+        FHE.verifySignatures(handles, cleartextMemory, decryptionProof);
         emit AmountDisclosed(encryptedAmount, cleartext);
     }
 
