@@ -3,11 +3,10 @@
 pragma solidity ^0.8.24;
 
 import {externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC7984} from "./IERC7984.sol";
 
 /// @dev Interface for confidential RWA contracts.
-interface IERC7984Rwa is IERC7984, IERC165 {
+interface IERC7984Rwa is IERC7984 {
     /// @dev Returns true if the contract is paused, false otherwise.
     function paused() external view returns (bool);
     /// @dev Returns whether an account is allowed to interact with the token.
