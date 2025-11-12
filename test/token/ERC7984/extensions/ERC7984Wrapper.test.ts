@@ -321,19 +321,9 @@ describe('ERC7984Wrapper', function () {
 /* eslint-disable no-unexpected-multiline */
 
 async function publicDecryptAndFinalizeUnwrap(wrapper: ERC7984ERC20WrapperMock, caller: HardhatEthersSigner) {
-  const unwrapEventFilter = wrapper.filters.UnwrapRequested();
-  const unwrapEvent = (await wrapper.queryFilter(unwrapEventFilter))[0];
-
-  const to_ = unwrapEvent.args[0];
-  const amount = unwrapEvent.args[1];
-
-  const publicDecryptResults = await fhevm.publicDecrypt([amount]);
-
-  await expect(
-    wrapper
-      .connect(caller)
-      .finalizeUnwrap(amount, publicDecryptResults.abiEncodedClearValues, publicDecryptResults.decryptionProof),
-  )
+  const [to, amount] = (await wrapper.queryFilter(wrapper.filters.UnwrapRequested()))[0].args;
+  const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+  await expect(wrapper.connect(caller).finalizeUnwrap(amount, abiEncodedClearValues, decryptionProof))
     .to.emit(wrapper, 'UnwrapFinalized')
-    .withArgs(to_, amount, publicDecryptResults.abiEncodedClearValues);
+    .withArgs(to, amount, abiEncodedClearValues);
 }
