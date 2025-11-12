@@ -137,12 +137,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         require(to != address(0), InvalidUnwrapRequest(burntAmount));
         delete _unwrapRequests[burntAmount];
 
-        bytes32[] memory handlesList = new bytes32[](1);
-        handlesList[0] = euint64.unwrap(burntAmount);
+        bytes32[] memory handles = new bytes32[](1);
+        handles[0] = euint64.unwrap(burntAmount);
 
-        bytes memory clearTexts = abi.encode(burntAmountCleartext);
+        bytes memory cleartexts = abi.encode(burntAmountCleartext);
 
-        FHE.verifySignatures(handlesList, clearTexts, decryptionProof);
+        FHE.verifySignatures(handles, cleartexts, decryptionProof);
 
         SafeERC20.safeTransfer(underlying(), to, burntAmountCleartext * rate());
 

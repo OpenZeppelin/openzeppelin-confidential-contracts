@@ -28,10 +28,10 @@ contract SwapERC7984ToERC20 {
     }
 
     function finalizeSwap(euint64 amount, uint64 cleartextAmount, bytes calldata decryptionProof) public virtual {
-        bytes32[] memory handlesList = new bytes32[](1);
-        handlesList[0] = euint64.unwrap(amount);
+        bytes32[] memory handles = new bytes32[](1);
+        handles[0] = euint64.unwrap(amount);
 
-        FHE.verifySignatures(handlesList, abi.encode(cleartextAmount), decryptionProof);
+        FHE.verifySignatures(handles, abi.encode(cleartextAmount), decryptionProof);
         address to = _receivers[amount];
         require(to != address(0), SwapERC7984ToERC20InvalidFinalization(amount));
         delete _receivers[amount];
