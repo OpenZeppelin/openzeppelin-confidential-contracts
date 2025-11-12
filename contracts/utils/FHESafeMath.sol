@@ -7,6 +7,9 @@ import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 /**
  * @dev Library providing safe arithmetic operations for encrypted values
  * to handle potential overflows in FHE operations.
+ *
+ * NOTE: An uninitialized `euint64` value (equivalent to euint64.wrap(bytes32(0))) is evaluated as 0.
+ * This library will may return an uninitialized value if all inputs are uninitialized.
  */
 library FHESafeMath {
     /**
