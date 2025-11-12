@@ -37,14 +37,6 @@ abstract contract ERC7984Restricted is ERC7984 {
      * @dev Returns whether a user account is allowed to interact with the token.
      *
      * Default implementation only disallows explicitly BLOCKED accounts (i.e. a blocklist).
-     *
-     * To convert into an allowlist, override as:
-     *
-     * ```solidity
-     * function isUserAllowed(address account) public view virtual override returns (bool) {
-     *     return getRestriction(account) == Restriction.ALLOWED;
-     * }
-     * ```
      */
     function isUserAllowed(address account) public view virtual returns (bool) {
         return getRestriction(account) != Restriction.BLOCKED; // i.e. DEFAULT && ALLOWED
@@ -58,7 +50,7 @@ abstract contract ERC7984Restricted is ERC7984 {
      * * `from` must be allowed to transfer tokens (see {isUserAllowed}).
      * * `to` must be allowed to receive tokens (see {isUserAllowed}).
      *
-     * The default restriction behaviour can be changed (for a pass-through for instance) by overriding
+     * The default restriction behavior can be changed (for a pass-through for instance) by overriding
      * {_checkSenderRestriction} and/or {_checkRecipientRestriction}.
      */
     function _update(address from, address to, euint64 value) internal virtual override returns (euint64) {
@@ -90,7 +82,7 @@ abstract contract ERC7984Restricted is ERC7984 {
         _setRestriction(account, Restriction.DEFAULT);
     }
 
-    /// @dev Checks if a user account is restricted. Reverts with {ERC20Restricted} if so.
+    /// @dev Checks if a user account is restricted. Reverts with {UserRestricted} if so.
     function _checkRestriction(address account) internal view virtual {
         require(isUserAllowed(account), UserRestricted(account));
     }
