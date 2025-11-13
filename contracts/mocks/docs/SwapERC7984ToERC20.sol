@@ -31,7 +31,7 @@ contract SwapERC7984ToERC20 {
         bytes32[] memory handles = new bytes32[](1);
         handles[0] = euint64.unwrap(amount);
 
-        FHE.verifySignatures(handles, abi.encode(cleartextAmount), decryptionProof);
+        FHE.checkSignatures(handles, abi.encode(cleartextAmount), decryptionProof);
         address to = _receivers[amount];
         require(to != address(0), SwapERC7984ToERC20InvalidFinalization(amount));
         delete _receivers[amount];

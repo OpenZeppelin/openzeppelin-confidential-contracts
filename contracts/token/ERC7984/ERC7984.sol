@@ -230,7 +230,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
 
         bytes memory cleartextMemory = abi.encode(cleartextAmount);
 
-        FHE.verifySignatures(handles, cleartextMemory, decryptionProof);
+        FHE.checkSignatures(handles, cleartextMemory, decryptionProof);
         emit AmountDisclosed(encryptedAmount, cleartextAmount);
     }
 
