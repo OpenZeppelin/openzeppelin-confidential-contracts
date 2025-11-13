@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {EthereumConfig, ZamaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {ZamaEthereumConfig, ZamaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7821WithExecutor} from "./../../finance/ERC7821WithExecutor.sol";
 import {VestingWalletCliffConfidential} from "./../../finance/VestingWalletCliffConfidential.sol";
 import {VestingWalletConfidentialFactory} from "./../../finance/VestingWalletConfidentialFactory.sol";
 
-abstract contract VestingWalletConfidentialFactoryMock is VestingWalletConfidentialFactory, EthereumConfig {
+abstract contract VestingWalletConfidentialFactoryMock is VestingWalletConfidentialFactory, ZamaEthereumConfig {
     function _deployVestingWalletImplementation() internal virtual override returns (address) {
         return address(new VestingWalletCliffExecutorConfidential());
     }
@@ -46,7 +46,11 @@ abstract contract VestingWalletConfidentialFactoryMock is VestingWalletConfident
 }
 
 // slither-disable-next-line locked-ether
-contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidential, ERC7821WithExecutor, EthereumConfig {
+contract VestingWalletCliffExecutorConfidential is
+    VestingWalletCliffConfidential,
+    ERC7821WithExecutor,
+    ZamaEthereumConfig
+{
     constructor() {
         _disableInitializers();
     }
@@ -61,6 +65,6 @@ contract VestingWalletCliffExecutorConfidential is VestingWalletCliffConfidentia
         __VestingWalletCliffConfidential_init(beneficiary, startTimestamp, durationSeconds, cliffSeconds);
         __ERC7821WithExecutor_init(executor);
 
-        FHE.setCoprocessor(ZamaConfig.getSepoliaConfig());
+        FHE.setCoprocessor(ZamaConfig.getEthereumCoprocessorConfig());
     }
 }
