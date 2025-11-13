@@ -142,7 +142,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
 
         bytes memory cleartexts = abi.encode(burntAmountCleartext);
 
-        FHE.verifySignatures(handles, cleartexts, decryptionProof);
+        FHE.checkSignatures(handles, cleartexts, decryptionProof);
 
         SafeERC20.safeTransfer(underlying(), to, burntAmountCleartext * rate());
 
