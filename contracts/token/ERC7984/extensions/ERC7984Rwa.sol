@@ -156,7 +156,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return burntAmount;
     }
 
-    /// @dev Variant of {forceConfidentialTransferFrom-address-address-euint64} with an amount input proof.
+    /// @dev Variant of {forceConfidentialTransferFrom-address-address-euint64} with an input proof.
     function forceConfidentialTransferFrom(
         address from,
         address to,
@@ -168,7 +168,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
 
     /**
      * @dev Force transfer callable by the role {AGENT_ROLE} which transfers tokens from `from` to `to` and
-     * bypasses the {ERC7984Restricted} and https://docs.openzeppelin.com/contracts/api/utils#pausable[`++Pausable++`]
+     * bypasses the {ERC7984Restricted} (only on from) and https://docs.openzeppelin.com/contracts/api/utils#pausable[`++Pausable++`]
      * checks. Frozen tokens are not transferred and must be unfrozen first.
      */
     function forceConfidentialTransferFrom(
