@@ -1842,14 +1842,14 @@ Burns confidential amount of tokens from account.
 [[ERC7984Rwa-forceConfidentialTransferFrom-address-address-externalEuint64-bytes-]]
 ==== `[.contract-item-name]#++forceConfidentialTransferFrom++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#public#
 
-Variant of {forceConfidentialTransferFrom-address-address-euint64} with an amount input proof.
+Variant of {forceConfidentialTransferFrom-address-address-euint64} with an input proof.
 
 [.contract-item]
 [[ERC7984Rwa-forceConfidentialTransferFrom-address-address-euint64-]]
 ==== `[.contract-item-name]#++forceConfidentialTransferFrom++#++(address from, address to, euint64 encryptedAmount) → euint64 transferred++` [.item-kind]#public#
 
 Force transfer callable by the role {AGENT_ROLE} which transfers tokens from `from` to `to` and
-bypasses the {ERC7984Restricted} and https://docs.openzeppelin.com/contracts/api/utils#pausable[`++Pausable++`]
+bypasses the {ERC7984Restricted} (only on from) and https://docs.openzeppelin.com/contracts/api/utils#pausable[`++Pausable++`]
 checks. Frozen tokens are not transferred and must be unfrozen first.
 
 [.contract-item]
