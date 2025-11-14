@@ -1,6 +1,13 @@
 # openzeppelin-confidential-contracts
 
 
+## 0.3.0-rc.1 (2025-11-14)
+
+- `ERC7984`: Support ERC-165 interface detection on ERC-7984. ([#253](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/253))
+- Migrate FHEVM contracts from v0.8 to v0.9 ([#253](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/253))
+- `IERC7984`: Support ERC-165 interface detection on ERC-7984. ([#253](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/253))
+- `FHESafeMath`: Return initialized 0 value instead of unititialized `euint64` on `tryDecrease` with initialized `delta` and unitiialized `oldValue`. ([#253](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/253))
+
 ## 0.3.0-rc.0 (2025-10-09)
 
 ### Token
@@ -15,6 +22,7 @@
 - `ERC7984Rwa`: An extension of `ERC7984`, that supports confidential Real World Assets (RWAs). ([#160](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/160))
 
 ### Utils
+
 - Migrate `@fhevm/solidity` from v0.7.0 to 0.8.0. ([#202](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/202))
 - `FHESafeMath`: Add `tryAdd` and `trySub` functions that return 0 upon failure. ([#206](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/206))
 - `FHESafeMath`: Support non-initialized inputs in `tryIncrease(..)`/`tryDecrease(..)`. ([#183](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/183))
