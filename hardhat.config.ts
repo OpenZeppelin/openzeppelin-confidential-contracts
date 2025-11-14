@@ -34,7 +34,7 @@ const config: HardhatUserConfig = {
     outDir: 'types',
     target: 'ethers-v6',
   },
-  docgen: require('./docs/config'),
+  docgen: require('./docs/config-md'),
   exposed: {
     imports: true,
     initializers: true,
