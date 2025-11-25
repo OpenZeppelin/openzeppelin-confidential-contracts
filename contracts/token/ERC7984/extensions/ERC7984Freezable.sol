@@ -8,8 +8,8 @@ import {ERC7984} from "../ERC7984.sol";
 
 /**
  * @dev Extension of {ERC7984} that implements a confidential
- * freezing mechanism that can be managed by an authorized account with
- * {setConfidentialFrozen} functions.
+ * freezing mechanism that can be managed by calling the internal {_setConfidentialFrozen}
+ * function.
  *
  * The freezing mechanism provides the guarantee to the contract owner
  * (e.g. a DAO or a well-configured multisig) that a specific confidential

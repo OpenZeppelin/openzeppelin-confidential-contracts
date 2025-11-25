@@ -165,7 +165,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
 
     /**
      * @dev Returns the default number of decimals of the underlying ERC-20 token that is being wrapped.
-     * Used as a default fallback when {_tryGetAssetDecimals} fails to fetch decimals of the underlying
+     * Used as a default fallback when `_tryGetAssetDecimals` fails to fetch decimals of the underlying
      * ERC-20 token.
      */
     function _fallbackUnderlyingDecimals() internal pure virtual returns (uint8) {

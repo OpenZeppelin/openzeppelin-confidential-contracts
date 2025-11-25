@@ -216,7 +216,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     }
 
     /**
-     * @dev Publicly discloses an encrypted value with a given decryption proof. Emits the {AmountDisclosed} event.
+     * @dev Publicly discloses an encrypted value with a given decryption proof. Emits the {IERC7984-AmountDisclosed} event.
      *
      * NOTE: May not be tied to a prior request via {requestDiscloseEncryptedAmount}.
      */
