@@ -10,7 +10,6 @@ import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC7984} from "./../../../interfaces/IERC7984.sol";
 import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
-import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984} from "./../ERC7984.sol";
 import {ERC7984Freezable} from "./ERC7984Freezable.sol";
 import {ERC7984Restricted} from "./ERC7984Restricted.sol";
@@ -19,15 +18,17 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  * @dev Extension of {ERC7984} that supports confidential Real World Assets (RWAs).
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
-abstract contract ERC7984Rwa is
-    IERC7984Rwa,
-    ERC7984Freezable,
-    ERC7984Restricted,
-    Pausable,
-    Multicall,
-    ERC165,
-    AccessControl
-{
+abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, AccessControl {
+    /**
+     * @dev Accounts granted the agent role have the following permissioned abilities:
+     *
+     * - Mint/Burn to/from a given address (does not require permission)
+     * - Force transfer from a given address (does not require permission)
+     *   - Bypasses pause and restriction checks (not frozen)
+     * - Pause/Unpause the contract
+     * - Block/Unblock a given account
+     * - Set frozen amount of tokens for a given account.
+     */
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
     /// @dev Checks if the sender is an admin.
@@ -49,11 +50,8 @@ abstract contract ERC7984Rwa is
     /// @inheritdoc ERC165
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(IERC165, ERC165, AccessControl) returns (bool) {
-        return
-            interfaceId == type(IERC7984Rwa).interfaceId ||
-            interfaceId == type(IERC7984).interfaceId ||
-            super.supportsInterface(interfaceId);
+    ) public view virtual override(IERC165, ERC7984, AccessControl) returns (bool) {
+        return interfaceId == type(IERC7984Rwa).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @dev Returns true if has admin role, false otherwise.
@@ -93,10 +91,10 @@ abstract contract ERC7984Rwa is
 
     /// @dev Unblocks a user account.
     function unblockUser(address account) public virtual onlyAgent {
-        _allowUser(account);
+        _resetUser(account);
     }
 
-    /// @dev Sets confidential frozen for an account.
+    /// @dev Sets confidential frozen for an account with proof.
     function setConfidentialFrozen(
         address account,
         externalEuint64 encryptedAmount,
@@ -105,7 +103,7 @@ abstract contract ERC7984Rwa is
         _setConfidentialFrozen(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /// @dev Sets confidential frozen for an account with proof.
+    /// @dev Sets confidential frozen for an account.
     function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual onlyAgent {
         require(
             FHE.isAllowed(encryptedAmount, msg.sender),
@@ -120,7 +118,9 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 mintedAmount = _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(mintedAmount, msg.sender);
+        return mintedAmount;
     }
 
     /// @dev Mints confidential amount of tokens to account.
@@ -129,7 +129,9 @@ abstract contract ERC7984Rwa is
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _mint(to, encryptedAmount);
+        euint64 mintedAmount = _mint(to, encryptedAmount);
+        FHE.allow(mintedAmount, msg.sender);
+        return mintedAmount;
     }
 
     /// @dev Burns confidential amount of tokens from account with proof.
@@ -138,7 +140,9 @@ abstract contract ERC7984Rwa is
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 burntAmount = _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(burntAmount, msg.sender);
+        return burntAmount;
     }
 
     /// @dev Burns confidential amount of tokens from account.
@@ -147,10 +151,12 @@ abstract contract ERC7984Rwa is
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _burn(account, encryptedAmount);
+        euint64 burntAmount = _burn(account, encryptedAmount);
+        FHE.allow(burntAmount, msg.sender);
+        return burntAmount;
     }
 
-    /// @dev Forces transfer of confidential amount of tokens from account to account with proof by skipping compliance checks.
+    /// @dev Variant of {forceConfidentialTransferFrom-address-address-euint64} with an input proof.
     function forceConfidentialTransferFrom(
         address from,
         address to,
@@ -160,7 +166,11 @@ abstract contract ERC7984Rwa is
         return _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /// @dev Forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
+    /**
+     * @dev Force transfer callable by the role {AGENT_ROLE} which transfers tokens from `from` to `to` and
+     * bypasses the {ERC7984Restricted} (only on from) and https://docs.openzeppelin.com/contracts/api/utils#pausable[`++Pausable++`]
+     * checks. Frozen tokens are not transferred and must be unfrozen first.
+     */
     function forceConfidentialTransferFrom(
         address from,
         address to,
@@ -213,7 +223,9 @@ abstract contract ERC7984Rwa is
     function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
         // bypassing `from` restriction check with {_checkSenderRestriction}. Still performing `to` restriction check.
         // bypassing paused state by directly calling `super._update`
-        return super._update(from, to, encryptedAmount);
+        euint64 transferred = super._update(from, to, encryptedAmount);
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /**
