@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.3.0-rc.0) (token/ERC7984/extensions/ERC7984ObserverAccess.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/extensions/ERC7984ObserverAccess.sol)
 
 pragma solidity ^0.8.27;
 
