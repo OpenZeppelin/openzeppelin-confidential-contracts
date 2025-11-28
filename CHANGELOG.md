@@ -20,7 +20,6 @@
 
 ### Utils
 
-- Migrate `@fhevm/solidity` from v0.7.0 to 0.8.0. ([#202](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/202))
 - `FHESafeMath`: Add `tryAdd` and `trySub` functions that return 0 upon failure. ([#206](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/206))
 - `FHESafeMath`: Support non-initialized inputs in `tryIncrease(..)`/`tryDecrease(..)`. ([#183](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/183))
 
