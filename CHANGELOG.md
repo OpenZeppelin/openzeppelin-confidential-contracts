@@ -1,7 +1,7 @@
 # openzeppelin-confidential-contracts
 
 
-## 0.3.0 (2025-11-26)
+## 0.3.0 (2025-11-28)
 
 - Migrate `@fhevm/solidity` from v0.7.0 to 0.9.1 ([#202](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/202), [#248](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/248), [#254](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/254))
 
