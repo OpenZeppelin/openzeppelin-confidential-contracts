@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (interfaces/IConfidentialFungibleToken.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.3.0) (interfaces/IERC7984.sol)
 pragma solidity ^0.8.24;
 
 import {euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
