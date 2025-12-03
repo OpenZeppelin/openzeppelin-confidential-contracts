@@ -82,6 +82,42 @@ describe('ERC7984Wrapper', function () {
           ).to.eventually.equal(10);
         });
 
+        it('max amount works', async function () {
+          const maxAmount = (2n ** 64n - 1n) / 10n ** 6n;
+          await this.token.$_mint(this.holder.address, ethers.parseUnits(maxAmount.toString(), 18));
+          const amountToWrap = ethers.parseUnits(maxAmount.toString(), 18);
+
+          if (viaCallback) {
+            await this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
+          } else {
+            await this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
+          }
+
+          await expect(
+            fhevm.userDecryptEuint(
+              FhevmType.euint64,
+              await this.wrapper.confidentialBalanceOf(this.holder.address),
+              this.wrapper.target,
+              this.holder,
+            ),
+          ).to.eventually.equal(ethers.parseUnits(maxAmount.toString(), 6));
+        });
+
+        it('amount exceeding max fails', async function () {
+          const maxAmount = (2n ** 64n - 1n) / 10n ** 6n;
+          await this.token.$_mint(this.holder.address, ethers.parseUnits(maxAmount.toString(), 18));
+          const amountToWrap = ethers.parseUnits((maxAmount + 1n).toString(), 18);
+
+          let tx;
+          if (viaCallback) {
+            tx = this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
+          } else {
+            tx = this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
+          }
+
+          await expect(tx).to.be.revertedWithCustomError(this.wrapper, 'SafeCastOverflowedUintDowncast');
+        });
+
         if (viaCallback) {
           it('to another address', async function () {
             const amountToWrap = ethers.parseUnits('100', 18);
