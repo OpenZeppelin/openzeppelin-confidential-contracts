@@ -45,24 +45,6 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         }
     }
 
-    /// @inheritdoc ERC7984
-    function decimals() public view virtual override returns (uint8) {
-        return _decimals;
-    }
-
-    /**
-     * @dev Returns the rate at which the underlying token is converted to the wrapped token.
-     * For example, if the `rate` is 1000, then 1000 units of the underlying token equal 1 unit of the wrapped token.
-     */
-    function rate() public view virtual returns (uint256) {
-        return _rate;
-    }
-
-    /// @dev Returns the address of the underlying ERC-20 token that is being wrapped.
-    function underlying() public view returns (IERC20) {
-        return _underlying;
-    }
-
     /**
      * @dev `ERC1363` callback function which wraps tokens to the address specified in `data` or
      * the address `from` (if no address is specified in `data`). This function refunds any excess tokens
@@ -79,7 +61,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
 
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        _mint(to, SafeCast.toUint64(amount / rate()));
 
         // transfer excess back to the sender
         uint256 excess = amount % rate();
@@ -99,7 +81,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
 
         // mint confidential token
-        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        _mint(to, SafeCast.toUint64(amount / rate()));
     }
 
     /**
@@ -147,6 +129,37 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         SafeERC20.safeTransfer(underlying(), to, burntAmountCleartext * rate());
 
         emit UnwrapFinalized(to, burntAmount, burntAmountCleartext);
+    }
+
+    /// @inheritdoc ERC7984
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
+    }
+
+    /**
+     * @dev Returns the rate at which the underlying token is converted to the wrapped token.
+     * For example, if the `rate` is 1000, then 1000 units of the underlying token equal 1 unit of the wrapped token.
+     */
+    function rate() public view virtual returns (uint256) {
+        return _rate;
+    }
+
+    /// @dev Returns the address of the underlying ERC-20 token that is being wrapped.
+    function underlying() public view returns (IERC20) {
+        return _underlying;
+    }
+
+    /**
+     * @dev Returns the total supply of the wrapped token, calculated based on the balance of the underlying
+     * token held by the contract and the conversion rate.
+     */
+    function totalSupply() public view virtual returns (uint256) {
+        return underlying().balanceOf(address(this)) / rate();
+    }
+
+    function _mint(address to, uint64 amount) internal virtual {
+        assert(amount + totalSupply() <= type(uint64).max);
+        _mint(to, FHE.asEuint64(amount));
     }
 
     function _unwrap(address from, address to, euint64 amount) internal virtual {
