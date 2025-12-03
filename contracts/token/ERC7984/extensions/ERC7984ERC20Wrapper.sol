@@ -48,7 +48,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     /**
      * @dev `ERC1363` callback function which wraps tokens to the address specified in `data` or
      * the address `from` (if no address is specified in `data`). This function refunds any excess tokens
-     * sent beyond the nearest multiple of {rate}. See {wrap} from more details on wrapping tokens.
+     * sent beyond the nearest multiple of {rate} to `from`. See {wrap} from more details on wrapping tokens.
      */
     function onTransferReceived(
         address /*operator*/,
@@ -59,13 +59,13 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         // check caller is the token contract
         require(address(underlying()) == msg.sender, ERC7984UnauthorizedCaller(msg.sender));
 
-        // mint confidential token
-        address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, SafeCast.toUint64(amount / rate()));
-
         // transfer excess back to the sender
         uint256 excess = amount % rate();
         if (excess > 0) SafeERC20.safeTransfer(underlying(), from, excess);
+
+        // mint confidential token
+        address to = data.length < 20 ? from : address(bytes20(data));
+        _mint(to, SafeCast.toUint64(amount / rate()));
 
         // return magic value
         return IERC1363Receiver.onTransferReceived.selector;
@@ -158,7 +158,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     }
 
     function _mint(address to, uint64 amount) internal virtual {
-        assert(amount + totalSupply() <= type(uint64).max);
+        assert(totalSupply() <= type(uint64).max);
         _mint(to, FHE.asEuint64(amount));
     }
 
