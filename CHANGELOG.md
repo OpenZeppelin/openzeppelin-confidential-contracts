@@ -15,7 +15,7 @@
 - `ERC7984Omnibus`: Add an extension of `ERC7984` that exposes new functions for transferring between confidential subaccounts on omnibus wallets. ([#186](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/186))
 - `ERC7984ObserverAccess`: Add an extension for ERC7984, which allows each account to add an observer who is given access to their transfer and balance amounts. ([#148](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/148))
 - `ERC7984Restricted`: An extension of `ERC7984` that implements user account transfer restrictions. ([#182](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/182))
-- `ERC7984Freezable`: Add an extension to `ERC7984`, which allows accounts granted the "freezer" role to freeze and unfreeze tokens. ([#151](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/151))
+- `ERC7984Freezable`: Add an extension to `ERC7984` that implements internal functions with the ability to freeze/unfreeze user tokens. ([#151](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/151))
 - `ERC7984Rwa`: An extension of `ERC7984`, that supports confidential Real World Assets (RWAs). ([#160](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/160))
 
 ### Utils
