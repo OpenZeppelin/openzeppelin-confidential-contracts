@@ -150,8 +150,9 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     }
 
     /**
-     * @dev Returns the total supply of the wrapped token, calculated based on the balance of the underlying
-     * token held by the contract and the conversion rate.
+     * @dev Returns the underlying balance divided by the {rate}, closely approximating the total supply of wrapped tokens.
+     *
+     * NOTE: The return value of this function can be inflated by directly sending underlying tokens to the wrapper contract.
      */
     function totalSupply() public view virtual returns (uint64) {
         return SafeCast.toUint64(underlying().balanceOf(address(this)) / rate());
