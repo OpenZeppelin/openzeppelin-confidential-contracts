@@ -17,7 +17,7 @@ OpenZeppelin Confidential Contracts exists thanks to its contributors. There are
 
 ## License
 
-Each contract file should have their own licence specified. In the absence of any specific licence information, file is released under the [MIT License](LICENSE).
+Each contract file should have their own license specified. In the absence of any specific licence information, file is released under the [MIT License](LICENSE).
 
 ## Legal
 
