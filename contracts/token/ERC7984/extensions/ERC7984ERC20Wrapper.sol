@@ -63,6 +63,11 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         return _underlying;
     }
 
+    /// inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984) returns (bool) {
+        return interfaceId == type(ERC7984ERC20Wrapper).interfaceId || super.supportsInterface(interfaceId);
+    }
+
     /**
      * @dev `ERC1363` callback function which wraps tokens to the address specified in `data` or
      * the address `from` (if no address is specified in `data`). This function refunds any excess tokens
