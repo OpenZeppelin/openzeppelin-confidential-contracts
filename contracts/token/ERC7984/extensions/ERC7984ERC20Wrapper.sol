@@ -61,7 +61,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
 
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, SafeCast.toUint64(amount / rate()));
+        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
 
         // transfer excess back to the sender
         uint256 excess = amount % rate();
@@ -81,7 +81,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
 
         // mint confidential token
-        _mint(to, SafeCast.toUint64(amount / rate()));
+        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
     }
 
     /**
@@ -158,13 +158,16 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         return SafeCast.toUint64(underlying().balanceOf(address(this)) / rate());
     }
 
-    /**
-     * @dev WARNING: This function must revert if {ERC7984-_mint} will fail silently. This function should be overriden
-     * to revert as necessary if {ERC7984-_mint} or any downstream functions are updated.
-     */
-    function _mint(address to, uint64 amount) internal virtual {
-        totalSupply(); // check that total supply doesn't overflow
-        _mint(to, FHE.asEuint64(amount));
+    /// @dev This function must revert if the new {ERC7984-confidentialTotalSupply} state is invalid.
+    function _checkTotalSupply() internal virtual {
+        SafeCast.toUint64(underlying().balanceOf(address(this)) / rate());
+    }
+
+    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
+        if (from == address(0)) {
+            _checkTotalSupply();
+        }
+        return super._update(from, to, amount);
     }
 
     function _unwrap(address from, address to, euint64 amount) internal virtual {
