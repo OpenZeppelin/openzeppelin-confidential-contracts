@@ -158,6 +158,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         return SafeCast.toUint64(underlying().balanceOf(address(this)) / rate());
     }
 
+    /**
+     * @dev WARNING: This function must revert if {ERC7984-_mint} will fail silently. This function should be overriden
+     * to revert as necessary if {ERC7984-_mint} or any downstream functions are updated.
+     */
     function _mint(address to, uint64 amount) internal virtual {
         totalSupply(); // check that total supply doesn't overflow
         _mint(to, FHE.asEuint64(amount));
