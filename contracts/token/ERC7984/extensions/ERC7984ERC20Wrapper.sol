@@ -59,13 +59,13 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         // check caller is the token contract
         require(address(underlying()) == msg.sender, ERC7984UnauthorizedCaller(msg.sender));
 
-        // transfer excess back to the sender
-        uint256 excess = amount % rate();
-        if (excess > 0) SafeERC20.safeTransfer(underlying(), from, excess);
-
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
         _mint(to, SafeCast.toUint64(amount / rate()));
+
+        // transfer excess back to the sender
+        uint256 excess = amount % rate();
+        if (excess > 0) SafeERC20.safeTransfer(underlying(), from, excess);
 
         // return magic value
         return IERC1363Receiver.onTransferReceived.selector;
