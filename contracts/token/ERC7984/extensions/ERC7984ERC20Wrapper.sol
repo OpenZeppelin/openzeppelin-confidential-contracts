@@ -151,7 +151,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     }
 
     /**
-     * @dev Returns the underlying balance divided by the {rate}, a value strictly greater than or equal to the
+     * @dev Returns the underlying balance divided by the {rate}, a value greater or equal to the actual
      * {confidentialTotalSupply}.
      *
      * NOTE: The return value of this function can be inflated by directly sending underlying tokens to the wrapper contract.
