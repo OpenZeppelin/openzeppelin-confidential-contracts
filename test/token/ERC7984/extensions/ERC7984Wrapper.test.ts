@@ -87,12 +87,12 @@ describe('ERC7984Wrapper', function () {
 
           const rate = await this.wrapper.rate();
           const maxConfidentialSupply = await this.wrapper.maxTotalSupply();
-          const maxUnderlyingSupply = maxConfidentialSupply * rate;
+          const maxUnderlyingBalance = maxConfidentialSupply * rate;
 
           if (viaCallback) {
-            await this.token.connect(this.holder).transferAndCall(this.wrapper, maxUnderlyingSupply);
+            await this.token.connect(this.holder).transferAndCall(this.wrapper, maxUnderlyingBalance);
           } else {
-            await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingSupply);
+            await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingBalance);
           }
 
           await expect(
@@ -110,10 +110,10 @@ describe('ERC7984Wrapper', function () {
 
           const rate = await this.wrapper.rate();
           const maxConfidentialSupply = await this.wrapper.maxTotalSupply();
-          const maxUnderlyingSupply = maxConfidentialSupply * rate;
+          const maxUnderlyingBalance = maxConfidentialSupply * rate;
 
           // first deposit close to the max
-          await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingSupply);
+          await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingBalance);
 
           // try to deposit more, causing the total supply to exceed the max supported amount
           await expect(
