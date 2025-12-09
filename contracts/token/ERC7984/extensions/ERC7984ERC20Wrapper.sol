@@ -155,7 +155,8 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
      * {confidentialTotalSupply}.
      *
      * NOTE: The return value of this function can be inflated by directly sending underlying tokens to the wrapper contract.
-     * Reductions will lag compared to {confidentialTotalSupply} since it is updated on {unwrap} while
+     * Reductions will lag compared to {confidentialTotalSupply} since it is updated on {unwrap} while this function updates
+     * on {finalizeUnwrap}.
      */
     function totalSupply() public view virtual returns (uint256) {
         return underlying().balanceOf(address(this)) / rate();
