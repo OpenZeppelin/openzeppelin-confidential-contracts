@@ -151,9 +151,11 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     }
 
     /**
-     * @dev Returns the underlying balance divided by the {rate}, over-approximating the total supply of wrapped tokens.
+     * @dev Returns the underlying balance divided by the {rate}, a value strictly greater than or equal to the
+     * {confidentialTotalSupply}.
      *
      * NOTE: The return value of this function can be inflated by directly sending underlying tokens to the wrapper contract.
+     * Reductions will lag compared to {confidentialTotalSupply} since it is updated on {unwrap} while
      */
     function totalSupply() public view virtual returns (uint256) {
         return underlying().balanceOf(address(this)) / rate();
@@ -164,8 +166,14 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         return type(uint64).max;
     }
 
-    /// @dev This function must revert if the new {ERC7984-confidentialTotalSupply} state is invalid.
-    function _checkTotalSupply() internal virtual {
+    /**
+     * @dev This function must revert if the new {confidentialTotalSupply} is invalid (overflow occurred).
+     *
+     * NOTE: Overflow can be detected here since the wrapper holdings are non-confidential. In other cases, it may be impossible
+     * to infer total supply overflow synchronously. This function may revert even if the {confidentialTotalSupply} did
+     * not overflow.
+     */
+    function _checkConfidentialTotalSupply() internal virtual {
         if (totalSupply() > maxTotalSupply()) {
             revert ERC7984TotalSupplyOverflow();
         }
@@ -173,7 +181,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
 
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
         if (from == address(0)) {
-            _checkTotalSupply();
+            _checkConfidentialTotalSupply();
         }
         return super._update(from, to, amount);
     }
