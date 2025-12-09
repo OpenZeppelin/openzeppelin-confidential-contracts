@@ -83,14 +83,16 @@ describe('ERC7984Wrapper', function () {
         });
 
         it('max amount works', async function () {
-          const maxAmount = (2n ** 64n - 1n) / 10n ** 6n;
-          await this.token.$_mint(this.holder.address, ethers.parseUnits(maxAmount.toString(), 18));
-          const amountToWrap = ethers.parseUnits(maxAmount.toString(), 18);
+          await this.token.$_mint(this.holder.address, ethers.MaxUint256 / 2n); // mint a lot of tokens
+
+          const rate = await this.wrapper.rate();
+          const maxConfidentialSupply = await this.wrapper.maxTotalSupply();
+          const maxUnderlyingSupply = maxConfidentialSupply * rate;
 
           if (viaCallback) {
-            await this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
+            await this.token.connect(this.holder).transferAndCall(this.wrapper, maxUnderlyingSupply);
           } else {
-            await this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
+            await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingSupply);
           }
 
           await expect(
@@ -100,22 +102,25 @@ describe('ERC7984Wrapper', function () {
               this.wrapper.target,
               this.holder,
             ),
-          ).to.eventually.equal(ethers.parseUnits(maxAmount.toString(), 6));
+          ).to.eventually.equal(maxConfidentialSupply);
         });
 
         it('amount exceeding max fails', async function () {
-          const maxAmount = (2n ** 64n - 1n) / 10n ** 6n;
-          await this.token.$_mint(this.holder.address, ethers.parseUnits(maxAmount.toString(), 18));
-          const amountToWrap = ethers.parseUnits((maxAmount + 1n).toString(), 18);
+          await this.token.$_mint(this.holder.address, ethers.MaxUint256 / 2n); // mint a lot of tokens
 
-          let tx;
-          if (viaCallback) {
-            tx = this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
-          } else {
-            tx = this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
-          }
+          const rate = await this.wrapper.rate();
+          const maxConfidentialSupply = await this.wrapper.maxTotalSupply();
+          const maxUnderlyingSupply = maxConfidentialSupply * rate;
 
-          await expect(tx).to.be.revertedWithCustomError(this.wrapper, 'SafeCastOverflowedUintDowncast');
+          // first deposit close to the max
+          await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingSupply);
+
+          // try to deposit more, causing the total supply to exceed the max supported amount
+          await expect(
+            viaCallback
+              ? this.token.connect(this.holder).transferAndCall(this.wrapper, rate)
+              : this.wrapper.connect(this.holder).wrap(this.holder.address, rate),
+          ).to.be.revertedWithCustomError(this.wrapper, 'ERC7984TotalSupplyOverflow');
         });
 
         if (viaCallback) {

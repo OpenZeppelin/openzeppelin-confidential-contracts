@@ -30,6 +30,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     event UnwrapFinalized(address indexed receiver, euint64 encryptedAmount, uint64 cleartextAmount);
 
     error InvalidUnwrapRequest(euint64 amount);
+    error ERC7984TotalSupplyOverflow();
 
     constructor(IERC20 underlying_) {
         _underlying = underlying_;
@@ -150,17 +151,24 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     }
 
     /**
-     * @dev Returns the underlying balance divided by the {rate}, closely approximating the total supply of wrapped tokens.
+     * @dev Returns the underlying balance divided by the {rate}, over-approximating the total supply of wrapped tokens.
      *
      * NOTE: The return value of this function can be inflated by directly sending underlying tokens to the wrapper contract.
      */
-    function totalSupply() public view virtual returns (uint64) {
-        return SafeCast.toUint64(underlying().balanceOf(address(this)) / rate());
+    function totalSupply() public view virtual returns (uint256) {
+        return underlying().balanceOf(address(this)) / rate();
+    }
+
+    /// @dev Returns the maximum total supply of wrapped tokens supported by the encrypted datatype.
+    function maxTotalSupply() public view virtual returns (uint256) {
+        return type(uint64).max;
     }
 
     /// @dev This function must revert if the new {ERC7984-confidentialTotalSupply} state is invalid.
     function _checkTotalSupply() internal virtual {
-        SafeCast.toUint64(underlying().balanceOf(address(this)) / rate());
+        if (totalSupply() > maxTotalSupply()) {
+            revert ERC7984TotalSupplyOverflow();
+        }
     }
 
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
