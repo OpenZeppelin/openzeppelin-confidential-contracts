@@ -82,6 +82,47 @@ describe('ERC7984Wrapper', function () {
           ).to.eventually.equal(10);
         });
 
+        it('max amount works', async function () {
+          await this.token.$_mint(this.holder.address, ethers.MaxUint256 / 2n); // mint a lot of tokens
+
+          const rate = await this.wrapper.rate();
+          const maxConfidentialSupply = await this.wrapper.maxTotalSupply();
+          const maxUnderlyingBalance = maxConfidentialSupply * rate;
+
+          if (viaCallback) {
+            await this.token.connect(this.holder).transferAndCall(this.wrapper, maxUnderlyingBalance);
+          } else {
+            await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingBalance);
+          }
+
+          await expect(
+            fhevm.userDecryptEuint(
+              FhevmType.euint64,
+              await this.wrapper.confidentialBalanceOf(this.holder.address),
+              this.wrapper.target,
+              this.holder,
+            ),
+          ).to.eventually.equal(maxConfidentialSupply);
+        });
+
+        it('amount exceeding max fails', async function () {
+          await this.token.$_mint(this.holder.address, ethers.MaxUint256 / 2n); // mint a lot of tokens
+
+          const rate = await this.wrapper.rate();
+          const maxConfidentialSupply = await this.wrapper.maxTotalSupply();
+          const maxUnderlyingBalance = maxConfidentialSupply * rate;
+
+          // first deposit close to the max
+          await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingBalance);
+
+          // try to deposit more, causing the total supply to exceed the max supported amount
+          await expect(
+            viaCallback
+              ? this.token.connect(this.holder).transferAndCall(this.wrapper, rate)
+              : this.wrapper.connect(this.holder).wrap(this.holder.address, rate),
+          ).to.be.revertedWithCustomError(this.wrapper, 'ERC7984TotalSupplyOverflow');
+        });
+
         if (viaCallback) {
           it('to another address', async function () {
             const amountToWrap = ethers.parseUnits('100', 18);
