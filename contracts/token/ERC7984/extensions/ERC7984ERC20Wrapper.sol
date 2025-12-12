@@ -30,6 +30,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     event UnwrapFinalized(address indexed receiver, euint64 encryptedAmount, uint64 cleartextAmount);
 
     error InvalidUnwrapRequest(euint64 amount);
+    error ERC7984TotalSupplyOverflow();
 
     constructor(IERC20 underlying_) {
         _underlying = underlying_;
@@ -45,28 +46,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         }
     }
 
-    /// @inheritdoc ERC7984
-    function decimals() public view virtual override returns (uint8) {
-        return _decimals;
-    }
-
-    /**
-     * @dev Returns the rate at which the underlying token is converted to the wrapped token.
-     * For example, if the `rate` is 1000, then 1000 units of the underlying token equal 1 unit of the wrapped token.
-     */
-    function rate() public view virtual returns (uint256) {
-        return _rate;
-    }
-
-    /// @dev Returns the address of the underlying ERC-20 token that is being wrapped.
-    function underlying() public view returns (IERC20) {
-        return _underlying;
-    }
-
     /**
      * @dev `ERC1363` callback function which wraps tokens to the address specified in `data` or
      * the address `from` (if no address is specified in `data`). This function refunds any excess tokens
-     * sent beyond the nearest multiple of {rate}. See {wrap} from more details on wrapping tokens.
+     * sent beyond the nearest multiple of {rate} to `from`. See {wrap} from more details on wrapping tokens.
      */
     function onTransferReceived(
         address /*operator*/,
@@ -147,6 +130,61 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         SafeERC20.safeTransfer(underlying(), to, burntAmountCleartext * rate());
 
         emit UnwrapFinalized(to, burntAmount, burntAmountCleartext);
+    }
+
+    /// @inheritdoc ERC7984
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
+    }
+
+    /**
+     * @dev Returns the rate at which the underlying token is converted to the wrapped token.
+     * For example, if the `rate` is 1000, then 1000 units of the underlying token equal 1 unit of the wrapped token.
+     */
+    function rate() public view virtual returns (uint256) {
+        return _rate;
+    }
+
+    /// @dev Returns the address of the underlying ERC-20 token that is being wrapped.
+    function underlying() public view returns (IERC20) {
+        return _underlying;
+    }
+
+    /**
+     * @dev Returns the underlying balance divided by the {rate}, a value greater or equal to the actual
+     * {confidentialTotalSupply}.
+     *
+     * NOTE: The return value of this function can be inflated by directly sending underlying tokens to the wrapper contract.
+     * Reductions will lag compared to {confidentialTotalSupply} since it is updated on {unwrap} while this function updates
+     * on {finalizeUnwrap}.
+     */
+    function totalSupply() public view virtual returns (uint256) {
+        return underlying().balanceOf(address(this)) / rate();
+    }
+
+    /// @dev Returns the maximum total supply of wrapped tokens supported by the encrypted datatype.
+    function maxTotalSupply() public view virtual returns (uint256) {
+        return type(uint64).max;
+    }
+
+    /**
+     * @dev This function must revert if the new {confidentialTotalSupply} is invalid (overflow occurred).
+     *
+     * NOTE: Overflow can be detected here since the wrapper holdings are non-confidential. In other cases, it may be impossible
+     * to infer total supply overflow synchronously. This function may revert even if the {confidentialTotalSupply} did
+     * not overflow.
+     */
+    function _checkConfidentialTotalSupply() internal virtual {
+        if (totalSupply() > maxTotalSupply()) {
+            revert ERC7984TotalSupplyOverflow();
+        }
+    }
+
+    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
+        if (from == address(0)) {
+            _checkConfidentialTotalSupply();
+        }
+        return super._update(from, to, amount);
     }
 
     function _unwrap(address from, address to, euint64 amount) internal virtual {
