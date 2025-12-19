@@ -33,7 +33,7 @@ abstract contract MyToken is ERC7984 {
 ```
 
 > [!NOTE]
-> All contracts built using confidentiality must set the coprocessor configuration. This can be done by inheriting config files such as `ZamaEthereumConfig`.
+> All contracts built using confidentiality must set the coprocessor configuration. This can be done by inheriting a config file such as `ZamaEthereumConfig`.
 
 > [!WARNING]
 > Developing contracts for confidentiality requires extreme care--many functions do not revert on failure as they would in normal contracts.
