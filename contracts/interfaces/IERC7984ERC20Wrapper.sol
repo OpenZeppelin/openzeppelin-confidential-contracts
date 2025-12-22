@@ -3,8 +3,8 @@
 pragma solidity ^0.8.24;
 
 import {externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC1363Receiver} from "@openzeppelin/contracts/interfaces/IERC1363Receiver.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC7984} from "./IERC7984.sol";
 
 /// @dev Interface for ERC7984ERC20Wrapper contract.

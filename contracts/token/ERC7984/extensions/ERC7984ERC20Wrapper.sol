@@ -49,13 +49,17 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
         }
     }
 
-    /// @inheritdoc IERC7984ERC20Wrapper
+    /**
+     * @dev `ERC1363` callback function which wraps tokens to the address specified in `data` or
+     * the address `from` (if no address is specified in `data`). This function refunds any excess tokens
+     * sent beyond the nearest multiple of {rate} to `from`. See {wrap} from more details on wrapping tokens.
+     */
     function onTransferReceived(
         address /*operator*/,
         address from,
         uint256 amount,
         bytes calldata data
-    ) public virtual returns (bytes4) {
+    ) public virtual override returns (bytes4) {
         // check caller is the token contract
         require(address(underlying()) == msg.sender, ERC7984UnauthorizedCaller(msg.sender));
 
@@ -72,7 +76,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
     }
 
     /// @inheritdoc IERC7984ERC20Wrapper
-    function wrap(address to, uint256 amount) public virtual {
+    function wrap(address to, uint256 amount) public virtual override {
         // take ownership of the tokens
         SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
 
@@ -81,7 +85,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
     }
 
     /// @inheritdoc IERC7984ERC20Wrapper
-    function unwrap(address from, address to, euint64 amount) public virtual {
+    function unwrap(address from, address to, euint64 amount) public virtual override {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         _unwrap(from, to, amount);
     }
@@ -92,7 +96,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual {
+    ) public virtual override {
         _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
@@ -101,7 +105,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
         euint64 burntAmount,
         uint64 burntAmountCleartext,
         bytes calldata decryptionProof
-    ) public virtual {
+    ) public virtual override {
         address to = _unwrapRequests[burntAmount];
         require(to != address(0), InvalidUnwrapRequest(burntAmount));
         delete _unwrapRequests[burntAmount];
@@ -124,12 +128,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
     }
 
     /// @inheritdoc IERC7984ERC20Wrapper
-    function rate() public view virtual returns (uint256) {
+    function rate() public view virtual override returns (uint256) {
         return _rate;
     }
 
     /// @inheritdoc IERC7984ERC20Wrapper
-    function underlying() public view returns (IERC20) {
+    function underlying() public view virtual override returns (IERC20) {
         return _underlying;
     }
 
@@ -139,12 +143,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
     }
 
     /// @inheritdoc IERC7984ERC20Wrapper
-    function totalSupply() public view virtual returns (uint256) {
+    function totalSupply() public view virtual override returns (uint256) {
         return underlying().balanceOf(address(this)) / rate();
     }
 
     /// @inheritdoc IERC7984ERC20Wrapper
-    function maxTotalSupply() public view virtual returns (uint256) {
+    function maxTotalSupply() public view virtual override returns (uint256) {
         return type(uint64).max;
     }
 
