@@ -38,11 +38,9 @@ describe('ERC7984Wrapper', function () {
 
   describe('ERC165', async function () {
     it('should support interface', async function () {
-      const erc7984Erc20WrapperFunctions = [
-        IERC7984ERC20Wrapper__factory,
-        IERC7984__factory,
-        IERC1363Receiver__factory,
-      ].flatMap(interfaceFactory => getFunctions(interfaceFactory));
+      const erc7984Erc20WrapperFunctions = [IERC7984ERC20Wrapper__factory, IERC7984__factory].flatMap(
+        interfaceFactory => getFunctions(interfaceFactory),
+      );
       const erc7984Functions = [IERC7984__factory, IERC165__factory].flatMap(interfaceFactory =>
         getFunctions(interfaceFactory),
       );
