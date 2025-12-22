@@ -59,7 +59,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
         address from,
         uint256 amount,
         bytes calldata data
-    ) public virtual override returns (bytes4) {
+    ) public virtual returns (bytes4) {
         // check caller is the token contract
         require(address(underlying()) == msg.sender, ERC7984UnauthorizedCaller(msg.sender));
 
@@ -69,28 +69,38 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
 
         // transfer excess back to the sender
         uint256 excess = amount % rate();
-        if (excess > 0) SafeERC20.safeTransfer(underlying(), from, excess);
+        if (excess > 0) SafeERC20.safeTransfer(IERC20(underlying()), from, excess);
 
         // return magic value
         return IERC1363Receiver.onTransferReceived.selector;
     }
 
-    /// @inheritdoc IERC7984ERC20Wrapper
+    /**
+     * @dev See {IERC7984ERC20Wrapper-wrap}. Tokens are exchanged at a fixed rate specified by {rate} such that
+     * `amount / rate()` confidential tokens are sent. The amount transferred in is rounded down to the nearest
+     * multiple of {rate}.
+     */
     function wrap(address to, uint256 amount) public virtual override {
         // take ownership of the tokens
-        SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
+        SafeERC20.safeTransferFrom(IERC20(underlying()), msg.sender, address(this), amount - (amount % rate()));
 
         // mint confidential token
         _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
     }
 
-    /// @inheritdoc IERC7984ERC20Wrapper
-    function unwrap(address from, address to, euint64 amount) public virtual override {
+    /**
+     * @dev Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
+     */
+    function unwrap(address from, address to, euint64 amount) public virtual {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         _unwrap(from, to, amount);
     }
 
-    /// @inheritdoc IERC7984ERC20Wrapper
+    /**
+     * @dev See {IERC7984ERC20Wrapper-unwrap}. `amount * rate()` underlying tokens are sent to `to`.
+     *
+     * NOTE: The unwrap request created by this function must be finalized by calling {finalizeUnwrap}.
+     */
     function unwrap(
         address from,
         address to,
@@ -117,7 +127,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
 
         FHE.checkSignatures(handles, cleartexts, decryptionProof);
 
-        SafeERC20.safeTransfer(underlying(), to, burntAmountCleartext * rate());
+        SafeERC20.safeTransfer(IERC20(underlying()), to, burntAmountCleartext * rate());
 
         emit UnwrapFinalized(to, burntAmount, burntAmountCleartext);
     }
@@ -127,14 +137,17 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
         return _decimals;
     }
 
-    /// @inheritdoc IERC7984ERC20Wrapper
-    function rate() public view virtual override returns (uint256) {
+    /**
+     * @dev Returns the rate at which the underlying token is converted to the wrapped token.
+     * For example, if the `rate` is 1000, then 1000 units of the underlying token equal 1 unit of the wrapped token.
+     */
+    function rate() public view virtual returns (uint256) {
         return _rate;
     }
 
     /// @inheritdoc IERC7984ERC20Wrapper
-    function underlying() public view virtual override returns (IERC20) {
-        return _underlying;
+    function underlying() public view virtual override returns (address) {
+        return address(_underlying);
     }
 
     /// @inheritdoc IERC165
@@ -142,13 +155,20 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
         return interfaceId == type(IERC7984ERC20Wrapper).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    /// @inheritdoc IERC7984ERC20Wrapper
-    function totalSupply() public view virtual override returns (uint256) {
-        return underlying().balanceOf(address(this)) / rate();
+    /**
+     * @dev Returns the underlying balance divided by the {rate}, a value greater or equal to the actual
+     * {confidentialTotalSupply}.
+     *
+     * NOTE: The return value of this function can be inflated by directly sending underlying tokens to the wrapper contract.
+     * Reductions will lag compared to {confidentialTotalSupply} since it is updated on {unwrap} while this function updates
+     * on {finalizeUnwrap}.
+     */
+    function totalSupply() public view virtual returns (uint256) {
+        return IERC20(underlying()).balanceOf(address(this)) / rate();
     }
 
-    /// @inheritdoc IERC7984ERC20Wrapper
-    function maxTotalSupply() public view virtual override returns (uint256) {
+    /// @dev Returns the maximum total supply of wrapped tokens supported by the encrypted datatype.
+    function maxTotalSupply() public view virtual returns (uint256) {
         return type(uint64).max;
     }
 
