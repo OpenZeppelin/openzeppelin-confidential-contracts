@@ -8,7 +8,10 @@ import {IERC1363Receiver} from "@openzeppelin/contracts/interfaces/IERC1363Recei
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {IERC7984} from "../../../interfaces/IERC7984.sol";
+import {IERC7984ERC20Wrapper} from "../../../interfaces/IERC7984ERC20Wrapper.sol";
 import {ERC7984} from "./../ERC7984.sol";
 
 /**
@@ -19,7 +22,7 @@ import {ERC7984} from "./../ERC7984.sol";
  * WARNING: Minting assumes the full amount of the underlying token transfer has been received, hence some non-standard
  * tokens such as fee-on-transfer or other deflationary-type tokens are not supported by this wrapper.
  */
-abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
+abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
     IERC20 private immutable _underlying;
     uint8 private immutable _decimals;
     uint256 private immutable _rate;
@@ -133,7 +136,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     }
 
     /// @inheritdoc ERC7984
-    function decimals() public view virtual override returns (uint8) {
+    function decimals() public view virtual override(IERC7984, ERC7984) returns (uint8) {
         return _decimals;
     }
 
@@ -151,8 +154,8 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     }
 
     /// inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984) returns (bool) {
-        return interfaceId == type(ERC7984ERC20Wrapper).interfaceId || super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC7984) returns (bool) {
+        return interfaceId == type(IERC7984ERC20Wrapper).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /**

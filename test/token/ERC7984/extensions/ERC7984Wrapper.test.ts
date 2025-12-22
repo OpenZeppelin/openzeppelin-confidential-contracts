@@ -1,4 +1,11 @@
-import { ERC7984ERC20WrapperMock } from '../../../../types';
+import {
+  ERC7984ERC20WrapperMock,
+  IERC1363Receiver__factory,
+  IERC165__factory,
+  IERC7984__factory,
+  IERC7984ERC20Wrapper__factory,
+} from '../../../../types';
+import { getFunctions, getInterfaceId } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
@@ -27,6 +34,26 @@ describe('ERC7984Wrapper', function () {
 
     await this.token.$_mint(this.holder.address, ethers.parseUnits('1000', 18));
     await this.token.connect(this.holder).approve(this.wrapper, ethers.MaxUint256);
+  });
+
+  describe('ERC165', async function () {
+    it('should support interface', async function () {
+      const erc7984Erc20WrapperFunctions = [
+        IERC7984ERC20Wrapper__factory,
+        IERC7984__factory,
+        IERC1363Receiver__factory,
+      ].flatMap(interfaceFactory => getFunctions(interfaceFactory));
+      const erc7984Functions = [IERC7984__factory, IERC165__factory].flatMap(interfaceFactory =>
+        getFunctions(interfaceFactory),
+      );
+      const erc165Functions = getFunctions(IERC165__factory);
+      for (let functions of [erc7984Erc20WrapperFunctions, erc7984Functions, erc165Functions]) {
+        expect(await this.wrapper.supportsInterface(getInterfaceId(functions))).is.true;
+      }
+    });
+    it('should not support interface', async function () {
+      expect(await this.wrapper.supportsInterface('0xbadbadba')).is.false;
+    });
   });
 
   describe('Wrap', async function () {
