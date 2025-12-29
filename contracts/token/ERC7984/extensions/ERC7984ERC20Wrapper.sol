@@ -110,12 +110,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper {
         _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /// @inheritdoc IERC7984ERC20Wrapper
+    /// @dev Fills an unwrap request for a given cipher-text `burntAmount` with the `cleartextAmount` and `decryptionProof`.
     function finalizeUnwrap(
         euint64 burntAmount,
         uint64 burntAmountCleartext,
         bytes calldata decryptionProof
-    ) public virtual override {
+    ) public virtual {
         address to = _unwrapRequests[burntAmount];
         require(to != address(0), InvalidUnwrapRequest(burntAmount));
         delete _unwrapRequests[burntAmount];
