@@ -38,6 +38,9 @@ describe('ERC7984Wrapper', function () {
 
   describe('ERC165', async function () {
     it('should support interface', async function () {
+      const erc1363ReceiverFunctions = [IERC1363Receiver__factory].flatMap(interfaceFactory =>
+        getFunctions(interfaceFactory),
+      );
       const erc7984Erc20WrapperFunctions = [IERC7984ERC20Wrapper__factory, IERC7984__factory].flatMap(
         interfaceFactory => getFunctions(interfaceFactory),
       );
@@ -45,12 +48,17 @@ describe('ERC7984Wrapper', function () {
         getFunctions(interfaceFactory),
       );
       const erc165Functions = getFunctions(IERC165__factory);
-      for (let functions of [erc7984Erc20WrapperFunctions, erc7984Functions, erc165Functions]) {
-        expect(await this.wrapper.supportsInterface(getInterfaceId(functions))).is.true;
+      for (let functions of [
+        erc1363ReceiverFunctions,
+        erc7984Erc20WrapperFunctions,
+        erc7984Functions,
+        erc165Functions,
+      ]) {
+        await expect(this.wrapper.supportsInterface(getInterfaceId(functions))).to.eventually.be.true;
       }
     });
     it('should not support interface', async function () {
-      expect(await this.wrapper.supportsInterface('0xbadbadba')).is.false;
+      await expect(this.wrapper.supportsInterface('0xbadbadba')).to.eventually.be.false;
     });
   });
 
