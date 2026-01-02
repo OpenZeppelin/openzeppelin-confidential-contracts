@@ -3,17 +3,29 @@
 [.readme-notice]
 NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api/token
 
-This set of interfaces, contracts, and utilities are all related to the evolving Confidential Token Standard. The standard utilizes the Zama fhEVM co-processor for manipulating FHE values. All amounts are stored on-chain as ciphertext handles (or pointers) to values stored on the co-processor.
+This set of interfaces, contracts, and utilities are all related to `ERC7984`, an evolving confidential token standard. The standard utilizes the Zama fhEVM co-processor for manipulating FHE values. All amounts are stored on-chain as ciphertext handles (or pointers) to values stored on the co-processor.
 
-- {ConfidentialFungibleToken}: Implementation of {IConfidentialFungibleToken}.
-- {ConfidentialFungibleTokenERC20Wrapper}: Extension of {ConfidentialFungibleToken} which wraps an `ERC20` into a confidential token. The wrapper allows for free conversion in both directions at a fixed rate.
-- {ConfidentialFungibleTokenUtils}: A library that provides the on-transfer callback check used by {ConfidentialFungibleToken}. 
+- {ERC7984}: Implementation of {IERC7984}.
+- {ERC7984ERC20Wrapper}: Extension of {ERC7984} which wraps an `ERC20` into a confidential token. The wrapper allows for free conversion in both directions at a fixed rate.
+- {ERC7984Freezable}: An extension of {ERC7984}, which allows accounts granted the "freezer" role to freeze and unfreeze tokens.
+- {ERC7984ObserverAccess}: An extension of {ERC7984}, which allows each account to add an observer who is given access to their transfer and balance amounts.
+- {ERC7984Restricted}: An extension of {ERC7984} that implements user account transfer restrictions.
+- {ERC7984Omnibus}: An extension of {ERC7984} that emits additional events for omnibus transfers, which contain encrypted addresses for the sub-account sender and recipient.
+- {ERC7984Rwa}: Extension of {ERC7984} that supports confidential Real World Assets (RWAs) by providing compliance checks, transfer controls and enforcement actions.
+- {ERC7984Votes}: An extension of {ERC7984} that supports confidential vote tracking and delegation via {VotesConfidential}.
+- {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}.
 
 == Core
-{{ConfidentialFungibleToken}}
+{{ERC7984}}
 
 == Extensions
-{{ConfidentialFungibleTokenERC20Wrapper}}
+{{ERC7984ERC20Wrapper}}
+{{ERC7984Freezable}}
+{{ERC7984ObserverAccess}}
+{{ERC7984Restricted}}
+{{ERC7984Omnibus}}
+{{ERC7984Rwa}}
+{{ERC7984Votes}}
 
 == Utilities
-{{ConfidentialFungibleTokenUtils}}
+{{ERC7984Utils}}

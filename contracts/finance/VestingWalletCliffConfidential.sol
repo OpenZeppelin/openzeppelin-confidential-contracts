@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.3.0) (finance/VestingWalletCliffConfidential.sol)
 pragma solidity ^0.8.27;
 
 import {euint128} from "@fhevm/solidity/lib/FHE.sol";
@@ -15,8 +16,7 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWalletCliffConfidential")) - 1)) & ~bytes32(uint256(0xff))
-    // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant VestingWalletCliffStorageLocation =
+    bytes32 private constant VESTING_WALLET_CLIFF_STORAGE_LOCATION =
         0x3c715f77db997bdb68403fafb54820cd57dedce553ed6315028656b0d601c700;
 
     /// @dev The specified cliff duration is larger than the vesting duration.
@@ -66,7 +66,7 @@ abstract contract VestingWalletCliffConfidential is VestingWalletConfidential {
 
     function _getVestingWalletCliffStorage() private pure returns (VestingWalletCliffStorage storage $) {
         assembly ("memory-safe") {
-            $.slot := VestingWalletCliffStorageLocation
+            $.slot := VESTING_WALLET_CLIFF_STORAGE_LOCATION
         }
     }
 }

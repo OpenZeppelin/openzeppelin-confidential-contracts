@@ -4,12 +4,39 @@
 
 **An experimental library for developing on the Zama fhEVM**
 
-> [!IMPORTANT]
-> This repository contains unaudited code and is a work in progress. Use at your own risk.
-
 ## Overview
 
 This library contains contracts and utilities that utilize the novel features of the Zama fhEVM coprocessor. Contracts take advantage of the FHE (Fully Homomorphic Encryption) capabilities of the coprocessor to perform confidential transactions. See the [documentation](https://docs.openzeppelin.com/confidential-contracts) and the [Zama documentation](https://docs.zama.ai/protocol) for more details.
+
+### Installation
+
+#### Hardhat (npm)
+
+```
+$ npm install @openzeppelin/confidential-contracts
+```
+→ Installs the latest audited release
+
+### Usage
+
+Once installed, you can use the contracts in the library by importing them:
+
+```solidity
+pragma solidity ^0.8.27;
+
+import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";
+
+abstract contract MyToken is ERC7984 {
+    constructor() ERC7984("MyToken", "MTN", "<CONTRACT-URI>") {
+    }
+}
+```
+
+> [!NOTE]
+> All contracts built using confidentiality must set the coprocessor configuration. This can be done by inheriting a config file such as `ZamaEthereumConfig`.
+
+> [!WARNING]
+> Developing contracts for confidentiality requires extreme care--many functions do not revert on failure as they would in normal contracts.
 
 ## Contribute
 
