@@ -180,6 +180,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         }
     }
 
+    /// @inheritdoc ERC7984
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
@@ -187,6 +188,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         return super._update(from, to, amount);
     }
 
+    /// @dev Internal logic for handling the creation of unwrap requests.
     function _unwrap(address from, address to, euint64 amount) internal virtual {
         require(to != address(0), ERC7984InvalidReceiver(to));
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
