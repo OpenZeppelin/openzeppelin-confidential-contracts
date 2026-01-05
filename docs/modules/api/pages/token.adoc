@@ -702,6 +702,8 @@ not overflow.
 [[ERC7984ERC20Wrapper-_unwrap-address-address-euint64-]]
 ==== `[.contract-item-name]#++_unwrap++#++(address from, address to, euint64 amount)++` [.item-kind]#internal#
 
+Internal logic for handling the creation of unwrap requests.
+
 [.contract-item]
 [[ERC7984ERC20Wrapper-_fallbackUnderlyingDecimals--]]
 ==== `[.contract-item-name]#++_fallbackUnderlyingDecimals++#++() → uint8++` [.item-kind]#internal#
