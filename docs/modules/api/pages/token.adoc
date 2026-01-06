@@ -447,7 +447,7 @@ The given gateway request ID `requestId` is invalid.
 :decimals: pass:normal[xref:#ERC7984ERC20Wrapper-decimals--[`++decimals++`]]
 :rate: pass:normal[xref:#ERC7984ERC20Wrapper-rate--[`++rate++`]]
 :underlying: pass:normal[xref:#ERC7984ERC20Wrapper-underlying--[`++underlying++`]]
-:totalSupply: pass:normal[xref:#ERC7984ERC20Wrapper-totalSupply--[`++totalSupply++`]]
+:inferredTotalSupply: pass:normal[xref:#ERC7984ERC20Wrapper-inferredTotalSupply--[`++inferredTotalSupply++`]]
 :maxTotalSupply: pass:normal[xref:#ERC7984ERC20Wrapper-maxTotalSupply--[`++maxTotalSupply++`]]
 :_checkConfidentialTotalSupply: pass:normal[xref:#ERC7984ERC20Wrapper-_checkConfidentialTotalSupply--[`++_checkConfidentialTotalSupply++`]]
 :_update: pass:normal[xref:#ERC7984ERC20Wrapper-_update-address-address-euint64-[`++_update++`]]
@@ -464,7 +464,7 @@ The given gateway request ID `requestId` is invalid.
 :decimals-: pass:normal[xref:#ERC7984ERC20Wrapper-decimals--[`++decimals++`]]
 :rate-: pass:normal[xref:#ERC7984ERC20Wrapper-rate--[`++rate++`]]
 :underlying-: pass:normal[xref:#ERC7984ERC20Wrapper-underlying--[`++underlying++`]]
-:totalSupply-: pass:normal[xref:#ERC7984ERC20Wrapper-totalSupply--[`++totalSupply++`]]
+:inferredTotalSupply-: pass:normal[xref:#ERC7984ERC20Wrapper-inferredTotalSupply--[`++inferredTotalSupply++`]]
 :maxTotalSupply-: pass:normal[xref:#ERC7984ERC20Wrapper-maxTotalSupply--[`++maxTotalSupply++`]]
 :_checkConfidentialTotalSupply-: pass:normal[xref:#ERC7984ERC20Wrapper-_checkConfidentialTotalSupply--[`++_checkConfidentialTotalSupply++`]]
 :_update-address-address-euint64: pass:normal[xref:#ERC7984ERC20Wrapper-_update-address-address-euint64-[`++_update++`]]
@@ -500,7 +500,7 @@ tokens such as fee-on-transfer or other deflationary-type tokens are not support
 * `++decimals()++`
 * `++rate()++`
 * `++underlying()++`
-* `++totalSupply()++`
+* `++inferredTotalSupply()++`
 * `++maxTotalSupply()++`
 * `++_checkConfidentialTotalSupply()++`
 * `++_update(from, to, amount)++`
@@ -668,8 +668,8 @@ For example, if the `rate` is 1000, then 1000 units of the underlying token equa
 Returns the address of the underlying ERC-20 token that is being wrapped.
 
 [.contract-item]
-[[ERC7984ERC20Wrapper-totalSupply--]]
-==== `[.contract-item-name]#++totalSupply++#++() → uint256++` [.item-kind]#public#
+[[ERC7984ERC20Wrapper-inferredTotalSupply--]]
+==== `[.contract-item-name]#++inferredTotalSupply++#++() → uint256++` [.item-kind]#public#
 
 Returns the underlying balance divided by the {rate}, a value greater or equal to the actual
 {confidentialTotalSupply}.
