@@ -158,7 +158,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
      * Reductions will lag compared to {confidentialTotalSupply} since it is updated on {unwrap} while this function updates
      * on {finalizeUnwrap}.
      */
-    function totalSupply() public view virtual returns (uint256) {
+    function inferredTotalSupply() public view virtual returns (uint256) {
         return underlying().balanceOf(address(this)) / rate();
     }
 
@@ -175,7 +175,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
      * not overflow.
      */
     function _checkConfidentialTotalSupply() internal virtual {
-        if (totalSupply() > maxTotalSupply()) {
+        if (inferredTotalSupply() > maxTotalSupply()) {
             revert ERC7984TotalSupplyOverflow();
         }
     }
