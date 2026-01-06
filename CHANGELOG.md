@@ -1,6 +1,10 @@
 # openzeppelin-confidential-contracts
 
 
+## 0.3.1 (2026-01-06)
+
+- `ERC7984ERC20Wrapper`: revert on wrap if there is a chance of total supply overflow. ([#271](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/271))
+
 ## 0.3.0 (2025-11-28)
 
 - Migrate `@fhevm/solidity` from v0.7.0 to 0.9.1 ([#202](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/202), [#248](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/248), [#254](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/254))
