@@ -10,7 +10,7 @@ const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
 
 /* eslint-disable no-unexpected-multiline */
-describe('ERC7984Wrapper', function () {
+describe('ERC7984ERC20Wrapper', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;

@@ -198,6 +198,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         FHE.makePubliclyDecryptable(burntAmount);
 
         assert(_unwrapRequests[burntAmount] == address(0));
+
+        // WARNING: Storing unwrap requests in a mapping from cipher-text to address assumes that
+        // cipher-texts are unique--this holds here but is not always true. Be cautious when assuming
+        // cipher-text uniqueness.
         _unwrapRequests[burntAmount] = to;
 
         emit UnwrapRequested(to, burntAmount);
