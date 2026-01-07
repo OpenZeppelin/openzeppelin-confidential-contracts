@@ -3,7 +3,9 @@
 
 ## 0.3.1 (2026-01-06)
 
-- `ERC7984ERC20Wrapper`: revert on wrap if there is a chance of total supply overflow. ([#271](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/271))
+### Bug fixes
+
+- `ERC7984ERC20Wrapper`: revert on wrap if there is a chance of total supply overflow. ([#268](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/268))
 
 ## 0.3.0 (2025-11-28)
 
