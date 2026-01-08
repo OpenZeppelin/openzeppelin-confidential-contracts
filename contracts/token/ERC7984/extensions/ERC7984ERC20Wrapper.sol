@@ -89,25 +89,29 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
      * @dev Unwraps tokens from `from` and sends the underlying tokens to `to`. The caller must be `from`
      * or be an approved operator for `from`. `amount * rate()` underlying tokens are sent to `to`.
      *
+     * Returns amount unwrapped.
+     *
      * NOTE: The unwrap request created by this function must be finalized by calling {finalizeUnwrap}.
      * NOTE: The caller *must* already be approved by ACL for the given `amount`.
      */
-    function unwrap(address from, address to, euint64 amount) public virtual {
+    function unwrap(address from, address to, euint64 amount) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        _unwrap(from, to, amount);
+        return _unwrap(from, to, amount);
     }
 
     /**
      * @dev Variant of {unwrap} that passes an `inputProof` which approves the caller for the `encryptedAmount`
      * in the ACL.
+     *
+     * Returns amount unwrapped.
      */
     function unwrap(
         address from,
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual {
-        _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+    ) public virtual returns (euint64) {
+        return _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @dev Fills an unwrap request for a given cipher-text `burntAmount` with the `cleartextAmount` and `decryptionProof`.
@@ -189,7 +193,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
     }
 
     /// @dev Internal logic for handling the creation of unwrap requests.
-    function _unwrap(address from, address to, euint64 amount) internal virtual {
+    function _unwrap(address from, address to, euint64 amount) internal virtual returns (euint64) {
         require(to != address(0), ERC7984InvalidReceiver(to));
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
@@ -205,6 +209,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         _unwrapRequests[burntAmount] = to;
 
         emit UnwrapRequested(to, burntAmount);
+        return burntAmount;
     }
 
     /**
