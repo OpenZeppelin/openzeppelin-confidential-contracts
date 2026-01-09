@@ -114,26 +114,26 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         return _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /// @dev Fills an unwrap request for a given cipher-text `burntAmount` with the `cleartextAmount` and `decryptionProof`.
+    /// @dev Fills an unwrap request for a given cipher-text `unwrapAmount` with the `cleartextAmount` and `decryptionProof`.
     function finalizeUnwrap(
-        euint64 burntAmount,
-        uint64 burntAmountCleartext,
+        euint64 unwrapAmount,
+        uint64 unwrapAmountCleartext,
         bytes calldata decryptionProof
     ) public virtual {
-        address to = _unwrapRequests[burntAmount];
-        require(to != address(0), InvalidUnwrapRequest(burntAmount));
-        delete _unwrapRequests[burntAmount];
+        address to = _unwrapRequests[unwrapAmount];
+        require(to != address(0), InvalidUnwrapRequest(unwrapAmount));
+        delete _unwrapRequests[unwrapAmount];
 
         bytes32[] memory handles = new bytes32[](1);
-        handles[0] = euint64.unwrap(burntAmount);
+        handles[0] = euint64.unwrap(unwrapAmount);
 
-        bytes memory cleartexts = abi.encode(burntAmountCleartext);
+        bytes memory cleartexts = abi.encode(unwrapAmountCleartext);
 
         FHE.checkSignatures(handles, cleartexts, decryptionProof);
 
-        SafeERC20.safeTransfer(underlying(), to, burntAmountCleartext * rate());
+        SafeERC20.safeTransfer(underlying(), to, unwrapAmountCleartext * rate());
 
-        emit UnwrapFinalized(to, burntAmount, burntAmountCleartext);
+        emit UnwrapFinalized(to, unwrapAmount, unwrapAmountCleartext);
     }
 
     /// @inheritdoc ERC7984
@@ -171,6 +171,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         return type(uint64).max;
     }
 
+    function unwrapRequests(euint64 unwrapAmount) public view virtual returns (address) {
+        return _unwrapRequests[unwrapAmount];
+    }
+
     /**
      * @dev This function must revert if the new {confidentialTotalSupply} is invalid (overflow occurred).
      *
@@ -198,18 +202,18 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
         // try to burn, see how much we actually got
-        euint64 burntAmount = _burn(from, amount);
-        FHE.makePubliclyDecryptable(burntAmount);
+        euint64 unwrapAmount = _burn(from, amount);
+        FHE.makePubliclyDecryptable(unwrapAmount);
 
-        assert(_unwrapRequests[burntAmount] == address(0));
+        assert(_unwrapRequests[unwrapAmount] == address(0));
 
         // WARNING: Storing unwrap requests in a mapping from cipher-text to address assumes that
         // cipher-texts are unique--this holds here but is not always true. Be cautious when assuming
         // cipher-text uniqueness.
-        _unwrapRequests[burntAmount] = to;
+        _unwrapRequests[unwrapAmount] = to;
 
-        emit UnwrapRequested(to, burntAmount);
-        return burntAmount;
+        emit UnwrapRequested(to, unwrapAmount);
+        return unwrapAmount;
     }
 
     /**
