@@ -16,6 +16,12 @@ interface IERC7984ERC20Wrapper is IERC7984 {
      *
      * NOTE: The caller *must* already be approved by ACL for the given `amount`.
      */
+    function unwrap(address from, address to, euint64 amount) external;
+
+    /**
+     * @dev Variant of {unwrap} that passes an `inputProof` which approves the caller for the `encryptedAmount`
+     * in the ACL.
+     */
     function unwrap(address from, address to, externalEuint64 encryptedAmount, bytes calldata inputProof) external;
 
     /// @dev Returns the address of the underlying ERC-20 token that is being wrapped.

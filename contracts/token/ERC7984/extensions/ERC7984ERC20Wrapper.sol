@@ -91,7 +91,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     /**
      * @dev Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
      */
-    function unwrap(address from, address to, euint64 amount) public virtual {
+    function unwrap(address from, address to, euint64 amount) public virtual override {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         _unwrap(from, to, amount);
     }
