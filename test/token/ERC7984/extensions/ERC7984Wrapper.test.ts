@@ -1,11 +1,5 @@
-import {
-  ERC7984ERC20WrapperMock,
-  IERC1363Receiver__factory,
-  IERC165__factory,
-  IERC7984__factory,
-  IERC7984ERC20Wrapper__factory,
-} from '../../../../types';
-import { getFunctions, getInterfaceId } from '../../../helpers/interface';
+import { ERC7984ERC20WrapperMock } from '../../../../types';
+import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
@@ -38,25 +32,15 @@ describe('ERC7984Wrapper', function () {
 
   describe('ERC165', async function () {
     it('should support interface', async function () {
-      const erc1363ReceiverFunctions = getFunctions(IERC1363Receiver__factory);
-      const erc7984Erc20WrapperFunctions = [IERC7984ERC20Wrapper__factory, IERC7984__factory].flatMap(
-        interfaceFactory => getFunctions(interfaceFactory),
-      );
-      const erc7984Functions = [IERC7984__factory, IERC165__factory].flatMap(interfaceFactory =>
-        getFunctions(interfaceFactory),
-      );
-      const erc165Functions = getFunctions(IERC165__factory);
-      for (let functions of [
-        erc1363ReceiverFunctions,
-        erc7984Erc20WrapperFunctions,
-        erc7984Functions,
-        erc165Functions,
-      ]) {
-        await expect(this.wrapper.supportsInterface(getInterfaceId(functions))).to.eventually.be.true;
-      }
+      await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC165)).to.eventually.be.true;
+      await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC1363Receiver)).to.eventually.be.true;
+      await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
+      await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.true;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.false;
     });
+
     it('should not support interface', async function () {
-      await expect(this.wrapper.supportsInterface('0xbadbadba')).to.eventually.be.false;
+      await expect(this.wrapper.supportsInterface(INVALID_ID)).to.eventually.be.false;
     });
   });
 
