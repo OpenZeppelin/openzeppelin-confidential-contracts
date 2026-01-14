@@ -120,7 +120,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         uint64 unwrapAmountCleartext,
         bytes calldata decryptionProof
     ) public virtual {
-        address to = _unwrapRequests[unwrapAmount];
+        address to = unwrapRequester(unwrapAmount);
         require(to != address(0), InvalidUnwrapRequest(unwrapAmount));
         delete _unwrapRequests[unwrapAmount];
 
@@ -171,6 +171,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         return type(uint64).max;
     }
 
+    /**
+     * @dev Get the address that has a pending unwrap request for the given `unwrapAmount`. Returns `address(0)` if no pending
+     * unwrap request for the amount `unwrapAmount` exists.
+     */
     function unwrapRequester(euint64 unwrapAmount) public view virtual returns (address) {
         return _unwrapRequests[unwrapAmount];
     }
@@ -205,7 +209,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         euint64 unwrapAmount = _burn(from, amount);
         FHE.makePubliclyDecryptable(unwrapAmount);
 
-        assert(_unwrapRequests[unwrapAmount] == address(0));
+        assert(unwrapRequester(unwrapAmount) == address(0));
 
         // WARNING: Storing unwrap requests in a mapping from cipher-text to address assumes that
         // cipher-texts are unique--this holds here but is not always true. Be cautious when assuming

@@ -323,7 +323,7 @@ describe('ERC7984ERC20Wrapper', function () {
         .$_unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
 
       const [unwrapAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.return$_unwrap()))[0].args;
-      await expect(this.wrapper.unwrapRequests(unwrapAmount)).to.eventually.eq(this.holder);
+      await expect(this.wrapper.unwrapRequester(unwrapAmount)).to.eventually.eq(this.holder);
     });
   });
 
