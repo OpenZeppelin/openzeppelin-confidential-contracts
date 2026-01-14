@@ -171,7 +171,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC1363Receiver {
         return type(uint64).max;
     }
 
-    function unwrapRequests(euint64 unwrapAmount) public view virtual returns (address) {
+    function unwrapRequester(euint64 unwrapAmount) public view virtual returns (address) {
         return _unwrapRequests[unwrapAmount];
     }
 
