@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/extensions/ERC7984ERC20Wrapper.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.3.1) (token/ERC7984/extensions/ERC7984ERC20Wrapper.sol)
 
 pragma solidity ^0.8.27;
 
@@ -166,7 +166,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * Reductions will lag compared to {confidentialTotalSupply} since it is updated on {unwrap} while this function updates
      * on {finalizeUnwrap}.
      */
-    function totalSupply() public view virtual returns (uint256) {
+    function inferredTotalSupply() public view virtual returns (uint256) {
         return IERC20(underlying()).balanceOf(address(this)) / rate();
     }
 
@@ -183,11 +183,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * not overflow.
      */
     function _checkConfidentialTotalSupply() internal virtual {
-        if (totalSupply() > maxTotalSupply()) {
+        if (inferredTotalSupply() > maxTotalSupply()) {
             revert ERC7984TotalSupplyOverflow();
         }
     }
 
+    /// @inheritdoc ERC7984
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
@@ -195,6 +196,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         return super._update(from, to, amount);
     }
 
+    /// @dev Internal logic for handling the creation of unwrap requests.
     function _unwrap(address from, address to, euint64 amount) internal virtual {
         require(to != address(0), ERC7984InvalidReceiver(to));
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
@@ -204,6 +206,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         FHE.makePubliclyDecryptable(burntAmount);
 
         assert(_unwrapRequests[burntAmount] == address(0));
+
+        // WARNING: Storing unwrap requests in a mapping from cipher-text to address assumes that
+        // cipher-texts are unique--this holds here but is not always true. Be cautious when assuming
+        // cipher-text uniqueness.
         _unwrapRequests[burntAmount] = to;
 
         emit UnwrapRequested(to, burntAmount);
