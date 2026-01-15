@@ -1,9 +1,8 @@
 // TODO: Replace file content with symlink to lib/openzeppelin-contracts when available.
-const fs = require('fs');
-const glob = require('glob');
-const match = require('micromatch');
-const path = require('path');
-const { findAll } = require('solidity-ast/utils');
+const fs = require("fs");
+const glob = require("micromatch");
+const path = require("path");
+const { findAll } = require("solidity-ast/utils");
 
 module.exports = function (
   pattern = 'contracts/**/*.sol',
