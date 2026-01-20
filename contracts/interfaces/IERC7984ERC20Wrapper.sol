@@ -14,9 +14,16 @@ interface IERC7984ERC20Wrapper is IERC7984 {
      * @dev Unwraps tokens from `from` and sends the underlying tokens to `to`. The caller must be `from`
      * or be an approved operator for `from`.
      *
+     * Returns amount unwrapped.
+     *
      * NOTE: The caller *must* already be approved by ACL for the given `amount`.
      */
-    function unwrap(address from, address to, externalEuint64 encryptedAmount, bytes calldata inputProof) external;
+    function unwrap(
+        address from,
+        address to,
+        externalEuint64 encryptedAmount,
+        bytes calldata inputProof
+    ) external returns (euint64);
 
     /// @dev Returns the address of the underlying ERC-20 token that is being wrapped.
     function underlying() external view returns (address);
