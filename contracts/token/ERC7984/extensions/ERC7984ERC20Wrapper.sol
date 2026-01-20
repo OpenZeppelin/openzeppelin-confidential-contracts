@@ -88,12 +88,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
     }
 
-    /**
-     * @dev Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
-     */
-    function unwrap(address from, address to, euint64 amount) public virtual {
+    /// @dev Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
+    function unwrap(address from, address to, euint64 amount) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        _unwrap(from, to, amount);
+        return _unwrap(from, to, amount);
     }
 
     /**
@@ -106,30 +104,30 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual override {
-        _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+    ) public virtual returns (euint64) {
+        return _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    /// @dev Fills an unwrap request for a given cipher-text `burntAmount` with the `cleartextAmount` and `decryptionProof`.
+    /// @dev Fills an unwrap request for a given cipher-text `unwrapAmount` with the `cleartextAmount` and `decryptionProof`.
     function finalizeUnwrap(
-        euint64 burntAmount,
-        uint64 burntAmountCleartext,
+        euint64 unwrapAmount,
+        uint64 unwrapAmountCleartext,
         bytes calldata decryptionProof
     ) public virtual {
-        address to = _unwrapRequests[burntAmount];
-        require(to != address(0), InvalidUnwrapRequest(burntAmount));
-        delete _unwrapRequests[burntAmount];
+        address to = unwrapRequester(unwrapAmount);
+        require(to != address(0), InvalidUnwrapRequest(unwrapAmount));
+        delete _unwrapRequests[unwrapAmount];
 
         bytes32[] memory handles = new bytes32[](1);
-        handles[0] = euint64.unwrap(burntAmount);
+        handles[0] = euint64.unwrap(unwrapAmount);
 
-        bytes memory cleartexts = abi.encode(burntAmountCleartext);
+        bytes memory cleartexts = abi.encode(unwrapAmountCleartext);
 
         FHE.checkSignatures(handles, cleartexts, decryptionProof);
 
-        SafeERC20.safeTransfer(IERC20(underlying()), to, burntAmountCleartext * rate());
+        SafeERC20.safeTransfer(IERC20(underlying()), to, unwrapAmountCleartext * rate());
 
-        emit UnwrapFinalized(to, burntAmount, burntAmountCleartext);
+        emit UnwrapFinalized(to, unwrapAmount, unwrapAmountCleartext);
     }
 
     /// @inheritdoc ERC7984
@@ -176,6 +174,14 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /**
+     * @dev Get the address that has a pending unwrap request for the given `unwrapAmount`. Returns `address(0)` if no pending
+     * unwrap request for the amount `unwrapAmount` exists.
+     */
+    function unwrapRequester(euint64 unwrapAmount) public view virtual returns (address) {
+        return _unwrapRequests[unwrapAmount];
+    }
+
+    /**
      * @dev This function must revert if the new {confidentialTotalSupply} is invalid (overflow occurred).
      *
      * NOTE: Overflow can be detected here since the wrapper holdings are non-confidential. In other cases, it may be impossible
@@ -197,22 +203,23 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /// @dev Internal logic for handling the creation of unwrap requests.
-    function _unwrap(address from, address to, euint64 amount) internal virtual {
+    function _unwrap(address from, address to, euint64 amount) internal virtual returns (euint64) {
         require(to != address(0), ERC7984InvalidReceiver(to));
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
         // try to burn, see how much we actually got
-        euint64 burntAmount = _burn(from, amount);
-        FHE.makePubliclyDecryptable(burntAmount);
+        euint64 unwrapAmount = _burn(from, amount);
+        FHE.makePubliclyDecryptable(unwrapAmount);
 
-        assert(_unwrapRequests[burntAmount] == address(0));
+        assert(unwrapRequester(unwrapAmount) == address(0));
 
         // WARNING: Storing unwrap requests in a mapping from cipher-text to address assumes that
         // cipher-texts are unique--this holds here but is not always true. Be cautious when assuming
         // cipher-text uniqueness.
-        _unwrapRequests[burntAmount] = to;
+        _unwrapRequests[unwrapAmount] = to;
 
-        emit UnwrapRequested(to, burntAmount);
+        emit UnwrapRequested(to, unwrapAmount);
+        return unwrapAmount;
     }
 
     /**

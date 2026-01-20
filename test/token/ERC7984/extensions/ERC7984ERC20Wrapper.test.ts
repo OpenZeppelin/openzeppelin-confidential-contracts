@@ -17,7 +17,7 @@ describe('ERC7984ERC20Wrapper', function () {
     const [holder, recipient, operator] = accounts;
 
     const token = await ethers.deployContract('$ERC20Mock', ['Public Token', 'PT', 18]);
-    const wrapper = await ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol, uri]);
+    const wrapper = await ethers.deployContract('$ERC7984ERC20WrapperMock', [token, name, symbol, uri]);
 
     this.accounts = accounts.slice(3);
     this.holder = holder;
@@ -330,6 +330,15 @@ describe('ERC7984ERC20Wrapper', function () {
       await expect(
         this.wrapper.connect(this.holder).finalizeUnwrap(ethers.ZeroHash, 0, '0x'),
       ).to.be.revertedWithCustomError(this.wrapper, 'InvalidUnwrapRequest');
+    });
+
+    it('returns unwrap amount', async function () {
+      await this.wrapper
+        .connect(this.holder)
+        .$_unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
+
+      const [unwrapAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.return$_unwrap()))[0].args;
+      await expect(this.wrapper.unwrapRequester(unwrapAmount)).to.eventually.eq(this.holder);
     });
   });
 
