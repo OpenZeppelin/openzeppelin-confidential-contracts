@@ -1,6 +1,5 @@
-import { IERC165__factory, IERC7984__factory, IERC7984Rwa__factory } from '../../../../types';
 import { callAndGetResult } from '../../../helpers/event';
-import { getFunctions, getInterfaceId } from '../../../helpers/interface';
+import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { AddressLike, BytesLike } from 'ethers';
@@ -22,20 +21,14 @@ describe('ERC7984Rwa', function () {
   describe('ERC165', async function () {
     it('should support interface', async function () {
       const { token } = await fixture();
-      const erc7984RwaFunctions = [IERC7984Rwa__factory, IERC7984__factory].flatMap(interfaceFactory =>
-        getFunctions(interfaceFactory),
-      );
-      const erc7984Functions = [IERC7984__factory, IERC165__factory].flatMap(interfaceFactory =>
-        getFunctions(interfaceFactory),
-      );
-      const erc165Functions = getFunctions(IERC165__factory);
-      for (let functions of [erc7984RwaFunctions, erc7984Functions, erc165Functions]) {
-        expect(await token.supportsInterface(getInterfaceId(functions))).is.true;
-      }
+      await expect(token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
+      await expect(token.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.false;
+      await expect(token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.true;
     });
+
     it('should not support interface', async function () {
       const { token } = await fixture();
-      expect(await token.supportsInterface('0xbadbadba')).is.false;
+      await expect(token.supportsInterface(INVALID_ID)).to.eventually.be.false;
     });
   });
 
