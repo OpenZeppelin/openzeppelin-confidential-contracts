@@ -84,7 +84,7 @@ describe('BatcherConfidential', function () {
       await this.batcher.connect(this.holder).exit(1);
     });
 
-    it.only('unwrap already finalized', async function () {
+    it('unwrap already finalized', async function () {
       const joinAmount = await fhevm
         .createEncryptedInput(this.batcher.target, this.holder.address)
         .add64(1000)
