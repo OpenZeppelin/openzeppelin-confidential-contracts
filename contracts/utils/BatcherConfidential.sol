@@ -149,7 +149,7 @@ abstract contract BatcherConfidential {
     }
 
     /// @dev Human readable description of what this batcher does.
-    function routeDescription() public view virtual returns (string memory);
+    function routeDescription() public pure virtual returns (string memory);
 
     /**
      * @dev Function which is executed after validation and unwrap finalization in {dispatchBatchCallback}. The parameter

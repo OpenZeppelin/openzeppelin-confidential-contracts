@@ -13,6 +13,10 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         exchange = exchange_;
     }
 
+    function routeDescription() public pure override returns (string memory) {
+        return "Exchange fromToken for toToken by swapping through the mock exchange.";
+    }
+
     function _executeRoute(uint256 batchId, uint256 unwrapAmount) internal override {
         // Approve exchange to spend unwrapped tokens
         uint256 rawAmount = unwrapAmount * fromToken().rate();
