@@ -63,7 +63,7 @@ describe('BatcherConfidential', function () {
         exchange,
       ]);
 
-      await this.fromToken.connect(this.holder).setOperator(batcher, Math.round(Date.now() / 1000) + 1000);
+      await this.fromToken.connect(this.holder).setOperator(batcher, 2n ** 48n - 1n);
 
       this.batcher = batcher;
     });
