@@ -4,7 +4,7 @@ import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/li
 import {ERC7984ERC20Wrapper} from "../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.27;
 
 abstract contract BatcherConfidential {
     struct Batch {
