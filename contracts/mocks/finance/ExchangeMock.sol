@@ -16,16 +16,16 @@ contract ExchangeMock {
         exchangeRate = initialExchangeRate;
     }
 
-    function swapAToB(uint256 amountIn) public returns (uint256) {
-        uint256 amountOut = (amountIn * exchangeRate) / 1e18;
-        require(tokenA.transferFrom(msg.sender, address(this), amountIn), "Transfer of token A failed");
+    function swapAToB(uint256 amount) public returns (uint256) {
+        uint256 amountOut = (amount * exchangeRate) / 1e18;
+        require(tokenA.transferFrom(msg.sender, address(this), amount), "Transfer of token A failed");
         require(tokenB.transfer(msg.sender, amountOut), "Transfer of token B failed");
         return amountOut;
     }
 
-    function swapBToA(uint256 amountIn) public returns (uint256) {
-        uint256 amountOut = (amountIn * 1e18) / exchangeRate;
-        require(tokenB.transferFrom(msg.sender, address(this), amountIn), "Transfer of token B failed");
+    function swapBToA(uint256 amount) public returns (uint256) {
+        uint256 amountOut = (amount * 1e18) / exchangeRate;
+        require(tokenB.transferFrom(msg.sender, address(this), amount), "Transfer of token B failed");
         require(tokenA.transfer(msg.sender, amountOut), "Transfer of token A failed");
         return amountOut;
     }
