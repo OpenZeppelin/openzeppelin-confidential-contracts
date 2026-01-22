@@ -1,34 +1,48 @@
-import { IERC165__factory, IERC7984__factory } from '../../../types';
-import { allowHandle } from '../../helpers/accounts';
-import { getFunctions, getInterfaceId } from '../../helpers/interface';
 import { ERC7984ERC20WrapperMock } from '../../types';
+import { $ERC20Mock } from '../../types/contracts-exposed/mocks/token/ERC20Mock.sol/$ERC20Mock';
+import { $ERC7984ERC20Wrapper } from '../../types/contracts-exposed/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol/$ERC7984ERC20Wrapper';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
-import hre, { ethers, fhevm } from 'hardhat';
+import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
+const wrapAmount = BigInt(ethers.parseEther('1'));
 
 describe('BatcherConfidential', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const fromTokenUnderlying = await ethers.deployContract('$ERC20Mock', [name, symbol, 18]);
-    const toTokenUnderlying = await ethers.deployContract('$ERC20Mock', [name, symbol, 18]);
+    const fromTokenUnderlying = (await ethers.deployContract('$ERC20Mock', [name, symbol, 18])) as any as $ERC20Mock;
+    const toTokenUnderlying = (await ethers.deployContract('$ERC20Mock', [name, symbol, 18])) as any as $ERC20Mock;
 
-    const fromToken = await ethers.deployContract('$ERC7984ERC20WrapperMock', [fromTokenUnderlying, name, symbol, uri]);
-    const toToken = await ethers.deployContract('$ERC7984ERC20WrapperMock', [toTokenUnderlying, name, symbol, uri]);
+    const fromToken = (await ethers.deployContract('$ERC7984ERC20WrapperMock', [
+      fromTokenUnderlying,
+      name,
+      symbol,
+      uri,
+    ])) as any as $ERC7984ERC20Wrapper;
+    const toToken = (await ethers.deployContract('$ERC7984ERC20WrapperMock', [
+      toTokenUnderlying,
+      name,
+      symbol,
+      uri,
+    ])) as any as $ERC7984ERC20Wrapper;
 
-    for (const tokens of [
-      { underlying: fromTokenUnderlying, wrapper: fromToken },
-      { underlying: toTokenUnderlying, wrapper: toToken },
-    ]) {
-      await tokens.underlying.$_mint(holder, ethers.parseEther('1'));
-      await (tokens.underlying.connect(holder) as any).approve(tokens.wrapper, ethers.parseEther('1'));
-      await tokens.wrapper.wrap(holder, ethers.parseEther('1'));
+    for (const { to, tokens } of [holder, recipient].flatMap(x =>
+      [
+        { underlying: fromTokenUnderlying, wrapper: fromToken },
+        { underlying: toTokenUnderlying, wrapper: toToken },
+      ].map(y => {
+        return { to: x, tokens: y };
+      }),
+    )) {
+      await tokens.underlying.$_mint(to, wrapAmount);
+      await tokens.underlying.connect(to).approve(tokens.wrapper, wrapAmount);
+      await tokens.wrapper.connect(to).wrap(to, wrapAmount);
     }
 
     Object.assign(this, {
@@ -40,6 +54,8 @@ describe('BatcherConfidential', function () {
       holder,
       recipient,
       operator,
+      fromTokenRate: BigInt(await fromToken.rate()),
+      toTokenRate: BigInt(await toToken.rate()),
     });
   });
 
@@ -61,36 +77,162 @@ describe('BatcherConfidential', function () {
         this.fromToken,
         this.toToken,
         exchange,
+        this.operator,
       ]);
 
-      await this.fromToken.connect(this.holder).setOperator(batcher, 2n ** 48n - 1n);
+      for (const approver of [this.holder, this.recipient]) {
+        await this.fromToken.connect(approver).setOperator(batcher, 2n ** 48n - 1n);
+      }
 
       this.batcher = batcher;
     });
 
-    it('happy path', async function () {
-      const joinAmount = await fhevm
-        .createEncryptedInput(this.batcher.target, this.holder.address)
-        .add64(1000)
-        .encrypt();
+    describe('join', async function () {
+      it('should increase individual deposits', async function () {
+        const batchId = await this.batcher.currentBatchId();
 
-      await this.batcher.connect(this.holder).join(joinAmount.handles[0], joinAmount.inputProof);
+        await expect(this.batcher.deposits(batchId, this.holder)).to.eventually.eq(ethers.ZeroHash);
+
+        await this.batcher.join(1000);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.deposits(batchId, this.holder),
+            this.batcher,
+            this.holder,
+          ),
+        ).to.eventually.eq('1000');
+
+        await this.batcher.join(2000);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.deposits(batchId, this.holder),
+            this.batcher,
+            this.holder,
+          ),
+        ).to.eventually.eq('3000');
+      });
+
+      it('should increase total deposits', async function () {
+        const batchId = await this.batcher.currentBatchId();
+
+        await this.batcher.join(1000);
+        await this.batcher.connect(this.recipient).join(2000);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.totalDeposits(batchId),
+            this.batcher,
+            this.operator,
+          ),
+        ).to.eventually.eq('3000');
+      });
+
+      it('should not credit failed transaction', async function () {
+        const batchId = await this.batcher.currentBatchId();
+
+        await this.batcher.join(wrapAmount / this.fromTokenRate + 1n);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.deposits(batchId, this.holder),
+            this.batcher,
+            this.holder,
+          ),
+        ).to.eventually.eq(0);
+      });
+    });
+
+    describe('exit', function () {
+      beforeEach(async function () {
+        this.batchId = await this.batcher.currentBatchId();
+
+        await this.batcher.join(1000);
+        await this.batcher.connect(this.holder).dispatchBatch();
+
+        const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
+        const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+        await this.batcher.dispatchBatchCallback(this.batchId, abiEncodedClearValues, decryptionProof);
+
+        this.exchangeRate = BigInt(await this.batcher.exchangeRate(this.batchId));
+        this.deposit = 1000n;
+      });
+
+      it('should clear deposits', async function () {
+        await this.batcher.exit(this.batchId);
+        await expect(this.batcher.deposits(this.batchId, this.holder)).to.eventually.eq(ethers.ZeroHash);
+      });
+
+      it('should transfer out correct amount of toToken', async function () {
+        const beforeBalanceToTokens = await fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.toToken.confidentialBalanceOf(this.holder),
+          this.toToken,
+          this.holder,
+        );
+
+        await this.batcher.exit(this.batchId);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.toToken.confidentialBalanceOf(this.holder),
+            this.toToken,
+            this.holder,
+          ),
+        ).to.eventually.eq(
+          BigInt(beforeBalanceToTokens) + BigInt(this.exchangeRate * this.deposit) / ethers.parseEther('1'),
+        );
+      });
+
+      it('should revert if not finalized', async function () {
+        await expect(this.batcher.exit(await this.batcher.currentBatchId())).to.be.revertedWithCustomError(
+          this.batcher,
+          'BatchNotFinalized',
+        );
+      });
+    });
+
+    it('happy path', async function () {
+      await this.batcher.connect(this.holder).join(1000);
       await this.batcher.connect(this.holder).dispatchBatch();
 
       const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
       const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
 
       await this.batcher.dispatchBatchCallback(1, abiEncodedClearValues, decryptionProof);
+
+      const exchangeRate = BigInt(await this.batcher.exchangeRate(1));
+      expect(exchangeRate).to.eq(ethers.parseEther('1'));
+
       await this.batcher.connect(this.holder).exit(1);
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.fromToken.confidentialBalanceOf(this.holder),
+          this.fromToken,
+          this.holder,
+        ),
+      ).to.eventually.eq(wrapAmount / this.fromTokenRate - 1000n);
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.toToken.confidentialBalanceOf(this.holder),
+          this.toToken,
+          this.holder,
+        ),
+      ).to.eventually.eq(wrapAmount / this.toTokenRate + (1000n * exchangeRate) / ethers.parseEther('1'));
     });
 
     it('unwrap already finalized', async function () {
-      const joinAmount = await fhevm
-        .createEncryptedInput(this.batcher.target, this.holder.address)
-        .add64(1000)
-        .encrypt();
-
-      await this.batcher.connect(this.holder).join(joinAmount.handles[0], joinAmount.inputProof);
+      await this.batcher.connect(this.holder).join(1000);
       await this.batcher.connect(this.holder).dispatchBatch();
 
       await publicDecryptAndFinalizeUnwrap(this.fromToken, this.holder);
@@ -100,15 +242,20 @@ describe('BatcherConfidential', function () {
 
       await this.batcher.dispatchBatchCallback(1, abiEncodedClearValues, decryptionProof);
       await this.batcher.connect(this.holder).exit(1);
+
+      const exchangeRate = BigInt(await this.batcher.exchangeRate(1));
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.toToken.confidentialBalanceOf(this.holder),
+          this.toToken,
+          this.holder,
+        ),
+      ).to.eventually.eq(wrapAmount / this.toTokenRate + (1000n * exchangeRate) / ethers.parseEther('1'));
     });
 
     it('unwrap already finalized, invalid callback value', async function () {
-      const joinAmount = await fhevm
-        .createEncryptedInput(this.batcher.target, this.holder.address)
-        .add64(1000)
-        .encrypt();
-
-      await this.batcher.connect(this.holder).join(joinAmount.handles[0], joinAmount.inputProof);
+      await this.batcher.connect(this.holder).join(1000);
       await this.batcher.connect(this.holder).dispatchBatch();
 
       await publicDecryptAndFinalizeUnwrap(this.fromToken, this.holder);

@@ -5,16 +5,42 @@ import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {BatcherConfidential} from "../../utils/BatcherConfidential.sol";
 import {ExchangeMock} from "../finance/ExchangeMock.sol";
+import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 
 abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConfidential {
     ExchangeMock public exchange;
+    address public admin;
 
-    constructor(ExchangeMock exchange_) {
+    constructor(ExchangeMock exchange_, address admin_) {
         exchange = exchange_;
+        admin = admin_;
     }
 
     function routeDescription() public pure override returns (string memory) {
         return "Exchange fromToken for toToken by swapping through the mock exchange.";
+    }
+
+    function join(uint64 amount) public {
+        euint64 ciphertext = FHE.asEuint64(amount);
+        FHE.allowTransient(ciphertext, msg.sender);
+
+        bytes memory callData = abi.encodePacked(
+            BatcherConfidential.join.selector,
+            abi.encode(externalEuint64.wrap(euint64.unwrap(ciphertext)), hex"")
+        );
+
+        (bool success, bytes memory returnVal) = address(this).delegatecall(callData);
+
+        if (!success) {
+            assembly ("memory-safe") {
+                revert(add(0x20, returnVal), mload(returnVal))
+            }
+        }
+    }
+
+    function join(externalEuint64 externalAmount, bytes calldata inputProof) public virtual override {
+        super.join(externalAmount, inputProof);
+        FHE.allow(totalDeposits(currentBatchId()), admin);
     }
 
     function _executeRoute(uint256 batchId, uint256 unwrapAmount) internal override {
