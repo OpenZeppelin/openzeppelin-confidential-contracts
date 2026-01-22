@@ -10,7 +10,7 @@ abstract contract BatcherConfidential {
     ERC7984ERC20Wrapper private _fromToken;
     ERC7984ERC20Wrapper private _toToken;
     mapping(uint256 => Batch) private _batches;
-    uint256 private _currentBatchId = 1;
+    uint256 private _currentBatchId;
 
     struct Batch {
         euint64 totalDeposits;
@@ -19,46 +19,72 @@ abstract contract BatcherConfidential {
         mapping(address => euint64) deposits;
     }
 
-    error BatchNotFinalized();
+    error BatchNotFinalized(uint256 batchId);
+    error ExchangeRateAlreadySet(uint256 batchId);
+    error BatchDispatched(uint256 batchId);
 
     constructor(ERC7984ERC20Wrapper fromToken_, ERC7984ERC20Wrapper toToken_) {
         _fromToken = fromToken_;
         _toToken = toToken_;
+        _currentBatchId = 1;
     }
 
-    function join(externalEuint64 externalAmount, bytes calldata inputProof) public {
+    function join(externalEuint64 externalAmount, bytes calldata inputProof) public virtual {
         euint64 amount = FHE.fromExternal(externalAmount, inputProof);
         FHE.allowTransient(amount, address(fromToken()));
         euint64 transferred = fromToken().confidentialTransferFrom(msg.sender, address(this), amount);
 
         uint256 batchId = currentBatchId();
 
-        euint64 newDeposits = FHE.add(batchDeposits(batchId, msg.sender), transferred);
+        euint64 newDeposits = FHE.add(deposits(batchId, msg.sender), transferred);
         FHE.allowThis(newDeposits);
+        FHE.allow(newDeposits, msg.sender);
         _batches[batchId].deposits[msg.sender] = newDeposits;
 
-        euint64 newTotalDeposits = FHE.add(_batches[batchId].totalDeposits, transferred);
+        euint64 newTotalDeposits = FHE.add(totalDeposits(batchId), transferred);
         FHE.allowThis(newTotalDeposits);
         _batches[batchId].totalDeposits = newTotalDeposits;
     }
 
-    function exit(uint256 batchId) public {
-        require(_batches[batchId].exchangeRate != 0, BatchNotFinalized());
+    function exit(uint256 batchId) public virtual {
+        require(_batches[batchId].exchangeRate != 0, BatchNotFinalized(batchId));
 
-        euint64 deposit = batchDeposits(batchId, msg.sender);
+        euint64 deposit = deposits(batchId, msg.sender);
         _batches[batchId].deposits[msg.sender] = euint64.wrap(0);
 
         // Max of 18x exchange rate if entire total supply is included. Should probably decrease mantissa.
-        euint128 amountToSend = FHE.div(
-            FHE.mul(FHE.asEuint128(deposit), uint128(_batches[batchId].exchangeRate)),
-            uint128(1e18)
+        euint64 amountToSend = FHE.asEuint64(
+            FHE.div(FHE.mul(FHE.asEuint128(deposit), uint128(_batches[batchId].exchangeRate)), uint128(1e18))
         );
-        toToken().confidentialTransfer(msg.sender, FHE.asEuint64(amountToSend));
+        FHE.allowTransient(amountToSend, address(toToken()));
+
+        toToken().confidentialTransfer(msg.sender, amountToSend);
     }
 
-    function dispatchBatch() public {
-        uint256 batchId = _currentBatchId++;
-        euint64 amountToUnwrap = _batches[batchId].totalDeposits;
+    function quit(uint256 batchId) public virtual {
+        require(euint64.unwrap(unwrapAmount(batchId)) == 0, BatchDispatched(batchId));
+
+        euint64 deposit = deposits(batchId, msg.sender);
+        euint64 totalDeposits_ = totalDeposits(batchId);
+
+        euint64 sent = fromToken().confidentialTransfer(msg.sender, deposit);
+        euint64 newDeposit = FHE.sub(deposit, sent);
+        euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
+
+        FHE.allowThis(newDeposit);
+        FHE.allow(newDeposit, msg.sender);
+
+        FHE.allowThis(newTotalDeposits);
+
+        _batches[batchId].deposits[msg.sender] = newDeposit;
+        _batches[batchId].totalDeposits = newTotalDeposits;
+    }
+
+    function dispatchBatch() public virtual {
+        uint256 batchId = currentBatchId();
+        _currentBatchId++;
+
+        euint64 amountToUnwrap = totalDeposits(batchId);
         _batches[batchId].unwrapAmount = _calculateUnwrapAmount(amountToUnwrap);
 
         FHE.allowTransient(amountToUnwrap, address(fromToken()));
@@ -69,17 +95,18 @@ abstract contract BatcherConfidential {
         uint256 batchId,
         uint64 unwrapAmountCleartext,
         bytes calldata decryptionProof
-    ) public {
-        euint64 unwrapAmount = _batches[batchId].unwrapAmount;
+    ) public virtual {
+        euint64 unwrapAmount_ = _batches[batchId].unwrapAmount;
 
+        // finalize unwrap call will fail if already called by this contract or by anyone else
         (bool success, ) = address(fromToken()).call(
-            abi.encodeCall(ERC7984ERC20Wrapper.finalizeUnwrap, (unwrapAmount, unwrapAmountCleartext, decryptionProof))
+            abi.encodeCall(ERC7984ERC20Wrapper.finalizeUnwrap, (unwrapAmount_, unwrapAmountCleartext, decryptionProof))
         );
 
         if (!success) {
             // Must validate input since finalizeUnwrap request failed
             bytes32[] memory handles = new bytes32[](1);
-            handles[0] = euint64.unwrap(unwrapAmount);
+            handles[0] = euint64.unwrap(unwrapAmount_);
 
             bytes memory cleartexts = abi.encode(unwrapAmountCleartext);
 
@@ -97,27 +124,35 @@ abstract contract BatcherConfidential {
         return _toToken;
     }
 
-    function batchUnwrapAmount(uint256 batchId) public view returns (euint64) {
-        return _batches[batchId].unwrapAmount;
-    }
-
-    function batchDeposits(uint256 batchId, address account) public view virtual returns (euint64) {
-        return _batches[batchId].deposits[account];
-    }
-
     function currentBatchId() public view virtual returns (uint256) {
         return _currentBatchId;
     }
 
+    function unwrapAmount(uint256 batchId) public view returns (euint64) {
+        return _batches[batchId].unwrapAmount;
+    }
+
+    function totalDeposits(uint256 batchId) public view virtual returns (euint64) {
+        return _batches[batchId].totalDeposits;
+    }
+
+    function deposits(uint256 batchId, address account) public view virtual returns (euint64) {
+        return _batches[batchId].deposits[account];
+    }
+
+    function exchangeRate(uint256 batchId) public view virtual returns (uint256) {
+        return _batches[batchId].exchangeRate;
+    }
+
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual;
 
-    function _setExchangeRate(uint256 batchId, uint256 exchangeRate) internal {
-        assert(_batches[batchId].exchangeRate == 0);
-        _batches[batchId].exchangeRate = exchangeRate;
+    function _setExchangeRate(uint256 batchId, uint256 exchangeRate_) internal virtual {
+        require(exchangeRate(batchId) == 0, ExchangeRateAlreadySet(batchId));
+        _batches[batchId].exchangeRate = exchangeRate_;
     }
 
     /// @dev Mirror calculations done on the token to attain the same cipher-text for unwrap tracking.
-    function _calculateUnwrapAmount(euint64 requestedUnwrapAmount) private returns (euint64) {
+    function _calculateUnwrapAmount(euint64 requestedUnwrapAmount) internal virtual returns (euint64) {
         euint64 balance = fromToken().confidentialBalanceOf(address(this));
 
         (ebool success, ) = FHESafeMath.tryDecrease(balance, requestedUnwrapAmount);
