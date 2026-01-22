@@ -2,10 +2,10 @@
 pragma solidity ^0.8.27;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {BatcherConfidential} from "../../utils/BatcherConfidential.sol";
-import {ExchangeMock} from "../finance/ExchangeMock.sol";
 import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {BatcherConfidential} from "./../../utils/BatcherConfidential.sol";
+import {ExchangeMock} from "./../finance/ExchangeMock.sol";
 
 abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConfidential {
     ExchangeMock public exchange;
