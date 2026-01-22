@@ -7,17 +7,17 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 pragma solidity ^0.8.24;
 
 abstract contract BatcherConfidential {
-    ERC7984ERC20Wrapper private _fromToken;
-    ERC7984ERC20Wrapper private _toToken;
-    mapping(uint256 => Batch) private _batches;
-    uint256 private _currentBatchId;
-
     struct Batch {
         euint64 totalDeposits;
         euint64 unwrapAmount;
         uint256 exchangeRate;
         mapping(address => euint64) deposits;
     }
+
+    ERC7984ERC20Wrapper private _fromToken;
+    ERC7984ERC20Wrapper private _toToken;
+    mapping(uint256 => Batch) private _batches;
+    uint256 private _currentBatchId;
 
     error BatchNotFinalized(uint256 batchId);
     error ExchangeRateAlreadySet(uint256 batchId);
@@ -29,6 +29,7 @@ abstract contract BatcherConfidential {
         _currentBatchId = 1;
     }
 
+    /// @dev Join the current batch with `externalAmount` and `inputProof`.
     function join(externalEuint64 externalAmount, bytes calldata inputProof) public virtual {
         euint64 amount = FHE.fromExternal(externalAmount, inputProof);
         FHE.allowTransient(amount, address(fromToken()));
@@ -104,7 +105,7 @@ abstract contract BatcherConfidential {
         );
 
         if (!success) {
-            // Must validate input since finalizeUnwrap request failed
+            // Must validate input since `finalizeUnwrap` request failed
             bytes32[] memory handles = new bytes32[](1);
             handles[0] = euint64.unwrap(unwrapAmount_);
 
@@ -116,14 +117,17 @@ abstract contract BatcherConfidential {
         _executeRoute(batchId, unwrapAmountCleartext);
     }
 
+    /// @dev Batcher from token. Users deposit this token in exchange for {toToken}.
     function fromToken() public view returns (ERC7984ERC20Wrapper) {
         return _fromToken;
     }
 
+    /// @dev Batcher to token. Users receive this token in exchange for their {fromToken} deposits.
     function toToken() public view returns (ERC7984ERC20Wrapper) {
         return _toToken;
     }
 
+    /// @dev The ongoing batch id. New deposits join this batch.
     function currentBatchId() public view virtual returns (uint256) {
         return _currentBatchId;
     }
@@ -144,8 +148,29 @@ abstract contract BatcherConfidential {
         return _batches[batchId].exchangeRate;
     }
 
+    /// @dev Human readable description of what this batcher does.
+    function routeDescription() public view virtual returns (string memory);
+
+    /**
+     * @dev Function which is executed after validation and unwrap finalization in {dispatchBatchCallback}. The parameter
+     * `amount` is the plaintext amount of the `fromToken` which were unwrapped--to attain the underlying tokens received,
+     * evaluate `amount * fromToken().rate()`.
+     *
+     * This function should set the exchange rate for the given `batchId` by calling {_setExchangeRate}. The exchange rate
+     * represents the rate going from {fromToken} to {toToken}--not the underlying tokens.
+     *
+     * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the exchange rate is set
+     * for the batch. If a multi-step route is necessary, only the final step sets the exchange rate.
+     */
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual;
 
+    /**
+     * @dev Sets the exchange rate for a given `batchId`. The exchange rate represents the rate at which deposits in {fromToken}
+     * are converted to {toToken}.
+     *
+     * WARNING: Do not supply the exchange rate between the two underling non-confidential tokens. Ensure the wrapper {ERC7984ERC20Wrapper-rate}
+     * is taken into account.
+     */
     function _setExchangeRate(uint256 batchId, uint256 exchangeRate_) internal virtual {
         require(exchangeRate(batchId) == 0, ExchangeRateAlreadySet(batchId));
         _batches[batchId].exchangeRate = exchangeRate_;
