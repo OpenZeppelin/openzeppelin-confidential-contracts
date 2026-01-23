@@ -1,6 +1,8 @@
-# <img src="logo.svg" alt="OpenZeppelin" height="40px">
+# OpenZeppelin Confidential Contracts
 
 [![Coverage Status](https://codecov.io/gh/OpenZeppelin/openzeppelin-confidential-contracts/graph/badge.svg?token=1OVLRTWTA9)](https://codecov.io/gh/OpenZeppelin/openzeppelin-confidential-contracts)
+[![License](https://img.shields.io/github/license/OpenZeppelin/openzeppelin-confidential-contracts)](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-%F0%9F%93%84-yellow)](https://docs.openzeppelin.com/confidential-contracts)
 
 **An experimental library for developing on the Zama fhEVM**
 
