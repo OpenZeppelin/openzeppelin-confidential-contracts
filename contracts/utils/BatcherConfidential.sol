@@ -47,6 +47,7 @@ abstract contract BatcherConfidential {
         _batches[batchId].totalDeposits = newTotalDeposits;
     }
 
+    /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
     function claim(uint256 batchId) public virtual {
         require(_batches[batchId].exchangeRate != 0, BatchNotFinalized(batchId));
 
@@ -62,6 +63,14 @@ abstract contract BatcherConfidential {
 
         toToken().confidentialTransfer(msg.sender, amountToSend);
     }
+
+    /**
+     * @dev Cancel the entire deposit made by `msg.sender` in batch with id `batchId`.
+     * This can only be called if the batch has not yet been dispatched.
+     *
+     * NOTE: Developers should consider adding additional restrictions to this function
+     * if maintaining confidentiality of deposits is critical to the application.
+     */
 
     function cancel(uint256 batchId) public virtual {
         require(euint64.unwrap(unwrapAmount(batchId)) == 0, BatchDispatched(batchId));
@@ -82,6 +91,12 @@ abstract contract BatcherConfidential {
         _batches[batchId].totalDeposits = newTotalDeposits;
     }
 
+    /**
+     * @dev Permissionless function to dispatch the current batch. Increments the {currentBatchId}.
+     *
+     * NOTE: Developers should consider adding additional restrictions to this function
+     * if maintaining confidentiality of deposits is critical to the application.
+     */
     function dispatchBatch() public virtual {
         uint256 batchId = currentBatchId();
         _currentBatchId++;
@@ -93,6 +108,10 @@ abstract contract BatcherConfidential {
         fromToken().unwrap(address(this), address(this), amountToUnwrap);
     }
 
+    /**
+     * @dev Dispatch batch callback callable by anyone. This function finalizes the unwrap of {fromToken}
+     * and calls {_executeRoute} to perform the batch's route.
+     */
     function dispatchBatchCallback(
         uint256 batchId,
         uint64 unwrapAmountCleartext,
@@ -119,12 +138,12 @@ abstract contract BatcherConfidential {
     }
 
     /// @dev Batcher from token. Users deposit this token in exchange for {toToken}.
-    function fromToken() public view returns (ERC7984ERC20Wrapper) {
+    function fromToken() public view virtual returns (ERC7984ERC20Wrapper) {
         return _fromToken;
     }
 
     /// @dev Batcher to token. Users receive this token in exchange for their {fromToken} deposits.
-    function toToken() public view returns (ERC7984ERC20Wrapper) {
+    function toToken() public view virtual returns (ERC7984ERC20Wrapper) {
         return _toToken;
     }
 
@@ -133,18 +152,22 @@ abstract contract BatcherConfidential {
         return _currentBatchId;
     }
 
-    function unwrapAmount(uint256 batchId) public view returns (euint64) {
+    /// @dev The amount of {fromToken} unwrapped during {dispatchBatch} for batch with id `batchId`.
+    function unwrapAmount(uint256 batchId) public view virtual returns (euint64) {
         return _batches[batchId].unwrapAmount;
     }
 
+    /// @dev The total deposits made in batch with id `batchId`.
     function totalDeposits(uint256 batchId) public view virtual returns (euint64) {
         return _batches[batchId].totalDeposits;
     }
 
+    /// @dev The deposits made by `account` in batch with id `batchId`.
     function deposits(uint256 batchId, address account) public view virtual returns (euint64) {
         return _batches[batchId].deposits[account];
     }
 
+    /// @dev The exchange rate set for batch with id `batchId`.
     function exchangeRate(uint256 batchId) public view virtual returns (uint64) {
         return _batches[batchId].exchangeRate;
     }
