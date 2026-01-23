@@ -14,14 +14,14 @@ abstract contract BatcherConfidential {
         mapping(address => euint64) deposits;
     }
 
-    ERC7984ERC20Wrapper private _fromToken;
-    ERC7984ERC20Wrapper private _toToken;
+    ERC7984ERC20Wrapper private immutable _fromToken;
+    ERC7984ERC20Wrapper private immutable _toToken;
     mapping(uint256 => Batch) private _batches;
     uint256 private _currentBatchId;
 
+    error BatchDispatched(uint256 batchId);
     error BatchNotFinalized(uint256 batchId);
     error ExchangeRateAlreadySet(uint256 batchId);
-    error BatchDispatched(uint256 batchId);
 
     constructor(ERC7984ERC20Wrapper fromToken_, ERC7984ERC20Wrapper toToken_) {
         _fromToken = fromToken_;
@@ -47,7 +47,7 @@ abstract contract BatcherConfidential {
         _batches[batchId].totalDeposits = newTotalDeposits;
     }
 
-    function exit(uint256 batchId) public virtual {
+    function claim(uint256 batchId) public virtual {
         require(_batches[batchId].exchangeRate != 0, BatchNotFinalized(batchId));
 
         euint64 deposit = deposits(batchId, msg.sender);
@@ -62,7 +62,7 @@ abstract contract BatcherConfidential {
         toToken().confidentialTransfer(msg.sender, amountToSend);
     }
 
-    function quit(uint256 batchId) public virtual {
+    function cancel(uint256 batchId) public virtual {
         require(euint64.unwrap(unwrapAmount(batchId)) == 0, BatchDispatched(batchId));
 
         euint64 deposit = deposits(batchId, msg.sender);
@@ -97,7 +97,7 @@ abstract contract BatcherConfidential {
         uint64 unwrapAmountCleartext,
         bytes calldata decryptionProof
     ) public virtual {
-        euint64 unwrapAmount_ = _batches[batchId].unwrapAmount;
+        euint64 unwrapAmount_ = unwrapAmount(batchId);
 
         // finalize unwrap call will fail if already called by this contract or by anyone else
         (bool success, ) = address(fromToken()).call(
