@@ -204,10 +204,8 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
     }
 
     /// @inheritdoc ERC7984Restricted
-    function isUserAllowed(
-        address account
-    ) public view virtual override(IERC7984Rwa, ERC7984Restricted) returns (bool) {
-        return super.isUserAllowed(account);
+    function canTransact(address account) public view virtual override(IERC7984Rwa, ERC7984Restricted) returns (bool) {
+        return super.canTransact(account);
     }
 
     /// @dev Internal function which updates confidential balances while performing frozen and restriction compliance checks.

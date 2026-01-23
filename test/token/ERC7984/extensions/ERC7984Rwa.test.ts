@@ -91,11 +91,11 @@ describe('ERC7984Rwa', function () {
   describe('ERC7984Restricted', async function () {
     it('should block & unblock', async function () {
       const { token, agent1, recipient } = await fixture();
-      await expect(token.isUserAllowed(recipient)).to.eventually.be.true;
+      await expect(token.canTransact(recipient)).to.eventually.be.true;
       await token.connect(agent1).blockUser(recipient);
-      await expect(token.isUserAllowed(recipient)).to.eventually.be.false;
+      await expect(token.canTransact(recipient)).to.eventually.be.false;
       await token.connect(agent1).unblockUser(recipient);
-      await expect(token.isUserAllowed(recipient)).to.eventually.be.true;
+      await expect(token.canTransact(recipient)).to.eventually.be.true;
     });
 
     for (const arg of [true, false]) {
