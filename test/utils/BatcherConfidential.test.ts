@@ -148,7 +148,7 @@ describe('BatcherConfidential', function () {
       });
     });
 
-    describe('exit', function () {
+    describe('claim', function () {
       beforeEach(async function () {
         this.batchId = await this.batcher.currentBatchId();
 
@@ -164,7 +164,7 @@ describe('BatcherConfidential', function () {
       });
 
       it('should clear deposits', async function () {
-        await this.batcher.exit(this.batchId);
+        await this.batcher.claim(this.batchId);
         await expect(this.batcher.deposits(this.batchId, this.holder)).to.eventually.eq(ethers.ZeroHash);
       });
 
@@ -176,7 +176,7 @@ describe('BatcherConfidential', function () {
           this.holder,
         );
 
-        await this.batcher.exit(this.batchId);
+        await this.batcher.claim(this.batchId);
 
         await expect(
           fhevm.userDecryptEuint(
@@ -191,10 +191,69 @@ describe('BatcherConfidential', function () {
       });
 
       it('should revert if not finalized', async function () {
-        await expect(this.batcher.exit(await this.batcher.currentBatchId())).to.be.revertedWithCustomError(
+        await expect(this.batcher.claim(await this.batcher.currentBatchId())).to.be.revertedWithCustomError(
           this.batcher,
           'BatchNotFinalized',
         );
+      });
+    });
+
+    describe('cancel', function () {
+      beforeEach(async function () {
+        this.batchId = await this.batcher.currentBatchId();
+        this.deposit = 1000n;
+
+        await this.batcher.join(this.deposit);
+      });
+
+      it('should send back full deposit', async function () {
+        const beforeBalance = await fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.fromToken.confidentialBalanceOf(this.holder),
+          this.fromToken,
+          this.holder,
+        );
+
+        await this.batcher.cancel(this.batchId);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.fromToken.confidentialBalanceOf(this.holder),
+            this.fromToken,
+            this.holder,
+          ),
+        ).to.eventually.eq(beforeBalance + this.deposit);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.deposits(this.batchId, this.holder),
+            this.batcher,
+            this.holder,
+          ),
+        ).to.eventually.eq(0);
+      });
+
+      it('should decrease total deposits', async function () {
+        await this.batcher.cancel(this.batchId);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.totalDeposits(this.batchId),
+            this.batcher,
+            this.operator,
+          ),
+        ).to.eventually.eq(0);
+      });
+
+      it('should fail if batch already dispatched', async function () {
+        await this.batcher.connect(this.holder).dispatchBatch();
+
+        await expect(this.batcher.cancel(this.batchId))
+          .to.be.revertedWithCustomError(this.batcher, 'BatchDispatched')
+          .withArgs(this.batchId);
       });
     });
 
@@ -210,7 +269,7 @@ describe('BatcherConfidential', function () {
       const exchangeRate = BigInt(await this.batcher.exchangeRate(1));
       expect(exchangeRate).to.eq(ethers.parseEther('1'));
 
-      await this.batcher.connect(this.holder).exit(1);
+      await this.batcher.connect(this.holder).claim(1);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -241,7 +300,7 @@ describe('BatcherConfidential', function () {
       const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
 
       await this.batcher.dispatchBatchCallback(1, abiEncodedClearValues, decryptionProof);
-      await this.batcher.connect(this.holder).exit(1);
+      await this.batcher.connect(this.holder).claim(1);
 
       const exchangeRate = BigInt(await this.batcher.exchangeRate(1));
       await expect(
