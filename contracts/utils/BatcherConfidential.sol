@@ -61,6 +61,7 @@ abstract contract BatcherConfidential {
         );
         FHE.allowTransient(amountToSend, address(toToken()));
 
+        // we should not assume success here
         toToken().confidentialTransfer(msg.sender, amountToSend);
     }
 
@@ -71,7 +72,6 @@ abstract contract BatcherConfidential {
      * NOTE: Developers should consider adding additional restrictions to this function
      * if maintaining confidentiality of deposits is critical to the application.
      */
-
     function cancel(uint256 batchId) public virtual {
         require(euint64.unwrap(unwrapAmount(batchId)) == 0, BatchDispatched(batchId));
 
