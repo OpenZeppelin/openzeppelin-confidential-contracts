@@ -9,6 +9,7 @@ Miscellaneous contracts and libraries containing utility functions you can use t
 - {FHESafeMath}: Implementation of safe math operations for encrypted values.
 - {CheckpointsConfidential}: Implementation of checkpoints for encrypted values.
 - {HandleAccessManager}: Minimal contract that adds a function to give allowance to callers for a given ciphertext handle.
+- {BatcherConfidential}: A batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts via a non-confidential route.
 
 == Math
 
@@ -20,3 +21,4 @@ Miscellaneous contracts and libraries containing utility functions you can use t
 
 == Other
 {{HandleAccessManager}}
+{{BatcherConfidential}}

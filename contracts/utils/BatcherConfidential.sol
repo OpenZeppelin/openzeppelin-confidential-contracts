@@ -10,7 +10,7 @@ abstract contract BatcherConfidential {
     struct Batch {
         euint64 totalDeposits;
         euint64 unwrapAmount;
-        uint256 exchangeRate;
+        uint64 exchangeRate;
         mapping(address => euint64) deposits;
     }
 
@@ -54,6 +54,7 @@ abstract contract BatcherConfidential {
         _batches[batchId].deposits[msg.sender] = euint64.wrap(0);
 
         // Max of 18x exchange rate if entire total supply is included. Should probably decrease mantissa.
+        // Overflow not possible on mul since `type(uint64).max ** 2 < type(uint128).max`. Div tbd
         euint64 amountToSend = FHE.asEuint64(
             FHE.div(FHE.mul(FHE.asEuint128(deposit), uint128(_batches[batchId].exchangeRate)), uint128(1e18))
         );
@@ -144,15 +145,15 @@ abstract contract BatcherConfidential {
         return _batches[batchId].deposits[account];
     }
 
-    function exchangeRate(uint256 batchId) public view virtual returns (uint256) {
+    function exchangeRate(uint256 batchId) public view virtual returns (uint64) {
         return _batches[batchId].exchangeRate;
     }
 
-    /// @dev Human readable description of what this batcher does.
+    /// @dev Human readable description of what the batcher does.
     function routeDescription() public pure virtual returns (string memory);
 
     /**
-     * @dev Function which is executed after validation and unwrap finalization in {dispatchBatchCallback}. The parameter
+     * @dev Function which is executed by {dispatchBatchCallback} after validation and unwrap finalization. The parameter
      * `amount` is the plaintext amount of the `fromToken` which were unwrapped--to attain the underlying tokens received,
      * evaluate `amount * fromToken().rate()`.
      *
@@ -171,7 +172,7 @@ abstract contract BatcherConfidential {
      * WARNING: Do not supply the exchange rate between the two underling non-confidential tokens. Ensure the wrapper {ERC7984ERC20Wrapper-rate}
      * is taken into account.
      */
-    function _setExchangeRate(uint256 batchId, uint256 exchangeRate_) internal virtual {
+    function _setExchangeRate(uint256 batchId, uint64 exchangeRate_) internal virtual {
         require(exchangeRate(batchId) == 0, ExchangeRateAlreadySet(batchId));
         _batches[batchId].exchangeRate = exchangeRate_;
     }

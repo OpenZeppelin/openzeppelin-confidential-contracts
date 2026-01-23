@@ -64,6 +64,6 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
 
         // Set the exchange rate for the batch based on swapped amount
         uint256 exchangeRate = (amountOut * 1e18) / unwrapAmount;
-        _setExchangeRate(batchId, exchangeRate);
+        _setExchangeRate(batchId, uint64(exchangeRate));
     }
 }
