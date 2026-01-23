@@ -6,7 +6,7 @@
 
 ## Overview
 
-This library contains contracts and utilities that utilize the novel features of the Zama fhEVM coprocessor. Contracts take advantage of the FHE (Fully Homomorphic Encryption) capabilities of the coprocessor to perform confidential transactions. See the [documentation](https://docs.openzeppelin.com/confidential-contracts) and the [Zama documentation](https://docs.zama.ai/fhevm) for more details.
+This library contains contracts and utilities that utilize the novel features of the Zama fhEVM coprocessor. Contracts take advantage of the FHE (Fully Homomorphic Encryption) capabilities of the coprocessor to perform confidential transactions. See the [documentation](https://docs.openzeppelin.com/confidential-contracts) and the [Zama documentation](https://docs.zama.ai/protocol) for more details.
 
 ### Installation
 
@@ -44,7 +44,7 @@ OpenZeppelin Confidential Contracts exists thanks to its contributors. There are
 
 ## License
 
-Each contract file should have their own licence specified. In the absence of any specific licence information, file is released under the [MIT License](LICENSE).
+Each contract file should have its own license specified. In the absence of any specific license information, the file is released under the [MIT License](LICENSE).
 
 ## Legal
 
