@@ -7,11 +7,11 @@ import {ERC7984, euint64} from "../ERC7984.sol";
 
 /**
  * @dev Extension of {ERC7984} that implements user account transfer restrictions through the
- * {isUserAllowed} function. Inspired by
+ * {canTransact} function. Inspired by
  * https://github.com/OpenZeppelin/openzeppelin-community-contracts/blob/master/contracts/token/ERC20/extensions/ERC20Restricted.sol.
  *
- * By default, each account has no explicit restriction. The {isUserAllowed} function acts as
- * a blocklist. Developers can override {isUserAllowed} to check that `restriction == ALLOWED`
+ * By default, each account has no explicit restriction. The {canTransact} function acts as
+ * a blocklist. Developers can override {canTransact} to check that `restriction == ALLOWED`
  * to implement an allowlist.
  */
 abstract contract ERC7984Restricted is ERC7984 {
@@ -39,7 +39,7 @@ abstract contract ERC7984Restricted is ERC7984 {
      *
      * Default implementation only disallows explicitly BLOCKED accounts (i.e. a blocklist).
      */
-    function isUserAllowed(address account) public view virtual returns (bool) {
+    function canTransact(address account) public view virtual returns (bool) {
         return getRestriction(account) != Restriction.BLOCKED; // i.e. DEFAULT && ALLOWED
     }
 
@@ -48,8 +48,8 @@ abstract contract ERC7984Restricted is ERC7984 {
      *
      * Requirements:
      *
-     * * `from` must be allowed to transfer tokens (see {isUserAllowed}).
-     * * `to` must be allowed to receive tokens (see {isUserAllowed}).
+     * * `from` must be allowed to transfer tokens (see {canTransact}).
+     * * `to` must be allowed to receive tokens (see {canTransact}).
      *
      * The default restriction behavior can be changed (for a pass-through for instance) by overriding
      * {_checkSenderRestriction} and/or {_checkRecipientRestriction}.
@@ -85,7 +85,7 @@ abstract contract ERC7984Restricted is ERC7984 {
 
     /// @dev Checks if a user account is restricted. Reverts with {UserRestricted} if so.
     function _checkRestriction(address account) internal view virtual {
-        require(isUserAllowed(account), UserRestricted(account));
+        require(canTransact(account), UserRestricted(account));
     }
 
     /**

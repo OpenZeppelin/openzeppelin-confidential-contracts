@@ -10,7 +10,7 @@ interface IERC7984Rwa is IERC7984 {
     /// @dev Returns true if the contract is paused, false otherwise.
     function paused() external view returns (bool);
     /// @dev Returns whether an account is allowed to interact with the token.
-    function isUserAllowed(address account) external view returns (bool);
+    function canTransact(address account) external view returns (bool);
     /// @dev Returns the confidential frozen balance of an account.
     function confidentialFrozen(address account) external view returns (euint64);
     /// @dev Returns the confidential available (unfrozen) balance of an account. Up to {IERC7984-confidentialBalanceOf}.
