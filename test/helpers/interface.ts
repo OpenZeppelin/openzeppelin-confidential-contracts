@@ -33,7 +33,7 @@ export const SIGNATURES = {
     'confidentialMint(address,bytes32)',
     'forceConfidentialTransferFrom(address,address,bytes32,bytes)',
     'forceConfidentialTransferFrom(address,address,bytes32)',
-    'isUserAllowed(address)',
+    'canTransact(address)',
     'pause()',
     'paused()',
     'setConfidentialFrozen(address,bytes32,bytes)',
