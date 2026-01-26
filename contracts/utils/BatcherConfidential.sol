@@ -38,12 +38,14 @@ abstract contract BatcherConfidential {
         uint256 batchId = currentBatchId();
 
         euint64 newDeposits = FHE.add(deposits(batchId, msg.sender), transferred);
+        euint64 newTotalDeposits = FHE.add(totalDeposits(batchId), transferred);
+
         FHE.allowThis(newDeposits);
         FHE.allow(newDeposits, msg.sender);
-        _batches[batchId].deposits[msg.sender] = newDeposits;
 
-        euint64 newTotalDeposits = FHE.add(totalDeposits(batchId), transferred);
         FHE.allowThis(newTotalDeposits);
+
+        _batches[batchId].deposits[msg.sender] = newDeposits;
         _batches[batchId].totalDeposits = newTotalDeposits;
     }
 
