@@ -10,6 +10,7 @@ const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
 const wrapAmount = BigInt(ethers.parseEther('1'));
+const exchangeRateMantissa = 1_000_000n; // 1e6
 
 describe('BatcherConfidential', function () {
   beforeEach(async function () {
@@ -186,7 +187,7 @@ describe('BatcherConfidential', function () {
             this.holder,
           ),
         ).to.eventually.eq(
-          BigInt(beforeBalanceToTokens) + BigInt(this.exchangeRate * this.deposit) / ethers.parseEther('1'),
+          BigInt(beforeBalanceToTokens) + BigInt(this.exchangeRate * this.deposit) / exchangeRateMantissa,
         );
       });
 
@@ -267,7 +268,7 @@ describe('BatcherConfidential', function () {
       await this.batcher.dispatchBatchCallback(1, abiEncodedClearValues, decryptionProof);
 
       const exchangeRate = BigInt(await this.batcher.exchangeRate(1));
-      expect(exchangeRate).to.eq(ethers.parseEther('1'));
+      expect(exchangeRate).to.eq(exchangeRateMantissa);
 
       await this.batcher.connect(this.holder).claim(1);
 
@@ -287,7 +288,7 @@ describe('BatcherConfidential', function () {
           this.toToken,
           this.holder,
         ),
-      ).to.eventually.eq(wrapAmount / this.toTokenRate + (1000n * exchangeRate) / ethers.parseEther('1'));
+      ).to.eventually.eq(wrapAmount / this.toTokenRate + (1000n * exchangeRate) / exchangeRateMantissa);
     });
 
     it('unwrap already finalized', async function () {
@@ -310,7 +311,7 @@ describe('BatcherConfidential', function () {
           this.toToken,
           this.holder,
         ),
-      ).to.eventually.eq(wrapAmount / this.toTokenRate + (1000n * exchangeRate) / ethers.parseEther('1'));
+      ).to.eventually.eq(wrapAmount / this.toTokenRate + (1000n * exchangeRate) / exchangeRateMantissa);
     });
 
     it('unwrap already finalized, invalid callback value', async function () {
