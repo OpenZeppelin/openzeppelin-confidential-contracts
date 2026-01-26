@@ -1,8 +1,6 @@
-import { ERC7984ERC20WrapperMock } from '../../types';
 import { $ERC20Mock } from '../../types/contracts-exposed/mocks/token/ERC20Mock.sol/$ERC20Mock';
 import { $ERC7984ERC20Wrapper } from '../../types/contracts-exposed/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol/$ERC7984ERC20Wrapper';
 import { FhevmType } from '@fhevm/hardhat-plugin';
-import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
@@ -258,81 +256,68 @@ describe('BatcherConfidential', function () {
       });
     });
 
-    it('happy path', async function () {
-      await this.batcher.connect(this.holder).join(1000);
-      await this.batcher.connect(this.holder).dispatchBatch();
+    describe('set exchange rate', function () {
+      it('should succeed if in bounds', async function () {
+        const uint64_max = 2n ** 64n - 1n;
+        const amount = uint64_max / 1000n;
+        const rate = 10n ** 9n;
+        await this.batcher.$_setExchangeRate(1, amount, rate);
+      });
 
-      const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
-      const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+      it('should revert if too large', async function () {
+        const uint64_max = 2n ** 64n - 1n;
+        const amount = uint64_max / 1000n;
+        const rate = 10n ** 9n + 1n;
+        await expect(this.batcher.$_setExchangeRate(1, amount, rate))
+          .to.be.revertedWithCustomError(this.batcher, 'InvalidExchangeRate')
+          .withArgs(amount, rate);
+      });
 
-      await this.batcher.dispatchBatchCallback(1, abiEncodedClearValues, decryptionProof);
+      it('should set exchange rate', async function () {
+        await this.batcher.$_setExchangeRate(1, 1000n, 10n ** 7n);
+        await expect(this.batcher.exchangeRate(1)).to.eventually.eq(10n ** 7n);
+      });
 
-      const exchangeRate = BigInt(await this.batcher.exchangeRate(1));
-      expect(exchangeRate).to.eq(exchangeRateMantissa);
-
-      await this.batcher.connect(this.holder).claim(1);
-
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await this.fromToken.confidentialBalanceOf(this.holder),
-          this.fromToken,
-          this.holder,
-        ),
-      ).to.eventually.eq(wrapAmount / this.fromTokenRate - 1000n);
-
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await this.toToken.confidentialBalanceOf(this.holder),
-          this.toToken,
-          this.holder,
-        ),
-      ).to.eventually.eq(wrapAmount / this.toTokenRate + (1000n * exchangeRate) / exchangeRateMantissa);
+      it('should fail if already set', async function () {
+        await this.batcher.$_setExchangeRate(1, 1000n, 10n ** 7n);
+        await expect(this.batcher.$_setExchangeRate(1, 1000n, 10n ** 7n))
+          .to.be.revertedWithCustomError(this.batcher, 'ExchangeRateAlreadySet')
+          .withArgs(1);
+      });
     });
 
-    it('unwrap already finalized', async function () {
-      await this.batcher.connect(this.holder).join(1000);
-      await this.batcher.connect(this.holder).dispatchBatch();
+    describe('dispatchBatchCallback', function () {
+      beforeEach(async function () {
+        const batchId = await this.batcher.currentBatchId();
 
-      await publicDecryptAndFinalizeUnwrap(this.fromToken, this.holder);
+        await this.batcher.connect(this.holder).join(1000);
+        await this.batcher.connect(this.holder).dispatchBatch();
 
-      const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
-      const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+        const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
+        const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
 
-      await this.batcher.dispatchBatchCallback(1, abiEncodedClearValues, decryptionProof);
-      await this.batcher.connect(this.holder).claim(1);
+        Object.assign(this, { batchId, unwrapAmount: amount, abiEncodedClearValues, decryptionProof });
 
-      const exchangeRate = BigInt(await this.batcher.exchangeRate(1));
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await this.toToken.confidentialBalanceOf(this.holder),
-          this.toToken,
-          this.holder,
-        ),
-      ).to.eventually.eq(wrapAmount / this.toTokenRate + (1000n * exchangeRate) / exchangeRateMantissa);
-    });
+        await expect(this.batcher.unwrapAmount(batchId)).to.eventually.eq(amount);
+      });
 
-    it('unwrap already finalized, invalid callback value', async function () {
-      await this.batcher.connect(this.holder).join(1000);
-      await this.batcher.connect(this.holder).dispatchBatch();
+      it('should finalize unwrap', async function () {
+        await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+          .to.emit(this.fromToken, 'UnwrapFinalized')
+          .withArgs(this.batcher, this.unwrapAmount, this.abiEncodedClearValues);
+      });
 
-      await publicDecryptAndFinalizeUnwrap(this.fromToken, this.holder);
+      it('should revert if proof validation fails', async function () {
+        await this.fromToken.finalizeUnwrap(this.unwrapAmount, this.abiEncodedClearValues, this.decryptionProof);
+        await expect(
+          this.batcher.dispatchBatchCallback(1, BigInt(this.abiEncodedClearValues) + 1n, this.decryptionProof),
+        ).to.be.reverted;
+      });
 
-      const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
-      const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
-
-      await expect(this.batcher.dispatchBatchCallback(1, BigInt(abiEncodedClearValues) + 1n, decryptionProof)).to.be
-        .reverted;
+      it('should succeed if unwrap already finalized', async function () {
+        await this.fromToken.finalizeUnwrap(this.unwrapAmount, this.abiEncodedClearValues, this.decryptionProof);
+        await this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof);
+      });
     });
   });
 });
-
-async function publicDecryptAndFinalizeUnwrap(wrapper: ERC7984ERC20WrapperMock, caller: HardhatEthersSigner) {
-  const [to, amount] = (await wrapper.queryFilter(wrapper.filters.UnwrapRequested()))[0].args;
-  const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
-  await expect(wrapper.connect(caller).finalizeUnwrap(amount, abiEncodedClearValues, decryptionProof))
-    .to.emit(wrapper, 'UnwrapFinalized')
-    .withArgs(to, amount, abiEncodedClearValues);
-}
