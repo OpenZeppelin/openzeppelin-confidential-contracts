@@ -10,6 +10,7 @@ abstract contract BatcherConfidential {
     struct Batch {
         euint64 totalDeposits;
         euint64 unwrapAmount;
+        uint64 totalDepositsCleartext;
         uint64 exchangeRate;
         mapping(address => euint64) deposits;
     }
@@ -125,20 +126,30 @@ abstract contract BatcherConfidential {
         bytes calldata decryptionProof
     ) public virtual {
         euint64 unwrapAmount_ = unwrapAmount(batchId);
+        uint64 totalDepositsCleartext_ = totalDepositsCleartext(batchId);
 
-        // finalize unwrap call will fail if already called by this contract or by anyone else
-        (bool success, ) = address(fromToken()).call(
-            abi.encodeCall(ERC7984ERC20Wrapper.finalizeUnwrap, (unwrapAmount_, unwrapAmountCleartext, decryptionProof))
-        );
+        if (totalDepositsCleartext_ != 0) {
+            unwrapAmountCleartext = totalDepositsCleartext_;
+        } else {
+            // finalize unwrap call will fail if already called by this contract or by anyone else
+            (bool success, ) = address(fromToken()).call(
+                abi.encodeCall(
+                    ERC7984ERC20Wrapper.finalizeUnwrap,
+                    (unwrapAmount_, unwrapAmountCleartext, decryptionProof)
+                )
+            );
 
-        if (!success) {
-            // Must validate input since `finalizeUnwrap` request failed
-            bytes32[] memory handles = new bytes32[](1);
-            handles[0] = euint64.unwrap(unwrapAmount_);
+            if (!success) {
+                // Must validate input since `finalizeUnwrap` request failed
+                bytes32[] memory handles = new bytes32[](1);
+                handles[0] = euint64.unwrap(unwrapAmount_);
 
-            bytes memory cleartexts = abi.encode(unwrapAmountCleartext);
+                bytes memory cleartexts = abi.encode(unwrapAmountCleartext);
 
-            FHE.checkSignatures(handles, cleartexts, decryptionProof);
+                FHE.checkSignatures(handles, cleartexts, decryptionProof);
+            }
+
+            _batches[batchId].totalDepositsCleartext = unwrapAmountCleartext;
         }
 
         _executeRoute(batchId, unwrapAmountCleartext);
@@ -167,6 +178,10 @@ abstract contract BatcherConfidential {
     /// @dev The total deposits made in batch with id `batchId`.
     function totalDeposits(uint256 batchId) public view virtual returns (euint64) {
         return _batches[batchId].totalDeposits;
+    }
+
+    function totalDepositsCleartext(uint256 batchId) public view virtual returns (uint64) {
+        return _batches[batchId].totalDepositsCleartext;
     }
 
     /// @dev The deposits made by `account` in batch with id `batchId`.
@@ -200,18 +215,22 @@ abstract contract BatcherConfidential {
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual;
 
     /**
-     * @dev Sets the exchange rate for a given `batchId` with unwrapped amount of `amount`. The exchange rate represents
-     * the rate at which deposits in {fromToken} are converted to {toToken}. The exchange rate is scaled by {exchangeRateMantissa}.
+     * @dev Sets the exchange rate for a given `batchId`. The exchange rate represents the rate at which deposits in {fromToken} are
+     * converted to {toToken}. The exchange rate is scaled by {exchangeRateMantissa}.
      *
      * WARNING: Do not supply the exchange rate between the two underlying non-confidential tokens. Ensure the wrapper {ERC7984ERC20Wrapper-rate}
      * is taken into account.
      */
-    function _setExchangeRate(uint256 batchId, uint256 amount, uint64 exchangeRate_) internal virtual {
+    function _setExchangeRate(uint256 batchId, uint64 exchangeRate_) internal virtual {
         require(exchangeRate(batchId) == 0, ExchangeRateAlreadySet(batchId));
+        uint256 totalDepositsCleartext_ = totalDepositsCleartext(batchId);
+
+        // ensure that there will not be overflow when calculating user outputs
         require(
-            (amount * exchangeRate_) / exchangeRateMantissa() <= type(uint64).max,
-            InvalidExchangeRate(amount, exchangeRate_)
+            (totalDepositsCleartext_ * exchangeRate_) / exchangeRateMantissa() <= type(uint64).max,
+            InvalidExchangeRate(totalDepositsCleartext_, exchangeRate_)
         );
+
         _batches[batchId].exchangeRate = exchangeRate_;
     }
 
