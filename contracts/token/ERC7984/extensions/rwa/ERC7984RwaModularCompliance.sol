@@ -11,12 +11,21 @@ import {ERC7984Rwa} from "../ERC7984Rwa.sol";
 /**
  * @dev Extension of {ERC7984Rwa} that supports compliance modules for confidential Real World Assets (RWAs).
  * Inspired by ERC-7579 modules.
+ *
+ * Compliance modules are called before transfers and after transfers. Before the transfer, compliance modules
+ * conduct checks to see if they approve the given transfer and return an encrypted boolean. If any module
+ * returns false, the transferred amount becomes 0. After the transfer, modules are notified of the final transfer
+ * amount and may do accounting as necessary. Compliance modules may revert on either call, which will propagate
+ * and revert the entire transaction.
+ *
+ * NOTE: Only force transfer compliance modules are called before force transfers--all compliance modules are called
+ * after force transfers. Normal transfers call all compliance modules (including force transfer compliance modules).
  */
 abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularCompliance, HandleAccessManager {
     using EnumerableSet for *;
 
-    EnumerableSet.AddressSet private _alwaysOnModules;
-    EnumerableSet.AddressSet private _transferOnlyModules;
+    EnumerableSet.AddressSet private _forceTransferComplianceModules;
+    EnumerableSet.AddressSet private _complianceModules;
 
     /// @dev Emitted when a module is installed.
     event ModuleInstalled(ComplianceModuleType moduleType, address module);
@@ -43,7 +52,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
      * * Force transfer compliance module
      */
     function supportsModule(ComplianceModuleType moduleType) public view virtual returns (bool) {
-        return moduleType == ComplianceModuleType.AlwaysOn || moduleType == ComplianceModuleType.TransferOnly;
+        return moduleType == ComplianceModuleType.Default || moduleType == ComplianceModuleType.ForceTransfer;
     }
 
     /// @inheritdoc IERC7984RwaModularCompliance
@@ -70,8 +79,8 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         ComplianceModuleType moduleType,
         address module
     ) internal view virtual returns (bool installed) {
-        if (moduleType == ComplianceModuleType.AlwaysOn) return _alwaysOnModules.contains(module);
-        if (moduleType == ComplianceModuleType.TransferOnly) return _transferOnlyModules.contains(module);
+        if (moduleType == ComplianceModuleType.ForceTransfer) return _forceTransferComplianceModules.contains(module);
+        if (moduleType == ComplianceModuleType.Default) return _complianceModules.contains(module);
     }
 
     /// @dev Internal function which installs a transfer compliance module.
@@ -85,10 +94,10 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
             ERC7984RwaNotTransferComplianceModule(module)
         );
 
-        if (moduleType == ComplianceModuleType.AlwaysOn) {
-            require(_alwaysOnModules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
-        } else if (moduleType == ComplianceModuleType.TransferOnly) {
-            require(_transferOnlyModules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
+        if (moduleType == ComplianceModuleType.ForceTransfer) {
+            require(_forceTransferComplianceModules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
+        } else if (moduleType == ComplianceModuleType.Default) {
+            require(_complianceModules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
         }
         emit ModuleInstalled(moduleType, module);
     }
@@ -96,10 +105,13 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
     /// @dev Internal function which uninstalls a transfer compliance module.
     function _uninstallModule(ComplianceModuleType moduleType, address module) internal virtual {
         require(supportsModule(moduleType), ERC7984RwaUnsupportedModuleType(moduleType));
-        if (moduleType == ComplianceModuleType.AlwaysOn) {
-            require(_alwaysOnModules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
-        } else if (moduleType == ComplianceModuleType.TransferOnly) {
-            require(_transferOnlyModules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
+        if (moduleType == ComplianceModuleType.ForceTransfer) {
+            require(
+                _forceTransferComplianceModules.remove(module),
+                ERC7984RwaAlreadyUninstalledModule(moduleType, module)
+            );
+        } else if (moduleType == ComplianceModuleType.Default) {
+            require(_complianceModules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
         }
         emit ModuleUninstalled(moduleType, module);
     }
@@ -146,7 +158,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (ebool compliant) {
-        address[] memory modules = _alwaysOnModules.values();
+        address[] memory modules = _forceTransferComplianceModules.values();
         uint256 modulesLength = modules.length;
         compliant = FHE.asEbool(true);
         for (uint256 i = 0; i < modulesLength; i++) {
@@ -163,7 +175,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (ebool compliant) {
-        address[] memory modules = _transferOnlyModules.values();
+        address[] memory modules = _complianceModules.values();
         uint256 modulesLength = modules.length;
         compliant = FHE.asEbool(true);
         for (uint256 i = 0; i < modulesLength; i++) {
@@ -175,13 +187,13 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
     }
 
     function _onTransferCompliance(address from, address to, euint64 encryptedAmount) internal virtual {
-        address[] memory modules = _alwaysOnModules.values();
+        address[] memory modules = _forceTransferComplianceModules.values();
         uint256 modulesLength = modules.length;
         for (uint256 i = 0; i < modulesLength; i++) {
             IERC7984RwaComplianceModule(modules[i]).postTransfer(from, to, encryptedAmount);
         }
 
-        modules = _transferOnlyModules.values();
+        modules = _complianceModules.values();
         modulesLength = modules.length;
         for (uint256 i = 0; i < modulesLength; i++) {
             IERC7984RwaComplianceModule(modules[i]).postTransfer(from, to, encryptedAmount);
@@ -191,7 +203,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
     /// @dev See {HandleAccessManager-_validateHandleAllowance}. Allow compliance modules to access any handle.
     function _validateHandleAllowance(bytes32) internal view override {
         require(
-            _alwaysOnModules.contains(msg.sender) || _transferOnlyModules.contains(msg.sender),
+            _forceTransferComplianceModules.contains(msg.sender) || _complianceModules.contains(msg.sender),
             SenderNotComplianceModule(msg.sender)
         );
     }
