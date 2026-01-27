@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC7984Receiver} from "../../interfaces/IERC7984Receiver.sol";
 
-contract ERC7984ReceiverMock is IERC7984Receiver, SepoliaConfig {
+contract ERC7984ReceiverMock is IERC7984Receiver, ZamaEthereumConfig {
     event ConfidentialTransferCallback(bool success);
 
     error InvalidInput(uint8 input);

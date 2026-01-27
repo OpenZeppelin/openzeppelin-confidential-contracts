@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (interfaces/IConfidentialFungibleTokenReceiver.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.3.0) (interfaces/IERC7984Receiver.sol)
 pragma solidity ^0.8.24;
 
 import {ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
@@ -8,7 +8,9 @@ import {ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 interface IERC7984Receiver {
     /**
      * @dev Called upon receiving a confidential token transfer. Returns an encrypted boolean indicating success
-     * of the callback. If false is returned, the transfer must be reversed.
+     * of the callback. If false is returned, the token contract will attempt to refund the transfer.
+     *
+     * WARNING: Do not manually refund the transfer AND return false, as this can lead to double refunds.
      */
     function onConfidentialTransferReceived(
         address operator,

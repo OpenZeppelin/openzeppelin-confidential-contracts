@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.27;
 
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984} from "../../token/ERC7984/ERC7984.sol";
 import {ERC7984Freezable} from "../../token/ERC7984/extensions/ERC7984Freezable.sol";
@@ -32,7 +32,7 @@ contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, HandleAccessMana
     }
 
     function confidentialAvailableAccess(address account) public {
-        euint64 available = confidentialAvailable(account);
+        euint64 available = _confidentialAvailable(account);
         FHE.allowThis(available);
         getHandleAllowance(euint64.unwrap(available), account, true);
     }

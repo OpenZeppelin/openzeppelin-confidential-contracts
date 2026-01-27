@@ -24,26 +24,26 @@ describe('ERC7984Restricted', function () {
     });
 
     it('allows users with DEFAULT restriction', async function () {
-      await expect(this.token.isUserAllowed(this.holder)).to.eventually.equal(true);
+      await expect(this.token.canTransact(this.holder)).to.eventually.equal(true);
     });
 
     it('allows users with ALLOWED status', async function () {
       await this.token.$_allowUser(this.holder); // Sets to ALLOWED
       await expect(this.token.getRestriction(this.holder)).to.eventually.equal(2); // ALLOWED
-      await expect(this.token.isUserAllowed(this.holder)).to.eventually.equal(true);
+      await expect(this.token.canTransact(this.holder)).to.eventually.equal(true);
     });
 
     it('blocks users with BLOCKED status', async function () {
       await this.token.$_blockUser(this.holder); // Sets to BLOCKED
       await expect(this.token.getRestriction(this.holder)).to.eventually.equal(1); // BLOCKED
-      await expect(this.token.isUserAllowed(this.holder)).to.eventually.equal(false);
+      await expect(this.token.canTransact(this.holder)).to.eventually.equal(false);
     });
 
     it('resets user to DEFAULT restriction', async function () {
       await this.token.$_blockUser(this.holder); // Sets to BLOCKED
       await this.token.$_resetUser(this.holder); // Sets to DEFAULT
       await expect(this.token.getRestriction(this.holder)).to.eventually.equal(0); // DEFAULT
-      await expect(this.token.isUserAllowed(this.holder)).to.eventually.equal(true);
+      await expect(this.token.canTransact(this.holder)).to.eventually.equal(true);
     });
 
     it('emits UserRestrictionUpdated event when restriction changes', async function () {

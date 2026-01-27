@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (interfaces/IConfidentialFungibleToken.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.3.0) (interfaces/IERC7984.sol)
 pragma solidity ^0.8.24;
 
 import {euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 /// @dev Draft interface for a confidential fungible token standard utilizing the Zama FHE library.
-interface IERC7984 {
+interface IERC7984 is IERC165 {
     /**
      * @dev Emitted when the expiration timestamp for an operator `operator` is updated for a given `holder`.
      * The operator may move any amount of tokens on behalf of the holder until the timestamp `until`.
@@ -32,8 +33,8 @@ interface IERC7984 {
     /// @dev Returns the number of decimals of the token. Recommended to be 6.
     function decimals() external view returns (uint8);
 
-    /// @dev Returns the token URI.
-    function tokenURI() external view returns (string memory);
+    /// @dev Returns the contract URI. See https://eips.ethereum.org/EIPS/eip-7572[ERC-7572] for details.
+    function contractURI() external view returns (string memory);
 
     /// @dev Returns the confidential total supply of the token.
     function confidentialTotalSupply() external view returns (euint64);

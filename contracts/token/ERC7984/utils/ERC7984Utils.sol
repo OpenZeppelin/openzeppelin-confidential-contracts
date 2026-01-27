@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (token/utils/ConfidentialFungibleTokenUtils.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/utils/ERC7984Utils.sol)
 pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
@@ -16,7 +16,8 @@ library ERC7984Utils {
      * The transfer callback is not invoked on the recipient if the recipient has no code (i.e. is an EOA). If the
      * recipient has non-zero code, it must implement
      * {IERC7984Receiver-onConfidentialTransferReceived} and return an `ebool` indicating
-     * whether the transfer was accepted or not. If the `ebool` is `false`, the transfer will be reversed.
+     * whether the transfer was accepted or not. If the `ebool` is `false`, the transfer function
+     * should try to refund the `from` address.
      */
     function checkOnTransferReceived(
         address operator,

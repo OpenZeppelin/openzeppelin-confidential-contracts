@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (finance/VestingWalletConfidential.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.3.0) (finance/VestingWalletConfidential.sol)
 pragma solidity ^0.8.24;
 
 import {FHE, ebool, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
@@ -34,8 +34,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWalletConfidential")) - 1)) & ~bytes32(uint256(0xff))
-    // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant VestingWalletStorageLocation =
+    bytes32 private constant VESTING_WALLET_STORAGE_LOCATION =
         0x78ce9ee9eb65fa0cf5bf10e861c3a95cb7c3c713c96ab1e5323a21e846796800;
 
     /// @dev Emitted when releasable vested tokens are released.
@@ -136,7 +135,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
 
     function _getVestingWalletStorage() private pure returns (VestingWalletStorage storage $) {
         assembly ("memory-safe") {
-            $.slot := VestingWalletStorageLocation
+            $.slot := VESTING_WALLET_STORAGE_LOCATION
         }
     }
 }

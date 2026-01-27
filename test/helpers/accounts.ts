@@ -18,7 +18,7 @@ export async function getAclAddress() {
 
 export async function allowHandle(hre: HardhatRuntimeEnvironment, from: Signer, to: Addressable, handle: string) {
   const acl_abi = JSON.parse(
-    fs.readFileSync('node_modules/@fhevm/core-contracts/artifacts/contracts/ACL.sol/ACL.json', 'utf8'),
+    fs.readFileSync('node_modules/@fhevm/host-contracts/artifacts/contracts/ACL.sol/ACL.json', 'utf8'),
   ).abi;
   const aclContract = await hre.ethers.getContractAt(acl_abi, await getAclAddress());
 

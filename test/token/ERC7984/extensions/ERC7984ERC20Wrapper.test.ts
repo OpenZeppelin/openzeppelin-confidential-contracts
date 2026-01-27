@@ -1,4 +1,7 @@
+import { ERC7984ERC20WrapperMock } from '../../../../types';
+import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
+import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
@@ -8,13 +11,13 @@ const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
 
 /* eslint-disable no-unexpected-multiline */
-describe('ERC7984Wrapper', function () {
+describe('ERC7984ERC20Wrapper', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
     const token = await ethers.deployContract('$ERC20Mock', ['Public Token', 'PT', 18]);
-    const wrapper = await ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol, uri]);
+    const wrapper = await ethers.deployContract('$ERC7984ERC20WrapperMock', [token, name, symbol, uri]);
 
     this.accounts = accounts.slice(3);
     this.holder = holder;
@@ -25,6 +28,20 @@ describe('ERC7984Wrapper', function () {
 
     await this.token.$_mint(this.holder.address, ethers.parseUnits('1000', 18));
     await this.token.connect(this.holder).approve(this.wrapper, ethers.MaxUint256);
+  });
+
+  describe('ERC165', async function () {
+    it('should support interface', async function () {
+      await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC165)).to.eventually.be.true;
+      await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC1363Receiver)).to.eventually.be.true;
+      await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
+      await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.true;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.false;
+    });
+
+    it('should not support interface', async function () {
+      await expect(this.wrapper.supportsInterface(INVALID_ID)).to.eventually.be.false;
+    });
   });
 
   describe('Wrap', async function () {
@@ -80,6 +97,47 @@ describe('ERC7984Wrapper', function () {
           ).to.eventually.equal(10);
         });
 
+        it('max amount works', async function () {
+          await this.token.$_mint(this.holder.address, ethers.MaxUint256 / 2n); // mint a lot of tokens
+
+          const rate = await this.wrapper.rate();
+          const maxConfidentialSupply = await this.wrapper.maxTotalSupply();
+          const maxUnderlyingBalance = maxConfidentialSupply * rate;
+
+          if (viaCallback) {
+            await this.token.connect(this.holder).transferAndCall(this.wrapper, maxUnderlyingBalance);
+          } else {
+            await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingBalance);
+          }
+
+          await expect(
+            fhevm.userDecryptEuint(
+              FhevmType.euint64,
+              await this.wrapper.confidentialBalanceOf(this.holder.address),
+              this.wrapper.target,
+              this.holder,
+            ),
+          ).to.eventually.equal(maxConfidentialSupply);
+        });
+
+        it('amount exceeding max fails', async function () {
+          await this.token.$_mint(this.holder.address, ethers.MaxUint256 / 2n); // mint a lot of tokens
+
+          const rate = await this.wrapper.rate();
+          const maxConfidentialSupply = await this.wrapper.maxTotalSupply();
+          const maxUnderlyingBalance = maxConfidentialSupply * rate;
+
+          // first deposit close to the max
+          await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingBalance);
+
+          // try to deposit more, causing the total supply to exceed the max supported amount
+          await expect(
+            viaCallback
+              ? this.token.connect(this.holder).transferAndCall(this.wrapper, rate)
+              : this.wrapper.connect(this.holder).wrap(this.holder.address, rate),
+          ).to.be.revertedWithCustomError(this.wrapper, 'ERC7984TotalSupplyOverflow');
+        });
+
         if (viaCallback) {
           it('to another address', async function () {
             const amountToWrap = ethers.parseUnits('100', 18);
@@ -131,8 +189,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      // wait for gateway to process the request
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(
         withdrawalAmount * 10n ** 12n + ethers.parseUnits('900', 18),
@@ -143,7 +200,7 @@ describe('ERC7984Wrapper', function () {
       await this.wrapper
         .connect(this.holder)
         .unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
     });
@@ -163,7 +220,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
     });
 
@@ -205,8 +262,7 @@ describe('ERC7984Wrapper', function () {
           encryptedInput.inputProof,
         );
 
-      // wait for gateway to process the request
-      await fhevm.awaitDecryptionOracle();
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.operator);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
     });
@@ -240,7 +296,49 @@ describe('ERC7984Wrapper', function () {
     });
 
     it('finalized with invalid signature', async function () {
-      await expect(this.wrapper.connect(this.holder).finalizeUnwrap(0, '0x', '0x')).to.be.reverted;
+      const withdrawalAmount = ethers.parseUnits('10', 6);
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.wrapper.target, this.holder.address)
+        .add64(withdrawalAmount)
+        .encrypt();
+
+      await this.wrapper
+        .connect(this.holder)
+        ['unwrap(address,address,bytes32,bytes)'](
+          this.holder,
+          this.holder,
+          encryptedInput.handles[0],
+          encryptedInput.inputProof,
+        );
+
+      const event = (await this.wrapper.queryFilter(this.wrapper.filters.UnwrapRequested()))[0];
+      const unwrapAmount = event.args[1];
+      const publicDecryptResults = await fhevm.publicDecrypt([unwrapAmount]);
+
+      await expect(
+        this.wrapper
+          .connect(this.holder)
+          .finalizeUnwrap(
+            unwrapAmount,
+            publicDecryptResults.abiEncodedClearValues,
+            publicDecryptResults.decryptionProof.slice(0, publicDecryptResults.decryptionProof.length - 2),
+          ),
+      ).to.be.reverted;
+    });
+
+    it('finalize invalid unwrap request', async function () {
+      await expect(
+        this.wrapper.connect(this.holder).finalizeUnwrap(ethers.ZeroHash, 0, '0x'),
+      ).to.be.revertedWithCustomError(this.wrapper, 'InvalidUnwrapRequest');
+    });
+
+    it('returns unwrap amount', async function () {
+      await this.wrapper
+        .connect(this.holder)
+        .$_unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
+
+      const [unwrapAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.return$_unwrap()))[0].args;
+      await expect(this.wrapper.unwrapRequester(unwrapAmount)).to.eventually.eq(this.holder);
     });
   });
 
@@ -286,3 +384,11 @@ describe('ERC7984Wrapper', function () {
   });
 });
 /* eslint-disable no-unexpected-multiline */
+
+async function publicDecryptAndFinalizeUnwrap(wrapper: ERC7984ERC20WrapperMock, caller: HardhatEthersSigner) {
+  const [to, amount] = (await wrapper.queryFilter(wrapper.filters.UnwrapRequested()))[0].args;
+  const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+  await expect(wrapper.connect(caller).finalizeUnwrap(amount, abiEncodedClearValues, decryptionProof))
+    .to.emit(wrapper, 'UnwrapFinalized')
+    .withArgs(to, amount, abiEncodedClearValues);
+}

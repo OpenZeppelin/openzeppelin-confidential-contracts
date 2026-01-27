@@ -61,10 +61,10 @@ describe('FHESafeMath', function () {
     for (const args of [
       // a - b = c & success
       [undefined, undefined, undefined, true],
-      [undefined, 0, undefined, true],
+      [undefined, 0, 0, true],
       [0, undefined, 0, true],
       [1, 1, 0, true],
-      [undefined, 1, undefined, false],
+      [undefined, 1, 0, false],
       [0, 1, 0, false],
     ]) {
       it(`${args[0]} - ${args[1]} = ${args[2]} & ${args[3] ? 'success' : 'failure'}`, async function () {
