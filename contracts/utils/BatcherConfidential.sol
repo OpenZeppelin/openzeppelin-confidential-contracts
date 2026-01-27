@@ -196,6 +196,9 @@ abstract contract BatcherConfidential {
      *
      * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the exchange rate is set
      * for the batch. If a multi-step route is necessary, only the final step sets the exchange rate.
+     *
+     * WARNING: This function must eventually successfully call {_setExchangeRate} for the batch to be finalized. Failure to
+     * do so results in user deposits being locked indefinitely.
      */
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual;
 
