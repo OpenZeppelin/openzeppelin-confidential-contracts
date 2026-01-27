@@ -113,20 +113,13 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         address to,
         euint64 encryptedAmount
     ) internal virtual override returns (euint64 transferred) {
-        transferred = super._update(
-            from,
-            to,
-            FHE.select(
-                FHE.and(
-                    _checkAlwaysBefore(from, to, encryptedAmount),
-                    _checkOnlyBeforeTransfer(from, to, encryptedAmount)
-                ),
-                encryptedAmount,
-                FHE.asEuint64(0)
-            )
+        euint64 amountToTransfer = FHE.select(
+            FHE.and(_checkAlwaysBefore(from, to, encryptedAmount), _checkOnlyBeforeTransfer(from, to, encryptedAmount)),
+            encryptedAmount,
+            FHE.asEuint64(0)
         );
-        _runAlwaysAfter(from, to, transferred);
-        _runOnlyAfterTransfer(from, to, transferred);
+        transferred = super._update(from, to, amountToTransfer);
+        _onTransferCompliance(from, to, transferred);
     }
 
     /**
@@ -138,12 +131,13 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         address to,
         euint64 encryptedAmount
     ) internal virtual override returns (euint64 transferred) {
-        transferred = super._update(
-            from,
-            to,
-            FHE.select(_checkAlwaysBefore(from, to, encryptedAmount), encryptedAmount, FHE.asEuint64(0))
+        euint64 amountToTransfer = FHE.select(
+            _checkAlwaysBefore(from, to, encryptedAmount),
+            encryptedAmount,
+            FHE.asEuint64(0)
         );
-        _runAlwaysAfter(from, to, transferred);
+        transferred = super._forceUpdate(from, to, amountToTransfer);
+        _onTransferCompliance(from, to, transferred);
     }
 
     /// @dev Checks always-on compliance.
@@ -152,9 +146,6 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (ebool compliant) {
-        if (!FHE.isInitialized(encryptedAmount)) {
-            return FHE.asEbool(true);
-        }
         address[] memory modules = _alwaysOnModules.values();
         uint256 modulesLength = modules.length;
         compliant = FHE.asEbool(true);
@@ -172,9 +163,6 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (ebool compliant) {
-        if (!FHE.isInitialized(encryptedAmount)) {
-            return FHE.asEbool(true);
-        }
         address[] memory modules = _transferOnlyModules.values();
         uint256 modulesLength = modules.length;
         compliant = FHE.asEbool(true);
@@ -186,25 +174,21 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         }
     }
 
-    /// @dev Runs always after.
-    function _runAlwaysAfter(address from, address to, euint64 encryptedAmount) internal virtual {
+    function _onTransferCompliance(address from, address to, euint64 encryptedAmount) internal virtual {
         address[] memory modules = _alwaysOnModules.values();
         uint256 modulesLength = modules.length;
         for (uint256 i = 0; i < modulesLength; i++) {
             IERC7984RwaComplianceModule(modules[i]).postTransfer(from, to, encryptedAmount);
         }
-    }
 
-    /// @dev Runs only after transfer.
-    function _runOnlyAfterTransfer(address from, address to, euint64 encryptedAmount) internal virtual {
-        address[] memory modules = _transferOnlyModules.values();
-        uint256 modulesLength = modules.length;
+        modules = _transferOnlyModules.values();
+        modulesLength = modules.length;
         for (uint256 i = 0; i < modulesLength; i++) {
             IERC7984RwaComplianceModule(modules[i]).postTransfer(from, to, encryptedAmount);
         }
     }
 
-    /// @dev Allow modules to get access to token handles over {HandleAccessManager-getHandleAllowance}.
+    /// @dev See {HandleAccessManager-_validateHandleAllowance}. Allow compliance modules to access any handle.
     function _validateHandleAllowance(bytes32) internal view override {
         require(
             _alwaysOnModules.contains(msg.sender) || _transferOnlyModules.contains(msg.sender),
