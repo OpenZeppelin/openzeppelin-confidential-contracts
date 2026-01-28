@@ -257,13 +257,21 @@ describe('BatcherConfidential', function () {
     });
 
     describe('set exchange rate', function () {
+      beforeEach(async function () {
+        this.batchId = await this.batcher.currentBatchId();
+      });
+
       it('should succeed if in bounds', async function () {
+        await this.batcher.connect(this.holder).join(1000);
+
+        await this.batcher.connect(this.holder).dispatchBatch();
+        await this.batcher.setSetExchangeRate(false);
+
         const rate = 10n ** 9n;
-        await this.batcher.$_setExchangeRate(1, rate);
+        await this.batcher.$_setExchangeRate(this.batchId, rate);
       });
 
       it('should revert if too large', async function () {
-        const batchId = await this.batcher.currentBatchId();
         const joinAmount = wrapAmount / this.fromTokenRate;
 
         await this.batcher.connect(this.holder).join(joinAmount);
@@ -273,18 +281,23 @@ describe('BatcherConfidential', function () {
 
         const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
         const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
-        await this.batcher.dispatchBatchCallback(batchId, abiEncodedClearValues, decryptionProof);
+        await this.batcher.dispatchBatchCallback(this.batchId, abiEncodedClearValues, decryptionProof);
 
         const uint64_max = 2n ** 64n - 1n;
         const rate = (uint64_max / joinAmount + 1n) * 10n ** 6n;
 
-        await expect(this.batcher.$_setExchangeRate(batchId, rate))
+        await expect(this.batcher.$_setExchangeRate(this.batchId, rate))
           .to.be.revertedWithCustomError(this.batcher, 'InvalidExchangeRate')
           .withArgs(joinAmount, rate);
       });
 
       it('should set exchange rate', async function () {
-        await this.batcher.$_setExchangeRate(1, 10n ** 7n);
+        await this.batcher.connect(this.holder).join(1000);
+
+        await this.batcher.connect(this.holder).dispatchBatch();
+        await this.batcher.setSetExchangeRate(false);
+
+        await this.batcher.$_setExchangeRate(this.batchId, 10n ** 7n);
         await expect(this.batcher.exchangeRate(1)).to.eventually.eq(10n ** 7n);
       });
 
