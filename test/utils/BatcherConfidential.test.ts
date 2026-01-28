@@ -1,6 +1,7 @@
 import { $ERC20Mock } from '../../types/contracts-exposed/mocks/token/ERC20Mock.sol/$ERC20Mock';
 import { $ERC7984ERC20Wrapper } from '../../types/contracts-exposed/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol/$ERC7984ERC20Wrapper';
 import { FhevmType } from '@fhevm/hardhat-plugin';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
@@ -131,6 +132,14 @@ describe('BatcherConfidential', function () {
         ).to.eventually.eq('3000');
       });
 
+      it('should emit event', async function () {
+        const batchId = await this.batcher.currentBatchId();
+
+        await expect(this.batcher.join(1000))
+          .to.emit(this.batcher, 'Joined')
+          .withArgs(batchId, this.holder.address, anyValue);
+      });
+
       it('should not credit failed transaction', async function () {
         const batchId = await this.batcher.currentBatchId();
 
@@ -195,6 +204,12 @@ describe('BatcherConfidential', function () {
           'BatchNotFinalized',
         );
       });
+
+      it('should emit event', async function () {
+        await expect(this.batcher.claim(this.batchId))
+          .to.emit(this.batcher, 'Claimed')
+          .withArgs(this.batchId, this.holder.address, anyValue);
+      });
     });
 
     describe('cancel', function () {
@@ -251,8 +266,14 @@ describe('BatcherConfidential', function () {
         await this.batcher.connect(this.holder).dispatchBatch();
 
         await expect(this.batcher.cancel(this.batchId))
-          .to.be.revertedWithCustomError(this.batcher, 'BatchDispatched')
+          .to.be.revertedWithCustomError(this.batcher, 'BatchAlreadyDispatched')
           .withArgs(this.batchId);
+      });
+
+      it('should emit event', async function () {
+        await expect(this.batcher.cancel(this.batchId))
+          .to.emit(this.batcher, 'Cancelled')
+          .withArgs(this.batchId, this.holder.address, anyValue);
       });
     });
 
@@ -283,6 +304,13 @@ describe('BatcherConfidential', function () {
         await expect(this.batcher.$_setExchangeRate(1, 1000n, 10n ** 7n))
           .to.be.revertedWithCustomError(this.batcher, 'ExchangeRateAlreadySet')
           .withArgs(1);
+      });
+
+      it('should emit event', async function () {
+        const rate = 10n ** 7n;
+        await expect(this.batcher.$_setExchangeRate(1, 1000n, rate))
+          .to.emit(this.batcher, 'ExchangeRateSet')
+          .withArgs(1, rate);
       });
     });
 
@@ -317,6 +345,18 @@ describe('BatcherConfidential', function () {
       it('should succeed if unwrap already finalized', async function () {
         await this.fromToken.finalizeUnwrap(this.unwrapAmount, this.abiEncodedClearValues, this.decryptionProof);
         await this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof);
+      });
+    });
+
+    describe('dispatchBatch', function () {
+      beforeEach(async function () {
+        this.batchId = await this.batcher.currentBatchId();
+
+        await this.batcher.join(1000);
+      });
+
+      it('should emit event', async function () {
+        await expect(this.batcher.dispatchBatch()).to.emit(this.batcher, 'BatchDispatched').withArgs(this.batchId);
       });
     });
   });

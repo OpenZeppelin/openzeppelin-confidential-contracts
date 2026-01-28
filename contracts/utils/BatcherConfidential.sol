@@ -19,8 +19,23 @@ abstract contract BatcherConfidential {
     mapping(uint256 => Batch) private _batches;
     uint256 private _currentBatchId;
 
+    /// @dev Emitted when a batch with id `batchId` is dispatched via {dispatchBatch}.
+    event BatchDispatched(uint256 indexed batchId);
+
+    /// @dev Emitted when an `account` joins a batch with id `batchId` with a deposit of `amount`.
+    event Joined(uint256 indexed batchId, address indexed account, euint64 amount);
+
+    /// @dev Emitted when an `account` claims their `amount` from batch with id `batchId`.
+    event Claimed(uint256 indexed batchId, address indexed account, euint64 amount);
+
+    /// @dev Emitted when an `account` cancels their deposit of `amount` from batch with id `batchId`.
+    event Cancelled(uint256 indexed batchId, address indexed account, euint64 amount);
+
+    /// @dev Emitted when the `exchangeRate` is set for batch with id `batchId`.
+    event ExchangeRateSet(uint256 indexed batchId, uint64 exchangeRate);
+
     /// @dev Thrown when attempting to cancel a deposit in a batch that has already been dispatched.
-    error BatchDispatched(uint256 batchId);
+    error BatchAlreadyDispatched(uint256 batchId);
     /// @dev Thrown when attempting to claim from a batch that has not yet been finalized.
     error BatchNotFinalized(uint256 batchId);
     /// @dev Thrown when attempting to set the exchange rate for a batch that already has it set.
@@ -52,6 +67,8 @@ abstract contract BatcherConfidential {
 
         _batches[batchId].deposits[msg.sender] = newDeposits;
         _batches[batchId].totalDeposits = newTotalDeposits;
+
+        emit Joined(batchId, msg.sender, transferred);
     }
 
     /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
@@ -70,6 +87,8 @@ abstract contract BatcherConfidential {
 
         // we should not assume success here
         toToken().confidentialTransfer(msg.sender, amountToSend);
+
+        emit Claimed(batchId, msg.sender, amountToSend);
     }
 
     /**
@@ -80,7 +99,7 @@ abstract contract BatcherConfidential {
      * if maintaining confidentiality of deposits is critical to the application.
      */
     function cancel(uint256 batchId) public virtual {
-        require(euint64.unwrap(unwrapAmount(batchId)) == 0, BatchDispatched(batchId));
+        require(euint64.unwrap(unwrapAmount(batchId)) == 0, BatchAlreadyDispatched(batchId));
 
         euint64 deposit = deposits(batchId, msg.sender);
         euint64 totalDeposits_ = totalDeposits(batchId);
@@ -96,6 +115,8 @@ abstract contract BatcherConfidential {
 
         _batches[batchId].deposits[msg.sender] = newDeposit;
         _batches[batchId].totalDeposits = newTotalDeposits;
+
+        emit Cancelled(batchId, msg.sender, sent);
     }
 
     /**
@@ -113,6 +134,8 @@ abstract contract BatcherConfidential {
 
         FHE.allowTransient(amountToUnwrap, address(fromToken()));
         fromToken().unwrap(address(this), address(this), amountToUnwrap);
+
+        emit BatchDispatched(batchId);
     }
 
     /**
@@ -216,6 +239,8 @@ abstract contract BatcherConfidential {
             InvalidExchangeRate(amount, exchangeRate_)
         );
         _batches[batchId].exchangeRate = exchangeRate_;
+
+        emit ExchangeRateSet(batchId, exchangeRate_);
     }
 
     /// @dev Mirror calculations done on the token to attain the same cipher-text for unwrap tracking.
