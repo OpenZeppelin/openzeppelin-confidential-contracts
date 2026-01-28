@@ -10,6 +10,7 @@ import {ExchangeMock} from "./../finance/ExchangeMock.sol";
 abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConfidential {
     ExchangeMock public exchange;
     address public admin;
+    bool public setExchangeRate = true;
 
     constructor(ExchangeMock exchange_, address admin_) {
         exchange = exchange_;
@@ -18,6 +19,10 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
 
     function routeDescription() public pure override returns (string memory) {
         return "Exchange fromToken for toToken by swapping through the mock exchange.";
+    }
+
+    function setSetExchangeRate(bool setExchangeRate_) public {
+        setExchangeRate = setExchangeRate_;
     }
 
     function join(uint64 amount) public {
@@ -64,6 +69,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
 
         // Set the exchange rate for the batch based on swapped amount
         uint256 exchangeRate = (amountOut * exchangeRateMantissa()) / unwrapAmount;
-        _setExchangeRate(batchId, unwrapAmount, uint64(exchangeRate));
+
+        if (setExchangeRate) _setExchangeRate(batchId, uint64(exchangeRate));
     }
 }
