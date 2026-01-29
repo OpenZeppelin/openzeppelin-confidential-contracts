@@ -50,7 +50,7 @@ abstract contract BatcherConfidential {
     }
 
     /// @dev Join the current batch with `externalAmount` and `inputProof`.
-    function join(externalEuint64 externalAmount, bytes calldata inputProof) public virtual {
+    function join(externalEuint64 externalAmount, bytes calldata inputProof) public virtual returns (euint64) {
         euint64 amount = FHE.fromExternal(externalAmount, inputProof);
         FHE.allowTransient(amount, address(fromToken()));
         euint64 transferred = fromToken().confidentialTransferFrom(msg.sender, address(this), amount);
@@ -69,10 +69,12 @@ abstract contract BatcherConfidential {
         _batches[batchId].totalDeposits = newTotalDeposits;
 
         emit Joined(batchId, msg.sender, transferred);
+
+        return transferred;
     }
 
     /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
-    function claim(uint256 batchId) public virtual {
+    function claim(uint256 batchId) public virtual returns (euint64) {
         require(_batches[batchId].exchangeRate != 0, BatchNotFinalized(batchId));
 
         euint64 deposit = deposits(batchId, msg.sender);
@@ -86,9 +88,11 @@ abstract contract BatcherConfidential {
         FHE.allowTransient(amountToSend, address(toToken()));
 
         // we should not assume success here
-        toToken().confidentialTransfer(msg.sender, amountToSend);
+        euint64 amountTransferred = toToken().confidentialTransfer(msg.sender, amountToSend);
 
-        emit Claimed(batchId, msg.sender, amountToSend);
+        emit Claimed(batchId, msg.sender, amountTransferred);
+
+        return amountTransferred;
     }
 
     /**
@@ -98,7 +102,7 @@ abstract contract BatcherConfidential {
      * NOTE: Developers should consider adding additional restrictions to this function
      * if maintaining confidentiality of deposits is critical to the application.
      */
-    function quit(uint256 batchId) public virtual {
+    function quit(uint256 batchId) public virtual returns (euint64) {
         require(euint64.unwrap(unwrapAmount(batchId)) == 0, BatchAlreadyDispatched(batchId));
 
         euint64 deposit = deposits(batchId, msg.sender);
@@ -117,6 +121,8 @@ abstract contract BatcherConfidential {
         _batches[batchId].totalDeposits = newTotalDeposits;
 
         emit Quit(batchId, msg.sender, sent);
+
+        return sent;
     }
 
     /**
