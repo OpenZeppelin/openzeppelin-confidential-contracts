@@ -212,7 +212,7 @@ describe('BatcherConfidential', function () {
       });
     });
 
-    describe('cancel', function () {
+    describe('quit', function () {
       beforeEach(async function () {
         this.batchId = await this.batcher.currentBatchId();
         this.deposit = 1000n;
@@ -228,7 +228,7 @@ describe('BatcherConfidential', function () {
           this.holder,
         );
 
-        await this.batcher.cancel(this.batchId);
+        await this.batcher.quit(this.batchId);
 
         await expect(
           fhevm.userDecryptEuint(
@@ -250,7 +250,7 @@ describe('BatcherConfidential', function () {
       });
 
       it('should decrease total deposits', async function () {
-        await this.batcher.cancel(this.batchId);
+        await this.batcher.quit(this.batchId);
 
         await expect(
           fhevm.userDecryptEuint(
@@ -265,14 +265,14 @@ describe('BatcherConfidential', function () {
       it('should fail if batch already dispatched', async function () {
         await this.batcher.connect(this.holder).dispatchBatch();
 
-        await expect(this.batcher.cancel(this.batchId))
+        await expect(this.batcher.quit(this.batchId))
           .to.be.revertedWithCustomError(this.batcher, 'BatchAlreadyDispatched')
           .withArgs(this.batchId);
       });
 
       it('should emit event', async function () {
-        await expect(this.batcher.cancel(this.batchId))
-          .to.emit(this.batcher, 'Cancelled')
+        await expect(this.batcher.quit(this.batchId))
+          .to.emit(this.batcher, 'Quit')
           .withArgs(this.batchId, this.holder.address, anyValue);
       });
     });

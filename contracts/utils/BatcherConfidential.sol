@@ -28,13 +28,13 @@ abstract contract BatcherConfidential {
     /// @dev Emitted when an `account` claims their `amount` from batch with id `batchId`.
     event Claimed(uint256 indexed batchId, address indexed account, euint64 amount);
 
-    /// @dev Emitted when an `account` cancels their deposit of `amount` from batch with id `batchId`.
-    event Cancelled(uint256 indexed batchId, address indexed account, euint64 amount);
+    /// @dev Emitted when an `account` quits a batch with id `batchId`.
+    event Quit(uint256 indexed batchId, address indexed account, euint64 amount);
 
     /// @dev Emitted when the `exchangeRate` is set for batch with id `batchId`.
     event ExchangeRateSet(uint256 indexed batchId, uint64 exchangeRate);
 
-    /// @dev Thrown when attempting to cancel a deposit in a batch that has already been dispatched.
+    /// @dev Thrown when attempting to quit a batch that has already been dispatched.
     error BatchAlreadyDispatched(uint256 batchId);
     /// @dev Thrown when attempting to claim from a batch that has not yet been finalized.
     error BatchNotFinalized(uint256 batchId);
@@ -92,13 +92,13 @@ abstract contract BatcherConfidential {
     }
 
     /**
-     * @dev Cancel the entire deposit made by `msg.sender` in batch with id `batchId`.
+     * @dev Quit the batch with id `batchId`. Entire deposit is returned to the user.
      * This can only be called if the batch has not yet been dispatched.
      *
      * NOTE: Developers should consider adding additional restrictions to this function
      * if maintaining confidentiality of deposits is critical to the application.
      */
-    function cancel(uint256 batchId) public virtual {
+    function quit(uint256 batchId) public virtual {
         require(euint64.unwrap(unwrapAmount(batchId)) == 0, BatchAlreadyDispatched(batchId));
 
         euint64 deposit = deposits(batchId, msg.sender);
@@ -116,7 +116,7 @@ abstract contract BatcherConfidential {
         _batches[batchId].deposits[msg.sender] = newDeposit;
         _batches[batchId].totalDeposits = newTotalDeposits;
 
-        emit Cancelled(batchId, msg.sender, sent);
+        emit Quit(batchId, msg.sender, sent);
     }
 
     /**
