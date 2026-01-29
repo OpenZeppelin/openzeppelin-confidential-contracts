@@ -173,7 +173,15 @@ describe('BatcherConfidential', function () {
 
       it('should clear deposits', async function () {
         await this.batcher.claim(this.batchId);
-        await expect(this.batcher.deposits(this.batchId, this.holder)).to.eventually.eq(ethers.ZeroHash);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.deposits(this.batchId, this.holder),
+            this.batcher,
+            this.holder,
+          ),
+        ).to.eventually.eq(0);
       });
 
       it('should transfer out correct amount of toToken', async function () {
@@ -209,6 +217,38 @@ describe('BatcherConfidential', function () {
         await expect(this.batcher.claim(this.batchId))
           .to.emit(this.batcher, 'Claimed')
           .withArgs(this.batchId, this.holder.address, anyValue);
+      });
+
+      it('should allow retry claim (idempotent when fully claimed)', async function () {
+        // First claim should succeed and clear deposits
+        await this.batcher.claim(this.batchId);
+
+        // Verify deposits are cleared
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.deposits(this.batchId, this.holder),
+            this.batcher,
+            this.holder,
+          ),
+        ).to.eventually.eq(0);
+
+        // Second claim should succeed (return 0, no-op since no deposit left)
+        await expect(this.batcher.claim(this.batchId)).to.emit(this.batcher, 'Claimed');
+
+        // Deposits should still be zero
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.deposits(this.batchId, this.holder),
+            this.batcher,
+            this.holder,
+          ),
+        ).to.eventually.eq(0);
+      });
+
+      it('should track failed claims properly', async function () {
+        // TODO: implement this once merging in #301
       });
     });
 
