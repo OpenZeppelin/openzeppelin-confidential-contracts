@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (utils/FHESafeMath.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.3.0) (utils/FHESafeMath.sol)
 pragma solidity ^0.8.24;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
@@ -7,6 +7,9 @@ import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 /**
  * @dev Library providing safe arithmetic operations for encrypted values
  * to handle potential overflows in FHE operations.
+ *
+ * NOTE: An uninitialized `euint64` value (equivalent to euint64.wrap(bytes32(0))) is evaluated as 0.
+ * This library may return an uninitialized value if all inputs are uninitialized.
  */
 library FHESafeMath {
     /**
@@ -33,7 +36,7 @@ library FHESafeMath {
             if (!FHE.isInitialized(delta)) {
                 return (FHE.asEbool(true), oldValue);
             }
-            return (FHE.eq(oldValue, delta), oldValue);
+            return (FHE.eq(delta, 0), FHE.asEuint64(0));
         }
         success = FHE.ge(oldValue, delta);
         updated = FHE.select(success, FHE.sub(oldValue, delta), oldValue);

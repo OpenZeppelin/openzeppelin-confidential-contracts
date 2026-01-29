@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/extensions/ERC7984ObserverAccess.sol)
 
 pragma solidity ^0.8.27;
 
@@ -10,7 +11,7 @@ import {ERC7984} from "../ERC7984.sol";
  * permanent ACL access to its transfer and balance amounts. A observer can be added or removed at any point in time.
  */
 abstract contract ERC7984ObserverAccess is ERC7984 {
-    mapping(address => address) private _observers;
+    mapping(address account => address) private _observers;
 
     /// @dev Emitted when the observer is changed for the given account `account`.
     event ERC7984ObserverAccessObserverSet(address account, address oldObserver, address newObserver);

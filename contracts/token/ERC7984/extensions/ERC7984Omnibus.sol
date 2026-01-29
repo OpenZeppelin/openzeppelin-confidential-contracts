@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/extensions/ERC7984Omnibus.sol)
 
 pragma solidity ^0.8.27;
 
@@ -188,8 +189,6 @@ abstract contract ERC7984Omnibus is ERC7984 {
         euint64 amount,
         bytes calldata data
     ) internal virtual returns (euint64) {
-        euint64 transferred = confidentialTransferFromAndCall(omnibusFrom, omnibusTo, amount, data);
-
         FHE.allowThis(sender);
         FHE.allow(sender, omnibusFrom);
         FHE.allow(sender, omnibusTo);
@@ -197,6 +196,8 @@ abstract contract ERC7984Omnibus is ERC7984 {
         FHE.allowThis(recipient);
         FHE.allow(recipient, omnibusFrom);
         FHE.allow(recipient, omnibusTo);
+
+        euint64 transferred = confidentialTransferFromAndCall(omnibusFrom, omnibusTo, amount, data);
 
         FHE.allowThis(transferred);
         FHE.allow(transferred, omnibusFrom);

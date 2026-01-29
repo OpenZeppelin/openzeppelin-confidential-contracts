@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
+import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {FHESafeMath} from "./../../utils/FHESafeMath.sol";
 
-contract FHESafeMathMock is SepoliaConfig {
+contract FHESafeMathMock is ZamaEthereumConfig {
     event HandleCreated(euint64 amount);
     event ResultComputed(ebool success, euint64 updated);
 
