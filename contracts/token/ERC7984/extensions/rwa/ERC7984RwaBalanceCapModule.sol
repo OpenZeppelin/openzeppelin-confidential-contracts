@@ -35,19 +35,21 @@ abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
     }
 
     /// @dev Internal function which checks if a transfer is compliant.
-    function _isCompliantTransfer(address from, address to, euint64 encryptedAmount) internal returns (ebool) {
+    function _isCompliantTransfer(
+        address token,
+        address from,
+        address to,
+        euint64 encryptedAmount
+    ) internal override returns (ebool) {
         if (to == address(0) || from == to) {
             return FHE.asEbool(true); // if burning or self-transfer
         }
 
-        require(
-            FHE.isAllowed(encryptedAmount, msg.sender),
-            UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
-        );
+        require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
 
-        euint64 balance = IERC7984(msg.sender).confidentialBalanceOf(to);
-        _getTokenHandleAllowance(msg.sender, balance);
+        euint64 balance = IERC7984(token).confidentialBalanceOf(to);
+        _getTokenHandleAllowance(token, balance);
         (ebool increased, euint64 futureBalance) = FHESafeMath.tryIncrease(balance, encryptedAmount);
-        return FHE.and(increased, FHE.le(futureBalance, getMaxBalance(msg.sender)));
+        return FHE.and(increased, FHE.le(futureBalance, getMaxBalance(token)));
     }
 }

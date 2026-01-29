@@ -13,8 +13,6 @@ contract ERC7984RwaModularComplianceModuleMock is ERC7984RwaComplianceModule, Za
     event PostTransfer();
     event PreTransfer();
 
-    constructor(address compliance) ERC7984RwaComplianceModule(compliance) {}
-
     function $_setCompliant() public {
         _compliant = true;
     }
@@ -24,6 +22,7 @@ contract ERC7984RwaModularComplianceModuleMock is ERC7984RwaComplianceModule, Za
     }
 
     function _isCompliantTransfer(
+        address /*token*/,
         address /*from*/,
         address /*to*/,
         euint64 /*encryptedAmount*/
@@ -32,7 +31,12 @@ contract ERC7984RwaModularComplianceModuleMock is ERC7984RwaComplianceModule, Za
         return FHE.asEbool(_compliant);
     }
 
-    function _postTransfer(address /*from*/, address /*to*/, euint64 /*encryptedAmount*/) internal override {
+    function _postTransfer(
+        address /*token*/,
+        address /*from*/,
+        address /*to*/,
+        euint64 /*encryptedAmount*/
+    ) internal override {
         emit PostTransfer();
     }
 }
