@@ -331,7 +331,7 @@ describe('BatcherConfidential', function () {
 
       it('should emit event', async function () {
         const rate = 10n ** 7n;
-        await expect(this.batcher.$_setExchangeRate(1, 1000n, rate))
+        await expect(this.batcher.$_setExchangeRate(1, rate))
           .to.emit(this.batcher, 'ExchangeRateSet')
           .withArgs(1, rate);
       });
