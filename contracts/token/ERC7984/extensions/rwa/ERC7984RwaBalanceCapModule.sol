@@ -18,8 +18,6 @@ abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
 
     event MaxBalanceSet(address token, euint64 newMaxBalance);
 
-    error UnauthorizedUseOfEncryptedAmount(euint64 encryptedAmount, address sender);
-
     /// @dev Sets max balance of an investor with proof.
     function setMaxBalance(
         address token,

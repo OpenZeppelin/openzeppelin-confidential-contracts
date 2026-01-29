@@ -10,6 +10,8 @@ import {HandleAccessManager} from "../../../../utils/HandleAccessManager.sol";
  * @dev A contract which allows to build a transfer compliance module for confidential Real World Assets (RWAs).
  */
 abstract contract ERC7984RwaComplianceModule is IERC7984RwaComplianceModule {
+    error UnauthorizedUseOfEncryptedAmount(euint64 encryptedAmount, address sender);
+
     /// @dev Thrown when the sender is not authorized to call the given function.
     error NotAuthorized(address account);
 
