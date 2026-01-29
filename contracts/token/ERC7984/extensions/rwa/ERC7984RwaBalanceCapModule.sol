@@ -30,7 +30,7 @@ abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
     }
 
     /// @dev Gets max balance of an investor.
-    function getMaxBalance(address token) public view virtual returns (euint64) {
+    function maxBalances(address token) public view virtual returns (euint64) {
         return _maxBalances[token];
     }
 
@@ -45,11 +45,13 @@ abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
             return FHE.asEbool(true); // if burning or self-transfer
         }
 
-        require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
-
         euint64 balance = IERC7984(token).confidentialBalanceOf(to);
         _getTokenHandleAllowance(token, balance);
+
+        require(FHE.isAllowed(balance, token), UnauthorizedUseOfEncryptedAmount(balance, token));
+        require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
+
         (ebool increased, euint64 futureBalance) = FHESafeMath.tryIncrease(balance, encryptedAmount);
-        return FHE.and(increased, FHE.le(futureBalance, getMaxBalance(token)));
+        return FHE.and(increased, FHE.le(futureBalance, maxBalances(token)));
     }
 }
