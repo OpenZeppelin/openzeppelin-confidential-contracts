@@ -42,21 +42,21 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
             return FHE.asEbool(true);
         }
 
+        euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
         euint64 toBalance = IERC7984(token).confidentialBalanceOf(to);
-        euint64 fromBalance = IERC7984(token).confidentialBalanceOf(to);
 
         _getTokenHandleAllowance(token, fromBalance);
         _getTokenHandleAllowance(token, toBalance);
 
-        require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
         require(FHE.isAllowed(fromBalance, token), UnauthorizedUseOfEncryptedAmount(fromBalance, token));
         require(FHE.isAllowed(toBalance, token), UnauthorizedUseOfEncryptedAmount(toBalance, token));
+        require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
 
         compliant = FHE.or(
-            FHE.eq(encryptedAmount, FHE.asEuint64(0)), // or zero amount
+            FHE.eq(encryptedAmount, FHE.asEuint64(0)), // zero transfer
             FHE.or(
-                FHE.gt(toBalance, FHE.asEuint64(0)), // or already investor
-                FHE.lt(investorCounts(token), maxInvestorCounts(token)) // or not reached max investors limit
+                FHE.gt(toBalance, FHE.asEuint64(0)), // already investor
+                FHE.lt(investorCounts(token), maxInvestorCounts(token)) // room for another investor
             )
         );
     }
@@ -73,14 +73,18 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
         require(FHE.isAllowed(fromBalance, token), UnauthorizedUseOfEncryptedAmount(fromBalance, msg.sender));
         require(FHE.isAllowed(toBalance, token), UnauthorizedUseOfEncryptedAmount(toBalance, msg.sender));
 
-        euint64 newInvestorCount = FHE.add(
-            investorCounts(token),
-            FHE.asEuint64(FHE.gt(encryptedAmount, euint64.wrap(0)))
-        );
-        newInvestorCount = FHE.sub(
-            newInvestorCount,
-            FHE.asEuint64(FHE.and(FHE.gt(fromBalance, euint64.wrap(0)), FHE.gt(toBalance, euint64.wrap(0))))
-        );
+        ebool transferNotZero = FHE.ne(encryptedAmount, euint64.wrap(0));
+        euint64 newInvestorCount = investorCounts(token);
+
+        if (to != address(0)) {
+            ebool addInvestor = FHE.and(transferNotZero, FHE.eq(toBalance, encryptedAmount));
+            newInvestorCount = FHE.add(newInvestorCount, FHE.asEuint64(addInvestor));
+        }
+
+        if (from != address(0)) {
+            ebool subInvestor = FHE.and(transferNotZero, FHE.eq(fromBalance, euint64.wrap(0)));
+            newInvestorCount = FHE.sub(newInvestorCount, FHE.asEuint64(subInvestor));
+        }
 
         _investorCounts[token] = newInvestorCount;
         FHE.allowThis(newInvestorCount);
