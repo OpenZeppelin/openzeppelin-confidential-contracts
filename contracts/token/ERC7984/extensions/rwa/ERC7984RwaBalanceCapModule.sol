@@ -18,6 +18,13 @@ abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
 
     event MaxBalanceSet(address token, euint64 newMaxBalance);
 
+    function onInstall(bytes calldata initData) public override {
+        euint64 maxBalance = abi.decode(initData, (euint64));
+        _setMaxBalance(msg.sender, maxBalance);
+
+        super.onInstall(initData);
+    }
+
     /// @dev Sets max balance of an investor with proof.
     function setMaxBalance(
         address token,
@@ -25,13 +32,18 @@ abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
         bytes calldata inputProof
     ) public virtual onlyTokenAgent(token) {
         euint64 maxBalance_ = FHE.fromExternal(maxBalance, inputProof);
-        FHE.allowThis(_maxBalances[token] = maxBalance_);
-        emit MaxBalanceSet(token, maxBalance_);
+
+        _setMaxBalance(token, maxBalance_);
     }
 
     /// @dev Gets max balance of an investor.
     function maxBalances(address token) public view virtual returns (euint64) {
         return _maxBalances[token];
+    }
+
+    function _setMaxBalance(address token, euint64 maxBalance) internal {
+        FHE.allowThis(_maxBalances[token] = maxBalance);
+        emit MaxBalanceSet(token, maxBalance);
     }
 
     /// @dev Internal function which checks if a transfer is compliant.

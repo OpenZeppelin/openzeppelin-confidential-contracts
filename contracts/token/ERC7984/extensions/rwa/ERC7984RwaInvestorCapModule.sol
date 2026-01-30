@@ -15,10 +15,15 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
 
     event MaxInvestorSet(address indexed token, uint64 maxInvestor);
 
+    function onInstall(bytes calldata initData) public override {
+        uint64 maxInvestorCount = abi.decode(initData, (uint64));
+        _setMaxInvestorCount(msg.sender, maxInvestorCount);
+        super.onInstall(initData);
+    }
+
     /// @dev Sets max number of investors for the given token `token` to `maxInvestor`.
-    function setMaxInvestor(address token, uint64 maxInvestorCount) public virtual onlyTokenAgent(token) {
-        _maxInvestorCounts[token] = maxInvestorCount;
-        emit MaxInvestorSet(token, maxInvestorCount);
+    function setMaxInvestorCount(address token, uint64 maxInvestorCount) public virtual onlyTokenAgent(token) {
+        _setMaxInvestorCount(token, maxInvestorCount);
     }
 
     /// @dev Gets max number of investors for the given token `token`.
@@ -29,6 +34,11 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
     /// @dev Gets current number of investors for the given token `token`.
     function investorCounts(address token) public view virtual returns (euint64) {
         return _investorCounts[token];
+    }
+
+    function _setMaxInvestorCount(address token, uint64 maxInvestorCount) internal {
+        _maxInvestorCounts[token] = maxInvestorCount;
+        emit MaxInvestorSet(token, maxInvestorCount);
     }
 
     /// @dev Internal function which checks if a transfer is compliant.

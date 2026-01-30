@@ -37,6 +37,10 @@ abstract contract ERC7984RwaComplianceModule is IERC7984RwaComplianceModule {
         _postTransfer(msg.sender, from, to, encryptedAmount);
     }
 
+    function onInstall(bytes calldata initData) public virtual {}
+
+    function onUninstall(bytes calldata deinitData) public virtual {}
+
     /// @dev Internal function which checks if a transfer is compliant.
     function _isCompliantTransfer(
         address token,

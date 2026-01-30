@@ -65,13 +65,21 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
      * @dev Consider gas footprint of the module before adding it since all modules will perform
      * all steps (pre-check, compliance check, post-hook) in a single transaction.
      */
-    function installModule(ComplianceModuleType moduleType, address module) public virtual onlyAdmin {
-        _installModule(moduleType, module);
+    function installModule(
+        ComplianceModuleType moduleType,
+        address module,
+        bytes memory initData
+    ) public virtual onlyAdmin {
+        _installModule(moduleType, module, initData);
     }
 
     /// @inheritdoc IERC7984RwaModularCompliance
-    function uninstallModule(ComplianceModuleType moduleType, address module) public virtual onlyAdmin {
-        _uninstallModule(moduleType, module);
+    function uninstallModule(
+        ComplianceModuleType moduleType,
+        address module,
+        bytes memory deinitData
+    ) public virtual onlyAdmin {
+        _uninstallModule(moduleType, module, deinitData);
     }
 
     /// @dev Checks if a compliance module is installed.
@@ -84,7 +92,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
     }
 
     /// @dev Internal function which installs a transfer compliance module.
-    function _installModule(ComplianceModuleType moduleType, address module) internal virtual {
+    function _installModule(ComplianceModuleType moduleType, address module, bytes memory initData) internal virtual {
         require(supportsModule(moduleType), ERC7984RwaUnsupportedModuleType(moduleType));
         (bool success, bytes memory returnData) = module.staticcall(
             abi.encodePacked(IERC7984RwaComplianceModule.isModule.selector)
@@ -99,11 +107,18 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         } else if (moduleType == ComplianceModuleType.Default) {
             require(_complianceModules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
         }
+
+        IERC7984RwaComplianceModule(module).onInstall(initData);
+
         emit ModuleInstalled(moduleType, module);
     }
 
     /// @dev Internal function which uninstalls a transfer compliance module.
-    function _uninstallModule(ComplianceModuleType moduleType, address module) internal virtual {
+    function _uninstallModule(
+        ComplianceModuleType moduleType,
+        address module,
+        bytes memory deinitData
+    ) internal virtual {
         require(supportsModule(moduleType), ERC7984RwaUnsupportedModuleType(moduleType));
         if (moduleType == ComplianceModuleType.ForceTransfer) {
             require(
@@ -113,6 +128,10 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         } else if (moduleType == ComplianceModuleType.Default) {
             require(_complianceModules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
         }
+
+        // ignore success purposely to avoid modules that revert on uninstall
+        module.call(abi.encodeCall(IERC7984RwaComplianceModule.onUninstall, (deinitData)));
+
         emit ModuleUninstalled(moduleType, module);
     }
 
