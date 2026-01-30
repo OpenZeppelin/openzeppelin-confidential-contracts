@@ -8,7 +8,7 @@ import { ethers, fhevm } from 'hardhat';
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
-const wrapAmount = BigInt(ethers.parseEther('1'));
+const wrapAmount = BigInt(ethers.parseEther('10'));
 const exchangeRateMantissa = 1_000_000n; // 1e6
 
 describe('BatcherConfidential', function () {
@@ -318,37 +318,60 @@ describe('BatcherConfidential', function () {
     });
 
     describe('set exchange rate', function () {
+      beforeEach(async function () {
+        this.batchId = await this.batcher.currentBatchId();
+      });
+
       it('should succeed if in bounds', async function () {
-        const uint64_max = 2n ** 64n - 1n;
-        const amount = uint64_max / 1000n;
+        await this.batcher.connect(this.holder).join(1000);
+
+        await this.batcher.connect(this.holder).dispatchBatch();
+        await this.batcher.setSetExchangeRate(false);
+
         const rate = 10n ** 9n;
-        await this.batcher.$_setExchangeRate(1, amount, rate);
+        await this.batcher.$_setExchangeRate(this.batchId, rate);
       });
 
       it('should revert if too large', async function () {
+        const joinAmount = wrapAmount / this.fromTokenRate;
+
+        await this.batcher.connect(this.holder).join(joinAmount);
+
+        await this.batcher.connect(this.holder).dispatchBatch();
+        await this.batcher.setSetExchangeRate(false);
+
+        const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
+        const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+        await this.batcher.dispatchBatchCallback(this.batchId, abiEncodedClearValues, decryptionProof);
+
         const uint64_max = 2n ** 64n - 1n;
-        const amount = uint64_max / 1000n;
-        const rate = 10n ** 9n + 1n;
-        await expect(this.batcher.$_setExchangeRate(1, amount, rate))
+        const rate = (uint64_max / joinAmount + 1n) * 10n ** 6n;
+
+        await expect(this.batcher.$_setExchangeRate(this.batchId, rate))
           .to.be.revertedWithCustomError(this.batcher, 'InvalidExchangeRate')
-          .withArgs(amount, rate);
+          .withArgs(joinAmount, rate);
       });
 
       it('should set exchange rate', async function () {
-        await this.batcher.$_setExchangeRate(1, 1000n, 10n ** 7n);
+        await this.batcher.connect(this.holder).join(1000);
+
+        await this.batcher.connect(this.holder).dispatchBatch();
+        await this.batcher.setSetExchangeRate(false);
+
+        await this.batcher.$_setExchangeRate(this.batchId, 10n ** 7n);
         await expect(this.batcher.exchangeRate(1)).to.eventually.eq(10n ** 7n);
       });
 
       it('should fail if already set', async function () {
-        await this.batcher.$_setExchangeRate(1, 1000n, 10n ** 7n);
-        await expect(this.batcher.$_setExchangeRate(1, 1000n, 10n ** 7n))
+        await this.batcher.$_setExchangeRate(1, 10n ** 7n);
+        await expect(this.batcher.$_setExchangeRate(1, 10n ** 7n))
           .to.be.revertedWithCustomError(this.batcher, 'ExchangeRateAlreadySet')
           .withArgs(1);
       });
 
       it('should emit event', async function () {
         const rate = 10n ** 7n;
-        await expect(this.batcher.$_setExchangeRate(1, 1000n, rate))
+        await expect(this.batcher.$_setExchangeRate(1, rate))
           .to.emit(this.batcher, 'ExchangeRateSet')
           .withArgs(1, rate);
       });
