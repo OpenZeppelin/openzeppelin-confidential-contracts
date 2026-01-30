@@ -14,45 +14,56 @@ import {ERC7984RwaComplianceModule} from "./ERC7984RwaComplianceModule.sol";
 abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
     using EnumerableSet for *;
 
-    euint64 private _maxBalance;
+    mapping(address => euint64) private _maxBalances;
 
-    event MaxBalanceSet(euint64 newMaxBalance);
+    event MaxBalanceSet(address token, euint64 newMaxBalance);
 
-    constructor(address token) ERC7984RwaComplianceModule(token) {
-        _token = token;
+    function onInstall(bytes calldata initData) public override {
+        euint64 maxBalance = abi.decode(initData, (euint64));
+        _setMaxBalance(msg.sender, maxBalance);
+
+        super.onInstall(initData);
     }
 
     /// @dev Sets max balance of an investor with proof.
-    function setMaxBalance(externalEuint64 maxBalance, bytes calldata inputProof) public virtual onlyTokenAdmin {
+    function setMaxBalance(
+        address token,
+        externalEuint64 maxBalance,
+        bytes calldata inputProof
+    ) public virtual onlyTokenAgent(token) {
         euint64 maxBalance_ = FHE.fromExternal(maxBalance, inputProof);
-        FHE.allowThis(_maxBalance = maxBalance_);
-        emit MaxBalanceSet(maxBalance_);
-    }
 
-    /// @dev Sets max balance of an investor.
-    function setMaxBalance(euint64 maxBalance) public virtual onlyTokenAdmin {
-        FHE.allowThis(_maxBalance = maxBalance);
-        emit MaxBalanceSet(maxBalance);
+        _setMaxBalance(token, maxBalance_);
     }
 
     /// @dev Gets max balance of an investor.
-    function getMaxBalance() public view virtual returns (euint64) {
-        return _maxBalance;
+    function maxBalances(address token) public view virtual returns (euint64) {
+        return _maxBalances[token];
+    }
+
+    function _setMaxBalance(address token, euint64 maxBalance) internal {
+        FHE.allowThis(_maxBalances[token] = maxBalance);
+        emit MaxBalanceSet(token, maxBalance);
     }
 
     /// @dev Internal function which checks if a transfer is compliant.
     function _isCompliantTransfer(
-        address /*from*/,
+        address token,
+        address from,
         address to,
         euint64 encryptedAmount
-    ) internal override returns (ebool compliant) {
-        if (to == address(0)) {
-            return FHE.asEbool(true); // if burning
+    ) internal override returns (ebool) {
+        if (to == address(0) || from == to) {
+            return FHE.asEbool(true); // if burning or self-transfer
         }
-        euint64 balance = IERC7984(_token).confidentialBalanceOf(to);
-        _getTokenHandleAllowance(balance);
-        _getTokenHandleAllowance(encryptedAmount);
+
+        euint64 balance = IERC7984(token).confidentialBalanceOf(to);
+        _getTokenHandleAllowance(token, balance);
+
+        require(FHE.isAllowed(balance, token), UnauthorizedUseOfEncryptedAmount(balance, token));
+        require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
+
         (ebool increased, euint64 futureBalance) = FHESafeMath.tryIncrease(balance, encryptedAmount);
-        compliant = FHE.and(increased, FHE.le(futureBalance, _maxBalance));
+        return FHE.and(increased, FHE.le(futureBalance, maxBalances(token)));
     }
 }
