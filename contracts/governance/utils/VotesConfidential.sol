@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (last updated v0.2.0) (governance/utils/VotesConfidential.sol)
-pragma solidity ^0.8.24;
+
+pragma solidity ^0.8.26;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC6372} from "@openzeppelin/contracts/interfaces/IERC6372.sol";
