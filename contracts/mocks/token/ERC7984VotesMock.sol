@@ -42,5 +42,7 @@ abstract contract ERC7984VotesMock is ERC7984Mock, ERC7984Votes {
         _clockOverrideVal = val;
     }
 
-    function _validateHandleAllowance(bytes32 handle) internal view override {}
+    function _validateHandleAllowance(bytes32) internal pure override returns (bool) {
+        return true;
+    }
 }
