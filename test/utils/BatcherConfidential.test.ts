@@ -349,7 +349,7 @@ describe('BatcherConfidential', function () {
 
         await expect(this.batcher.$_setExchangeRate(this.batchId, rate))
           .to.be.revertedWithCustomError(this.batcher, 'InvalidExchangeRate')
-          .withArgs(joinAmount, rate);
+          .withArgs(this.batchId, joinAmount, rate);
       });
 
       it('should set exchange rate', async function () {
