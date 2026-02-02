@@ -1,48 +1,30 @@
+import { $ERC7984RwaModularCompliance } from '../../../../types/contracts-exposed/token/ERC7984/extensions/rwa/ERC7984RwaModularCompliance.sol/$ERC7984RwaModularCompliance';
 import { callAndGetResult } from '../../../helpers/event';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import { BytesLike } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
+enum ModuleType {
+  Default,
+  ForceTransfer,
+}
+
 const transferEventSignature = 'ConfidentialTransfer(address,address,bytes32)';
-const alwaysOnType = 0;
-const transferOnlyType = 1;
-const moduleTypes = [alwaysOnType, transferOnlyType];
-const maxInverstor = 2;
-const maxBalance = 100;
 const adminRole = ethers.ZeroHash;
 
 const fixture = async () => {
-  const [admin, agent1, agent2, recipient, anyone] = await ethers.getSigners();
+  const [admin, agent1, agent2, holder, recipient, anyone] = await ethers.getSigners();
   const token = (
-    await ethers.deployContract('ERC7984RwaModularComplianceMock', ['name', 'symbol', 'uri', admin.address])
-  ).connect(anyone);
+    await ethers.deployContract('$ERC7984RwaModularComplianceMock', ['name', 'symbol', 'uri', admin])
+  ).connect(anyone) as $ERC7984RwaModularCompliance;
   await token.connect(admin).addAgent(agent1);
-  const alwaysOnModule = await ethers.deployContract('ERC7984RwaModularComplianceModuleMock', [
-    await token.getAddress(),
-  ]);
-  const transferOnlyModule = await ethers.deployContract('ERC7984RwaModularComplianceModuleMock', [
-    await token.getAddress(),
-  ]);
-  const investorCapModule = await ethers.deployContract('ERC7984RwaInvestorCapModuleMock', [
-    await token.getAddress(),
-    maxInverstor,
-  ]);
-  const balanceCapModule = await ethers.deployContract('ERC7984RwaBalanceCapModuleMock', [await token.getAddress()]);
-  const encryptedInput = await fhevm
-    .createEncryptedInput(await balanceCapModule.getAddress(), admin.address)
-    .add64(maxBalance)
-    .encrypt();
-  await balanceCapModule
-    .connect(admin)
-    ['setMaxBalance(bytes32,bytes)'](encryptedInput.handles[0], encryptedInput.inputProof);
+  const complianceModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
+
   return {
     token,
-    alwaysOnModule,
-    transferOnlyModule,
-    investorCapModule,
-    balanceCapModule,
+    holder,
+    complianceModule,
     admin,
     agent1,
     agent2,
@@ -52,64 +34,152 @@ const fixture = async () => {
 };
 
 describe('ERC7984RwaModularCompliance', function () {
-  describe('Support module', async function () {
-    for (const type of moduleTypes) {
-      it(`should support module type ${type}`, async function () {
-        const { token } = await fixture();
-        await expect(token.supportsModule(type)).to.eventually.be.true;
+  beforeEach(async function () {
+    const [admin, agent1, agent2, holder, recipient, anyone] = await ethers.getSigners();
+    const token = (
+      await ethers.deployContract('$ERC7984RwaModularComplianceMock', ['name', 'symbol', 'uri', admin])
+    ).connect(anyone) as $ERC7984RwaModularCompliance;
+    await token.connect(admin).addAgent(agent1);
+    const complianceModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
+
+    Object.assign(this, {
+      token,
+      complianceModule,
+      admin,
+      agent1,
+      agent2,
+      recipient,
+      holder,
+      anyone,
+    });
+  });
+
+  describe('support module', async function () {
+    for (const type of [ModuleType.Default, ModuleType.ForceTransfer]) {
+      it(`should support module type ${ModuleType[type]}`, async function () {
+        await expect(this.token.supportsModule(type)).to.eventually.be.true;
+      });
+
+      it('should not support other module types', async function () {
+        await expect(this.token.supportsModule(3)).to.be.reverted;
       });
     }
   });
 
-  describe('Instal module', async function () {
-    for (const type of moduleTypes) {
-      it(`should install module type ${type}`, async function () {
-        const { token, investorCapModule, admin } = await fixture();
-        await expect(token.connect(admin).installModule(type, investorCapModule))
-          .to.emit(token, 'ModuleInstalled')
-          .withArgs(type, investorCapModule);
-        await expect(token.isModuleInstalled(type, investorCapModule)).to.eventually.be.true;
-      });
-    }
-
-    it('should not install module if not admin', async function () {
-      const { token, investorCapModule, anyone } = await fixture();
-      await expect(token.connect(anyone).installModule(alwaysOnType, investorCapModule))
-        .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
-        .withArgs(anyone.address, adminRole);
+  describe('install module', async function () {
+    it('should emit event', async function () {
+      await expect(this.token.$_installModule(ModuleType.Default, this.complianceModule, '0x'))
+        .to.emit(this.token, 'ModuleInstalled')
+        .withArgs(ModuleType.Default, this.complianceModule);
     });
 
-    for (const type of moduleTypes) {
-      it('should not install module if not module', async function () {
-        const { token, admin } = await fixture();
-        const notModule = '0x0000000000000000000000000000000000000001';
-        await expect(token.connect(admin).installModule(type, notModule))
-          .to.be.revertedWithCustomError(token, 'ERC7984RwaNotTransferComplianceModule')
-          .withArgs(notModule);
-        await expect(token.isModuleInstalled(type, notModule)).to.eventually.be.false;
+    it('should call `onInstall` on the module', async function () {
+      await expect(this.token.$_installModule(ModuleType.Default, this.complianceModule, '0xffff'))
+        .to.emit(this.complianceModule, 'OnInstall')
+        .withArgs('0xffff');
+    });
+
+    for (const type of [ModuleType.Default, ModuleType.ForceTransfer]) {
+      it(`should add ${ModuleType[type]} module to modules list`, async function () {
+        await this.token.$_installModule(type, this.complianceModule, '0x');
+        await expect(this.token.isModuleInstalled(type, this.complianceModule)).to.eventually.be.true;
       });
     }
 
-    for (const type of moduleTypes) {
-      it(`should not install module type ${type} if already installed`, async function () {
-        const { token, investorCapModule, admin } = await fixture();
-        await token.connect(admin).installModule(type, investorCapModule);
-        await expect(token.connect(admin).installModule(type, investorCapModule))
-          .to.be.revertedWithCustomError(token, 'ERC7984RwaAlreadyInstalledModule')
-          .withArgs(type, await investorCapModule.getAddress());
-      });
-    }
+    it('should gate to admin', async function () {
+      await expect(this.token.connect(this.anyone).installModule(ModuleType.Default, this.complianceModule, '0x'))
+        .to.be.revertedWithCustomError(this.token, 'AccessControlUnauthorizedAccount')
+        .withArgs(this.anyone, adminRole);
+    });
+
+    it('should run module check', async function () {
+      const notModule = '0x0000000000000000000000000000000000000001';
+      await expect(this.token.connect(this.admin).installModule(ModuleType.Default, notModule, '0x'))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaNotTransferComplianceModule')
+        .withArgs(notModule);
+    });
+
+    it('should not install module if already installed', async function () {
+      await this.token.$_installModule(ModuleType.Default, this.complianceModule, '0x');
+      await expect(this.token.$_installModule(ModuleType.Default, this.complianceModule, '0x'))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaAlreadyInstalledModule')
+        .withArgs(ModuleType.Default, this.complianceModule);
+    });
   });
 
-  describe('Uninstal module', async function () {
-    for (const type of moduleTypes) {
-      it(`should remove module type ${type}`, async function () {
-        const { token, investorCapModule, admin } = await fixture();
-        await token.connect(admin).installModule(type, investorCapModule);
-        await expect(token.connect(admin).uninstallModule(type, investorCapModule))
-          .to.emit(token, 'ModuleUninstalled')
-          .withArgs(type, investorCapModule);
-        await expect(token.isModuleInstalled(type, investorCapModule)).to.eventually.be.false;
+  describe('uninstall module', async function () {
+    beforeEach(async function () {
+      for (const type of [ModuleType.Default, ModuleType.ForceTransfer]) {
+        await this.token.$_installModule(type, this.complianceModule, '0x');
+      }
+    });
+
+    it('should emit event', async function () {
+      await expect(this.token.$_uninstallModule(ModuleType.Default, this.complianceModule, '0x'))
+        .to.emit(this.token, 'ModuleUninstalled')
+        .withArgs(ModuleType.Default, this.complianceModule);
+    });
+
+    it('should fail if module not installed', async function () {
+      const newComplianceModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
+
+      await expect(this.token.$_uninstallModule(ModuleType.Default, newComplianceModule, '0x'))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaAlreadyUninstalledModule')
+        .withArgs(ModuleType.Default, newComplianceModule);
+    });
+
+    it('should call `onUninstall` on the module', async function () {
+      await expect(this.token.$_uninstallModule(ModuleType.Default, this.complianceModule, '0xffff'))
+        .to.emit(this.complianceModule, 'OnUninstall')
+        .withArgs('0xffff');
+    });
+
+    for (const type of [ModuleType.Default, ModuleType.ForceTransfer]) {
+      it(`should remove module of type ${ModuleType[type]} from modules list`, async function () {
+        await this.token.$_uninstallModule(type, this.complianceModule, '0x');
+        await expect(this.token.isModuleInstalled(type, this.complianceModule)).to.eventually.be.false;
+      });
+    }
+
+    it("should not revert if module's `onUninstall` reverts", async function () {
+      await this.complianceModule.setRevertOnUninstall(true);
+      await this.token.$_uninstallModule(ModuleType.Default, this.complianceModule, '0x');
+    });
+
+    it('should gate to admin', async function () {
+      await expect(this.token.connect(this.anyone).uninstallModule(ModuleType.Default, this.complianceModule, '0x'))
+        .to.be.revertedWithCustomError(this.token, 'AccessControlUnauthorizedAccount')
+        .withArgs(this.anyone, adminRole);
+    });
+  });
+
+  describe('check compliance on transfer', async function () {
+    beforeEach(async function () {
+      await this.token.$_installModule(ModuleType.Default, this.complianceModule, '0x');
+      await this.token['$_mint(address,uint64)'](this.holder, 1000);
+    });
+
+    it('should call pre-transfer hook', async function () {
+      await expect(
+        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
+      ).to.emit(this.complianceModule, 'PreTransfer');
+    });
+
+    it('should call post-transfer hook', async function () {
+      await expect(
+        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
+      ).to.emit(this.complianceModule, 'PostTransfer');
+    });
+
+    for (const approve of [true, false]) {
+      it(`should react correctly to compliance ${approve ? 'approval' : 'denial'}`, async function () {
+        await this.complianceModule.setIsCompliant(approve);
+        await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n);
+
+        const recipientBalance = await this.token.confidentialBalanceOf(this.recipient);
+        await expect(
+          fhevm.userDecryptEuint(FhevmType.euint64, recipientBalance, this.token.target, this.recipient),
+        ).to.eventually.equal(approve ? 100 : 0);
       });
     }
   });
@@ -182,271 +252,5 @@ describe('ERC7984RwaModularCompliance', function () {
         });
       }
     }
-  });
-
-  describe('Balance cap module', async function () {
-    for (const withProof of [false, true]) {
-      it(`should set max balance ${withProof ? 'with proof' : ''}`, async function () {
-        const { admin, balanceCapModule } = await fixture();
-        let params = [] as unknown as [encryptedAmount: BytesLike, inputProof: BytesLike];
-        if (withProof) {
-          const { handles, inputProof } = await fhevm
-            .createEncryptedInput(await balanceCapModule.getAddress(), admin.address)
-            .add64(maxBalance + 100)
-            .encrypt();
-          params.push(handles[0], inputProof);
-        } else {
-          const [newBalance] = await callAndGetResult(
-            balanceCapModule.connect(admin).createEncryptedAmount(maxBalance + 100),
-            'AmountEncrypted(bytes32)',
-          );
-          params.push(newBalance);
-        }
-        await expect(
-          balanceCapModule
-            .connect(admin)
-            [withProof ? 'setMaxBalance(bytes32,bytes)' : 'setMaxBalance(bytes32)'](...params),
-        )
-          .to.emit(balanceCapModule, 'MaxBalanceSet')
-          .withArgs(params[0]);
-        await balanceCapModule
-          .connect(admin)
-          .getHandleAllowance(await balanceCapModule.getMaxBalance(), admin.address, true);
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await balanceCapModule.getMaxBalance(),
-            await balanceCapModule.getAddress(),
-            admin,
-          ),
-        ).to.eventually.equal(maxBalance + 100);
-      });
-    }
-    for (const withProof of [false, true]) {
-      it(`should not set max balance if not admin ${withProof ? 'with proof' : ''}`, async function () {
-        const { admin, balanceCapModule, anyone } = await fixture();
-        const [newBalance] = await callAndGetResult(
-          balanceCapModule.connect(admin).createEncryptedAmount(maxBalance + 100),
-          'AmountEncrypted(bytes32)',
-        );
-        const oldBalance = await balanceCapModule.getMaxBalance();
-        const params = [newBalance];
-        if (withProof) {
-          params.push('0x');
-        }
-        await expect(
-          balanceCapModule
-            .connect(anyone)
-            [withProof ? 'setMaxBalance(bytes32,bytes)' : 'setMaxBalance(bytes32)'](...params),
-        )
-          .to.be.revertedWithCustomError(balanceCapModule, 'SenderNotTokenAdmin')
-          .withArgs(anyone.address);
-        await expect(balanceCapModule.getMaxBalance()).to.eventually.equal(oldBalance);
-      });
-    }
-
-    for (const type of moduleTypes) {
-      it(`should transfer if compliant to balance cap module with type ${type}`, async function () {
-        const { token, admin, agent1, balanceCapModule, recipient, anyone } = await fixture();
-        await token.connect(admin).installModule(type, balanceCapModule);
-        const encryptedMint = await fhevm
-          .createEncryptedInput(await token.getAddress(), agent1.address)
-          .add64(100)
-          .encrypt();
-        await token
-          .connect(agent1)
-          ['confidentialMint(address,bytes32,bytes)'](recipient, encryptedMint.handles[0], encryptedMint.inputProof);
-        const amount = 25;
-        const encryptedTransferValueInput = await fhevm
-          .createEncryptedInput(await token.getAddress(), recipient.address)
-          .add64(amount)
-          .encrypt();
-        const [, , transferredHandle] = await callAndGetResult(
-          token
-            .connect(recipient)
-            ['confidentialTransfer(address,bytes32,bytes)'](
-              anyone,
-              encryptedTransferValueInput.handles[0],
-              encryptedTransferValueInput.inputProof,
-            ),
-          transferEventSignature,
-        );
-        await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), recipient),
-        ).to.eventually.equal(amount);
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await token.confidentialBalanceOf(recipient),
-            await token.getAddress(),
-            recipient,
-          ),
-        ).to.eventually.equal(75);
-      });
-    }
-
-    it(`should transfer zero if not compliant to balance cap module`, async function () {
-      const { token, admin, agent1, balanceCapModule, recipient, anyone } = await fixture();
-      await token.connect(admin).installModule(transferOnlyType, balanceCapModule);
-      const encryptedMint = await fhevm
-        .createEncryptedInput(await token.getAddress(), agent1.address)
-        .add64(100)
-        .encrypt();
-      await token
-        .connect(agent1)
-        ['confidentialMint(address,bytes32,bytes)'](recipient, encryptedMint.handles[0], encryptedMint.inputProof);
-      await token
-        .connect(agent1)
-        ['confidentialMint(address,bytes32,bytes)'](anyone, encryptedMint.handles[0], encryptedMint.inputProof);
-      const amount = 25;
-      const encryptedTransferValueInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), recipient.address)
-        .add64(amount)
-        .encrypt();
-      const [, , transferredHandle] = await callAndGetResult(
-        token
-          .connect(recipient)
-          ['confidentialTransfer(address,bytes32,bytes)'](
-            anyone,
-            encryptedTransferValueInput.handles[0],
-            encryptedTransferValueInput.inputProof,
-          ),
-        transferEventSignature,
-      );
-      await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), recipient),
-      ).to.eventually.equal(0);
-    });
-
-    it('should transfer if compliant because burning', async function () {
-      const { token, admin, agent1, balanceCapModule, recipient } = await fixture();
-      await token.connect(admin).installModule(alwaysOnType, balanceCapModule);
-      const encryptedMint = await fhevm
-        .createEncryptedInput(await token.getAddress(), agent1.address)
-        .add64(100)
-        .encrypt();
-      await token
-        .connect(agent1)
-        ['confidentialMint(address,bytes32,bytes)'](recipient, encryptedMint.handles[0], encryptedMint.inputProof);
-      const amount = 25;
-      const encryptedBurnValueInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), agent1.address)
-        .add64(amount)
-        .encrypt();
-      const [, , transferredHandle] = await callAndGetResult(
-        token
-          .connect(agent1)
-          ['confidentialBurn(address,bytes32,bytes)'](
-            recipient,
-            encryptedBurnValueInput.handles[0],
-            encryptedBurnValueInput.inputProof,
-          ),
-        transferEventSignature,
-      );
-      await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), recipient),
-      ).to.eventually.equal(25);
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await token.confidentialBalanceOf(recipient),
-          await token.getAddress(),
-          recipient,
-        ),
-      ).to.eventually.equal(75);
-    });
-  });
-
-  describe('Investor cap module', async function () {
-    for (const type of moduleTypes) {
-      it(`should transfer if compliant to investor cap module else zero with type ${type}`, async function () {
-        const { token, admin, agent1, investorCapModule, recipient, anyone } = await fixture();
-        await token.connect(admin).installModule(type, investorCapModule);
-        const encryptedMint = await fhevm
-          .createEncryptedInput(await token.getAddress(), agent1.address)
-          .add64(100)
-          .encrypt();
-        for (const investor of [
-          recipient.address, // investor#1
-          ethers.Wallet.createRandom().address, //investor#2
-        ]) {
-          await token
-            .connect(agent1)
-            ['confidentialMint(address,bytes32,bytes)'](investor, encryptedMint.handles[0], encryptedMint.inputProof);
-        }
-        await investorCapModule
-          .connect(admin)
-          .getHandleAllowance(await investorCapModule.getCurrentInvestor(), admin.address, true);
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await investorCapModule.getCurrentInvestor(),
-            await investorCapModule.getAddress(),
-            admin,
-          ),
-        )
-          .to.eventually.equal(await investorCapModule.getMaxInvestor())
-          .to.equal(2);
-        const amount = 25;
-        const encryptedTransferValueInput = await fhevm
-          .createEncryptedInput(await token.getAddress(), recipient.address)
-          .add64(amount)
-          .encrypt();
-        // trying to transfer to investor#3 (anyone) but number of investors is capped
-        const [, , transferredHandle] = await callAndGetResult(
-          token
-            .connect(recipient)
-            ['confidentialTransfer(address,bytes32,bytes)'](
-              anyone,
-              encryptedTransferValueInput.handles[0],
-              encryptedTransferValueInput.inputProof,
-            ),
-          transferEventSignature,
-        );
-        await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), recipient),
-        ).to.eventually.equal(0);
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await token.confidentialBalanceOf(recipient),
-            await token.getAddress(),
-            recipient,
-          ),
-        ).to.eventually.equal(100);
-        // current investor should be unchanged
-        await investorCapModule
-          .connect(admin)
-          .getHandleAllowance(await investorCapModule.getCurrentInvestor(), admin.address, true);
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await investorCapModule.getCurrentInvestor(),
-            await investorCapModule.getAddress(),
-            admin,
-          ),
-        ).to.eventually.equal(2);
-      });
-    }
-
-    it('should set max investor', async function () {
-      const { token, admin, investorCapModule } = await fixture();
-      const newMaxInvestor = 100;
-      await token.connect(admin).installModule(alwaysOnType, investorCapModule);
-      await expect(investorCapModule.connect(admin).setMaxInvestor(newMaxInvestor))
-        .to.emit(investorCapModule, 'MaxInvestorSet')
-        .withArgs(newMaxInvestor);
-      await expect(investorCapModule.getMaxInvestor()).to.eventually.equal(newMaxInvestor);
-    });
-
-    it('should not set max investor if not admin', async function () {
-      const { token, admin, anyone, investorCapModule } = await fixture();
-      const newMaxInvestor = maxInverstor + 10;
-      await token.connect(admin).installModule(alwaysOnType, investorCapModule);
-      await expect(investorCapModule.connect(anyone).setMaxInvestor(newMaxInvestor))
-        .to.be.revertedWithCustomError(investorCapModule, 'SenderNotTokenAdmin')
-        .withArgs(anyone.address);
-      await expect(investorCapModule.getMaxInvestor()).to.eventually.equal(maxInverstor);
-    });
   });
 });

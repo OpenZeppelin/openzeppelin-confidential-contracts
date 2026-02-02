@@ -102,11 +102,13 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
             ERC7984RwaNotTransferComplianceModule(module)
         );
 
+        EnumerableSet.AddressSet storage modules;
         if (moduleType == ComplianceModuleType.ForceTransfer) {
-            require(_forceTransferComplianceModules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
-        } else if (moduleType == ComplianceModuleType.Default) {
-            require(_complianceModules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
+            modules = _forceTransferComplianceModules;
+        } else {
+            modules = _complianceModules;
         }
+        require(modules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
 
         IERC7984RwaComplianceModule(module).onInstall(initData);
 
