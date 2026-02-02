@@ -6,37 +6,22 @@ import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984RwaComplianceModule} from "../../token/ERC7984/extensions/rwa/ERC7984RwaComplianceModule.sol";
 
-// solhint-disable func-name-mixedcase
-contract ERC7984RwaModularComplianceModuleMock is ERC7984RwaComplianceModule, ZamaEthereumConfig {
-    bool private _compliant = false;
+contract ComplianceModuleMock is ERC7984RwaComplianceModule, ZamaEthereumConfig {
+    bool public isCompliant = false;
 
     event PostTransfer();
     event PreTransfer();
 
-    function $_setCompliant() public {
-        _compliant = true;
+    function setIsCompliant(bool isCompliant_) public {
+        isCompliant = isCompliant_;
     }
 
-    function $_unsetCompliant() public {
-        _compliant = false;
-    }
-
-    function _isCompliantTransfer(
-        address /*token*/,
-        address /*from*/,
-        address /*to*/,
-        euint64 /*encryptedAmount*/
-    ) internal override returns (ebool) {
+    function _isCompliantTransfer(address, address, address, euint64) internal override returns (ebool) {
         emit PreTransfer();
-        return FHE.asEbool(_compliant);
+        return FHE.asEbool(isCompliant);
     }
 
-    function _postTransfer(
-        address /*token*/,
-        address /*from*/,
-        address /*to*/,
-        euint64 /*encryptedAmount*/
-    ) internal override {
+    function _postTransfer(address, address, address, euint64) internal override {
         emit PostTransfer();
     }
 }
