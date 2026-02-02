@@ -326,7 +326,7 @@ describe('BatcherConfidential', function () {
         await this.batcher.connect(this.holder).join(1000);
 
         await this.batcher.connect(this.holder).dispatchBatch();
-        await this.batcher.setSetExchangeRate(false);
+        await this.batcher.shouldSetExchangeRate(false);
 
         const rate = 10n ** 9n;
         await this.batcher.$_setExchangeRate(this.batchId, rate);
@@ -338,7 +338,7 @@ describe('BatcherConfidential', function () {
         await this.batcher.connect(this.holder).join(joinAmount);
 
         await this.batcher.connect(this.holder).dispatchBatch();
-        await this.batcher.setSetExchangeRate(false);
+        await this.batcher.shouldSetExchangeRate(false);
 
         const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
         const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
@@ -356,7 +356,7 @@ describe('BatcherConfidential', function () {
         await this.batcher.connect(this.holder).join(1000);
 
         await this.batcher.connect(this.holder).dispatchBatch();
-        await this.batcher.setSetExchangeRate(false);
+        await this.batcher.shouldSetExchangeRate(false);
 
         await this.batcher.$_setExchangeRate(this.batchId, 10n ** 7n);
         await expect(this.batcher.exchangeRate(1)).to.eventually.eq(10n ** 7n);
