@@ -21,7 +21,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         return "Exchange fromToken for toToken by swapping through the mock exchange.";
     }
 
-    function setSetExchangeRate(bool setExchangeRate_) public {
+    function shouldSetExchangeRate(bool setExchangeRate_) public {
         setExchangeRate = setExchangeRate_;
     }
 
