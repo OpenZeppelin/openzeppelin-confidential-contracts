@@ -115,7 +115,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         emit ModuleInstalled(moduleType, module);
     }
 
-    /// @dev Internal function which uninstalls a transfer compliance module.
+    /// @dev Internal function which uninstalls a compliance module.
     function _uninstallModule(
         ComplianceModuleType moduleType,
         address module,
