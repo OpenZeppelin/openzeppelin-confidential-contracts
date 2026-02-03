@@ -42,7 +42,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
     error BatchNotFinalized(uint256 batchId);
     /// @dev Thrown when attempting to set the exchange rate for a batch that already has it set.
     error ExchangeRateAlreadySet(uint256 batchId);
-    /// @dev Thrown when the given exchange rate is invalid. `exchangeRate * totalDeposits / exchangeRateDecimals` must fit in uint64.
+    /// @dev Thrown when the given exchange rate is invalid. `exchangeRate * totalDeposits / 10 ** exchangeRateDecimals` must fit in uint64.
     error InvalidExchangeRate(uint256 batchId, uint256 totalDeposits, uint64 exchangeRate);
 
     constructor(ERC7984ERC20Wrapper fromToken_, ERC7984ERC20Wrapper toToken_) {
@@ -84,7 +84,10 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
         // Overflow is not possible on mul since `type(uint64).max ** 2 < type(uint128).max`.
         // Given that the output of the entire batch must fit in uint64, individual user outputs must also fit.
         euint64 amountToSend = FHE.asEuint64(
-            FHE.div(FHE.mul(FHE.asEuint128(deposit), _batches[batchId].exchangeRate), exchangeRateDecimals())
+            FHE.div(
+                FHE.mul(FHE.asEuint128(deposit), _batches[batchId].exchangeRate),
+                uint128(10) ** exchangeRateDecimals()
+            )
         );
         FHE.allowTransient(amountToSend, address(toToken()));
 
@@ -229,8 +232,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
         return _batches[batchId].exchangeRate;
     }
 
-    function exchangeRateDecimals() public pure virtual returns (uint64) {
-        return 1e6;
+    function exchangeRateDecimals() public pure virtual returns (uint8) {
+        return 6;
     }
 
     /// @dev Human readable description of what the batcher does.
@@ -254,7 +257,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
 
     /**
      * @dev Sets the exchange rate for a given `batchId`. The exchange rate represents the rate at which deposits in {fromToken} are
-     * converted to {toToken}. The exchange rate is scaled by {exchangeRateDecimals}.
+     * converted to {toToken}. The exchange rate is scaled by `10 ** exchangeRateDecimals()`.
      *
      * WARNING: Do not supply the exchange rate between the two underlying non-confidential tokens. Ensure the wrapper {ERC7984ERC20Wrapper-rate}
      * is taken into account.
@@ -265,7 +268,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
 
         // ensure that there will not be overflow when calculating user outputs
         require(
-            (totalDepositsCleartext_ * exchangeRate_) / exchangeRateDecimals() <= type(uint64).max,
+            (totalDepositsCleartext_ * exchangeRate_) / (uint128(10) ** exchangeRateDecimals()) <= type(uint64).max,
             InvalidExchangeRate(batchId, totalDepositsCleartext_, exchangeRate_)
         );
 

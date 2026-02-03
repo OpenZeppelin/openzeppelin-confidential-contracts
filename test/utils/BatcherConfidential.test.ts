@@ -9,7 +9,8 @@ const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
 const wrapAmount = BigInt(ethers.parseEther('10'));
-const exchangeRateMantissa = 1_000_000n; // 1e6
+const exchangeRateDecimals = 6n;
+const exchangeRateMantissa = 10n ** exchangeRateDecimals;
 
 describe('BatcherConfidential', function () {
   beforeEach(async function () {
@@ -345,7 +346,7 @@ describe('BatcherConfidential', function () {
         await this.batcher.dispatchBatchCallback(this.batchId, abiEncodedClearValues, decryptionProof);
 
         const uint64_max = 2n ** 64n - 1n;
-        const rate = (uint64_max / joinAmount + 1n) * 10n ** 6n;
+        const rate = (uint64_max / joinAmount + 1n) * exchangeRateMantissa;
 
         await expect(this.batcher.$_setExchangeRate(this.batchId, rate))
           .to.be.revertedWithCustomError(this.batcher, 'InvalidExchangeRate')
