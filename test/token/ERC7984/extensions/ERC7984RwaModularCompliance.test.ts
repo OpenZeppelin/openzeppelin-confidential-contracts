@@ -157,18 +157,22 @@ describe('ERC7984RwaModularCompliance', function () {
     beforeEach(async function () {
       await this.token.$_installModule(ModuleType.Default, this.complianceModule, '0x');
       await this.token['$_mint(address,uint64)'](this.holder, 1000);
+
+      const forceTransferModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
+      await this.token.$_installModule(ModuleType.ForceTransfer, forceTransferModule, '0x');
+      this.forceTransferModule = forceTransferModule;
     });
 
-    it('should call pre-transfer hook', async function () {
-      await expect(
-        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
-      ).to.emit(this.complianceModule, 'PreTransfer');
+    it('should call pre-transfer hooks', async function () {
+      await expect(this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n))
+        .to.emit(this.complianceModule, 'PreTransfer')
+        .to.emit(this.forceTransferModule, 'PreTransfer');
     });
 
-    it('should call post-transfer hook', async function () {
-      await expect(
-        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
-      ).to.emit(this.complianceModule, 'PostTransfer');
+    it('should call post-transfer hooks', async function () {
+      await expect(this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n))
+        .to.emit(this.complianceModule, 'PostTransfer')
+        .to.emit(this.forceTransferModule, 'PostTransfer');
     });
 
     for (const approve of [true, false]) {
@@ -182,75 +186,93 @@ describe('ERC7984RwaModularCompliance', function () {
         ).to.eventually.equal(approve ? 100 : 0);
       });
     }
-  });
 
-  describe('Modules', async function () {
-    for (const forceTransfer of [false, true]) {
-      for (const compliant of [true, false]) {
-        it(`should ${forceTransfer ? 'force transfer' : 'transfer'} ${
-          compliant ? 'if' : 'zero if not'
-        } compliant`, async function () {
-          const { token, alwaysOnModule, transferOnlyModule, admin, agent1, recipient, anyone } = await fixture();
-          await token.connect(admin).installModule(alwaysOnType, alwaysOnModule);
-          await token.connect(admin).installModule(transferOnlyType, transferOnlyModule);
-          const amount = 100;
-          const encryptedMint = await fhevm
-            .createEncryptedInput(await token.getAddress(), agent1.address)
-            .add64(amount)
-            .encrypt();
-          // set compliant for initial mint
-          await alwaysOnModule.$_setCompliant();
-          await transferOnlyModule.$_setCompliant();
-          await token
-            .connect(agent1)
-            ['confidentialMint(address,bytes32,bytes)'](
-              recipient.address,
-              encryptedMint.handles[0],
-              encryptedMint.inputProof,
-            );
-          await expect(
-            fhevm.userDecryptEuint(
-              FhevmType.euint64,
-              await token.confidentialBalanceOf(recipient.address),
-              await token.getAddress(),
-              recipient,
+    describe('force transfer', function () {
+      it('should only call pre-transfer hook on force transfer module', async function () {
+        const encryptedAmount = await fhevm
+          .createEncryptedInput(this.token.target, this.agent1.address)
+          .add64(100n)
+          .encrypt();
+
+        await expect(
+          this.token
+            .connect(this.agent1)
+            ['forceConfidentialTransferFrom(address,address,bytes32,bytes)'](
+              this.holder,
+              this.recipient,
+              encryptedAmount.handles[0],
+              encryptedAmount.inputProof,
             ),
-          ).to.eventually.equal(amount);
-          const encryptedMint2 = await fhevm
-            .createEncryptedInput(await token.getAddress(), agent1.address)
-            .add64(amount)
-            .encrypt();
-          if (compliant) {
-            await alwaysOnModule.$_setCompliant();
-            await transferOnlyModule.$_setCompliant();
-          } else {
-            await alwaysOnModule.$_unsetCompliant();
-            await transferOnlyModule.$_unsetCompliant();
-          }
-          if (!forceTransfer) {
-            await token.connect(recipient).setOperator(agent1.address, (await time.latest()) + 1000);
-          }
-          const tx = token
-            .connect(agent1)
-            [
-              forceTransfer
-                ? 'forceConfidentialTransferFrom(address,address,bytes32,bytes)'
-                : 'confidentialTransferFrom(address,address,bytes32,bytes)'
-            ](recipient.address, anyone.address, encryptedMint2.handles[0], encryptedMint2.inputProof);
-          const [, , transferredHandle] = await callAndGetResult(tx, transferEventSignature);
-          await expect(
-            fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, await token.getAddress(), recipient),
-          ).to.eventually.equal(compliant ? amount : 0);
-          await expect(tx).to.emit(alwaysOnModule, 'PreTransfer').to.emit(alwaysOnModule, 'PostTransfer');
-          if (forceTransfer) {
-            await expect(tx)
-              .to.not.emit(transferOnlyModule, 'PreTransfer')
-              .to.not.emit(transferOnlyModule, 'PostTransfer');
-          } else {
-            await expect(tx).to.emit(transferOnlyModule, 'PreTransfer').to.emit(transferOnlyModule, 'PostTransfer');
-          }
-        });
-      }
-    }
+        )
+          .to.emit(this.forceTransferModule, 'PreTransfer')
+          .to.not.emit(this.complianceModule, 'PreTransfer');
+      });
+
+      it('should call post-transfer hook on all compliance modules', async function () {
+        const encryptedAmount = await fhevm
+          .createEncryptedInput(this.token.target, this.agent1.address)
+          .add64(100n)
+          .encrypt();
+
+        await expect(
+          this.token
+            .connect(this.agent1)
+            ['forceConfidentialTransferFrom(address,address,bytes32,bytes)'](
+              this.holder,
+              this.recipient,
+              encryptedAmount.handles[0],
+              encryptedAmount.inputProof,
+            ),
+        )
+          .to.emit(this.forceTransferModule, 'PostTransfer')
+          .to.emit(this.complianceModule, 'PostTransfer');
+      });
+
+      it('should pass compliance if default module fails', async function () {
+        await this.complianceModule.setIsCompliant(false);
+
+        const encryptedAmount = await fhevm
+          .createEncryptedInput(this.token.target, this.agent1.address)
+          .add64(100n)
+          .encrypt();
+
+        await this.token
+          .connect(this.agent1)
+          ['forceConfidentialTransferFrom(address,address,bytes32,bytes)'](
+            this.holder,
+            this.recipient,
+            encryptedAmount.handles[0],
+            encryptedAmount.inputProof,
+          );
+
+        const recipientBalance = await this.token.confidentialBalanceOf(this.recipient);
+        await expect(
+          fhevm.userDecryptEuint(FhevmType.euint64, recipientBalance, this.token.target, this.recipient),
+        ).to.eventually.equal(100);
+      });
+
+      it('should fail compliance if force transfer module does not pass', async function () {
+        await this.forceTransferModule.setIsCompliant(false);
+
+        const encryptedAmount = await fhevm
+          .createEncryptedInput(this.token.target, this.agent1.address)
+          .add64(100n)
+          .encrypt();
+
+        await this.token
+          .connect(this.agent1)
+          ['forceConfidentialTransferFrom(address,address,bytes32,bytes)'](
+            this.holder,
+            this.recipient,
+            encryptedAmount.handles[0],
+            encryptedAmount.inputProof,
+          );
+
+        const recipientBalance = await this.token.confidentialBalanceOf(this.recipient);
+        await expect(
+          fhevm.userDecryptEuint(FhevmType.euint64, recipientBalance, this.token.target, this.recipient),
+        ).to.eventually.equal(0);
+      });
+    });
   });
 });
