@@ -6,7 +6,7 @@ import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
 enum ModuleType {
-  Default,
+  Standard,
   ForceTransfer,
 }
 
@@ -55,7 +55,7 @@ describe('ERC7984RwaModularCompliance', function () {
   });
 
   describe('support module', async function () {
-    for (const type of [ModuleType.Default, ModuleType.ForceTransfer]) {
+    for (const type of [ModuleType.Standard, ModuleType.ForceTransfer]) {
       it(`should support module type ${ModuleType[type]}`, async function () {
         await expect(this.token.supportsModule(type)).to.eventually.be.true;
       });
@@ -68,18 +68,18 @@ describe('ERC7984RwaModularCompliance', function () {
 
   describe('install module', async function () {
     it('should emit event', async function () {
-      await expect(this.token.$_installModule(ModuleType.Default, this.complianceModule, '0x'))
+      await expect(this.token.$_installModule(ModuleType.Standard, this.complianceModule, '0x'))
         .to.emit(this.token, 'ModuleInstalled')
-        .withArgs(ModuleType.Default, this.complianceModule);
+        .withArgs(ModuleType.Standard, this.complianceModule);
     });
 
     it('should call `onInstall` on the module', async function () {
-      await expect(this.token.$_installModule(ModuleType.Default, this.complianceModule, '0xffff'))
+      await expect(this.token.$_installModule(ModuleType.Standard, this.complianceModule, '0xffff'))
         .to.emit(this.complianceModule, 'OnInstall')
         .withArgs('0xffff');
     });
 
-    for (const type of [ModuleType.Default, ModuleType.ForceTransfer]) {
+    for (const type of [ModuleType.Standard, ModuleType.ForceTransfer]) {
       it(`should add ${ModuleType[type]} module to modules list`, async function () {
         await this.token.$_installModule(type, this.complianceModule, '0x');
         await expect(this.token.isModuleInstalled(type, this.complianceModule)).to.eventually.be.true;
@@ -87,54 +87,54 @@ describe('ERC7984RwaModularCompliance', function () {
     }
 
     it('should gate to admin', async function () {
-      await expect(this.token.connect(this.anyone).installModule(ModuleType.Default, this.complianceModule, '0x'))
+      await expect(this.token.connect(this.anyone).installModule(ModuleType.Standard, this.complianceModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'AccessControlUnauthorizedAccount')
         .withArgs(this.anyone, adminRole);
     });
 
     it('should run module check', async function () {
       const notModule = '0x0000000000000000000000000000000000000001';
-      await expect(this.token.connect(this.admin).installModule(ModuleType.Default, notModule, '0x'))
+      await expect(this.token.connect(this.admin).installModule(ModuleType.Standard, notModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'ERC7984RwaNotTransferComplianceModule')
         .withArgs(notModule);
     });
 
     it('should not install module if already installed', async function () {
-      await this.token.$_installModule(ModuleType.Default, this.complianceModule, '0x');
-      await expect(this.token.$_installModule(ModuleType.Default, this.complianceModule, '0x'))
+      await this.token.$_installModule(ModuleType.Standard, this.complianceModule, '0x');
+      await expect(this.token.$_installModule(ModuleType.Standard, this.complianceModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'ERC7984RwaAlreadyInstalledModule')
-        .withArgs(ModuleType.Default, this.complianceModule);
+        .withArgs(ModuleType.Standard, this.complianceModule);
     });
   });
 
   describe('uninstall module', async function () {
     beforeEach(async function () {
-      for (const type of [ModuleType.Default, ModuleType.ForceTransfer]) {
+      for (const type of [ModuleType.Standard, ModuleType.ForceTransfer]) {
         await this.token.$_installModule(type, this.complianceModule, '0x');
       }
     });
 
     it('should emit event', async function () {
-      await expect(this.token.$_uninstallModule(ModuleType.Default, this.complianceModule, '0x'))
+      await expect(this.token.$_uninstallModule(ModuleType.Standard, this.complianceModule, '0x'))
         .to.emit(this.token, 'ModuleUninstalled')
-        .withArgs(ModuleType.Default, this.complianceModule);
+        .withArgs(ModuleType.Standard, this.complianceModule);
     });
 
     it('should fail if module not installed', async function () {
       const newComplianceModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
 
-      await expect(this.token.$_uninstallModule(ModuleType.Default, newComplianceModule, '0x'))
+      await expect(this.token.$_uninstallModule(ModuleType.Standard, newComplianceModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'ERC7984RwaAlreadyUninstalledModule')
-        .withArgs(ModuleType.Default, newComplianceModule);
+        .withArgs(ModuleType.Standard, newComplianceModule);
     });
 
     it('should call `onUninstall` on the module', async function () {
-      await expect(this.token.$_uninstallModule(ModuleType.Default, this.complianceModule, '0xffff'))
+      await expect(this.token.$_uninstallModule(ModuleType.Standard, this.complianceModule, '0xffff'))
         .to.emit(this.complianceModule, 'OnUninstall')
         .withArgs('0xffff');
     });
 
-    for (const type of [ModuleType.Default, ModuleType.ForceTransfer]) {
+    for (const type of [ModuleType.Standard, ModuleType.ForceTransfer]) {
       it(`should remove module of type ${ModuleType[type]} from modules list`, async function () {
         await this.token.$_uninstallModule(type, this.complianceModule, '0x');
         await expect(this.token.isModuleInstalled(type, this.complianceModule)).to.eventually.be.false;
@@ -143,11 +143,11 @@ describe('ERC7984RwaModularCompliance', function () {
 
     it("should not revert if module's `onUninstall` reverts", async function () {
       await this.complianceModule.setRevertOnUninstall(true);
-      await this.token.$_uninstallModule(ModuleType.Default, this.complianceModule, '0x');
+      await this.token.$_uninstallModule(ModuleType.Standard, this.complianceModule, '0x');
     });
 
     it('should gate to admin', async function () {
-      await expect(this.token.connect(this.anyone).uninstallModule(ModuleType.Default, this.complianceModule, '0x'))
+      await expect(this.token.connect(this.anyone).uninstallModule(ModuleType.Standard, this.complianceModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'AccessControlUnauthorizedAccount')
         .withArgs(this.anyone, adminRole);
     });
@@ -155,7 +155,7 @@ describe('ERC7984RwaModularCompliance', function () {
 
   describe('check compliance on transfer', async function () {
     beforeEach(async function () {
-      await this.token.$_installModule(ModuleType.Default, this.complianceModule, '0x');
+      await this.token.$_installModule(ModuleType.Standard, this.complianceModule, '0x');
       await this.token['$_mint(address,uint64)'](this.holder, 1000);
 
       const forceTransferModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');

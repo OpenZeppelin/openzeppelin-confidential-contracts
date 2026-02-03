@@ -52,7 +52,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
      * * Force transfer compliance module
      */
     function supportsModule(ComplianceModuleType moduleType) public view virtual returns (bool) {
-        return moduleType == ComplianceModuleType.Default || moduleType == ComplianceModuleType.ForceTransfer;
+        return moduleType == ComplianceModuleType.Standard || moduleType == ComplianceModuleType.ForceTransfer;
     }
 
     /// @inheritdoc IERC7984RwaModularCompliance
@@ -88,7 +88,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         address module
     ) internal view virtual returns (bool installed) {
         if (moduleType == ComplianceModuleType.ForceTransfer) return _forceTransferComplianceModules.contains(module);
-        if (moduleType == ComplianceModuleType.Default) return _complianceModules.contains(module);
+        if (moduleType == ComplianceModuleType.Standard) return _complianceModules.contains(module);
     }
 
     /// @dev Internal function which installs a transfer compliance module.
@@ -127,7 +127,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
                 _forceTransferComplianceModules.remove(module),
                 ERC7984RwaAlreadyUninstalledModule(moduleType, module)
             );
-        } else if (moduleType == ComplianceModuleType.Default) {
+        } else if (moduleType == ComplianceModuleType.Standard) {
             require(_complianceModules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
         }
 

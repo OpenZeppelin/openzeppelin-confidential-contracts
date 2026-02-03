@@ -89,7 +89,7 @@ interface IERC7984Rwa is IERC7984 {
 /// @dev Interface for confidential RWA with modular compliance.
 interface IERC7984RwaModularCompliance {
     enum ComplianceModuleType {
-        Default,
+        Standard,
         ForceTransfer
     }
 
