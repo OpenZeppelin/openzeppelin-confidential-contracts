@@ -137,6 +137,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         require(modules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
 
         // ignore success purposely to avoid modules that revert on uninstall
+        // slither-disable-next-line unchecked-lowlevel
         module.call(abi.encodeCall(IERC7984RwaComplianceModule.onUninstall, (deinitData)));
 
         emit ModuleUninstalled(moduleType, module);
