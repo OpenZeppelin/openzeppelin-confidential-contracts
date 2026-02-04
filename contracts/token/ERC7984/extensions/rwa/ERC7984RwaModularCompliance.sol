@@ -122,14 +122,14 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         bytes memory deinitData
     ) internal virtual {
         require(supportsModule(moduleType), ERC7984RwaUnsupportedModuleType(moduleType));
+
+        EnumerableSet.AddressSet storage modules;
         if (moduleType == ComplianceModuleType.ForceTransfer) {
-            require(
-                _forceTransferComplianceModules.remove(module),
-                ERC7984RwaAlreadyUninstalledModule(moduleType, module)
-            );
-        } else if (moduleType == ComplianceModuleType.Standard) {
-            require(_complianceModules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
+            modules = _forceTransferComplianceModules;
+        } else {
+            modules = _complianceModules;
         }
+        require(modules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
 
         // ignore success purposely to avoid modules that revert on uninstall
         module.call(abi.encodeCall(IERC7984RwaComplianceModule.onUninstall, (deinitData)));
