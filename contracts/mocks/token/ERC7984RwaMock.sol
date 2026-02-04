@@ -29,7 +29,9 @@ contract ERC7984RwaMock is ERC7984Rwa, ERC7984Mock, HandleAccessManager {
         return super._update(from, to, amount);
     }
 
-    function _validateHandleAllowance(bytes32 handle) internal view override onlyAgent {}
+    function _validateHandleAllowance(bytes32) internal view override returns (bool) {
+        return isAgent(msg.sender);
+    }
 
     // solhint-disable-next-line func-name-mixedcase
     function $_setConfidentialFrozen(address account, uint64 amount) public virtual {

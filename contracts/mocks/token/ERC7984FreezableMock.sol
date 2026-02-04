@@ -37,5 +37,7 @@ contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, HandleAccessMana
         getHandleAllowance(euint64.unwrap(available), account, true);
     }
 
-    function _validateHandleAllowance(bytes32 handle) internal view override {}
+    function _validateHandleAllowance(bytes32) internal pure override returns (bool) {
+        return true;
+    }
 }
