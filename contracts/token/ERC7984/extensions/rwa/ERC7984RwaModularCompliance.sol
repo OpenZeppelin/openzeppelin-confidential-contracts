@@ -82,6 +82,11 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         _uninstallModule(moduleType, module, deinitData);
     }
 
+    /// @inheritdoc ERC7984Rwa
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IERC7984RwaModularCompliance).interfaceId || super.supportsInterface(interfaceId);
+    }
+
     /// @dev Checks if a compliance module is installed.
     function _isModuleInstalled(
         ComplianceModuleType moduleType,

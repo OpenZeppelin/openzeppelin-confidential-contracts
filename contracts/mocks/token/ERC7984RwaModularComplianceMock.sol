@@ -17,7 +17,9 @@ contract ERC7984RwaModularComplianceMock is ERC7984RwaModularCompliance, ERC7984
         address admin
     ) ERC7984Rwa(admin) ERC7984Mock(name, symbol, tokenUri) {}
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984Rwa, ERC7984) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC7984, ERC7984RwaModularCompliance) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
