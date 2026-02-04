@@ -4,10 +4,10 @@ pragma solidity ^0.8.24;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {ComplianceModuleConfidential} from "./../../finance/compliance/ComplianceModuleConfidential.sol";
 import {IERC7984} from "./../../interfaces/IERC7984.sol";
-import {ERC7984RwaComplianceModule} from "./../../token/ERC7984/extensions/rwa/ERC7984RwaComplianceModule.sol";
 
-contract ComplianceModuleConfidentialMock is ERC7984RwaComplianceModule, ZamaEthereumConfig {
+contract ComplianceModuleConfidentialMock is ComplianceModuleConfidential, ZamaEthereumConfig {
     bool public isCompliant = true;
     bool public revertOnUninstall = false;
 
