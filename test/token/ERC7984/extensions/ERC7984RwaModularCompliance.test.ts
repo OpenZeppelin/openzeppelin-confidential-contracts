@@ -90,11 +90,13 @@ describe('ERC7984RwaModularCompliance', function () {
       await expect(this.token.connect(this.anyone).installModule(ModuleType.Standard, this.complianceModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'AccessControlUnauthorizedAccount')
         .withArgs(this.anyone, adminRole);
+
+      await this.token.connect(this.admin).installModule(ModuleType.Standard, this.complianceModule, '0x');
     });
 
     it('should run module check', async function () {
       const notModule = '0x0000000000000000000000000000000000000001';
-      await expect(this.token.connect(this.admin).installModule(ModuleType.Standard, notModule, '0x'))
+      await expect(this.token.$_installModule(ModuleType.Standard, notModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'ERC7984RwaNotTransferComplianceModule')
         .withArgs(notModule);
     });
@@ -150,6 +152,9 @@ describe('ERC7984RwaModularCompliance', function () {
       await expect(this.token.connect(this.anyone).uninstallModule(ModuleType.Standard, this.complianceModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'AccessControlUnauthorizedAccount')
         .withArgs(this.anyone, adminRole);
+
+      await this.token.connect(this.admin).uninstallModule(ModuleType.Standard, this.complianceModule, '0x');
+      await expect(this.token.isModuleInstalled(ModuleType.Standard, this.complianceModule)).to.eventually.be.false;
     });
   });
 
