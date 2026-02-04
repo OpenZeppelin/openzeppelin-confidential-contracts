@@ -77,17 +77,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
 
     /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
     function claim(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        require(_batches[batchId].exchangeRate != 0, BatchNotFinalized(batchId));
+        require(exchangeRate(batchId) != 0, BatchNotFinalized(batchId));
 
         euint64 deposit = deposits(batchId, msg.sender);
 
         // Overflow is not possible on mul since `type(uint64).max ** 2 < type(uint128).max`.
         // Given that the output of the entire batch must fit in uint64, individual user outputs must also fit.
         euint64 amountToSend = FHE.asEuint64(
-            FHE.div(
-                FHE.mul(FHE.asEuint128(deposit), _batches[batchId].exchangeRate),
-                uint128(10) ** exchangeRateDecimals()
-            )
+            FHE.div(FHE.mul(FHE.asEuint128(deposit), exchangeRate(batchId)), uint128(10) ** exchangeRateDecimals())
         );
         FHE.allowTransient(amountToSend, address(toToken()));
 
