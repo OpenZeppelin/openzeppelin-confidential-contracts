@@ -222,10 +222,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
     }
 
     /// @dev See {HandleAccessManager-_validateHandleAllowance}. Allow compliance modules to access any handle.
-    function _validateHandleAllowance(bytes32) internal view override {
-        require(
-            _forceTransferComplianceModules.contains(msg.sender) || _complianceModules.contains(msg.sender),
-            SenderNotComplianceModule(msg.sender)
-        );
+    function _validateHandleAllowance(bytes32) internal view override returns (bool) {
+        return _forceTransferComplianceModules.contains(msg.sender) || _complianceModules.contains(msg.sender);
     }
 }
