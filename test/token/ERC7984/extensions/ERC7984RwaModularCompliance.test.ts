@@ -59,11 +59,11 @@ describe('ERC7984RwaModularCompliance', function () {
       it(`should support module type ${ModuleType[type]}`, async function () {
         await expect(this.token.supportsModule(type)).to.eventually.be.true;
       });
-
-      it('should not support other module types', async function () {
-        await expect(this.token.supportsModule(3)).to.be.reverted;
-      });
     }
+
+    it('should not support other module types', async function () {
+      await expect(this.token.supportsModule(3)).to.be.reverted;
+    });
   });
 
   describe('install module', async function () {
