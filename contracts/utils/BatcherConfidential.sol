@@ -38,11 +38,17 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
 
     /// @dev Thrown when attempting to quit a batch that has already been dispatched.
     error BatchAlreadyDispatched(uint256 batchId);
+
     /// @dev Thrown when attempting to claim from a batch that has not yet been finalized.
     error BatchNotFinalized(uint256 batchId);
+
     /// @dev Thrown when attempting to set the exchange rate for a batch that already has it set.
     error ExchangeRateAlreadySet(uint256 batchId);
-    /// @dev Thrown when the given exchange rate is invalid. `exchangeRate * totalDeposits / 10 ** exchangeRateDecimals` must fit in uint64.
+
+    /**
+     * @dev Thrown when the given exchange rate is invalid. `exchangeRate * totalDeposits / 10 ** exchangeRateDecimals`
+     * must fit in uint64.
+     */
     error InvalidExchangeRate(uint256 batchId, uint256 totalDeposits, uint64 exchangeRate);
 
     constructor(ERC7984ERC20Wrapper fromToken_, ERC7984ERC20Wrapper toToken_) {
@@ -229,6 +235,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
         return _batches[batchId].exchangeRate;
     }
 
+    /// @dev The number of decimals of precision for the exchange rate.
     function exchangeRateDecimals() public pure virtual returns (uint8) {
         return 6;
     }
@@ -254,7 +261,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
 
     /**
      * @dev Sets the exchange rate for a given `batchId`. The exchange rate represents the rate at which deposits in {fromToken} are
-     * converted to {toToken}. The exchange rate is scaled by `10 ** exchangeRateDecimals()`.
+     * converted to {toToken}. The exchange rate is scaled by `10 ** exchangeRateDecimals()`. An exchange rate of 0 is invalid.
      *
      * WARNING: Do not supply the exchange rate between the two underlying non-confidential tokens. Ensure the wrapper {ERC7984ERC20Wrapper-rate}
      * is taken into account.
@@ -263,9 +270,10 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
         require(exchangeRate(batchId) == 0, ExchangeRateAlreadySet(batchId));
         uint256 totalDepositsCleartext_ = totalDepositsCleartext(batchId);
 
-        // ensure that there will not be overflow when calculating user outputs
+        // Ensure valid exchange rate: not 0 and will not overflow when calculating user outputs
         require(
-            (totalDepositsCleartext_ * exchangeRate_) / (uint128(10) ** exchangeRateDecimals()) <= type(uint64).max,
+            exchangeRate_ != 0 &&
+                (totalDepositsCleartext_ * exchangeRate_) / (uint128(10) ** exchangeRateDecimals()) <= type(uint64).max,
             InvalidExchangeRate(batchId, totalDepositsCleartext_, exchangeRate_)
         );
 

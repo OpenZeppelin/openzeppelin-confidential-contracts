@@ -333,6 +333,21 @@ describe('BatcherConfidential', function () {
         await this.batcher.$_setExchangeRate(this.batchId, rate);
       });
 
+      it('should revert if 0', async function () {
+        await this.batcher.connect(this.holder).join(1000);
+
+        await this.batcher.connect(this.holder).dispatchBatch();
+        await this.batcher.shouldSetExchangeRate(false);
+
+        const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
+        const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+        await this.batcher.dispatchBatchCallback(this.batchId, abiEncodedClearValues, decryptionProof);
+
+        await expect(this.batcher.$_setExchangeRate(this.batchId, 0n))
+          .to.be.revertedWithCustomError(this.batcher, 'InvalidExchangeRate')
+          .withArgs(this.batchId, 1000n, 0n);
+      });
+
       it('should revert if too large', async function () {
         const joinAmount = wrapAmount / this.fromTokenRate;
 
