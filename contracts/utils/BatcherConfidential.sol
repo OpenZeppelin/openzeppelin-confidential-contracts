@@ -8,6 +8,13 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 pragma solidity ^0.8.27;
 
 abstract contract BatcherConfidential is ReentrancyGuardTransient {
+    /// @dev Enum representing the lifecycle state of a batch.
+    enum BatchState {
+        Pending, // Batch is active and accepting deposits (batchId == currentBatchId)
+        Dispatched, // Batch has been dispatched but not yet finalized
+        Finalized // Batch is complete, users can claim their tokens
+    }
+
     struct Batch {
         euint64 totalDeposits;
         euint64 unwrapAmount;
@@ -36,14 +43,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
     /// @dev Emitted when the `exchangeRate` is set for batch with id `batchId`.
     event ExchangeRateSet(uint256 indexed batchId, uint64 exchangeRate);
 
-    /// @dev Thrown when attempting to quit a batch that has already been dispatched.
-    error BatchAlreadyDispatched(uint256 batchId);
+    /// @dev The `batchId` does not exist. Batch IDs start at 1 and must be less than or equal to {currentBatchId}.
+    error BatchNonexistent(uint256 batchId);
 
-    /// @dev Thrown when attempting to claim from a batch that has not yet been finalized.
-    error BatchNotFinalized(uint256 batchId);
-
-    /// @dev Thrown when attempting to set the exchange rate for a batch that already has it set.
-    error ExchangeRateAlreadySet(uint256 batchId);
+    /**
+     * @dev The batch `batchId` is in the state `current`, which is invalid for the operation.
+     * The state `expected` is the required for the operation.
+     */
+    error BatchUnexpectedState(uint256 batchId, BatchState current, BatchState expected);
 
     /**
      * @dev Thrown when the given exchange rate is invalid. `exchangeRate * totalDeposits / 10 ** exchangeRateDecimals`
@@ -83,7 +90,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
 
     /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
     function claim(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        require(exchangeRate(batchId) != 0, BatchNotFinalized(batchId));
+        _validateState(batchId, BatchState.Finalized);
 
         euint64 deposit = deposits(batchId, msg.sender);
 
@@ -116,7 +123,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
      * if maintaining confidentiality of deposits is critical to the application.
      */
     function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        require(euint64.unwrap(unwrapAmount(batchId)) == 0, BatchAlreadyDispatched(batchId));
+        _validateState(batchId, BatchState.Pending);
 
         euint64 deposit = deposits(batchId, msg.sender);
         euint64 totalDeposits_ = totalDeposits(batchId);
@@ -243,6 +250,21 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
     /// @dev Human readable description of what the batcher does.
     function routeDescription() public pure virtual returns (string memory);
 
+    /// @dev Returns the current state of a batch. Reverts if the batch does not exist.
+    function batchState(uint256 batchId) public view virtual returns (BatchState) {
+        if (exchangeRate(batchId) != 0) {
+            return BatchState.Finalized;
+        }
+        if (euint64.unwrap(unwrapAmount(batchId)) != 0) {
+            return BatchState.Dispatched;
+        }
+        if (batchId == currentBatchId()) {
+            return BatchState.Pending;
+        }
+
+        revert BatchNonexistent(batchId);
+    }
+
     /**
      * @dev Function which is executed by {dispatchBatchCallback} after validation and unwrap finalization. The parameter
      * `amount` is the plaintext amount of the `fromToken` which were unwrapped--to attain the underlying tokens received,
@@ -260,6 +282,19 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual;
 
     /**
+     * @dev Check that the current state of a batch matches the `expectedState`.
+     *
+     * If requirements are not met, reverts with a {BatchUnexpectedState} error.
+     */
+    function _validateState(uint256 batchId, BatchState expectedState) internal view returns (BatchState) {
+        BatchState currentState = batchState(batchId);
+        if (currentState != expectedState) {
+            revert BatchUnexpectedState(batchId, currentState, expectedState);
+        }
+        return currentState;
+    }
+
+    /**
      * @dev Sets the exchange rate for a given `batchId`. The exchange rate represents the rate at which deposits in {fromToken} are
      * converted to {toToken}. The exchange rate is scaled by `10 ** exchangeRateDecimals()`. An exchange rate of 0 is invalid.
      *
@@ -267,7 +302,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
      * is taken into account.
      */
     function _setExchangeRate(uint256 batchId, uint64 exchangeRate_) internal virtual {
-        require(exchangeRate(batchId) == 0, ExchangeRateAlreadySet(batchId));
+        _validateState(batchId, BatchState.Dispatched);
         uint256 totalDepositsCleartext_ = totalDepositsCleartext(batchId);
 
         // Ensure valid exchange rate: not 0 and will not overflow when calculating user outputs
