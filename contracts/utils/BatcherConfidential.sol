@@ -12,7 +12,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
     enum BatchState {
         Pending, // Batch is active and accepting deposits (batchId == currentBatchId)
         Dispatched, // Batch has been dispatched but not yet finalized
-        Finalized // Batch is complete, users can claim their tokens
+        Finalized, // Batch is complete, users can claim their tokens
+        Cancelled // Batch is cancelled, users can claim their refund
     }
 
     struct Batch {
