@@ -4,10 +4,11 @@ import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/li
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
+import {IERC7984Receiver} from "../interfaces/IERC7984Receiver.sol";
 
 pragma solidity ^0.8.27;
 
-abstract contract BatcherConfidential is ReentrancyGuardTransient {
+abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Receiver {
     /// @dev Enum representing the lifecycle state of a batch.
     enum BatchState {
         Pending, // Batch is active and accepting deposits (batchId == currentBatchId)
@@ -73,22 +74,15 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
         FHE.allowTransient(amount, address(fromToken()));
         euint64 transferred = fromToken().confidentialTransferFrom(msg.sender, address(this), amount);
 
-        uint256 batchId = currentBatchId();
+        euint64 joinedAmount = _join(msg.sender, transferred);
+        euint64 refundAmount = FHE.sub(transferred, joinedAmount);
 
-        euint64 newDeposits = FHE.add(deposits(batchId, msg.sender), transferred);
-        euint64 newTotalDeposits = FHE.add(totalDeposits(batchId), transferred);
+        FHE.allowTransient(joinedAmount, msg.sender);
+        FHE.allowTransient(refundAmount, address(fromToken()));
 
-        FHE.allowThis(newDeposits);
-        FHE.allow(newDeposits, msg.sender);
+        fromToken().confidentialTransfer(msg.sender, refundAmount);
 
-        FHE.allowThis(newTotalDeposits);
-
-        _batches[batchId].deposits[msg.sender] = newDeposits;
-        _batches[batchId].totalDeposits = newTotalDeposits;
-
-        emit Joined(batchId, msg.sender, transferred);
-
-        return transferred;
+        return joinedAmount;
     }
 
     /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
@@ -134,6 +128,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
         euint64 deposit = deposits(batchId, msg.sender);
         euint64 totalDeposits_ = totalDeposits(batchId);
 
+        FHE.allowTransient(deposit, address(fromToken()));
         euint64 sent = fromToken().confidentialTransfer(msg.sender, deposit);
         euint64 newDeposit = FHE.sub(deposit, sent);
         euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
@@ -209,6 +204,18 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
         _executeRoute(batchId, unwrapAmountCleartext);
     }
 
+    /// @inheritdoc IERC7984Receiver
+    function onConfidentialTransferReceived(
+        address operator,
+        address from,
+        euint64 amount,
+        bytes calldata
+    ) external returns (ebool) {
+        ebool success = FHE.gt(_join(from, amount), FHE.asEuint64(0));
+        FHE.allowTransient(success, operator);
+        return success;
+    }
+
     /// @dev Batcher from token. Users deposit this token in exchange for {toToken}.
     function fromToken() public view virtual returns (ERC7984ERC20Wrapper) {
         return _fromToken;
@@ -269,6 +276,30 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
         }
 
         revert BatchNonexistent(batchId);
+    }
+
+    /**
+     * @dev Joins a batch with amount `amount` on behalf of `to`. Does not do any transfers in.
+     * Returns the amount joined with.
+     */
+    function _join(address to, euint64 amount) internal virtual returns (euint64) {
+        uint256 batchId = currentBatchId();
+
+        (ebool success, euint64 newTotalDeposits) = FHESafeMath.tryIncrease(totalDeposits(batchId), amount);
+        euint64 joinedAmount = FHE.select(success, amount, FHE.asEuint64(0));
+        euint64 newDeposits = FHE.add(deposits(batchId, to), joinedAmount);
+
+        FHE.allowThis(newTotalDeposits);
+
+        FHE.allowThis(newDeposits);
+        FHE.allow(newDeposits, to);
+
+        _batches[batchId].totalDeposits = newTotalDeposits;
+        _batches[batchId].deposits[to] = newDeposits;
+
+        emit Joined(batchId, to, joinedAmount);
+
+        return joinedAmount;
     }
 
     /**
