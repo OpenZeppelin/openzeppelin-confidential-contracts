@@ -16,6 +16,12 @@ enum BatchState {
   Pending,
   Dispatched,
   Finalized,
+  Cancelled,
+}
+
+// Helper to encode batch state as bitmap (mirrors _encodeStateBitmap in contract)
+function encodeStateBitmap(...states: BatchState[]): bigint {
+  return states.reduce((acc, state) => acc | (1n << BigInt(state)), 0n);
 }
 
 describe('BatcherConfidential', function () {
@@ -217,7 +223,7 @@ describe('BatcherConfidential', function () {
         const currentBatchId = await this.batcher.currentBatchId();
         await expect(this.batcher.claim(currentBatchId))
           .to.be.revertedWithCustomError(this.batcher, 'BatchUnexpectedState')
-          .withArgs(currentBatchId, BatchState.Pending, BatchState.Finalized);
+          .withArgs(currentBatchId, BatchState.Pending, encodeStateBitmap(BatchState.Finalized));
       });
 
       it('should emit event', async function () {
@@ -314,7 +320,7 @@ describe('BatcherConfidential', function () {
 
         await expect(this.batcher.quit(this.batchId))
           .to.be.revertedWithCustomError(this.batcher, 'BatchUnexpectedState')
-          .withArgs(this.batchId, BatchState.Dispatched, BatchState.Pending);
+          .withArgs(this.batchId, BatchState.Dispatched, encodeStateBitmap(BatchState.Pending, BatchState.Cancelled));
       });
 
       it('should emit event', async function () {
@@ -398,7 +404,7 @@ describe('BatcherConfidential', function () {
 
         await expect(this.batcher.$_setExchangeRate(1, 10n ** 7n))
           .to.be.revertedWithCustomError(this.batcher, 'BatchUnexpectedState')
-          .withArgs(1n, BatchState.Finalized, BatchState.Dispatched);
+          .withArgs(1n, BatchState.Finalized, encodeStateBitmap(BatchState.Dispatched));
       });
 
       it('should emit event', async function () {

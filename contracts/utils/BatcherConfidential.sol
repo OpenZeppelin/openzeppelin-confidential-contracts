@@ -49,9 +49,11 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
 
     /**
      * @dev The batch `batchId` is in the state `current`, which is invalid for the operation.
-     * The state `expected` is the required for the operation.
+     * The `expectedStates` is a bitmap encoding the expected/allowed states for the operation.
+     *
+     * See {_encodeStateBitmap}.
      */
-    error BatchUnexpectedState(uint256 batchId, BatchState current, BatchState expected);
+    error BatchUnexpectedState(uint256 batchId, BatchState current, bytes32 expectedStates);
 
     /**
      * @dev Thrown when the given exchange rate is invalid. `exchangeRate * totalDeposits / 10 ** exchangeRateDecimals`
@@ -91,7 +93,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
 
     /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
     function claim(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        _validateState(batchId, BatchState.Finalized);
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
 
         euint64 deposit = deposits(batchId, msg.sender);
 
@@ -118,13 +120,16 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
 
     /**
      * @dev Quit the batch with id `batchId`. Entire deposit is returned to the user.
-     * This can only be called if the batch has not yet been dispatched.
+     * This can only be called if the batch has not yet been dispatched or if the batch was cancelled.
      *
      * NOTE: Developers should consider adding additional restrictions to this function
      * if maintaining confidentiality of deposits is critical to the application.
      */
     function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        _validateState(batchId, BatchState.Pending);
+        _validateStateBitmap(
+            batchId,
+            _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Cancelled)
+        );
 
         euint64 deposit = deposits(batchId, msg.sender);
         euint64 totalDeposits_ = totalDeposits(batchId);
@@ -283,14 +288,15 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual;
 
     /**
-     * @dev Check that the current state of a batch matches the `expectedState`.
+     * @dev Check that the current state of a batch matches the requirements described by the `allowedStates` bitmap.
+     * This bitmap should be built using `_encodeStateBitmap`.
      *
      * If requirements are not met, reverts with a {BatchUnexpectedState} error.
      */
-    function _validateState(uint256 batchId, BatchState expectedState) internal view returns (BatchState) {
+    function _validateStateBitmap(uint256 batchId, bytes32 allowedStates) internal view returns (BatchState) {
         BatchState currentState = batchState(batchId);
-        if (currentState != expectedState) {
-            revert BatchUnexpectedState(batchId, currentState, expectedState);
+        if (_encodeStateBitmap(currentState) & allowedStates == bytes32(0)) {
+            revert BatchUnexpectedState(batchId, currentState, allowedStates);
         }
         return currentState;
     }
@@ -303,7 +309,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
      * is taken into account.
      */
     function _setExchangeRate(uint256 batchId, uint64 exchangeRate_) internal virtual {
-        _validateState(batchId, BatchState.Dispatched);
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Dispatched));
         uint256 totalDepositsCleartext_ = totalDepositsCleartext(batchId);
 
         // Ensure valid exchange rate: not 0 and will not overflow when calculating user outputs
@@ -325,5 +331,19 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient {
         (ebool success, ) = FHESafeMath.tryDecrease(balance, requestedUnwrapAmount);
 
         return FHE.select(success, requestedUnwrapAmount, FHE.asEuint64(0));
+    }
+
+    /**
+     * @dev Encodes a `BatchState` into a `bytes32` representation where each bit enabled corresponds to
+     * the underlying position in the `BatchState` enum. For example:
+     *
+     * 0x000...1000
+     *         ^--- Cancelled
+     *          ^-- Finalized
+     *           ^- Dispatched
+     *            ^ Pending
+     */
+    function _encodeStateBitmap(BatchState batchState_) internal pure returns (bytes32) {
+        return bytes32(1 << uint8(batchState_));
     }
 }
