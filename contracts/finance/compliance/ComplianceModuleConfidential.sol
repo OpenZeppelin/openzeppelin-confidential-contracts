@@ -16,6 +16,13 @@ abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential 
     /// @dev Thrown when the sender is not authorized to call the given function.
     error NotAuthorized(address account);
 
+    /// @dev Thrown when the sender is not an admin of the token.
+    modifier onlyTokenAdmin(address token) {
+        require(IERC7984Rwa(token).isAdmin(msg.sender), NotAuthorized(msg.sender));
+        _;
+    }
+
+    /// @dev Thrown when the sender is not an agent of the token.
     modifier onlyTokenAgent(address token) {
         require(IERC7984Rwa(token).isAgent(msg.sender), NotAuthorized(msg.sender));
         _;
