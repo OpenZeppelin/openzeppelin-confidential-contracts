@@ -16,7 +16,7 @@ enum BatchState {
   Pending,
   Dispatched,
   Finalized,
-  Cancelled,
+  Canceled,
 }
 
 // Helper to encode batch state as bitmap (mirrors _encodeStateBitmap in contract)
@@ -320,7 +320,7 @@ describe('BatcherConfidential', function () {
 
         await expect(this.batcher.quit(this.batchId))
           .to.be.revertedWithCustomError(this.batcher, 'BatchUnexpectedState')
-          .withArgs(this.batchId, BatchState.Dispatched, encodeStateBitmap(BatchState.Pending, BatchState.Cancelled));
+          .withArgs(this.batchId, BatchState.Dispatched, encodeStateBitmap(BatchState.Pending, BatchState.Canceled));
       });
 
       it('should emit event', async function () {

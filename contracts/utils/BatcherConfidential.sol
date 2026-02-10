@@ -2,9 +2,9 @@
 
 import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
 import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
-import {IERC7984Receiver} from "../interfaces/IERC7984Receiver.sol";
 
 pragma solidity ^0.8.27;
 
@@ -14,7 +14,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         Pending, // Batch is active and accepting deposits (batchId == currentBatchId)
         Dispatched, // Batch has been dispatched but not yet finalized
         Finalized, // Batch is complete, users can claim their tokens
-        Cancelled // Batch is cancelled, users can claim their refund
+        Canceled // Batch is canceled, users can claim their refund
     }
 
     struct Batch {
@@ -114,16 +114,13 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /**
      * @dev Quit the batch with id `batchId`. Entire deposit is returned to the user.
-     * This can only be called if the batch has not yet been dispatched or if the batch was cancelled.
+     * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
      *
      * NOTE: Developers should consider adding additional restrictions to this function
      * if maintaining confidentiality of deposits is critical to the application.
      */
     function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        _validateStateBitmap(
-            batchId,
-            _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Cancelled)
-        );
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
 
         euint64 deposit = deposits(batchId, msg.sender);
         euint64 totalDeposits_ = totalDeposits(batchId);
@@ -369,7 +366,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * the underlying position in the `BatchState` enum. For example:
      *
      * 0x000...1000
-     *         ^--- Cancelled
+     *         ^--- Canceled
      *          ^-- Finalized
      *           ^- Dispatched
      *            ^ Pending
