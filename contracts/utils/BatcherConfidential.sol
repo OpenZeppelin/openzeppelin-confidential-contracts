@@ -69,6 +69,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      */
     error InvalidExchangeRate(uint256 batchId, uint256 totalDeposits, uint64 exchangeRate);
 
+    /// @dev The caller is not authorized to call this function.
+    error Unauthorized();
+
     constructor(ERC7984ERC20Wrapper fromToken_, ERC7984ERC20Wrapper toToken_) {
         _fromToken = fromToken_;
         _toToken = toToken_;
@@ -220,7 +223,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         euint64 amount,
         bytes calldata
     ) external returns (ebool) {
-        require(msg.sender == address(fromToken()));
+        require(msg.sender == address(fromToken()), Unauthorized());
         ebool success = FHE.gt(_join(from, amount), FHE.asEuint64(0));
         FHE.allowTransient(success, msg.sender);
         return success;

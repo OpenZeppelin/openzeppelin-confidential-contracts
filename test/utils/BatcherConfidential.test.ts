@@ -1,7 +1,9 @@
+import { BatcherConfidentialSwapMock } from '../../types';
 import { $ERC20Mock } from '../../types/contracts-exposed/mocks/token/ERC20Mock.sol/$ERC20Mock';
 import { $ERC7984ERC20Wrapper } from '../../types/contracts-exposed/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol/$ERC7984ERC20Wrapper';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
@@ -100,74 +102,108 @@ describe('BatcherConfidential', function () {
       this.batcher = batcher;
     });
 
-    describe('join', async function () {
-      it('should increase individual deposits', async function () {
-        const batchId = await this.batcher.currentBatchId();
+    for (const viaCallback of [true, false]) {
+      describe(`join ${viaCallback ? 'via callback' : 'directly'}`, async function () {
+        const join = async function (
+          token: $ERC7984ERC20Wrapper,
+          sender: HardhatEthersSigner,
+          batcher: BatcherConfidentialSwapMock,
+          amount: bigint,
+        ) {
+          if (viaCallback) {
+            const encryptedInput = await fhevm
+              .createEncryptedInput(token.target.toString(), sender.address)
+              .add64(amount)
+              .encrypt();
 
-        await expect(this.batcher.deposits(batchId, this.holder)).to.eventually.eq(ethers.ZeroHash);
+            return token
+              .connect(sender)
+              ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
+                batcher,
+                encryptedInput.handles[0],
+                encryptedInput.inputProof,
+                ethers.ZeroHash,
+              );
+          } else {
+            return batcher.connect(sender)['join(uint64)'](amount);
+          }
+        };
 
-        await this.batcher.join(1000);
+        it('should increase individual deposits', async function () {
+          const batchId = await this.batcher.currentBatchId();
 
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await this.batcher.deposits(batchId, this.holder),
-            this.batcher,
-            this.holder,
-          ),
-        ).to.eventually.eq('1000');
+          await expect(this.batcher.deposits(batchId, this.holder)).to.eventually.eq(ethers.ZeroHash);
 
-        await this.batcher.join(2000);
+          await join(this.fromToken, this.holder, this.batcher, 1000n);
 
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await this.batcher.deposits(batchId, this.holder),
-            this.batcher,
-            this.holder,
-          ),
-        ).to.eventually.eq('3000');
+          await expect(
+            fhevm.userDecryptEuint(
+              FhevmType.euint64,
+              await this.batcher.deposits(batchId, this.holder),
+              this.batcher,
+              this.holder,
+            ),
+          ).to.eventually.eq('1000');
+
+          await join(this.fromToken, this.holder, this.batcher, 2000n);
+
+          await expect(
+            fhevm.userDecryptEuint(
+              FhevmType.euint64,
+              await this.batcher.deposits(batchId, this.holder),
+              this.batcher,
+              this.holder,
+            ),
+          ).to.eventually.eq('3000');
+        });
+
+        it('should increase total deposits', async function () {
+          const batchId = await this.batcher.currentBatchId();
+          await join(this.fromToken, this.holder, this.batcher, 1000n);
+          await join(this.fromToken, this.recipient, this.batcher, 2000n);
+
+          await expect(
+            fhevm.userDecryptEuint(
+              FhevmType.euint64,
+              await this.batcher.totalDeposits(batchId),
+              this.batcher,
+              this.operator,
+            ),
+          ).to.eventually.eq('3000');
+        });
+
+        it('should emit event', async function () {
+          const batchId = await this.batcher.currentBatchId();
+
+          await expect(join(this.fromToken, this.holder, this.batcher, 1000n))
+            .to.emit(this.batcher, 'Joined')
+            .withArgs(batchId, this.holder.address, anyValue);
+        });
+
+        it('should not credit failed transaction', async function () {
+          const batchId = await this.batcher.currentBatchId();
+
+          await this.batcher.join(wrapAmount / this.fromTokenRate + 1n);
+
+          await expect(
+            fhevm.userDecryptEuint(
+              FhevmType.euint64,
+              await this.batcher.deposits(batchId, this.holder),
+              this.batcher,
+              this.holder,
+            ),
+          ).to.eventually.eq(0);
+        });
+
+        if (viaCallback) {
+          it('must come from the token', async function () {
+            await expect(
+              this.batcher.onConfidentialTransferReceived(ethers.ZeroAddress, this.holder, ethers.ZeroHash, '0x'),
+            ).to.be.revertedWithCustomError(this.batcher, 'Unauthorized');
+          });
+        }
       });
-
-      it('should increase total deposits', async function () {
-        const batchId = await this.batcher.currentBatchId();
-
-        await this.batcher.join(1000);
-        await this.batcher.connect(this.recipient).join(2000);
-
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await this.batcher.totalDeposits(batchId),
-            this.batcher,
-            this.operator,
-          ),
-        ).to.eventually.eq('3000');
-      });
-
-      it('should emit event', async function () {
-        const batchId = await this.batcher.currentBatchId();
-
-        await expect(this.batcher.join(1000))
-          .to.emit(this.batcher, 'Joined')
-          .withArgs(batchId, this.holder.address, anyValue);
-      });
-
-      it('should not credit failed transaction', async function () {
-        const batchId = await this.batcher.currentBatchId();
-
-        await this.batcher.join(wrapAmount / this.fromTokenRate + 1n);
-
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await this.batcher.deposits(batchId, this.holder),
-            this.batcher,
-            this.holder,
-          ),
-        ).to.eventually.eq(0);
-      });
-    });
+    }
 
     describe('claim', function () {
       beforeEach(async function () {
