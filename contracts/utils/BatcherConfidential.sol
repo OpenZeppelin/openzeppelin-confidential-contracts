@@ -215,13 +215,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /// @inheritdoc IERC7984Receiver
     function onConfidentialTransferReceived(
-        address operator,
+        address,
         address from,
         euint64 amount,
         bytes calldata
     ) external returns (ebool) {
+        require(msg.sender == address(fromToken()));
         ebool success = FHE.gt(_join(from, amount), FHE.asEuint64(0));
-        FHE.allowTransient(success, operator);
+        FHE.allowTransient(success, msg.sender);
         return success;
     }
 
@@ -338,10 +339,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * and rewraps them for quitting users.
      */
     function _cancel(uint256 batchId) internal virtual {
-        _validateStateBitmap(
-            batchId,
-            _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Dispatched)
-        );
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Dispatched));
 
         _batches[batchId].canceled = true;
 
