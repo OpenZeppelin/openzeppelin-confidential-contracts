@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
+pragma solidity ^0.8.27;
+
 import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
 import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
-
-pragma solidity ^0.8.27;
 
 abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Receiver {
     /// @dev Enum representing the lifecycle state of a batch.
@@ -22,6 +22,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         euint64 unwrapAmount;
         uint64 totalDepositsCleartext;
         uint64 exchangeRate;
+        bool canceled;
         mapping(address => euint64) deposits;
     }
 
@@ -33,6 +34,15 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev Emitted when a batch with id `batchId` is dispatched via {dispatchBatch}.
     event BatchDispatched(uint256 indexed batchId);
 
+    /// @dev Emitted when a batch with id `batchId` is canceled via {_cancel}.
+    event BatchCanceled(uint256 indexed batchId);
+
+    /**
+     * @dev Emitted when a batch with id `batchId` is finalized via {_setExchangeRate}
+     * with an exchange rate of `exchangeRate`.
+     */
+    event BatchFinalized(uint256 indexed batchId, uint64 exchangeRate);
+
     /// @dev Emitted when an `account` joins a batch with id `batchId` with a deposit of `amount`.
     event Joined(uint256 indexed batchId, address indexed account, euint64 amount);
 
@@ -41,9 +51,6 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /// @dev Emitted when an `account` quits a batch with id `batchId`.
     event Quit(uint256 indexed batchId, address indexed account, euint64 amount);
-
-    /// @dev Emitted when the `exchangeRate` is set for batch with id `batchId`.
-    event ExchangeRateSet(uint256 indexed batchId, uint64 exchangeRate);
 
     /// @dev The `batchId` does not exist. Batch IDs start at 1 and must be less than or equal to {currentBatchId}.
     error BatchNonexistent(uint256 batchId);
@@ -171,6 +178,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         uint64 unwrapAmountCleartext,
         bytes calldata decryptionProof
     ) public virtual {
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Dispatched));
+
         euint64 unwrapAmount_ = unwrapAmount(batchId);
         uint64 totalDepositsCleartext_ = totalDepositsCleartext(batchId);
 
@@ -198,7 +207,10 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             _batches[batchId].totalDepositsCleartext = unwrapAmountCleartext;
         }
 
-        _executeRoute(batchId, unwrapAmountCleartext);
+        uint64 exchangeRate_ = _executeRoute(batchId, unwrapAmountCleartext);
+        if (exchangeRate_ != 0) {
+            _setExchangeRate(batchId, exchangeRate_);
+        }
     }
 
     /// @inheritdoc IERC7984Receiver
@@ -262,6 +274,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /// @dev Returns the current state of a batch. Reverts if the batch does not exist.
     function batchState(uint256 batchId) public view virtual returns (BatchState) {
+        if (_batches[batchId].canceled) {
+            return BatchState.Canceled;
+        }
         if (exchangeRate(batchId) != 0) {
             return BatchState.Finalized;
         }
@@ -304,16 +319,34 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * `amount` is the plaintext amount of the `fromToken` which were unwrapped--to attain the underlying tokens received,
      * evaluate `amount * fromToken().rate()`.
      *
-     * This function should set the exchange rate for the given `batchId` by calling {_setExchangeRate}. The exchange rate
+     * This function returns the exchange rate for the given `batchId`. The exchange rate
      * represents the rate going from {fromToken} to {toToken}--not the underlying tokens.
+     * If the exchange rate is not ready, 0 should be returned.
      *
-     * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the exchange rate is set
-     * for the batch. If a multi-step route is necessary, only the final step sets the exchange rate.
+     * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the exchange rate returned
+     * as a non-zero value. If a multi-step route is necessary, only the final returns a non-zero value.
      *
-     * WARNING: This function must eventually successfully call {_setExchangeRate} for the batch to be finalized. Failure to
-     * do so results in user deposits being locked indefinitely.
+     * WARNING: This function must eventually return a non-zero value. Failure to do so results in user deposits being
+     * locked indefinitely.
      */
-    function _executeRoute(uint256 batchId, uint256 amount) internal virtual;
+    function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (uint64);
+
+    /**
+     * @dev Cancels a batch with id `batchId`. A canceled batch can be exited by calling {quit}.
+     *
+     * NOTE: This function should be extended to implement additional logic which retrieves the batch assets
+     * and rewraps them for quitting users.
+     */
+    function _cancel(uint256 batchId) internal virtual {
+        _validateStateBitmap(
+            batchId,
+            _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Dispatched)
+        );
+
+        _batches[batchId].canceled = true;
+
+        emit BatchCanceled(batchId);
+    }
 
     /**
      * @dev Check that the current state of a batch matches the requirements described by the `allowedStates` bitmap.
@@ -349,7 +382,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         _batches[batchId].exchangeRate = exchangeRate_;
 
-        emit ExchangeRateSet(batchId, exchangeRate_);
+        emit BatchFinalized(batchId, exchangeRate_);
     }
 
     /// @dev Mirror calculations done on the token to attain the same cipher-text for unwrap tracking.

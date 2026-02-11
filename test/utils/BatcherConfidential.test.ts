@@ -418,9 +418,7 @@ describe('BatcherConfidential', function () {
         await this.batcher.dispatchBatchCallback(this.batchId, abiEncodedClearValues, decryptionProof);
 
         const rate = 10n ** 7n;
-        await expect(this.batcher.$_setExchangeRate(1, rate))
-          .to.emit(this.batcher, 'ExchangeRateSet')
-          .withArgs(1, rate);
+        await expect(this.batcher.$_setExchangeRate(1, rate)).to.emit(this.batcher, 'BatchFinalized').withArgs(1, rate);
       });
     });
 
