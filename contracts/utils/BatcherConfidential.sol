@@ -3,6 +3,7 @@
 pragma solidity ^0.8.27;
 
 import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/lib/FHE.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
 import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
@@ -76,6 +77,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _fromToken = fromToken_;
         _toToken = toToken_;
         _currentBatchId = 1;
+
+        IERC20(toToken().underlying()).approve(address(toToken()), type(uint256).max);
     }
 
     /// @dev Join the current batch with `externalAmount` and `inputProof`.
@@ -210,8 +213,17 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             _batches[batchId].totalDepositsCleartext = unwrapAmountCleartext;
         }
 
-        uint64 exchangeRate_ = _executeRoute(batchId, unwrapAmountCleartext);
-        if (exchangeRate_ != 0) {
+        bool routeComplete = _executeRoute(batchId, unwrapAmountCleartext);
+
+        if (routeComplete) {
+            IERC20 toUnderlying = IERC20(toToken().underlying());
+            uint256 swappedAmount = toUnderlying.balanceOf(address(this));
+            toToken().wrap(address(this), swappedAmount);
+
+            uint256 wrappedAmount = swappedAmount / toToken().rate();
+            uint64 exchangeRate_ = uint64(
+                (wrappedAmount * (uint256(10) ** exchangeRateDecimals())) / unwrapAmountCleartext
+            );
             _setExchangeRate(batchId, exchangeRate_);
         }
     }
@@ -321,19 +333,18 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /**
      * @dev Function which is executed by {dispatchBatchCallback} after validation and unwrap finalization. The parameter
      * `amount` is the plaintext amount of the `fromToken` which were unwrapped--to attain the underlying tokens received,
-     * evaluate `amount * fromToken().rate()`.
+     * evaluate `amount * fromToken().rate()`. This function should swap the underlying {fromToken} for underlying {toToken}.
      *
-     * This function returns the exchange rate for the given `batchId`. The exchange rate
-     * represents the rate going from {fromToken} to {toToken}--not the underlying tokens.
-     * If the exchange rate is not ready, 0 should be returned.
+     * This function returns a boolean indicating whether the route execution is complete or not. If the route execution is complete,
+     * the balance of the underlying {toToken} is wrapped and the exchange rate is set.
      *
-     * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the exchange rate returned
-     * as a non-zero value. If a multi-step route is necessary, only the final returns a non-zero value.
+     * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the route execution is complete.
+     * If a multi-step route is necessary, only the final step should return true.
      *
-     * WARNING: This function must eventually return a non-zero value. Failure to do so results in user deposits being
+     * WARNING: This function must eventually return true. Failure to do so results in user deposits being
      * locked indefinitely.
      */
-    function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (uint64);
+    function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (bool);
 
     /**
      * @dev Cancels a batch with id `batchId`. A canceled batch can be exited by calling {quit}.

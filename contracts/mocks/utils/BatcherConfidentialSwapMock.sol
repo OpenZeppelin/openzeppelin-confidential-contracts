@@ -55,24 +55,14 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         return joinedAmount;
     }
 
-    function _executeRoute(uint256, uint256 unwrapAmount) internal override returns (uint64) {
+    function _executeRoute(uint256, uint256 unwrapAmount) internal override returns (bool) {
         // Approve exchange to spend unwrapped tokens
         uint256 rawAmount = unwrapAmount * fromToken().rate();
         IERC20(fromToken().underlying()).approve(address(exchange), rawAmount);
 
         // Swap unwrapped tokens via exchange
-        uint256 swappedAmount = exchange.swapAToB(rawAmount);
+        exchange.swapAToB(rawAmount);
 
-        // excess over rate is essentially burned. Should be considered a fee that goes to the owner.
-        IERC20(toToken().underlying()).approve(address(toToken()), swappedAmount);
-        toToken().wrap(address(this), swappedAmount);
-
-        uint256 amountOut = swappedAmount / toToken().rate();
-
-        // Set the exchange rate for the batch based on swapped amount
-        uint256 exchangeRate = (amountOut * (uint256(10) ** exchangeRateDecimals())) / unwrapAmount;
-
-        if (setExchangeRate) return uint64(exchangeRate);
-        return 0;
+        return setExchangeRate;
     }
 }
