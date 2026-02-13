@@ -79,13 +79,18 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * @dev See {IERC7984ERC20Wrapper-wrap}. Tokens are exchanged at a fixed rate specified by {rate} such that
      * `amount / rate()` confidential tokens are sent. The amount transferred in is rounded down to the nearest
      * multiple of {rate}.
+     *
+     * Returns the amount of wrapped token sent.
      */
-    function wrap(address to, uint256 amount) public virtual override {
+    function wrap(address to, uint256 amount) public virtual override returns (euint64) {
         // take ownership of the tokens
         SafeERC20.safeTransferFrom(IERC20(underlying()), msg.sender, address(this), amount - (amount % rate()));
 
         // mint confidential token
-        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        FHE.allowTransient(wrappedAmountSent, msg.sender);
+
+        return wrappedAmountSent;
     }
 
     /// @dev Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
