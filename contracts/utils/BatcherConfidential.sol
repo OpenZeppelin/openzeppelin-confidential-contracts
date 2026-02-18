@@ -140,16 +140,15 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         FHE.allowTransient(deposit, address(fromToken()));
         euint64 sent = fromToken().confidentialTransfer(msg.sender, deposit);
-        euint64 newDeposit = FHE.sub(deposit, sent);
         euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
+        euint64 newDeposit = FHE.sub(deposit, sent);
 
+        FHE.allowThis(newTotalDeposits);
         FHE.allowThis(newDeposit);
         FHE.allow(newDeposit, msg.sender);
 
-        FHE.allowThis(newTotalDeposits);
-
-        _batches[batchId].deposits[msg.sender] = newDeposit;
         _batches[batchId].totalDeposits = newTotalDeposits;
+        _batches[batchId].deposits[msg.sender] = newDeposit;
 
         emit Quit(batchId, msg.sender, sent);
 
@@ -167,9 +166,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _currentBatchId++;
 
         euint64 amountToUnwrap = totalDeposits(batchId);
+        FHE.allowTransient(amountToUnwrap, address(fromToken()));
         _batches[batchId].unwrapAmount = _calculateUnwrapAmount(amountToUnwrap);
 
-        FHE.allowTransient(amountToUnwrap, address(fromToken()));
         fromToken().unwrap(address(this), address(this), amountToUnwrap);
 
         emit BatchDispatched(batchId);
@@ -318,7 +317,6 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         euint64 newDeposits = FHE.add(deposits(batchId, to), joinedAmount);
 
         FHE.allowThis(newTotalDeposits);
-
         FHE.allowThis(newDeposits);
         FHE.allow(newDeposits, to);
 
