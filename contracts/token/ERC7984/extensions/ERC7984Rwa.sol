@@ -65,6 +65,11 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return hasRole(AGENT_ROLE, account);
     }
 
+    /// @dev Returns true if admin or agent, false otherwise.
+    function isAdminOrAgent(address account) public view virtual returns (bool) {
+        return isAdmin(account) || isAgent(account);
+    }
+
     /// @dev Adds agent.
     function addAgent(address account) public virtual onlyAdmin {
         _grantRole(AGENT_ROLE, account);
