@@ -46,10 +46,10 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         euint64 ciphertext = FHE.asEuint64(amount);
         FHE.allowTransient(ciphertext, msg.sender);
 
-        bytes4 selector = bytes4(keccak256("join(bytes32,bytes)"));
-        bytes memory callData = abi.encodePacked(
-            selector,
-            abi.encode(externalEuint64.wrap(euint64.unwrap(ciphertext)), hex"")
+        bytes memory callData = abi.encodeWithSignature(
+            "join(bytes32,bytes)",
+            externalEuint64.wrap(euint64.unwrap(ciphertext)),
+            hex""
         );
 
         Address.functionDelegateCall(address(this), callData);
