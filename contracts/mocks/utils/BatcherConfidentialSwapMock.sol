@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {BatcherConfidential} from "./../../utils/BatcherConfidential.sol";
 import {ExchangeMock} from "./../finance/ExchangeMock.sol";
 
@@ -34,13 +35,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
             abi.encode(externalEuint64.wrap(euint64.unwrap(ciphertext)), hex"")
         );
 
-        (bool success, bytes memory returnVal) = address(this).delegatecall(callData);
-
-        if (!success) {
-            assembly ("memory-safe") {
-                revert(add(0x20, returnVal), mload(returnVal))
-            }
-        }
+        Address.functionDelegateCall(address(this), callData);
     }
 
     function quit(uint256 batchId) public virtual override returns (euint64) {

@@ -4,6 +4,9 @@ pragma solidity ^0.8.27;
 
 import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
 import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
@@ -78,7 +81,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _toToken = toToken_;
         _currentBatchId = 1;
 
-        IERC20(toToken().underlying()).approve(address(toToken()), type(uint256).max);
+        SafeERC20.forceApprove(IERC20(toToken().underlying()), address(toToken()), type(uint256).max);
     }
 
     /// @dev Join the current batch with `externalAmount` and `inputProof`.
@@ -90,7 +93,6 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         euint64 joinedAmount = _join(msg.sender, transferred);
         euint64 refundAmount = FHE.sub(transferred, joinedAmount);
 
-        FHE.allowTransient(joinedAmount, msg.sender);
         FHE.allowTransient(refundAmount, address(fromToken()));
 
         fromToken().confidentialTransfer(msg.sender, refundAmount);
@@ -192,36 +194,26 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             unwrapAmountCleartext = totalDepositsCleartext_;
         } else {
             // finalize unwrap call will fail if already called by this contract or by anyone else
-            (bool success, ) = address(fromToken()).call(
-                abi.encodeCall(
-                    ERC7984ERC20Wrapper.finalizeUnwrap,
-                    (unwrapAmount_, unwrapAmountCleartext, decryptionProof)
-                )
-            );
-
-            if (!success) {
+            try ERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapAmount_, unwrapAmountCleartext, decryptionProof) {
+                // No need to validate input since `finalizeUnwrap` request succeeded
+            } catch {
                 // Must validate input since `finalizeUnwrap` request failed
                 bytes32[] memory handles = new bytes32[](1);
                 handles[0] = euint64.unwrap(unwrapAmount_);
-
-                bytes memory cleartexts = abi.encode(unwrapAmountCleartext);
-
-                FHE.checkSignatures(handles, cleartexts, decryptionProof);
+                FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
             }
-
             _batches[batchId].totalDepositsCleartext = unwrapAmountCleartext;
         }
 
         bool routeComplete = _executeRoute(batchId, unwrapAmountCleartext);
 
         if (routeComplete) {
-            IERC20 toUnderlying = IERC20(toToken().underlying());
-            uint256 swappedAmount = toUnderlying.balanceOf(address(this));
+            uint256 swappedAmount = IERC20(toToken().underlying()).balanceOf(address(this));
             toToken().wrap(address(this), swappedAmount);
 
             uint256 wrappedAmount = swappedAmount / toToken().rate();
-            uint64 exchangeRate_ = uint64(
-                (wrappedAmount * (uint256(10) ** exchangeRateDecimals())) / unwrapAmountCleartext
+            uint64 exchangeRate_ = SafeCast.toUint64(
+                Math.mulDiv(wrappedAmount, uint256(10) ** exchangeRateDecimals(), unwrapAmountCleartext)
             );
             _setExchangeRate(batchId, exchangeRate_);
         }
@@ -319,6 +311,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         FHE.allowThis(newTotalDeposits);
         FHE.allowThis(newDeposits);
         FHE.allow(newDeposits, to);
+        FHE.allow(joinedAmount, to);
 
         _batches[batchId].totalDeposits = newTotalDeposits;
         _batches[batchId].deposits[to] = newDeposits;
