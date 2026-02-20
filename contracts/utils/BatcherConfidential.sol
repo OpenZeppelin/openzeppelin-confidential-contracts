@@ -209,13 +209,25 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         if (routeComplete) {
             uint256 swappedAmount = IERC20(toToken().underlying()).balanceOf(address(this));
+
+            // If wrapper is full, this reverts. Will brick batcher.
+            // If output is less than toToken().rate() batch can never be finalized.
+            // Any dust left after (amount % toToken().rate()) goes to the next batch.
             toToken().wrap(address(this), swappedAmount);
 
             uint256 wrappedAmount = swappedAmount / toToken().rate();
             uint64 exchangeRate_ = SafeCast.toUint64(
                 Math.mulDiv(wrappedAmount, uint256(10) ** exchangeRateDecimals(), unwrapAmountCleartext)
             );
-            _setExchangeRate(batchId, exchangeRate_);
+
+            // Ensure valid exchange rate: not 0 and will not overflow when calculating user outputs
+            require(
+                exchangeRate_ != 0 && wrappedAmount <= type(uint64).max,
+                InvalidExchangeRate(batchId, unwrapAmountCleartext, exchangeRate_)
+            );
+            _batches[batchId].exchangeRate = exchangeRate_;
+
+            emit BatchFinalized(batchId, exchangeRate_);
         }
     }
 
@@ -363,29 +375,6 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             revert BatchUnexpectedState(batchId, currentState, allowedStates);
         }
         return currentState;
-    }
-
-    /**
-     * @dev Sets the exchange rate for a given `batchId`. The exchange rate represents the rate at which deposits in {fromToken} are
-     * converted to {toToken}. The exchange rate is scaled by `10 ** exchangeRateDecimals()`. An exchange rate of 0 is invalid.
-     *
-     * WARNING: Do not supply the exchange rate between the two underlying non-confidential tokens. Ensure the wrapper {ERC7984ERC20Wrapper-rate}
-     * is taken into account.
-     */
-    function _setExchangeRate(uint256 batchId, uint64 exchangeRate_) internal virtual {
-        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Dispatched));
-        uint256 totalDepositsCleartext_ = totalDepositsCleartext(batchId);
-
-        // Ensure valid exchange rate: not 0 and will not overflow when calculating user outputs
-        require(
-            exchangeRate_ != 0 &&
-                (totalDepositsCleartext_ * exchangeRate_) / (uint128(10) ** exchangeRateDecimals()) <= type(uint64).max,
-            InvalidExchangeRate(batchId, totalDepositsCleartext_, exchangeRate_)
-        );
-
-        _batches[batchId].exchangeRate = exchangeRate_;
-
-        emit BatchFinalized(batchId, exchangeRate_);
     }
 
     /// @dev Mirror calculations done on the token to attain the same cipher-text for unwrap tracking.
