@@ -21,6 +21,12 @@ enum BatchState {
   Canceled,
 }
 
+enum ExecuteOutcome {
+  Complete,
+  Partial,
+  Cancel,
+}
+
 // Helper to encode batch state as bitmap (mirrors _encodeStateBitmap in contract)
 function encodeStateBitmap(...states: BatchState[]): bigint {
   return states.reduce((acc, state) => acc | (1n << BigInt(state)), 0n);
@@ -457,7 +463,8 @@ describe('BatcherConfidential', function () {
 
     // cancel the batch
     const rate = await this.fromToken.rate();
-    await expect(batcher.$_cancel(batchId1, abiEncodedClearValues, decryptionProof))
+    await batcher.setExecutionOutcome(ExecuteOutcome.Cancel);
+    await expect(batcher.dispatchBatchCallback(batchId1, abiEncodedClearValues, decryptionProof))
       .to.emit(this.fromTokenUnderlying, 'Transfer')
       .withArgs(this.fromToken, batcher, amount1 * rate) // unwrap
       .to.emit(this.fromTokenUnderlying, 'Transfer')

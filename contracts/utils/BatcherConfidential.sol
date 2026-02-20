@@ -21,6 +21,13 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         Canceled // Batch is canceled, users can claim their refund
     }
 
+    /// @dev Enum representing the outcome of a route execution in {dispatchBatchCallback}.
+    enum ExecuteOutcome {
+        Complete,
+        Partial,
+        Cancel
+    }
+
     struct Batch {
         euint64 totalDeposits;
         euint64 unwrapAmount;
@@ -182,9 +189,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
         }
 
-        bool routeComplete = _executeRoute(batchId, unwrapAmountCleartext);
+        ExecuteOutcome outcome = _executeRoute(batchId, unwrapAmountCleartext);
 
-        if (routeComplete) {
+        if (outcome == ExecuteOutcome.Complete) {
             uint256 swappedAmount = IERC20(toToken().underlying()).balanceOf(address(this));
 
             // If wrapper is full, this reverts. Will brick batcher.
@@ -205,6 +212,13 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             _batches[batchId].exchangeRate = exchangeRate_;
 
             emit BatchFinalized(batchId, exchangeRate_);
+        } else if (outcome == ExecuteOutcome.Cancel) {
+            // rewrap tokens so that users can quit and receive their original deposit back.
+            // This assumes that the unwrap was successful and that the batch has not executed any route logic.
+            fromToken().wrap(address(this), unwrapAmountCleartext * fromToken().rate());
+            _batches[batchId].canceled = true;
+
+            emit BatchCanceled(batchId);
         }
     }
 
@@ -320,35 +334,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * WARNING: This function must eventually return true. Failure to do so results in user deposits being
      * locked indefinitely.
      */
-    function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (bool);
-
-    /**
-     * @dev Cancels a batch with id `batchId`. A canceled batch can be exited by calling {quit}.
-     *
-     * NOTE: This function should be extended to implement additional logic which retrieves the batch assets
-     * and rewraps them for quitting users.
-     */
-    function _cancel(uint256 batchId, uint64 unwrapAmountCleartext, bytes calldata decryptionProof) internal virtual {
-        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Dispatched));
-
-        euint64 unwrapAmount_ = unwrapAmount(batchId);
-        // finalize unwrap call will fail if already called by this contract or by anyone else
-        try ERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapAmount_, unwrapAmountCleartext, decryptionProof) {
-            // No need to validate input since `finalizeUnwrap` request succeeded
-        } catch {
-            // Must validate input since `finalizeUnwrap` request failed
-            bytes32[] memory handles = new bytes32[](1);
-            handles[0] = euint64.unwrap(unwrapAmount_);
-            FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
-        }
-
-        // rewrap tokens so that users can quit and receive their original deposit back.
-        // This assumes that the unwrap was successful and that the batch has not executed any route logic.
-        fromToken().wrap(address(this), unwrapAmountCleartext * fromToken().rate());
-        _batches[batchId].canceled = true;
-
-        emit BatchCanceled(batchId);
-    }
+    function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (ExecuteOutcome);
 
     /**
      * @dev Check that the current state of a batch matches the requirements described by the `allowedStates` bitmap.
