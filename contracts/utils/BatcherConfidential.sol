@@ -83,22 +83,6 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         SafeERC20.forceApprove(IERC20(toToken().underlying()), address(toToken()), type(uint256).max);
     }
 
-    /// @dev Join the current batch with `externalAmount` and `inputProof`.
-    function join(externalEuint64 externalAmount, bytes calldata inputProof) public virtual returns (euint64) {
-        euint64 amount = FHE.fromExternal(externalAmount, inputProof);
-        FHE.allowTransient(amount, address(fromToken()));
-        euint64 transferred = fromToken().confidentialTransferFrom(msg.sender, address(this), amount);
-
-        euint64 joinedAmount = _join(msg.sender, transferred);
-        euint64 refundAmount = FHE.sub(transferred, joinedAmount);
-
-        FHE.allowTransient(refundAmount, address(fromToken()));
-
-        fromToken().confidentialTransfer(msg.sender, refundAmount);
-
-        return joinedAmount;
-    }
-
     /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
     function claim(uint256 batchId) public virtual nonReentrant returns (euint64) {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));

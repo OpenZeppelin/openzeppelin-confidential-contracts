@@ -26,12 +26,29 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         setExchangeRate = setExchangeRate_;
     }
 
+    /// @dev Join the current batch with `externalAmount` and `inputProof`.
+    function join(externalEuint64 externalAmount, bytes calldata inputProof) public virtual returns (euint64) {
+        euint64 amount = FHE.fromExternal(externalAmount, inputProof);
+        FHE.allowTransient(amount, address(fromToken()));
+        euint64 transferred = fromToken().confidentialTransferFrom(msg.sender, address(this), amount);
+
+        euint64 joinedAmount = _join(msg.sender, transferred);
+        euint64 refundAmount = FHE.sub(transferred, joinedAmount);
+
+        FHE.allowTransient(refundAmount, address(fromToken()));
+
+        fromToken().confidentialTransfer(msg.sender, refundAmount);
+
+        return joinedAmount;
+    }
+
     function join(uint64 amount) public {
         euint64 ciphertext = FHE.asEuint64(amount);
         FHE.allowTransient(ciphertext, msg.sender);
 
+        bytes4 selector = bytes4(keccak256("join(bytes32,bytes)"));
         bytes memory callData = abi.encodePacked(
-            BatcherConfidential.join.selector,
+            selector,
             abi.encode(externalEuint64.wrap(euint64.unwrap(ciphertext)), hex"")
         );
 
