@@ -57,7 +57,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
 
     function quit(uint256 batchId) public virtual override returns (euint64) {
         euint64 amount = super.quit(batchId);
-        FHE.allow(totalDeposits(currentBatchId()), admin);
+        FHE.allow(totalDeposits(batchId), admin);
         return amount;
     }
 

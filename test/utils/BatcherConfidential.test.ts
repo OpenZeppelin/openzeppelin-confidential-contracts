@@ -419,7 +419,7 @@ describe('BatcherConfidential', function () {
     });
   });
 
-  it('BUG: cancel and quit takes tokens from the next batch', async function () {
+  it('cancel and quit takes tokens from the next batch', async function () {
     const amount1 = 1337n;
     const amount2 = 4337n;
 
@@ -431,78 +431,85 @@ describe('BatcherConfidential', function () {
     ]);
     await this.fromToken.connect(this.holder).setOperator(batcher, 2n ** 48n - 1n);
 
-    // First batch: join, dispatch, cancel
+    // ========================== First batch ==========================
     const batchId1 = await batcher.currentBatchId();
+
+    // batch is empty
+    await expect(batcher.totalDeposits(batchId1)).to.eventually.eq(0n);
+
+    // join
     await batcher.connect(this.holder).join(amount1);
+
+    // batch has deposit
+    await expect(
+      fhevm.userDecryptEuint(FhevmType.euint64, await batcher.totalDeposits(batchId1), batcher, this.operator),
+    ).to.eventually.eq(amount1);
+
+    // dispatch
     await batcher.dispatchBatch();
 
-    // Check unwrap amount
-    {
-      const { abiEncodedClearValues } = await batcher
-        .unwrapAmount(batchId1)
-        .then(amount => fhevm.publicDecrypt([amount]));
-      expect(abiEncodedClearValues).to.eq(amount1);
-    }
+    // dispatch amount is publicly decryptable
+    const { abiEncodedClearValues, decryptionProof } = await batcher
+      .unwrapAmount(batchId1)
+      .then(amount => fhevm.publicDecrypt([amount]));
 
-    // Cancel
-    await batcher.$_cancel(batchId1);
+    expect(abiEncodedClearValues).to.eq(amount1);
 
-    // Trying to quit the canceled batch: user doesn't get any refund !
-    {
-      const balanceBefore = await fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.fromToken.confidentialBalanceOf(this.holder),
-        this.fromToken,
-        this.holder,
-      );
+    // cancel the batch
+    const rate = await this.fromToken.rate();
+    await expect(batcher.$_cancel(batchId1, abiEncodedClearValues, decryptionProof))
+      .to.emit(this.fromTokenUnderlying, 'Transfer')
+      .withArgs(this.fromToken, batcher, amount1 * rate) // unwrap
+      .to.emit(this.fromTokenUnderlying, 'Transfer')
+      .withArgs(batcher, this.fromToken, amount1 * rate); // unwrap
 
-      await batcher.connect(this.holder).quit(batchId1);
+    // quit
+    const balanceBefore = await fhevm.userDecryptEuint(
+      FhevmType.euint64,
+      await this.fromToken.confidentialBalanceOf(this.holder),
+      this.fromToken,
+      this.holder,
+    );
 
-      const balanceAfter = await fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.fromToken.confidentialBalanceOf(this.holder),
-        this.fromToken,
-        this.holder,
-      );
+    await batcher.connect(this.holder).quit(batchId1);
 
-      // Error: quit did not send any token !
-      expect(balanceAfter).to.eq(balanceBefore);
-    }
+    const balanceAfter = await fhevm.userDecryptEuint(
+      FhevmType.euint64,
+      await this.fromToken.confidentialBalanceOf(this.holder),
+      this.fromToken,
+      this.holder,
+    );
 
-    // Second batch: join
+    expect(balanceAfter - balanceBefore).to.eq(amount1);
+
+    // batch size was reduced
+    await expect(
+      fhevm.userDecryptEuint(FhevmType.euint64, await batcher.totalDeposits(batchId1), batcher, this.operator),
+    ).to.eventually.eq(0n);
+
+    // ========================== Second batch ==========================
     const batchId2 = await batcher.currentBatchId();
+
+    // batch is empty
+    await expect(batcher.totalDeposits(batchId2)).to.eventually.eq(0n);
+
+    // join
     await batcher.connect(this.holder).join(amount2);
 
-    // Quitting now will work, user gets its refund
-    {
-      const balanceBefore = await fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.fromToken.confidentialBalanceOf(this.holder),
-        this.fromToken,
-        this.holder,
-      );
-
-      await batcher.connect(this.holder).quit(batchId1);
-
-      const balanceAfter = await fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.fromToken.confidentialBalanceOf(this.holder),
-        this.fromToken,
-        this.holder,
-      );
-
-      expect(balanceAfter).to.eq(balanceBefore + amount1);
-    }
+    // batch has deposit
+    await expect(
+      fhevm.userDecryptEuint(FhevmType.euint64, await batcher.totalDeposits(batchId2), batcher, this.operator),
+    ).to.eventually.eq(amount2);
 
     // Second batch: dispatch
     await batcher.dispatchBatch();
 
     // Check unwrap amount
-    {
-      const { abiEncodedClearValues } = await batcher
+    await expect(
+      batcher
         .unwrapAmount(batchId2)
-        .then(amount => fhevm.publicDecrypt([amount]));
-      expect(abiEncodedClearValues).to.eq(0n); // ERROR: This should be amount2
-    }
+        .then(amount => fhevm.publicDecrypt([amount]))
+        .then(({ abiEncodedClearValues }) => abiEncodedClearValues),
+    ).to.eventually.eq(amount2);
   });
 });

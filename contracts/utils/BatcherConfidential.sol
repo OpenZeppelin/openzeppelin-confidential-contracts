@@ -80,6 +80,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _toToken = toToken_;
         _currentBatchId = 1;
 
+        SafeERC20.forceApprove(IERC20(fromToken().underlying()), address(fromToken()), type(uint256).max);
         SafeERC20.forceApprove(IERC20(toToken().underlying()), address(toToken()), type(uint256).max);
     }
 
@@ -327,9 +328,23 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * NOTE: This function should be extended to implement additional logic which retrieves the batch assets
      * and rewraps them for quitting users.
      */
-    function _cancel(uint256 batchId) internal virtual {
+    function _cancel(uint256 batchId, uint64 unwrapAmountCleartext, bytes calldata decryptionProof) internal virtual {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Dispatched));
 
+        euint64 unwrapAmount_ = unwrapAmount(batchId);
+        // finalize unwrap call will fail if already called by this contract or by anyone else
+        try ERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapAmount_, unwrapAmountCleartext, decryptionProof) {
+            // No need to validate input since `finalizeUnwrap` request succeeded
+        } catch {
+            // Must validate input since `finalizeUnwrap` request failed
+            bytes32[] memory handles = new bytes32[](1);
+            handles[0] = euint64.unwrap(unwrapAmount_);
+            FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
+        }
+
+        // rewrap tokens so that users can quit and receive their original deposit back.
+        // This assumes that the unwrap was successful and that the batch has not executed any route logic.
+        fromToken().wrap(address(this), unwrapAmountCleartext * fromToken().rate());
         _batches[batchId].canceled = true;
 
         emit BatchCanceled(batchId);
