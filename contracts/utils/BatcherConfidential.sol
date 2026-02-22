@@ -1,0 +1,375 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.27;
+
+import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/lib/FHE.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
+import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
+import {FHESafeMath} from "./../utils/FHESafeMath.sol";
+
+abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Receiver {
+    /// @dev Enum representing the lifecycle state of a batch.
+    enum BatchState {
+        Pending, // Batch is active and accepting deposits (batchId == currentBatchId)
+        Dispatched, // Batch has been dispatched but not yet finalized
+        Finalized, // Batch is complete, users can claim their tokens
+        Canceled // Batch is canceled, users can claim their refund
+    }
+
+    /// @dev Enum representing the outcome of a route execution in {dispatchBatchCallback}.
+    enum ExecuteOutcome {
+        Complete,
+        Partial,
+        Cancel
+    }
+
+    struct Batch {
+        euint64 totalDeposits;
+        euint64 unwrapAmount;
+        uint64 exchangeRate;
+        bool canceled;
+        mapping(address => euint64) deposits;
+    }
+
+    ERC7984ERC20Wrapper private immutable _fromToken;
+    ERC7984ERC20Wrapper private immutable _toToken;
+    mapping(uint256 => Batch) private _batches;
+    uint256 private _currentBatchId;
+
+    /// @dev Emitted when a batch with id `batchId` is dispatched via {dispatchBatch}.
+    event BatchDispatched(uint256 indexed batchId);
+
+    /// @dev Emitted when a batch with id `batchId` is canceled via {_cancel}.
+    event BatchCanceled(uint256 indexed batchId);
+
+    /**
+     * @dev Emitted when a batch with id `batchId` is finalized via {_setExchangeRate}
+     * with an exchange rate of `exchangeRate`.
+     */
+    event BatchFinalized(uint256 indexed batchId, uint64 exchangeRate);
+
+    /// @dev Emitted when an `account` joins a batch with id `batchId` with a deposit of `amount`.
+    event Joined(uint256 indexed batchId, address indexed account, euint64 amount);
+
+    /// @dev Emitted when an `account` claims their `amount` from batch with id `batchId`.
+    event Claimed(uint256 indexed batchId, address indexed account, euint64 amount);
+
+    /// @dev Emitted when an `account` quits a batch with id `batchId`.
+    event Quit(uint256 indexed batchId, address indexed account, euint64 amount);
+
+    /// @dev The `batchId` does not exist. Batch IDs start at 1 and must be less than or equal to {currentBatchId}.
+    error BatchNonexistent(uint256 batchId);
+
+    /**
+     * @dev The batch `batchId` is in the state `current`, which is invalid for the operation.
+     * The `expectedStates` is a bitmap encoding the expected/allowed states for the operation.
+     *
+     * See {_encodeStateBitmap}.
+     */
+    error BatchUnexpectedState(uint256 batchId, BatchState current, bytes32 expectedStates);
+
+    /**
+     * @dev Thrown when the given exchange rate is invalid. `exchangeRate * totalDeposits / 10 ** exchangeRateDecimals`
+     * must fit in uint64.
+     */
+    error InvalidExchangeRate(uint256 batchId, uint256 totalDeposits, uint64 exchangeRate);
+
+    /// @dev The caller is not authorized to call this function.
+    error Unauthorized();
+
+    constructor(ERC7984ERC20Wrapper fromToken_, ERC7984ERC20Wrapper toToken_) {
+        _fromToken = fromToken_;
+        _toToken = toToken_;
+        _currentBatchId = 1;
+
+        SafeERC20.forceApprove(IERC20(fromToken().underlying()), address(fromToken()), type(uint256).max);
+        SafeERC20.forceApprove(IERC20(toToken().underlying()), address(toToken()), type(uint256).max);
+    }
+
+    /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
+    function claim(uint256 batchId) public virtual nonReentrant returns (euint64) {
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
+
+        euint64 deposit = deposits(batchId, msg.sender);
+
+        // Overflow is not possible on mul since `type(uint64).max ** 2 < type(uint128).max`.
+        // Given that the output of the entire batch must fit in uint64, individual user outputs must also fit.
+        euint64 amountToSend = FHE.asEuint64(
+            FHE.div(FHE.mul(FHE.asEuint128(deposit), exchangeRate(batchId)), uint128(10) ** exchangeRateDecimals())
+        );
+        FHE.allowTransient(amountToSend, address(toToken()));
+
+        euint64 amountTransferred = toToken().confidentialTransfer(msg.sender, amountToSend);
+
+        ebool transferSuccess = FHE.eq(amountTransferred, amountToSend);
+        euint64 newDeposit = FHE.select(transferSuccess, FHE.asEuint64(0), deposit);
+
+        FHE.allowThis(newDeposit);
+        FHE.allow(newDeposit, msg.sender);
+        _batches[batchId].deposits[msg.sender] = newDeposit;
+
+        emit Claimed(batchId, msg.sender, amountTransferred);
+
+        return amountTransferred;
+    }
+
+    /**
+     * @dev Quit the batch with id `batchId`. Entire deposit is returned to the user.
+     * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
+     *
+     * NOTE: Developers should consider adding additional restrictions to this function
+     * if maintaining confidentiality of deposits is critical to the application.
+     */
+    function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
+
+        euint64 deposit = deposits(batchId, msg.sender);
+        euint64 totalDeposits_ = totalDeposits(batchId);
+
+        FHE.allowTransient(deposit, address(fromToken()));
+        euint64 sent = fromToken().confidentialTransfer(msg.sender, deposit);
+        euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
+        euint64 newDeposit = FHE.sub(deposit, sent);
+
+        FHE.allowThis(newTotalDeposits);
+        FHE.allowThis(newDeposit);
+        FHE.allow(newDeposit, msg.sender);
+
+        _batches[batchId].totalDeposits = newTotalDeposits;
+        _batches[batchId].deposits[msg.sender] = newDeposit;
+
+        emit Quit(batchId, msg.sender, sent);
+
+        return sent;
+    }
+
+    /**
+     * @dev Permissionless function to dispatch the current batch. Increments the {currentBatchId}.
+     *
+     * NOTE: Developers should consider adding additional restrictions to this function
+     * if maintaining confidentiality of deposits is critical to the application.
+     */
+    function dispatchBatch() public virtual {
+        uint256 batchId = currentBatchId();
+        _currentBatchId++;
+
+        euint64 amountToUnwrap = totalDeposits(batchId);
+        FHE.allowTransient(amountToUnwrap, address(fromToken()));
+        _batches[batchId].unwrapAmount = _calculateUnwrapAmount(amountToUnwrap);
+
+        fromToken().unwrap(address(this), address(this), amountToUnwrap);
+
+        emit BatchDispatched(batchId);
+    }
+
+    /**
+     * @dev Dispatch batch callback callable by anyone. This function finalizes the unwrap of {fromToken}
+     * and calls {_executeRoute} to perform the batch's route.
+     */
+    function dispatchBatchCallback(
+        uint256 batchId,
+        uint64 unwrapAmountCleartext,
+        bytes calldata decryptionProof
+    ) public virtual {
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Dispatched));
+
+        euint64 unwrapAmount_ = unwrapAmount(batchId);
+        // finalize unwrap call will fail if already called by this contract or by anyone else
+        try ERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapAmount_, unwrapAmountCleartext, decryptionProof) {
+            // No need to validate input since `finalizeUnwrap` request succeeded
+        } catch {
+            // Must validate input since `finalizeUnwrap` request failed
+            bytes32[] memory handles = new bytes32[](1);
+            handles[0] = euint64.unwrap(unwrapAmount_);
+            FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
+        }
+
+        ExecuteOutcome outcome = _executeRoute(batchId, unwrapAmountCleartext);
+
+        if (outcome == ExecuteOutcome.Complete) {
+            uint256 swappedAmount = IERC20(toToken().underlying()).balanceOf(address(this));
+
+            // If wrapper is full, this reverts. Will brick batcher.
+            // If output is less than toToken().rate() batch can never be finalized.
+            // Any dust left after (amount % toToken().rate()) goes to the next batch.
+            toToken().wrap(address(this), swappedAmount);
+
+            uint256 wrappedAmount = swappedAmount / toToken().rate();
+            uint64 exchangeRate_ = SafeCast.toUint64(
+                Math.mulDiv(wrappedAmount, uint256(10) ** exchangeRateDecimals(), unwrapAmountCleartext)
+            );
+
+            // Ensure valid exchange rate: not 0 and will not overflow when calculating user outputs
+            require(
+                exchangeRate_ != 0 && wrappedAmount <= type(uint64).max,
+                InvalidExchangeRate(batchId, unwrapAmountCleartext, exchangeRate_)
+            );
+            _batches[batchId].exchangeRate = exchangeRate_;
+
+            emit BatchFinalized(batchId, exchangeRate_);
+        } else if (outcome == ExecuteOutcome.Cancel) {
+            // rewrap tokens so that users can quit and receive their original deposit back.
+            // This assumes that the unwrap was successful and that the batch has not executed any route logic.
+            fromToken().wrap(address(this), unwrapAmountCleartext * fromToken().rate());
+            _batches[batchId].canceled = true;
+
+            emit BatchCanceled(batchId);
+        }
+    }
+
+    /// @inheritdoc IERC7984Receiver
+    function onConfidentialTransferReceived(
+        address,
+        address from,
+        euint64 amount,
+        bytes calldata
+    ) external returns (ebool) {
+        require(msg.sender == address(fromToken()), Unauthorized());
+        ebool success = FHE.gt(_join(from, amount), FHE.asEuint64(0));
+        FHE.allowTransient(success, msg.sender);
+        return success;
+    }
+
+    /// @dev Batcher from token. Users deposit this token in exchange for {toToken}.
+    function fromToken() public view virtual returns (ERC7984ERC20Wrapper) {
+        return _fromToken;
+    }
+
+    /// @dev Batcher to token. Users receive this token in exchange for their {fromToken} deposits.
+    function toToken() public view virtual returns (ERC7984ERC20Wrapper) {
+        return _toToken;
+    }
+
+    /// @dev The ongoing batch id. New deposits join this batch.
+    function currentBatchId() public view virtual returns (uint256) {
+        return _currentBatchId;
+    }
+
+    /// @dev The amount of {fromToken} unwrapped during {dispatchBatch} for batch with id `batchId`.
+    function unwrapAmount(uint256 batchId) public view virtual returns (euint64) {
+        return _batches[batchId].unwrapAmount;
+    }
+
+    /// @dev The total deposits made in batch with id `batchId`.
+    function totalDeposits(uint256 batchId) public view virtual returns (euint64) {
+        return _batches[batchId].totalDeposits;
+    }
+
+    /// @dev The deposits made by `account` in batch with id `batchId`.
+    function deposits(uint256 batchId, address account) public view virtual returns (euint64) {
+        return _batches[batchId].deposits[account];
+    }
+
+    /// @dev The exchange rate set for batch with id `batchId`.
+    function exchangeRate(uint256 batchId) public view virtual returns (uint64) {
+        return _batches[batchId].exchangeRate;
+    }
+
+    /// @dev The number of decimals of precision for the exchange rate.
+    function exchangeRateDecimals() public pure virtual returns (uint8) {
+        return 6;
+    }
+
+    /// @dev Human readable description of what the batcher does.
+    function routeDescription() public pure virtual returns (string memory);
+
+    /// @dev Returns the current state of a batch. Reverts if the batch does not exist.
+    function batchState(uint256 batchId) public view virtual returns (BatchState) {
+        if (_batches[batchId].canceled) {
+            return BatchState.Canceled;
+        }
+        if (exchangeRate(batchId) != 0) {
+            return BatchState.Finalized;
+        }
+        if (euint64.unwrap(unwrapAmount(batchId)) != 0) {
+            return BatchState.Dispatched;
+        }
+        if (batchId == currentBatchId()) {
+            return BatchState.Pending;
+        }
+
+        revert BatchNonexistent(batchId);
+    }
+
+    /**
+     * @dev Joins a batch with amount `amount` on behalf of `to`. Does not do any transfers in.
+     * Returns the amount joined with.
+     */
+    function _join(address to, euint64 amount) internal virtual returns (euint64) {
+        uint256 batchId = currentBatchId();
+
+        (ebool success, euint64 newTotalDeposits) = FHESafeMath.tryIncrease(totalDeposits(batchId), amount);
+        euint64 joinedAmount = FHE.select(success, amount, FHE.asEuint64(0));
+        euint64 newDeposits = FHE.add(deposits(batchId, to), joinedAmount);
+
+        FHE.allowThis(newTotalDeposits);
+        FHE.allowThis(newDeposits);
+        FHE.allow(newDeposits, to);
+        FHE.allow(joinedAmount, to);
+
+        _batches[batchId].totalDeposits = newTotalDeposits;
+        _batches[batchId].deposits[to] = newDeposits;
+
+        emit Joined(batchId, to, joinedAmount);
+
+        return joinedAmount;
+    }
+
+    /**
+     * @dev Function which is executed by {dispatchBatchCallback} after validation and unwrap finalization. The parameter
+     * `amount` is the plaintext amount of the `fromToken` which were unwrapped--to attain the underlying tokens received,
+     * evaluate `amount * fromToken().rate()`. This function should swap the underlying {fromToken} for underlying {toToken}.
+     *
+     * This function returns a boolean indicating whether the route execution is complete or not. If the route execution is complete,
+     * the balance of the underlying {toToken} is wrapped and the exchange rate is set.
+     *
+     * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the route execution is complete.
+     * If a multi-step route is necessary, only the final step should return true.
+     *
+     * WARNING: This function must eventually return true. Failure to do so results in user deposits being
+     * locked indefinitely.
+     */
+    function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (ExecuteOutcome);
+
+    /**
+     * @dev Check that the current state of a batch matches the requirements described by the `allowedStates` bitmap.
+     * This bitmap should be built using `_encodeStateBitmap`.
+     *
+     * If requirements are not met, reverts with a {BatchUnexpectedState} error.
+     */
+    function _validateStateBitmap(uint256 batchId, bytes32 allowedStates) internal view returns (BatchState) {
+        BatchState currentState = batchState(batchId);
+        if (_encodeStateBitmap(currentState) & allowedStates == bytes32(0)) {
+            revert BatchUnexpectedState(batchId, currentState, allowedStates);
+        }
+        return currentState;
+    }
+
+    /// @dev Mirror calculations done on the token to attain the same cipher-text for unwrap tracking.
+    function _calculateUnwrapAmount(euint64 requestedUnwrapAmount) internal virtual returns (euint64) {
+        euint64 balance = fromToken().confidentialBalanceOf(address(this));
+
+        (ebool success, ) = FHESafeMath.tryDecrease(balance, requestedUnwrapAmount);
+
+        return FHE.select(success, requestedUnwrapAmount, FHE.asEuint64(0));
+    }
+
+    /**
+     * @dev Encodes a `BatchState` into a `bytes32` representation where each bit enabled corresponds to
+     * the underlying position in the `BatchState` enum. For example:
+     *
+     * 0x000...1000
+     *         ^--- Canceled
+     *          ^-- Finalized
+     *           ^- Dispatched
+     *            ^ Pending
+     */
+    function _encodeStateBitmap(BatchState batchState_) internal pure returns (bytes32) {
+        return bytes32(1 << uint8(batchState_));
+    }
+}
