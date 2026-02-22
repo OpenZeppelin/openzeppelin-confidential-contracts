@@ -11,7 +11,7 @@ import {ExchangeMock} from "./../finance/ExchangeMock.sol";
 abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConfidential {
     ExchangeMock public exchange;
     address public admin;
-    bool public setExchangeRate = true;
+    ExecuteOutcome public outcome = ExecuteOutcome.Complete;
 
     constructor(ExchangeMock exchange_, address admin_) {
         exchange = exchange_;
@@ -22,8 +22,8 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         return "Exchange fromToken for toToken by swapping through the mock exchange.";
     }
 
-    function shouldSetExchangeRate(bool setExchangeRate_) public {
-        setExchangeRate = setExchangeRate_;
+    function setExecutionOutcome(ExecuteOutcome outcome_) public {
+        outcome = outcome_;
     }
 
     /// @dev Join the current batch with `externalAmount` and `inputProof`.
@@ -57,7 +57,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
 
     function quit(uint256 batchId) public virtual override returns (euint64) {
         euint64 amount = super.quit(batchId);
-        FHE.allow(totalDeposits(currentBatchId()), admin);
+        FHE.allow(totalDeposits(batchId), admin);
         return amount;
     }
 
@@ -67,14 +67,15 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         return joinedAmount;
     }
 
-    function _executeRoute(uint256, uint256 unwrapAmount) internal override returns (bool) {
-        // Approve exchange to spend unwrapped tokens
-        uint256 rawAmount = unwrapAmount * fromToken().rate();
-        IERC20(fromToken().underlying()).approve(address(exchange), rawAmount);
+    function _executeRoute(uint256, uint256 unwrapAmount) internal override returns (ExecuteOutcome) {
+        if (outcome == ExecuteOutcome.Complete) {
+            // Approve exchange to spend unwrapped tokens
+            uint256 rawAmount = unwrapAmount * fromToken().rate();
+            IERC20(fromToken().underlying()).approve(address(exchange), rawAmount);
 
-        // Swap unwrapped tokens via exchange
-        exchange.swapAToB(rawAmount);
-
-        return setExchangeRate;
+            // Swap unwrapped tokens via exchange
+            exchange.swapAToB(rawAmount);
+        }
+        return outcome;
     }
 }
