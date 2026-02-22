@@ -349,7 +349,7 @@ describe('ERC7984', function () {
                 functionParams.unshift(from);
                 await contract.connect(sender).confidentialTransferFrom(...functionParams);
               } else {
-                await contract.connect(sender).confidentialTransfer(...functionParams);
+                await contract.connect(sender)['confidentialTransfer(address,bytes32)'](...functionParams);
               }
             }
           }
