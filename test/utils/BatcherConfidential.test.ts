@@ -90,6 +90,7 @@ describe('BatcherConfidential', function () {
     }
 
     Object.assign(this, {
+      exchange,
       batcher,
       fromTokenUnderlying,
       toTokenUnderlying,
@@ -431,6 +432,14 @@ describe('BatcherConfidential', function () {
         .withArgs(this.fromToken, this.batcher, this.joinAmount * this.fromTokenRate) // unwrap
         .to.emit(this.fromTokenUnderlying, 'Transfer')
         .withArgs(this.batcher, this.fromToken, this.joinAmount * this.fromTokenRate); // rewrap
+    });
+
+    it("should revert if `_executeRoute` doesn't receive any to token underlying", async function () {
+      await this.exchange.setExchangeRate(0);
+
+      await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+        .to.be.revertedWithCustomError(this.batcher, 'InvalidExchangeRate')
+        .withArgs(this.batchId, this.joinAmount, 0);
     });
   });
 
