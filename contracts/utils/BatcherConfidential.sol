@@ -21,7 +21,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         Canceled // Batch is canceled, users can claim their refund
     }
 
-    /// @dev Enum representing the outcome of a route execution in {dispatchBatchCallback}.
+    /// @dev Enum representing the outcome of a route execution in {_executeRoute}.
     enum ExecuteOutcome {
         Complete,
         Partial,
@@ -325,14 +325,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * `amount` is the plaintext amount of the `fromToken` which were unwrapped--to attain the underlying tokens received,
      * evaluate `amount * fromToken().rate()`. This function should swap the underlying {fromToken} for underlying {toToken}.
      *
-     * This function returns a boolean indicating whether the route execution is complete or not. If the route execution is complete,
+     * This function returns an {ExecuteOutcome} enum indicating the new state of the batch. If the route execution is complete,
      * the balance of the underlying {toToken} is wrapped and the exchange rate is set.
      *
      * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the route execution is complete.
-     * If a multi-step route is necessary, only the final step should return true.
+     * If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`.
      *
-     * WARNING: This function must eventually return true. Failure to do so results in user deposits being
-     * locked indefinitely.
+     * WARNING: This function must eventually return `ExecuteOutcome.Complete` or `ExecuteOutcome.Cancel`. Failure to do so results
+     * in user deposits being locked indefinitely.
      */
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (ExecuteOutcome);
 
