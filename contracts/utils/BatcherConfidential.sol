@@ -12,6 +12,20 @@ import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
 import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
+/**
+ * @dev `BatcherConfidential` is a batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts
+ * via a non-confidential route. Users deposit {fromToken} into the batcher and receive {toToken} in exchange. Deposits are
+ * made by using `ERC7984` transfer and call functions such as {ERC7984-confidentialTransferAndCall}.
+ *
+ * Developers must implement the virtual function {_executeRoute} to perform the batch's route. This function is called
+ * once the batch deposits are unwrapped into the underlying tokens. The function should swap the underlying {fromToken} for
+ * underlying {toToken}. If an issue is encountered, the function should return {ExecuteOutcome.Cancel} to cancel the batch.
+ *
+ * Developers must also implement the virtual function {routeDescription} to provide a human readable description of the batch's route.
+ *
+ * NOTE: The batcher could be used to maintain confidentiality of deposits--by default there are no confidentiality guarantees.
+ * If desired, developers should consider restricting certain functions to increase confidentiality.
+ */
 abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Receiver {
     /// @dev Enum representing the lifecycle state of a batch.
     enum BatchState {
