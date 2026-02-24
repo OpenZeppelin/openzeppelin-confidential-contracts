@@ -8,12 +8,18 @@ const uri = 'https://example.com/metadata';
 
 describe('ERC7984Metadata', function () {
   beforeEach(async function () {
-    this.token = await ethers.deployContract('ERC7984MetadataMock', [name, symbol, uri]);
+    this.token = await ethers.deployContract('$ERC7984MetadataMock', [name, symbol, uri]);
+    await expect(this.token.contractURI()).to.eventually.equal(uri);
   });
 
-  describe('constructor', function () {
+  describe('_setContractURI', function () {
     it('sets the contract URI', async function () {
-      await expect(this.token.contractURI()).to.eventually.equal(uri);
+      await this.token.$_setContractURI('new URI');
+      await expect(this.token.contractURI()).to.eventually.equal('new URI');
+    });
+
+    it('emits a ContractURIUpdated event', async function () {
+      await expect(this.token.$_setContractURI(uri)).to.emit(this.token, 'ContractURIUpdated');
     });
   });
 

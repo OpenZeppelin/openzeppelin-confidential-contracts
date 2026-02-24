@@ -10,10 +10,13 @@ import {ERC7984} from "../ERC7984.sol";
  * @dev Extension of {ERC7984} that adds a {contractURI} function.
  */
 abstract contract ERC7984Metadata is IERC7984Metadata, ERC7984 {
+    /// @dev Event emitted when the contract URI is changed.
+    event ContractURIUpdated();
+
     string private _contractURI;
 
     constructor(string memory contractURI_) {
-        _contractURI = contractURI_;
+        _setContractURI(contractURI_);
     }
 
     /// @inheritdoc IERC7984Metadata
@@ -24,5 +27,16 @@ abstract contract ERC7984Metadata is IERC7984Metadata, ERC7984 {
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984, IERC165) returns (bool) {
         return interfaceId == type(IERC7984Metadata).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Sets the {contractURI} for the contract.
+     *
+     * Emits a {ContractURIUpdated} event.
+     */
+    function _setContractURI(string memory newContractURI) internal virtual {
+        _contractURI = newContractURI;
+
+        emit ContractURIUpdated();
     }
 }
