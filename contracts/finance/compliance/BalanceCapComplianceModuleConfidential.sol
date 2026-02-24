@@ -53,8 +53,11 @@ abstract contract BalanceCapComplianceModuleConfidential is ComplianceModuleConf
         euint64 balance = IERC7984(token).confidentialBalanceOf(to);
         _getTokenHandleAllowance(token, balance);
 
-        require(FHE.isAllowed(balance, token), UnauthorizedUseOfEncryptedAmount(balance, token));
-        require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
+        if (FHE.isInitialized(balance))
+            require(FHE.isAllowed(balance, token), UnauthorizedUseOfEncryptedAmount(balance, token));
+
+        if (FHE.isInitialized(encryptedAmount))
+            require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
 
         (ebool increased, euint64 futureBalance) = FHESafeMath.tryIncrease(balance, encryptedAmount);
         return FHE.and(increased, FHE.le(futureBalance, maxBalances(token)));
