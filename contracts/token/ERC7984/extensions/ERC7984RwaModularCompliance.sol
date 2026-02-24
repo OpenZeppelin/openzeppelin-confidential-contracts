@@ -4,9 +4,9 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IERC7984RwaModularCompliance, IERC7984RwaComplianceModule} from "../../../../interfaces/IERC7984Rwa.sol";
-import {HandleAccessManager} from "../../../../utils/HandleAccessManager.sol";
-import {ERC7984Rwa} from "../ERC7984Rwa.sol";
+import {IERC7984RwaModularCompliance, IERC7984RwaComplianceModule} from "../../../interfaces/IERC7984Rwa.sol";
+import {HandleAccessManager} from "../../../utils/HandleAccessManager.sol";
+import {ERC7984Rwa} from "./ERC7984Rwa.sol";
 
 /**
  * @dev Extension of {ERC7984Rwa} that supports compliance modules for confidential Real World Assets (RWAs).
