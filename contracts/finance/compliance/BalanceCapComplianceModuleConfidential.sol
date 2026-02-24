@@ -47,7 +47,7 @@ abstract contract BalanceCapComplianceModuleConfidential is ComplianceModuleConf
         euint64 encryptedAmount
     ) internal override returns (ebool) {
         if (to == address(0) || from == to) {
-            return FHE.allowTransient(FHE.asEbool(true), msg.sender); // if burning or self-transfer
+            return FHE.asEbool(true);
         }
 
         euint64 balance = IERC7984(token).confidentialBalanceOf(to);

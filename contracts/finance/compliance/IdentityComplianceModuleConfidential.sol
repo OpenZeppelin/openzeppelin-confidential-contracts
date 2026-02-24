@@ -25,6 +25,6 @@ contract IdentityComplianceModuleConfidential is ComplianceModuleConfidential {
     ) internal virtual override returns (ebool) {
         require(IToken(token).identityRegistry().isVerified(to), AddressNotVerified(to));
 
-        return FHE.allow(FHE.asEbool(true), msg.sender);
+        return FHE.asEbool(true);
     }
 }
