@@ -13,11 +13,7 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
     event EncryptedAmountCreated(euint64 amount);
     event EncryptedAddressCreated(eaddress addr);
 
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        string memory tokenURI_
-    ) ERC7984(name_, symbol_, tokenURI_) {
+    constructor(string memory name_, string memory symbol_) ERC7984(name_, symbol_) {
         _OWNER = msg.sender;
     }
 

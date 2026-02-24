@@ -11,7 +11,7 @@ const agentRole = ethers.id('AGENT_ROLE');
 
 const fixture = async () => {
   const [admin, agent1, agent2, recipient, anyone] = await ethers.getSigners();
-  const token = await ethers.deployContract('ERC7984RwaMock', ['name', 'symbol', 'uri', admin.address]);
+  const token = await ethers.deployContract('ERC7984RwaMock', ['name', 'symbol', admin.address]);
   await token.connect(admin).addAgent(agent1);
   token.connect(anyone);
   return { token, admin, agent1, agent2, recipient, anyone };

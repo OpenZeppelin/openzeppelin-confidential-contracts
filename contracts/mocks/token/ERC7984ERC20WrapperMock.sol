@@ -9,7 +9,6 @@ contract ERC7984ERC20WrapperMock is ERC7984ERC20Wrapper, ZamaEthereumConfig {
     constructor(
         IERC20 token,
         string memory name,
-        string memory symbol,
-        string memory uri
-    ) ERC7984ERC20Wrapper(token) ERC7984(name, symbol, uri) {}
+        string memory symbol
+    ) ERC7984ERC20Wrapper(token) ERC7984(name, symbol) {}
 }
