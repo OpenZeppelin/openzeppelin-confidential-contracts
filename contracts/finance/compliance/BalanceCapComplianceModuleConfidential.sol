@@ -4,49 +4,42 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IERC7984} from "../../../../interfaces/IERC7984.sol";
-import {FHESafeMath} from "../../../../utils/FHESafeMath.sol";
-import {ERC7984RwaComplianceModule} from "./ERC7984RwaComplianceModule.sol";
+import {IERC7984} from "../../interfaces/IERC7984.sol";
+import {FHESafeMath} from "../../utils/FHESafeMath.sol";
+import {ComplianceModuleConfidential} from "./ComplianceModuleConfidential.sol";
 
-/**
- * @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the balance of an investor.
- */
-abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
+/// @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the balance of an investor.
+abstract contract BalanceCapComplianceModuleConfidential is ComplianceModuleConfidential {
     using EnumerableSet for *;
 
-    mapping(address => euint64) private _maxBalances;
+    event MaxBalanceSet(address token, uint64 newMaxBalance);
 
-    event MaxBalanceSet(address token, euint64 newMaxBalance);
+    mapping(address => uint64) private _maxBalances;
 
     function onInstall(bytes calldata initData) public override {
-        euint64 maxBalance = abi.decode(initData, (euint64));
+        uint64 maxBalance = abi.decode(initData, (uint64));
         _setMaxBalance(msg.sender, maxBalance);
 
         super.onInstall(initData);
     }
 
-    /// @dev Sets max balance of an investor with proof.
-    function setMaxBalance(
-        address token,
-        externalEuint64 maxBalance,
-        bytes calldata inputProof
-    ) public virtual onlyTokenAgent(token) {
-        euint64 maxBalance_ = FHE.fromExternal(maxBalance, inputProof);
-
-        _setMaxBalance(token, maxBalance_);
+    /// @dev Sets the max balance for a given token `token` to `maxBalance`.
+    function setMaxBalance(address token, uint64 maxBalance) public virtual onlyTokenAgent(token) {
+        _setMaxBalance(token, maxBalance);
     }
 
-    /// @dev Gets max balance of an investor.
-    function maxBalances(address token) public view virtual returns (euint64) {
+    /// @dev Gets max balance for a given token `token`.
+    function maxBalances(address token) public view virtual returns (uint64) {
         return _maxBalances[token];
     }
 
-    function _setMaxBalance(address token, euint64 maxBalance) internal {
-        FHE.allowThis(_maxBalances[token] = maxBalance);
+    function _setMaxBalance(address token, uint64 maxBalance) internal {
+        _maxBalances[token] = maxBalance;
+
         emit MaxBalanceSet(token, maxBalance);
     }
 
-    /// @dev Internal function which checks if a transfer is compliant.
+    /// @inheritdoc ComplianceModuleConfidential
     function _isCompliantTransfer(
         address token,
         address from,
@@ -54,7 +47,7 @@ abstract contract ERC7984RwaBalanceCapModule is ERC7984RwaComplianceModule {
         euint64 encryptedAmount
     ) internal override returns (ebool) {
         if (to == address(0) || from == to) {
-            return FHE.asEbool(true); // if burning or self-transfer
+            return FHE.allowTransient(FHE.asEbool(true), msg.sender); // if burning or self-transfer
         }
 
         euint64 balance = IERC7984(token).confidentialBalanceOf(to);

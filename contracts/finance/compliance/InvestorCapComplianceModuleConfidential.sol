@@ -3,32 +3,30 @@
 pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IERC7984} from "../../../../interfaces/IERC7984.sol";
-import {ERC7984RwaComplianceModule} from "./ERC7984RwaComplianceModule.sol";
+import {IERC7984} from "../../interfaces/IERC7984.sol";
+import {ComplianceModuleConfidential} from "./ComplianceModuleConfidential.sol";
 
-/**
- * @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the number of investors.
- */
-abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
-    mapping(address => uint64) private _maxInvestorCounts;
+/// @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the number of investors.
+abstract contract InvestorCapComplianceModuleConfidential is ComplianceModuleConfidential {
+    mapping(address => uint64) private _maxInvestors;
     mapping(address => euint64) private _investorCounts;
 
     event MaxInvestorSet(address indexed token, uint64 maxInvestor);
 
     function onInstall(bytes calldata initData) public override {
         uint64 maxInvestorCount = abi.decode(initData, (uint64));
-        _setMaxInvestorCount(msg.sender, maxInvestorCount);
+        _setMaxInvestors(msg.sender, maxInvestorCount);
         super.onInstall(initData);
     }
 
     /// @dev Sets max number of investors for the given token `token` to `maxInvestor`.
-    function setMaxInvestorCount(address token, uint64 maxInvestorCount) public virtual onlyTokenAgent(token) {
-        _setMaxInvestorCount(token, maxInvestorCount);
+    function setMaxInvestors(address token, uint64 maxInvestors_) public virtual onlyTokenAgent(token) {
+        _setMaxInvestors(token, maxInvestors_);
     }
 
     /// @dev Gets max number of investors for the given token `token`.
-    function maxInvestorCounts(address token) public view virtual returns (uint64) {
-        return _maxInvestorCounts[token];
+    function maxInvestors(address token) public view virtual returns (uint64) {
+        return _maxInvestors[token];
     }
 
     /// @dev Gets current number of investors for the given token `token`.
@@ -36,20 +34,20 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
         return _investorCounts[token];
     }
 
-    function _setMaxInvestorCount(address token, uint64 maxInvestorCount) internal {
-        _maxInvestorCounts[token] = maxInvestorCount;
+    function _setMaxInvestors(address token, uint64 maxInvestorCount) internal {
+        _maxInvestors[token] = maxInvestorCount;
         emit MaxInvestorSet(token, maxInvestorCount);
     }
 
-    /// @dev Internal function which checks if a transfer is compliant.
+    /// @inheritdoc ComplianceModuleConfidential
     function _isCompliantTransfer(
         address token,
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal override returns (ebool compliant) {
+    ) internal override returns (ebool) {
         if (to == address(0) || to == from || euint64.unwrap(encryptedAmount) == 0) {
-            return FHE.asEbool(true);
+            return FHE.allowTransient(FHE.asEbool(true), msg.sender);
         }
 
         euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
@@ -62,16 +60,20 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
         require(FHE.isAllowed(toBalance, token), UnauthorizedUseOfEncryptedAmount(toBalance, token));
         require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
 
-        compliant = FHE.or(
-            FHE.eq(encryptedAmount, FHE.asEuint64(0)), // zero transfer
+        euint64 encryptedZero = FHE.asEuint64(0);
+
+        // Note, not checking if current transfer is the whole balance of the from address
+        return
             FHE.or(
-                FHE.gt(toBalance, FHE.asEuint64(0)), // already investor
-                FHE.lt(investorCounts(token), maxInvestorCounts(token)) // room for another investor
-            )
-        );
+                FHE.eq(encryptedAmount, encryptedZero), // zero transfer
+                FHE.or(
+                    FHE.ne(toBalance, encryptedZero), // already investor
+                    FHE.lt(investorCounts(token), maxInvestors(token)) // room for another investor
+                )
+            );
     }
 
-    /// @dev Internal function which performs operation after transfer.
+    /// @inheritdoc ComplianceModuleConfidential
     function _postTransfer(address token, address from, address to, euint64 encryptedAmount) internal override {
         euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
         euint64 toBalance = IERC7984(token).confidentialBalanceOf(to);
@@ -83,7 +85,8 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
         require(FHE.isAllowed(fromBalance, token), UnauthorizedUseOfEncryptedAmount(fromBalance, msg.sender));
         require(FHE.isAllowed(toBalance, token), UnauthorizedUseOfEncryptedAmount(toBalance, msg.sender));
 
-        ebool transferNotZero = FHE.ne(encryptedAmount, euint64.wrap(0));
+        euint64 encryptedZero = FHE.asEuint64(0);
+        ebool transferNotZero = FHE.ne(encryptedAmount, encryptedZero);
         euint64 newInvestorCount = investorCounts(token);
 
         if (to != address(0)) {
@@ -92,7 +95,7 @@ abstract contract ERC7984RwaInvestorCapModule is ERC7984RwaComplianceModule {
         }
 
         if (from != address(0)) {
-            ebool subInvestor = FHE.and(transferNotZero, FHE.eq(fromBalance, euint64.wrap(0)));
+            ebool subInvestor = FHE.and(transferNotZero, FHE.eq(fromBalance, encryptedZero));
             newInvestorCount = FHE.sub(newInvestorCount, FHE.asEuint64(subInvestor));
         }
 
