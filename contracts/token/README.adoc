@@ -14,6 +14,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 - {ERC7984Rwa}: Extension of {ERC7984} that supports confidential Real World Assets (RWAs) by providing compliance checks, transfer controls and enforcement actions.
 - {ERC7984Votes}: An extension of {ERC7984} that supports confidential vote tracking and delegation via {VotesConfidential}.
 - {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}.
+- {ERC7984ContractURI}: An extension of {ERC7984} that adds the `contractURI()` function--allowing for additional metadata to be associated with the token.
 
 == Core
 {{ERC7984}}
@@ -26,6 +27,7 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 {{ERC7984Omnibus}}
 {{ERC7984Rwa}}
 {{ERC7984Votes}}
+{{ERC7984ContractURI}}
 
 == Utilities
 {{ERC7984Utils}}
