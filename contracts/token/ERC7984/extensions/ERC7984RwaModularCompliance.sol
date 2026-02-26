@@ -4,8 +4,9 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IERC7984RwaModularCompliance, IERC7984RwaComplianceModule} from "../../../interfaces/IERC7984Rwa.sol";
-import {HandleAccessManager} from "../../../utils/HandleAccessManager.sol";
+import {IComplianceModuleConfidential} from "./../../../interfaces/IComplianceModuleConfidential.sol";
+import {IERC7984RwaModularCompliance} from "./../../../interfaces/IERC7984Rwa.sol";
+import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
 import {ERC7984Rwa} from "./ERC7984Rwa.sol";
 
 /**
@@ -100,10 +101,10 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
     function _installModule(ComplianceModuleType moduleType, address module, bytes memory initData) internal virtual {
         require(supportsModule(moduleType), ERC7984RwaUnsupportedModuleType(moduleType));
         (bool success, bytes memory returnData) = module.staticcall(
-            abi.encodePacked(IERC7984RwaComplianceModule.isModule.selector)
+            abi.encodePacked(IComplianceModuleConfidential.isModule.selector)
         );
         require(
-            success && bytes4(returnData) == IERC7984RwaComplianceModule.isModule.selector,
+            success && bytes4(returnData) == IComplianceModuleConfidential.isModule.selector,
             ERC7984RwaNotTransferComplianceModule(module)
         );
 
@@ -115,7 +116,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         }
         require(modules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
 
-        IERC7984RwaComplianceModule(module).onInstall(initData);
+        IComplianceModuleConfidential(module).onInstall(initData);
 
         emit ModuleInstalled(moduleType, module);
     }
@@ -138,7 +139,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
 
         // ignore success purposely to avoid modules that revert on uninstall
         // slither-disable-next-line unchecked-lowlevel
-        module.call(abi.encodeCall(IERC7984RwaComplianceModule.onUninstall, (deinitData)));
+        module.call(abi.encodeCall(IComplianceModuleConfidential.onUninstall, (deinitData)));
 
         emit ModuleUninstalled(moduleType, module);
     }
@@ -194,7 +195,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
             FHE.allowTransient(encryptedAmount, modules[i]);
             compliant = FHE.and(
                 compliant,
-                IERC7984RwaComplianceModule(modules[i]).isCompliantTransfer(from, to, encryptedAmount)
+                IComplianceModuleConfidential(modules[i]).isCompliantTransfer(from, to, encryptedAmount)
             );
         }
     }
@@ -212,7 +213,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
             FHE.allowTransient(encryptedAmount, modules[i]);
             compliant = FHE.and(
                 compliant,
-                IERC7984RwaComplianceModule(modules[i]).isCompliantTransfer(from, to, encryptedAmount)
+                IComplianceModuleConfidential(modules[i]).isCompliantTransfer(from, to, encryptedAmount)
             );
         }
     }
@@ -222,14 +223,14 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         uint256 modulesLength = modules.length;
         for (uint256 i = 0; i < modulesLength; i++) {
             FHE.allowTransient(encryptedAmount, modules[i]);
-            IERC7984RwaComplianceModule(modules[i]).postTransfer(from, to, encryptedAmount);
+            IComplianceModuleConfidential(modules[i]).postTransfer(from, to, encryptedAmount);
         }
 
         modules = _complianceModules.values();
         modulesLength = modules.length;
         for (uint256 i = 0; i < modulesLength; i++) {
             FHE.allowTransient(encryptedAmount, modules[i]);
-            IERC7984RwaComplianceModule(modules[i]).postTransfer(from, to, encryptedAmount);
+            IComplianceModuleConfidential(modules[i]).postTransfer(from, to, encryptedAmount);
         }
     }
 

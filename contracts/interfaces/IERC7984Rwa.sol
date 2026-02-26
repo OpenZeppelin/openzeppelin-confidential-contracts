@@ -102,21 +102,3 @@ interface IERC7984RwaModularCompliance {
     /// @dev Uninstalls a transfer compliance module.
     function uninstallModule(ComplianceModuleType moduleType, address module, bytes calldata deinitData) external;
 }
-
-/// @dev Interface for confidential RWA transfer compliance module.
-interface IERC7984RwaComplianceModule {
-    /// @dev Returns magic number if it is a module.
-    function isModule() external returns (bytes4);
-
-    /// @dev Checks if a transfer is compliant. Should be non-mutating.
-    function isCompliantTransfer(address from, address to, euint64 encryptedAmount) external returns (ebool);
-
-    /// @dev Performs operation after transfer.
-    function postTransfer(address from, address to, euint64 encryptedAmount) external;
-
-    /// @dev Performs operation after installation.
-    function onInstall(bytes calldata initData) external;
-
-    /// @dev Performs operation after uninstallation.
-    function onUninstall(bytes calldata deinitData) external;
-}
