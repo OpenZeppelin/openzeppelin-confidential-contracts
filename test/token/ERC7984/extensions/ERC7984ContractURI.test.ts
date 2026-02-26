@@ -6,9 +6,9 @@ const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
 
-describe('ERC7984Metadata', function () {
+describe('ERC7984ContractURI', function () {
   beforeEach(async function () {
-    this.token = await ethers.deployContract('$ERC7984MetadataMock', [name, symbol, uri]);
+    this.token = await ethers.deployContract('$ERC7984ContractURIMock', [name, symbol, uri]);
     await expect(this.token.contractURI()).to.eventually.equal(uri);
   });
 
@@ -24,8 +24,8 @@ describe('ERC7984Metadata', function () {
   });
 
   describe('ERC165', function () {
-    it('supports IERC7984Metadata', async function () {
-      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984Metadata)).to.eventually.be.true;
+    it('supports IERC7984ContractURI', async function () {
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984ContractURI)).to.eventually.be.true;
     });
 
     it('supports IERC7984', async function () {
