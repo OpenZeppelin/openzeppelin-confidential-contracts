@@ -41,8 +41,6 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
     error ERC7984RwaAlreadyInstalledModule(ComplianceModuleType moduleType, address module);
     /// @dev The module is already uninstalled.
     error ERC7984RwaAlreadyUninstalledModule(ComplianceModuleType moduleType, address module);
-    /// @dev The sender is not a compliance module.
-    error SenderNotComplianceModule(address account);
 
     /**
      * @dev Check if a certain module typeId is supported.
@@ -108,12 +106,9 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
             ERC7984RwaNotTransferComplianceModule(module)
         );
 
-        EnumerableSet.AddressSet storage modules;
-        if (moduleType == ComplianceModuleType.ForceTransfer) {
-            modules = _forceTransferComplianceModules;
-        } else {
-            modules = _complianceModules;
-        }
+        EnumerableSet.AddressSet storage modules = moduleType == ComplianceModuleType.ForceTransfer
+            ? _forceTransferComplianceModules
+            : _complianceModules;
         require(modules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
 
         IComplianceModuleConfidential(module).onInstall(initData);
