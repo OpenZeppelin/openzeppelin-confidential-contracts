@@ -73,6 +73,10 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         return _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data);
     }
 
+    function $_burn(address from, uint64 amount) public returns (euint64 transferred) {
+        return _burn(from, FHE.asEuint64(amount));
+    }
+
     function $_burn(
         address from,
         externalEuint64 encryptedAmount,

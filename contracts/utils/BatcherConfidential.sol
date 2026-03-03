@@ -203,7 +203,12 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
         }
 
-        ExecuteOutcome outcome = _executeRoute(batchId, unwrapAmountCleartext);
+        ExecuteOutcome outcome;
+        if (unwrapAmountCleartext == 0) {
+            outcome = ExecuteOutcome.Cancel;
+        } else {
+            outcome = _executeRoute(batchId, unwrapAmountCleartext);
+        }
 
         if (outcome == ExecuteOutcome.Complete) {
             uint256 swappedAmount = IERC20(toToken().underlying()).balanceOf(address(this));

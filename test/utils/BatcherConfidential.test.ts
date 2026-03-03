@@ -300,7 +300,28 @@ describe('BatcherConfidential', function () {
     });
 
     it('should track failed claims properly', async function () {
-      // TODO: implement this once merging in #301
+      // will burn `toToken` from batcher to induce failed transfer
+      await this.toToken['$_burn(address,uint64)'](this.batcher, 100n);
+
+      let claimEvent = (await (await this.batcher.claim(this.batchId)).wait()).logs.filter(
+        (log: any) => log.address === this.batcher.target,
+      )[0];
+      let claimAmount = claimEvent.args[2];
+
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, claimAmount, this.toToken.target, this.holder),
+      ).to.eventually.eq(0);
+
+      await this.toToken['$_mint(address,uint64)'](this.batcher, 100n);
+
+      claimEvent = (await (await this.batcher.claim(this.batchId)).wait()).logs.filter(
+        (log: any) => log.address === this.batcher.target,
+      )[0];
+      claimAmount = claimEvent.args[2];
+
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, claimAmount, this.toToken.target, this.holder),
+      ).to.eventually.eq(1000n);
     });
   });
 
@@ -440,6 +461,19 @@ describe('BatcherConfidential', function () {
       await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
         .to.be.revertedWithCustomError(this.batcher, 'InvalidExchangeRate')
         .withArgs(this.batchId, this.joinAmount, 0);
+    });
+
+    it('should cancel if unwrap amount is 0', async function () {
+      await this.batcher.connect(this.holder).join(0n);
+
+      await this.batcher.connect(this.holder).dispatchBatch();
+
+      const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[1].args;
+      const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+
+      await expect(this.batcher.dispatchBatchCallback(this.batchId + 1n, abiEncodedClearValues, decryptionProof))
+        .to.emit(this.batcher, 'BatchCanceled')
+        .withArgs(this.batchId + 1n);
     });
   });
 
