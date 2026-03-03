@@ -189,7 +189,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         uint256 batchId,
         uint64 unwrapAmountCleartext,
         bytes calldata decryptionProof
-    ) public virtual {
+    ) public virtual nonReentrant {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Dispatched));
 
         euint64 unwrapAmount_ = unwrapAmount(batchId);
