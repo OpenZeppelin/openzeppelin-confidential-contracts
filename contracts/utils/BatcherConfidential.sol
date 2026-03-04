@@ -58,13 +58,10 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev Emitted when a batch with id `batchId` is dispatched via {dispatchBatch}.
     event BatchDispatched(uint256 indexed batchId);
 
-    /// @dev Emitted when a batch with id `batchId` is canceled via {_cancel}.
+    /// @dev Emitted when a batch with id `batchId` is canceled.
     event BatchCanceled(uint256 indexed batchId);
 
-    /**
-     * @dev Emitted when a batch with id `batchId` is finalized via {_setExchangeRate}
-     * with an exchange rate of `exchangeRate`.
-     */
+    /// @dev Emitted when a batch with id `batchId` is finalized with an exchange rate of `exchangeRate`.
     event BatchFinalized(uint256 indexed batchId, uint64 exchangeRate);
 
     /// @dev Emitted when an `account` joins a batch with id `batchId` with a deposit of `amount`.
@@ -88,8 +85,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     error BatchUnexpectedState(uint256 batchId, BatchState current, bytes32 expectedStates);
 
     /**
-     * @dev Thrown when the given exchange rate is invalid. `exchangeRate * totalDeposits / 10 ** exchangeRateDecimals`
-     * must fit in uint64.
+     * @dev Thrown when the given exchange rate is invalid. The exchange rate must be non-zero and the wrapped
+     * amount of {toToken} must be less than or equal to `type(uint64).max`.
      */
     error InvalidExchangeRate(uint256 batchId, uint256 totalDeposits, uint64 exchangeRate);
 
@@ -183,7 +180,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /**
      * @dev Dispatch batch callback callable by anyone. This function finalizes the unwrap of {fromToken}
-     * and calls {_executeRoute} to perform the batch's route.
+     * and calls {_executeRoute} to perform the batch's route. If `_executeRoute` returns `ExecuteOutcome.Partial`,
+     * this function should be called again with the same `batchId`, `unwrapAmountCleartext`, and `decryptionProof`.
      */
     function dispatchBatchCallback(
         uint256 batchId,
