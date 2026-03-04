@@ -170,8 +170,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * if maintaining confidentiality of deposits is critical to the application.
      */
     function dispatchBatch() public virtual {
-        uint256 batchId = currentBatchId();
-        _currentBatchId++;
+        uint256 batchId = _getAndIncreaseBatchId();
 
         euint64 amountToUnwrap = totalDeposits(batchId);
         FHE.allowTransient(amountToUnwrap, address(fromToken()));
@@ -379,6 +378,11 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         (ebool success, ) = FHESafeMath.tryDecrease(balance, requestedUnwrapAmount);
 
         return FHE.select(success, requestedUnwrapAmount, FHE.asEuint64(0));
+    }
+
+    /// @dev Gets the current batch id and increments it.
+    function _getAndIncreaseBatchId() internal virtual returns (uint256) {
+        return _currentBatchId++;
     }
 
     /**
