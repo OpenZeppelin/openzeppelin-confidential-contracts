@@ -37,9 +37,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /// @dev Enum representing the outcome of a route execution in {_executeRoute}.
     enum ExecuteOutcome {
-        Complete,
-        Partial,
-        Cancel
+        Complete, // Route execution is complete. Full balance of underlying {toToken} is assigned to the batch.
+        Partial, // Route execution is incomplete and will be called again. Intermediate steps *must* not result in underlying {toToken} being transferred into the batcher.
+        Cancel // Route execution failed. Batch is canceled. Underlying {fromToken} is rewrapped.
     }
 
     struct Batch {
@@ -348,7 +348,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * the balance of the underlying {toToken} is wrapped and the exchange rate is set.
      *
      * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the route execution is complete.
-     * If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`.
+     * If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`. Intermediate steps *must* not
+     * result in underlying {toToken} being transferred into the batcher.
      *
      * WARNING: This function must eventually return `ExecuteOutcome.Complete` or `ExecuteOutcome.Cancel`. Failure to do so results
      * in user deposits being locked indefinitely.
