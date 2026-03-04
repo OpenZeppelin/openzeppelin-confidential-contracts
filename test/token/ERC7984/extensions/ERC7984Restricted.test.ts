@@ -7,7 +7,7 @@ const initialSupply = 1000n;
 async function fixture() {
   const [holder, recipient, approved] = await ethers.getSigners();
 
-  const token = await ethers.deployContract('$ERC7984RestrictedMock', ['token', 'tk', 'uri']);
+  const token = await ethers.deployContract('$ERC7984RestrictedMock', ['token', 'tk']);
   await token['$_mint(address,uint64)'](holder, initialSupply);
 
   return { holder, recipient, approved, token };

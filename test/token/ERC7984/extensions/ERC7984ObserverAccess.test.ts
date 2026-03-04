@@ -5,14 +5,13 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'Observer Access Token';
 const symbol = 'OAT';
-const uri = 'https://example.com/metadata';
 
 describe('ERC7984ObserverAccess', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract('$ERC7984ObserverAccessMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984ObserverAccessMock', [name, symbol]);
     this.holder = holder;
     this.recipient = recipient;
     this.token = token;

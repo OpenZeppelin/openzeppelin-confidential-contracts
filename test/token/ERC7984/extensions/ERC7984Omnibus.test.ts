@@ -7,16 +7,11 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'OmnibusToken';
 const symbol = 'OBT';
-const uri = 'https://example.com/metadata';
 
 describe('ERC7984Omnibus', function () {
   beforeEach(async function () {
     const [holder, recipient, operator, subaccount] = await ethers.getSigners();
-    const token = (await ethers.deployContract('$ERC7984OmnibusMock', [
-      name,
-      symbol,
-      uri,
-    ])) as any as $ERC7984OmnibusMock;
+    const token = (await ethers.deployContract('$ERC7984OmnibusMock', [name, symbol])) as any as $ERC7984OmnibusMock;
     const acl = IACL__factory.connect(await getAclAddress(), ethers.provider);
     Object.assign(this, { token, acl, holder, recipient, operator, subaccount });
 

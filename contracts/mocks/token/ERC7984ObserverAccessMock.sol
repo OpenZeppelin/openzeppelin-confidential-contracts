@@ -7,11 +7,7 @@ import {ERC7984ObserverAccess} from "../../token/ERC7984/extensions/ERC7984Obser
 import {ERC7984Mock} from "./ERC7984Mock.sol";
 
 contract ERC7984ObserverAccessMock is ERC7984ObserverAccess, ERC7984Mock {
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        string memory tokenURI_
-    ) ERC7984Mock(name_, symbol_, tokenURI_) {}
+    constructor(string memory name_, string memory symbol_) ERC7984Mock(name_, symbol_) {}
 
     function _update(
         address from,
