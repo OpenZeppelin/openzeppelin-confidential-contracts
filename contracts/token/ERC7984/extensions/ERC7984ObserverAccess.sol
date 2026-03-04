@@ -7,8 +7,8 @@ import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984} from "../ERC7984.sol";
 
 /**
- * @dev Extension of {ERC7984} that allows each account to add a observer who is given
- * permanent ACL access to its transfer and balance amounts. A observer can be added or removed at any point in time.
+ * @dev Extension of {ERC7984} that allows each account to add an observer who is given
+ * permanent ACL access to its transfer and balance amounts. An observer can be added or removed at any point in time.
  */
 abstract contract ERC7984ObserverAccess is ERC7984 {
     mapping(address account => address) private _observers;
