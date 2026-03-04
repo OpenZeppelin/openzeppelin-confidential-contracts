@@ -11,8 +11,7 @@ abstract contract HandleAccessManager {
      * @dev Get handle access for the given handle `handle`. Access will be given to the
      * account `account` with the given persistence flag.
      *
-     * NOTE: This function call is gated by `msg.sender` and validated by the
-     * {_validateHandleAllowance} function.
+     * NOTE: This function call is validated by {_validateHandleAllowance}.
      */
     function getHandleAllowance(bytes32 handle, address account, bool persistent) public virtual {
         require(_validateHandleAllowance(handle), HandleAccessManagerNotAllowed(handle, account));
