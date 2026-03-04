@@ -25,6 +25,10 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
  *
  * NOTE: The batcher could be used to maintain confidentiality of deposits--by default there are no confidentiality guarantees.
  * If desired, developers should consider restricting certain functions to increase confidentiality.
+ *
+ * WARNING: The {toToken} and {fromToken} must be carefully inspected to ensure proper capacity is maintained. If {toToken} or
+ * {fromToken} are filled--resulting in denial of service--batches could get bricked. The batcher would be unable to wrap
+ * underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancellation would also fail on rewrap.
  */
 abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Receiver {
     /// @dev Enum representing the lifecycle state of a batch.
