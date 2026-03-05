@@ -4,5 +4,16 @@
   "initialVersions": {
     "openzeppelin-confidential-contracts": "0.3.1"
   },
-  "changesets": []
+  "changesets": [
+    "fast-humans-run",
+    "full-worlds-rescue",
+    "good-flies-win",
+    "happy-hands-find",
+    "long-items-appear",
+    "modern-snakes-return",
+    "nasty-walls-taste",
+    "pink-areas-double",
+    "shaky-pugs-return",
+    "sour-dodos-sniff"
+  ]
 }
