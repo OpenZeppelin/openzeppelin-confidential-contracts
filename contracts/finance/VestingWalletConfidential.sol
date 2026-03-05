@@ -21,7 +21,7 @@ import {IERC7984} from "./../interfaces/IERC7984.sol";
  * NOTE: Since the wallet is `Ownable`, and ownership can be transferred, it is possible to sell unvested tokens.
  *
  * NOTE: When using this contract with any token whose balance is adjusted automatically (i.e. a rebase token), make
- * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
+ * sure to account for the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
  *
  * Confidential vesting wallet contracts can be deployed (as clones) using the {VestingWalletConfidentialFactory}.
  */
@@ -81,7 +81,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         FHE.allowTransient(amount, token);
         euint64 amountSent = IERC7984(token).confidentialTransfer(owner(), amount);
 
-        // This could overflow if the total supply is resent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
+        // This could overflow if the total supply is re-sent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
         euint128 newReleasedAmount = FHE.add(released(token), amountSent);
         FHE.allow(newReleasedAmount, owner());
         FHE.allowThis(newReleasedAmount);

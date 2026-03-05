@@ -6,7 +6,7 @@ pragma solidity ^0.8.24;
 
 import {euint32, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Checkpoints} from "./temporary-Checkpoints.sol";
+import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 
 /**
  * @dev This library defines the `Trace*` struct, for checkpointing values as they change at different points in
