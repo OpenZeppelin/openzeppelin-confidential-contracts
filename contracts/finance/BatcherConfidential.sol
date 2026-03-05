@@ -121,7 +121,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         euint64 amountTransferred = toToken().confidentialTransfer(msg.sender, amountToSend);
 
-        ebool transferSuccess = FHE.eq(amountTransferred, amountToSend);
+        ebool transferSuccess = FHE.ne(amountTransferred, FHE.asEuint64(0));
         euint64 newDeposit = FHE.select(transferSuccess, FHE.asEuint64(0), deposit);
 
         FHE.allowThis(newDeposit);
