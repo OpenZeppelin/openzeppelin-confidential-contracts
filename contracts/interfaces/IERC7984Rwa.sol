@@ -16,9 +16,6 @@ interface IERC7984Rwa is IERC7984 {
     /// @dev Returns true if agent, false otherwise.
     function isAgent(address account) external view returns (bool);
 
-    /// @dev Returns true if admin or agent, false otherwise.
-    function isAdminOrAgent(address account) external view returns (bool);
-
     /// @dev Returns whether an account is allowed to interact with the token.
     function canTransact(address account) external view returns (bool);
 

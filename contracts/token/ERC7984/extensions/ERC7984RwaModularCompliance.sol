@@ -3,6 +3,7 @@
 pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {LowLevelCall} from "@openzeppelin/contracts/utils/LowLevelCall.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IComplianceModuleConfidential} from "./../../../interfaces/IComplianceModuleConfidential.sol";
 import {IERC7984RwaModularCompliance} from "./../../../interfaces/IERC7984Rwa.sol";
@@ -133,8 +134,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         require(modules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
 
         // ignore success purposely to avoid modules that revert on uninstall
-        // slither-disable-next-line unchecked-lowlevel
-        module.call(abi.encodeCall(IComplianceModuleConfidential.onUninstall, (deinitData)));
+        LowLevelCall.callNoReturn(module, abi.encodeCall(IComplianceModuleConfidential.onUninstall, (deinitData)));
 
         emit ModuleUninstalled(moduleType, module);
     }

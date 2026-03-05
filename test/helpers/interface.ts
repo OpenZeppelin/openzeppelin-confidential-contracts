@@ -36,7 +36,6 @@ export const SIGNATURES = {
     'canTransact(address)',
     'isAdmin(address)',
     'isAgent(address)',
-    'isAdminOrAgent(address)',
     'pause()',
     'paused()',
     'setConfidentialFrozen(address,bytes32,bytes)',
