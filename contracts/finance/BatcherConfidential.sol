@@ -5,6 +5,7 @@ pragma solidity ^0.8.27;
 import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
@@ -101,7 +102,10 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     error InvalidFromToken();
 
     constructor(ERC7984ERC20Wrapper fromToken_, ERC7984ERC20Wrapper toToken_) {
-        require(fromToken_.supportsInterface(type(IERC7984ERC20Wrapper).interfaceId), InvalidFromToken());
+        require(
+            ERC165Checker.supportsInterface(address(fromToken_), type(IERC7984ERC20Wrapper).interfaceId),
+            InvalidFromToken()
+        );
 
         _fromToken = fromToken_;
         _toToken = toToken_;
