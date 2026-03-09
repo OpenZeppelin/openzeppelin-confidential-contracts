@@ -19,8 +19,6 @@ interface IERC7984ERC20Wrapper is IERC7984 {
      * or be an approved operator for `from`.
      *
      * Returns amount unwrapped.
-     *
-     * NOTE: The caller *must* already be approved by ACL for the given `amount`.
      */
     function unwrap(
         address from,
