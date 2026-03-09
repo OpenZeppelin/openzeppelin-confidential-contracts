@@ -142,7 +142,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * NOTE: Developers should consider adding additional restrictions to this function
      * if maintaining confidentiality of deposits is critical to the application.
      *
-     * WARNING: {dispatchBatch} may fail if an incompatible v`ersion of {ERC7984ERC20Wrapper} is used.
+     * WARNING: {dispatchBatch} may fail if an incompatible version of {ERC7984ERC20Wrapper} is used.
      * This function must be unrestricted in cases where batch dispatching fails.
      */
     function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
