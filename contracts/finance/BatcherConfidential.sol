@@ -98,20 +98,18 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The caller is not authorized to call this function.
     error Unauthorized();
 
-    /// @dev The given `fromToken` does not support `IERC7984ERC20Wrapper`.
-    error InvalidFromToken();
-
-    /// @dev The given `toToken` does not support the {IERC7984ERC20Wrapper.wrap} function.
-    error InvalidToToken();
+    /// @dev The given `token` does not support `IERC7984ERC20Wrapper` via `ERC165`.
+    error InvalidWrapperToken(address token);
 
     constructor(ERC7984ERC20Wrapper fromToken_, ERC7984ERC20Wrapper toToken_) {
         require(
             ERC165Checker.supportsInterface(address(fromToken_), type(IERC7984ERC20Wrapper).interfaceId),
-            InvalidFromToken()
+            InvalidWrapperToken(address(fromToken_))
         );
-        try toToken_.wrap(address(this), 0) {} catch {
-            revert InvalidToToken();
-        }
+        require(
+            ERC165Checker.supportsInterface(address(toToken_), type(IERC7984ERC20Wrapper).interfaceId),
+            InvalidWrapperToken(address(toToken_))
+        );
 
         _fromToken = fromToken_;
         _toToken = toToken_;

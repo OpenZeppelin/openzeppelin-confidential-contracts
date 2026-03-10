@@ -115,7 +115,9 @@ describe('BatcherConfidential', function () {
         this.exchange,
         this.operator,
       ]),
-    ).to.be.revertedWithCustomError(this.batcher, 'InvalidFromToken');
+    )
+      .to.be.revertedWithCustomError(this.batcher, 'InvalidWrapperToken')
+      .withArgs(confidentialToken.target);
   });
 
   it('should reject invalid toToken', async function () {
@@ -128,7 +130,9 @@ describe('BatcherConfidential', function () {
         this.exchange,
         this.operator,
       ]),
-    ).to.be.revertedWithCustomError(this.batcher, 'InvalidToToken');
+    )
+      .to.be.revertedWithCustomError(this.batcher, 'InvalidWrapperToken')
+      .withArgs(confidentialToken.target);
   });
 
   for (const viaCallback of [true, false]) {
