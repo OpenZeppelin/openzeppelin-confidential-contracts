@@ -119,10 +119,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         uint64 unwrapAmountCleartext,
         bytes calldata decryptionProof
     ) public virtual {
-        euint64 unwrapAmount = euint64.wrap(unwrapRequestId);
-        address to = unwrapRequester(unwrapAmount);
-        require(to != address(0), InvalidUnwrapRequest(unwrapAmount));
-        delete _unwrapRequests[unwrapAmount];
+        euint64 unwrapAmount_ = unwrapAmount(unwrapRequestId);
+        address to = unwrapRequester(unwrapAmount_);
+        require(to != address(0), InvalidUnwrapRequest(unwrapAmount_));
+        delete _unwrapRequests[unwrapAmount_];
 
         bytes32[] memory handles = new bytes32[](1);
         handles[0] = unwrapRequestId;
@@ -133,7 +133,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
         SafeERC20.safeTransfer(IERC20(underlying()), to, unwrapAmountCleartext * rate());
 
-        emit UnwrapFinalized(to, unwrapAmount, unwrapAmountCleartext);
+        emit UnwrapFinalized(to, unwrapAmount_, unwrapAmountCleartext);
     }
 
     /// @inheritdoc ERC7984
