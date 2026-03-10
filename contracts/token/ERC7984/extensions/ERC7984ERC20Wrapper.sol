@@ -109,22 +109,23 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual returns (euint64) {
-        return _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+    ) public virtual returns (bytes32) {
+        return euint64.unwrap(_unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof)));
     }
 
-    /// @dev Fills an unwrap request for a given cipher-text `unwrapAmount` with the `cleartextAmount` and `decryptionProof`.
+    /// @inheritdoc IERC7984ERC20Wrapper
     function finalizeUnwrap(
-        euint64 unwrapAmount,
+        bytes32 unwrapRequestId,
         uint64 unwrapAmountCleartext,
         bytes calldata decryptionProof
     ) public virtual {
+        euint64 unwrapAmount = euint64.wrap(unwrapRequestId);
         address to = unwrapRequester(unwrapAmount);
         require(to != address(0), InvalidUnwrapRequest(unwrapAmount));
         delete _unwrapRequests[unwrapAmount];
 
         bytes32[] memory handles = new bytes32[](1);
-        handles[0] = euint64.unwrap(unwrapAmount);
+        handles[0] = unwrapRequestId;
 
         bytes memory cleartexts = abi.encode(unwrapAmountCleartext);
 
@@ -140,10 +141,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         return _decimals;
     }
 
-    /**
-     * @dev Returns the rate at which the underlying token is converted to the wrapped token.
-     * For example, if the `rate` is 1000, then 1000 units of the underlying token equal 1 unit of the wrapped token.
-     */
+    /// @inheritdoc IERC7984ERC20Wrapper
     function rate() public view virtual returns (uint256) {
         return _rate;
     }

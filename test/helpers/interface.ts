@@ -22,7 +22,13 @@ export const SIGNATURES = {
     'setOperator(address,uint48)',
     'symbol()',
   ],
-  ERC7984ERC20Wrapper: ['underlying()', 'unwrap(address,address,bytes32,bytes)', 'wrap(address,uint256)'],
+  ERC7984ERC20Wrapper: [
+    'underlying()',
+    'unwrap(address,address,bytes32,bytes)',
+    'wrap(address,uint256)',
+    'finalizeUnwrap(bytes32,uint64,bytes)',
+    'rate()',
+  ],
   ERC7984RWA: [
     'blockUser(address)',
     'confidentialAvailable(address)',

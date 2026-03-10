@@ -195,7 +195,13 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         euint64 unwrapAmount_ = unwrapAmount(batchId);
         // finalize unwrap call will fail if already called by this contract or by anyone else
-        try ERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapAmount_, unwrapAmountCleartext, decryptionProof) {
+        try
+            ERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(
+                euint64.unwrap(unwrapAmount_),
+                unwrapAmountCleartext,
+                decryptionProof
+            )
+        {
             // No need to validate input since `finalizeUnwrap` request succeeded
         } catch {
             // Must validate input since `finalizeUnwrap` request failed
