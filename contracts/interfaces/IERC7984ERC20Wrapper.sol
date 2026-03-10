@@ -30,7 +30,7 @@ interface IERC7984ERC20Wrapper is IERC7984 {
     /// @dev Returns the address of the underlying ERC-20 token that is being wrapped.
     function underlying() external view returns (address);
 
-    /// @dev Finalizes an unwrap request identified by `unwrapRequestId`.
+    /// @dev Finalizes an unwrap request identified by `unwrapRequestId` with the given `unwrapAmountCleartext` and `decryptionProof`.
     function finalizeUnwrap(
         bytes32 unwrapRequestId,
         uint64 unwrapAmountCleartext,
