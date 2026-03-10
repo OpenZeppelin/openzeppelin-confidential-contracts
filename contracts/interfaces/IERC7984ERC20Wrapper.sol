@@ -42,4 +42,7 @@ interface IERC7984ERC20Wrapper is IERC7984 {
      * For example, if the `rate` is 1000, then 1000 units of the underlying token equal 1 unit of the wrapped token.
      */
     function rate() external view returns (uint256);
+
+    /// @dev Returns the amount of wrapper tokens that were unwrapped for a given `unwrapRequestId`.
+    function unwrapAmount(bytes32 unwrapRequestId) external view returns (euint64);
 }

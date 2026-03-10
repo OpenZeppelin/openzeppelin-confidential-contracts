@@ -9,7 +9,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
-import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
+import {ERC7984ERC20Wrapper, IERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
 /**
@@ -56,8 +56,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         mapping(address => euint64) deposits;
     }
 
-    ERC7984ERC20Wrapper private immutable _fromToken;
-    ERC7984ERC20Wrapper private immutable _toToken;
+    IERC7984ERC20Wrapper private immutable _fromToken;
+    IERC7984ERC20Wrapper private immutable _toToken;
     mapping(uint256 => Batch) private _batches;
     uint256 private _currentBatchId;
 
@@ -99,7 +99,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The caller is not authorized to call this function.
     error Unauthorized();
 
-    constructor(ERC7984ERC20Wrapper fromToken_, ERC7984ERC20Wrapper toToken_) {
+    constructor(IERC7984ERC20Wrapper fromToken_, IERC7984ERC20Wrapper toToken_) {
         _fromToken = fromToken_;
         _toToken = toToken_;
         _currentBatchId = 1;
@@ -203,12 +203,12 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         bytes32 unwrapRequestId_ = unwrapRequestId(batchId);
         // finalize unwrap call will fail if already called by this contract or by anyone else
-        try ERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapRequestId_, unwrapAmountCleartext, decryptionProof) {
+        try IERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapRequestId_, unwrapAmountCleartext, decryptionProof) {
             // No need to validate input since `finalizeUnwrap` request succeeded
         } catch {
             // Must validate input since `finalizeUnwrap` request failed
             bytes32[] memory handles = new bytes32[](1);
-            handles[0] = unwrapRequestId_;
+            handles[0] = euint64.unwrap(fromToken().unwrapAmount(unwrapRequestId_));
             FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
         }
 
@@ -264,12 +264,12 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     }
 
     /// @dev Batcher from token. Users deposit this token in exchange for {toToken}.
-    function fromToken() public view virtual returns (ERC7984ERC20Wrapper) {
+    function fromToken() public view virtual returns (IERC7984ERC20Wrapper) {
         return _fromToken;
     }
 
     /// @dev Batcher to token. Users receive this token in exchange for their {fromToken} deposits.
-    function toToken() public view virtual returns (ERC7984ERC20Wrapper) {
+    function toToken() public view virtual returns (IERC7984ERC20Wrapper) {
         return _toToken;
     }
 

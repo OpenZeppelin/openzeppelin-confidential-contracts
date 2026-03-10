@@ -151,6 +151,11 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         return address(_underlying);
     }
 
+    /// @inheritdoc IERC7984ERC20Wrapper
+    function unwrapAmount(bytes32 unwrapRequestId) public view virtual returns (euint64) {
+        return euint64.wrap(unwrapRequestId);
+    }
+
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC7984) returns (bool) {
         return

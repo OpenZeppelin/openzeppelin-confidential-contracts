@@ -28,6 +28,7 @@ export const SIGNATURES = {
     'wrap(address,uint256)',
     'finalizeUnwrap(bytes32,uint64,bytes)',
     'rate()',
+    'unwrapAmount(bytes32)',
   ],
   ERC7984RWA: [
     'blockUser(address)',
