@@ -30,6 +30,8 @@ interface IERC7984ERC20Wrapper is IERC7984 {
      * or be an approved operator for `from`.
      *
      * Returns the unwrap request id.
+     *
+     * NOTE: The returned unwrap request id must never be zero.
      */
     function unwrap(
         address from,
