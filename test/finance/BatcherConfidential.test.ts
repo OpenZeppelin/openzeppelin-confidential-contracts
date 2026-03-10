@@ -409,7 +409,7 @@ describe('BatcherConfidential', function () {
     it('should finalize unwrap', async function () {
       await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
         .to.emit(this.fromToken, 'UnwrapFinalized')
-        .withArgs(this.batcher, this.unwrapAmount, this.abiEncodedClearValues);
+        .withArgs(this.batcher, this.unwrapAmount, this.unwrapAmount, this.abiEncodedClearValues);
     });
 
     it('should revert if proof validation fails', async function () {
