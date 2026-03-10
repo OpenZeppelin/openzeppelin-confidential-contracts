@@ -5,11 +5,12 @@ pragma solidity ^0.8.27;
 import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
-import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
+import {ERC7984ERC20Wrapper, IERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
 /**
@@ -99,7 +100,19 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The caller is not authorized to call this function.
     error Unauthorized();
 
+    /// @dev The given `token` does not support `IERC7984ERC20Wrapper` via `ERC165`.
+    error InvalidWrapperToken(address token);
+
     constructor(ERC7984ERC20Wrapper fromToken_, ERC7984ERC20Wrapper toToken_) {
+        require(
+            ERC165Checker.supportsInterface(address(fromToken_), type(IERC7984ERC20Wrapper).interfaceId),
+            InvalidWrapperToken(address(fromToken_))
+        );
+        require(
+            ERC165Checker.supportsInterface(address(toToken_), type(IERC7984ERC20Wrapper).interfaceId),
+            InvalidWrapperToken(address(toToken_))
+        );
+
         _fromToken = fromToken_;
         _toToken = toToken_;
         _currentBatchId = 1;
