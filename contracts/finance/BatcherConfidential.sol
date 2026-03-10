@@ -23,6 +23,8 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
  *
  * Developers must also implement the virtual function {routeDescription} to provide a human readable description of the batch's route.
  *
+ * NOTE: The batcher does not support {ERC7984ERC20Wrapper} contracts prior to v0.4.0.
+ *
  * NOTE: The batcher could be used to maintain confidentiality of deposits--by default there are no confidentiality guarantees.
  * If desired, developers should consider restricting certain functions to increase confidentiality.
  *
@@ -139,6 +141,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      *
      * NOTE: Developers should consider adding additional restrictions to this function
      * if maintaining confidentiality of deposits is critical to the application.
+     *
+     * WARNING: {dispatchBatch} may fail if an incompatible version of {ERC7984ERC20Wrapper} is used.
+     * This function must be unrestricted in cases where batch dispatching fails.
      */
     function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
@@ -174,9 +179,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         euint64 amountToUnwrap = totalDeposits(batchId);
         FHE.allowTransient(amountToUnwrap, address(fromToken()));
-        _batches[batchId].unwrapAmount = _calculateUnwrapAmount(amountToUnwrap);
-
-        fromToken().unwrap(address(this), address(this), amountToUnwrap);
+        _batches[batchId].unwrapAmount = fromToken().unwrap(address(this), address(this), amountToUnwrap);
 
         emit BatchDispatched(batchId);
     }
@@ -375,15 +378,6 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             revert BatchUnexpectedState(batchId, currentState, allowedStates);
         }
         return currentState;
-    }
-
-    /// @dev Mirror calculations done on the token to attain the same cipher-text for unwrap tracking.
-    function _calculateUnwrapAmount(euint64 requestedUnwrapAmount) internal virtual returns (euint64) {
-        euint64 balance = fromToken().confidentialBalanceOf(address(this));
-
-        (ebool success, ) = FHESafeMath.tryDecrease(balance, requestedUnwrapAmount);
-
-        return FHE.select(success, requestedUnwrapAmount, FHE.asEuint64(0));
     }
 
     /// @dev Gets the current batch id and increments it.
