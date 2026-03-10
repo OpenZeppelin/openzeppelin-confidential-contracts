@@ -50,7 +50,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     struct Batch {
         euint64 totalDeposits;
-        euint64 unwrapAmount;
+        bytes32 unwrapRequestId;
         uint64 exchangeRate;
         bool canceled;
         mapping(address => euint64) deposits;
@@ -179,7 +179,12 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         euint64 amountToUnwrap = totalDeposits(batchId);
         FHE.allowTransient(amountToUnwrap, address(fromToken()));
-        _batches[batchId].unwrapAmount = fromToken().unwrap(address(this), address(this), amountToUnwrap);
+        _batches[batchId].unwrapRequestId = fromToken().unwrap(
+            address(this),
+            address(this),
+            externalEuint64.wrap(euint64.unwrap(amountToUnwrap)),
+            ""
+        );
 
         emit BatchDispatched(batchId);
     }
@@ -196,20 +201,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     ) public virtual nonReentrant {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Dispatched));
 
-        euint64 unwrapAmount_ = unwrapAmount(batchId);
+        bytes32 unwrapRequestId_ = unwrapRequestId(batchId);
         // finalize unwrap call will fail if already called by this contract or by anyone else
-        try
-            ERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(
-                euint64.unwrap(unwrapAmount_),
-                unwrapAmountCleartext,
-                decryptionProof
-            )
-        {
+        try ERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapRequestId_, unwrapAmountCleartext, decryptionProof) {
             // No need to validate input since `finalizeUnwrap` request succeeded
         } catch {
             // Must validate input since `finalizeUnwrap` request failed
             bytes32[] memory handles = new bytes32[](1);
-            handles[0] = euint64.unwrap(unwrapAmount_);
+            handles[0] = unwrapRequestId_;
             FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
         }
 
@@ -279,9 +278,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         return _currentBatchId;
     }
 
-    /// @dev The amount of {fromToken} unwrapped during {dispatchBatch} for batch with id `batchId`.
-    function unwrapAmount(uint256 batchId) public view virtual returns (euint64) {
-        return _batches[batchId].unwrapAmount;
+    /// @dev The unwrap request id for a batch with id `batchId`.
+    function unwrapRequestId(uint256 batchId) public view virtual returns (bytes32) {
+        return _batches[batchId].unwrapRequestId;
     }
 
     /// @dev The total deposits made in batch with id `batchId`.
@@ -315,7 +314,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         if (exchangeRate(batchId) != 0) {
             return BatchState.Finalized;
         }
-        if (euint64.unwrap(unwrapAmount(batchId)) != 0) {
+        if (unwrapRequestId(batchId) != 0) {
             return BatchState.Dispatched;
         }
         if (batchId == currentBatchId()) {

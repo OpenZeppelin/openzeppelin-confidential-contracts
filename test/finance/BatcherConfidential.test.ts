@@ -401,7 +401,7 @@ describe('BatcherConfidential', function () {
       const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
       const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
 
-      await expect(this.batcher.unwrapAmount(batchId)).to.eventually.eq(amount);
+      await expect(this.batcher.unwrapRequestId(batchId)).to.eventually.eq(amount);
 
       Object.assign(this, { joinAmount, batchId, unwrapAmount: amount, abiEncodedClearValues, decryptionProof });
     });
@@ -563,7 +563,7 @@ describe('BatcherConfidential', function () {
 
     // dispatch amount is publicly decryptable
     const { abiEncodedClearValues, decryptionProof } = await batcher
-      .unwrapAmount(batchId1)
+      .unwrapRequestId(batchId1)
       .then(amount => fhevm.publicDecrypt([amount]));
 
     expect(abiEncodedClearValues).to.eq(amount1);
@@ -621,7 +621,7 @@ describe('BatcherConfidential', function () {
     // Check unwrap amount
     await expect(
       batcher
-        .unwrapAmount(batchId2)
+        .unwrapRequestId(batchId2)
         .then(amount => fhevm.publicDecrypt([amount]))
         .then(({ abiEncodedClearValues }) => abiEncodedClearValues),
     ).to.eventually.eq(amount2);
