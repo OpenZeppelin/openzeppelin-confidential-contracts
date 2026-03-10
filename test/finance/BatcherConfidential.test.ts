@@ -118,6 +118,19 @@ describe('BatcherConfidential', function () {
     ).to.be.revertedWithCustomError(this.batcher, 'InvalidFromToken');
   });
 
+  it('should reject invalid toToken', async function () {
+    const confidentialToken = await ethers.deployContract('$ERC7984Mock', ['Mock Token', 'MTK', 'URI']);
+
+    await expect(
+      ethers.deployContract('$BatcherConfidentialSwapMock', [
+        this.fromToken,
+        confidentialToken,
+        this.exchange,
+        this.operator,
+      ]),
+    ).to.be.revertedWithCustomError(this.batcher, 'InvalidToToken');
+  });
+
   for (const viaCallback of [true, false]) {
     describe(`join ${viaCallback ? 'via callback' : 'directly'}`, async function () {
       const join = async function (
