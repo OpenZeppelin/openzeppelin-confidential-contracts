@@ -121,31 +121,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         SafeERC20.forceApprove(IERC20(toToken().underlying()), address(toToken()), type(uint256).max);
     }
 
-    /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
-    function claim(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
-
-        euint64 deposit = deposits(batchId, msg.sender);
-
-        // Overflow is not possible on mul since `type(uint64).max ** 2 < type(uint128).max`.
-        // Given that the output of the entire batch must fit in uint64, individual user outputs must also fit.
-        euint64 amountToSend = FHE.asEuint64(
-            FHE.div(FHE.mul(FHE.asEuint128(deposit), exchangeRate(batchId)), uint128(10) ** exchangeRateDecimals())
-        );
-        FHE.allowTransient(amountToSend, address(toToken()));
-
-        euint64 amountTransferred = toToken().confidentialTransfer(msg.sender, amountToSend);
-
-        ebool transferSuccess = FHE.ne(amountTransferred, FHE.asEuint64(0));
-        euint64 newDeposit = FHE.select(transferSuccess, FHE.asEuint64(0), deposit);
-
-        FHE.allowThis(newDeposit);
-        FHE.allow(newDeposit, msg.sender);
-        _batches[batchId].deposits[msg.sender] = newDeposit;
-
-        emit Claimed(batchId, msg.sender, amountTransferred);
-
-        return amountTransferred;
+    /// @dev Claim the `toToken` corresponding to `account`'s deposit in batch with id `batchId`.
+    function claim(uint256 batchId, address account) public virtual nonReentrant returns (euint64) {
+        return _claim(batchId, account);
     }
 
     /**
@@ -335,6 +313,36 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         }
 
         revert BatchNonexistent(batchId);
+    }
+
+    /**
+     * @dev Claims `toToken` for `account`'s deposit in batch with id `batchId`. Tokens are always
+     * sent to `account`, enabling third-party relayers to claim on behalf of depositors.
+     */
+    function _claim(uint256 batchId, address account) internal virtual returns (euint64) {
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
+
+        euint64 deposit = deposits(batchId, account);
+
+        // Overflow is not possible on mul since `type(uint64).max ** 2 < type(uint128).max`.
+        // Given that the output of the entire batch must fit in uint64, individual user outputs must also fit.
+        euint64 amountToSend = FHE.asEuint64(
+            FHE.div(FHE.mul(FHE.asEuint128(deposit), exchangeRate(batchId)), uint128(10) ** exchangeRateDecimals())
+        );
+        FHE.allowTransient(amountToSend, address(toToken()));
+
+        euint64 amountTransferred = toToken().confidentialTransfer(account, amountToSend);
+
+        ebool transferSuccess = FHE.ne(amountTransferred, FHE.asEuint64(0));
+        euint64 newDeposit = FHE.select(transferSuccess, FHE.asEuint64(0), deposit);
+
+        FHE.allowThis(newDeposit);
+        FHE.allow(newDeposit, account);
+        _batches[batchId].deposits[account] = newDeposit;
+
+        emit Claimed(batchId, account, amountTransferred);
+
+        return amountTransferred;
     }
 
     /**
