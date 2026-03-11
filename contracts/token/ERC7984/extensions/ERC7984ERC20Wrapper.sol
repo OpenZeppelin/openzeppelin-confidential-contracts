@@ -27,7 +27,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     uint8 private immutable _decimals;
     uint256 private immutable _rate;
 
-    mapping(euint64 unwrapAmount => address recipient) private _unwrapRequests;
+    mapping(bytes32 unwrapRequestId => address recipient) private _unwrapRequests;
 
     error InvalidUnwrapRequest(bytes32 unwrapRequestId);
     error ERC7984TotalSupplyOverflow();
@@ -120,10 +120,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(to != address(0), InvalidUnwrapRequest(unwrapRequestId));
 
         euint64 unwrapAmount_ = unwrapAmount(unwrapRequestId);
-        delete _unwrapRequests[unwrapAmount_];
+        delete _unwrapRequests[unwrapRequestId];
 
         bytes32[] memory handles = new bytes32[](1);
-        handles[0] = unwrapRequestId;
+        handles[0] = euint64.unwrap(unwrapAmount_);
 
         bytes memory cleartexts = abi.encode(unwrapAmountCleartext);
 
@@ -184,7 +184,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * unwrap request for the amount `unwrapAmount` exists.
      */
     function unwrapRequester(bytes32 unwrapRequestId) public view virtual returns (address) {
-        return _unwrapRequests[euint64.wrap(unwrapRequestId)];
+        return _unwrapRequests[unwrapRequestId];
     }
 
     /**
@@ -222,7 +222,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         // WARNING: Storing unwrap requests in a mapping from cipher-text to address assumes that
         // cipher-texts are unique--this holds here but is not always true. Be cautious when assuming
         // cipher-text uniqueness.
-        _unwrapRequests[unwrapAmount_] = to;
+        _unwrapRequests[euint64.unwrap(unwrapAmount_)] = to;
 
         emit UnwrapRequested(to, euint64.unwrap(unwrapAmount_), unwrapAmount_);
         return unwrapAmount_;
