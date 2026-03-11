@@ -295,6 +295,12 @@ describe('BatcherConfidential', function () {
         .withArgs(currentBatchId, BatchState.Pending, encodeStateBitmap(BatchState.Finalized));
     });
 
+    it('should revert if account did not participate in the batch', async function () {
+      await expect(this.batcher.claim(this.batchId, this.recipient))
+        .to.be.revertedWithCustomError(this.batcher, 'ZeroClaimableBalance')
+        .withArgs(this.batchId, this.recipient.address);
+    });
+
     it('should emit event', async function () {
       await expect(this.batcher.claim(this.batchId, this.holder))
         .to.emit(this.batcher, 'Claimed')

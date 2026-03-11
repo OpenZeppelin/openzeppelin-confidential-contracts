@@ -83,6 +83,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The `batchId` does not exist. Batch IDs start at 1 and must be less than or equal to {currentBatchId}.
     error BatchNonexistent(uint256 batchId);
 
+    /// @dev The `account` has a zero deposits in batch `batchId`.
+    error ZeroClaimableBalance(uint256 batchId, address account);
+
     /**
      * @dev The batch `batchId` is in the state `current`, which is invalid for the operation.
      * The `expectedStates` is a bitmap encoding the expected/allowed states for the operation.
@@ -121,7 +124,11 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         SafeERC20.forceApprove(IERC20(toToken().underlying()), address(toToken()), type(uint256).max);
     }
 
-    /// @dev Claim the `toToken` corresponding to `account`'s deposit in batch with id `batchId`.
+    /**
+     * @dev Claim the `toToken` corresponding to `account`'s deposit in batch with id `batchId`.
+     *
+     * NOTE: This function is not gated and can be called by anyone. Claims could be frontrun.
+     */
     function claim(uint256 batchId, address account) public virtual nonReentrant returns (euint64) {
         return _claim(batchId, account);
     }
@@ -323,6 +330,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
 
         euint64 deposit = deposits(batchId, account);
+        require(FHE.isInitialized(deposit), ZeroClaimableBalance(batchId, account));
 
         // Overflow is not possible on mul since `type(uint64).max ** 2 < type(uint128).max`.
         // Given that the output of the entire batch must fit in uint64, individual user outputs must also fit.
