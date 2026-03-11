@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.2.0) (utils/HandleAccessManager.sol)
+pragma solidity ^0.8.26;
+
+import {Impl} from "@fhevm/solidity/lib/Impl.sol";
+
+abstract contract HandleAccessManager {
+    error HandleAccessManagerNotAllowed(bytes32 handle, address account);
+
+    /**
+     * @dev Get handle access for the given handle `handle`. Access will be given to the
+     * account `account` with the given persistence flag.
+     *
+     * NOTE: This function call is validated by {_validateHandleAllowance}.
+     */
+    function getHandleAllowance(bytes32 handle, address account, bool persistent) public virtual {
+        require(_validateHandleAllowance(handle), HandleAccessManagerNotAllowed(handle, account));
+        if (persistent) {
+            Impl.allow(handle, account);
+        } else {
+            Impl.allowTransient(handle, account);
+        }
+    }
+
+    /**
+     * @dev Unimplemented function that must return true if the message sender is allowed to call
+     * {getHandleAllowance} for the given handle.
+     */
+    function _validateHandleAllowance(bytes32 handle) internal view virtual returns (bool);
+}

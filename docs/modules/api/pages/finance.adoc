@@ -1,0 +1,918 @@
+:github-icon: pass:[<svg class="icon"><use href="#github-icon"/></svg>]
+:VestingWalletConfidential: pass:normal[xref:finance.adoc#VestingWalletConfidential[`VestingWalletConfidential`]]
+:VestingWalletCliffConfidential: pass:normal[xref:finance.adoc#VestingWalletCliffConfidential[`VestingWalletCliffConfidential`]]
+:VestingWalletConfidential: pass:normal[xref:finance.adoc#VestingWalletConfidential[`VestingWalletConfidential`]]
+:BatcherConfidential: pass:normal[xref:finance.adoc#BatcherConfidential[`BatcherConfidential`]]
+:ERC7984ERC20Wrapper: pass:normal[xref:token.adoc#ERC7984ERC20Wrapper[`ERC7984ERC20Wrapper`]]
+:VestingWalletConfidentialFactory: pass:normal[xref:finance.adoc#VestingWalletConfidentialFactory[`VestingWalletConfidentialFactory`]]
+:VestingWalletConfidentialFactory: pass:normal[xref:finance.adoc#VestingWalletConfidentialFactory[`VestingWalletConfidentialFactory`]]
+:IERC7984: pass:normal[xref:interfaces.adoc#IERC7984[`IERC7984`]]
+:VestingWalletConfidential: pass:normal[xref:finance.adoc#VestingWalletConfidential[`VestingWalletConfidential`]]
+:VestingWalletConfidential: pass:normal[xref:finance.adoc#VestingWalletConfidential[`VestingWalletConfidential`]]
+:VestingWalletConfidential-start: pass:normal[xref:finance.adoc#VestingWalletConfidential-start--[`VestingWalletConfidential.start`]]
+:ERC7984ERC20Wrapper: pass:normal[xref:token.adoc#ERC7984ERC20Wrapper[`ERC7984ERC20Wrapper`]]
+:ERC7984-confidentialTransferAndCall: pass:normal[xref:token.adoc#ERC7984-confidentialTransferAndCall-address-euint64-bytes-[`ERC7984.confidentialTransferAndCall`]]
+:ERC7984ERC20Wrapper: pass:normal[xref:token.adoc#ERC7984ERC20Wrapper[`ERC7984ERC20Wrapper`]]
+:ERC7984ERC20Wrapper: pass:normal[xref:token.adoc#ERC7984ERC20Wrapper[`ERC7984ERC20Wrapper`]]
+
+= Finance
+
+[.readme-notice]
+NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api#finance
+
+This directory includes primitives for on-chain confidential financial systems:
+
+- {VestingWalletConfidential}: Handles the vesting of confidential tokens for a given beneficiary. Custody of multiple tokens can be given to this contract, which will release the token to the beneficiary following a given, customizable, vesting schedule.
+- {VestingWalletCliffConfidential}: Variant of {VestingWalletConfidential} which adds a cliff period to the vesting schedule.
+- {BatcherConfidential}: A batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts via a non-confidential route.
+
+For convenience, this directory also includes:
+
+- {VestingWalletConfidentialFactory}: A factory which enables batch funding of vesting wallets.
+
+== Contracts
+:VestingWalletStorage: pass:normal[xref:#VestingWalletConfidential-VestingWalletStorage[`++VestingWalletStorage++`]]
+:VestingWalletConfidentialTokenReleased: pass:normal[xref:#VestingWalletConfidential-VestingWalletConfidentialTokenReleased-address-euint64-[`++VestingWalletConfidentialTokenReleased++`]]
+:start: pass:normal[xref:#VestingWalletConfidential-start--[`++start++`]]
+:duration: pass:normal[xref:#VestingWalletConfidential-duration--[`++duration++`]]
+:end: pass:normal[xref:#VestingWalletConfidential-end--[`++end++`]]
+:released: pass:normal[xref:#VestingWalletConfidential-released-address-[`++released++`]]
+:releasable: pass:normal[xref:#VestingWalletConfidential-releasable-address-[`++releasable++`]]
+:release: pass:normal[xref:#VestingWalletConfidential-release-address-[`++release++`]]
+:vestedAmount: pass:normal[xref:#VestingWalletConfidential-vestedAmount-address-uint48-[`++vestedAmount++`]]
+:__VestingWalletConfidential_init: pass:normal[xref:#VestingWalletConfidential-__VestingWalletConfidential_init-address-uint48-uint48-[`++__VestingWalletConfidential_init++`]]
+:__VestingWalletConfidential_init_unchained: pass:normal[xref:#VestingWalletConfidential-__VestingWalletConfidential_init_unchained-uint48-uint48-[`++__VestingWalletConfidential_init_unchained++`]]
+:_vestingSchedule: pass:normal[xref:#VestingWalletConfidential-_vestingSchedule-euint128-uint48-[`++_vestingSchedule++`]]
+
+:start-: pass:normal[xref:#VestingWalletConfidential-start--[`++start++`]]
+:duration-: pass:normal[xref:#VestingWalletConfidential-duration--[`++duration++`]]
+:end-: pass:normal[xref:#VestingWalletConfidential-end--[`++end++`]]
+:released-address: pass:normal[xref:#VestingWalletConfidential-released-address-[`++released++`]]
+:releasable-address: pass:normal[xref:#VestingWalletConfidential-releasable-address-[`++releasable++`]]
+:release-address: pass:normal[xref:#VestingWalletConfidential-release-address-[`++release++`]]
+:vestedAmount-address-uint48: pass:normal[xref:#VestingWalletConfidential-vestedAmount-address-uint48-[`++vestedAmount++`]]
+:__VestingWalletConfidential_init-address-uint48-uint48: pass:normal[xref:#VestingWalletConfidential-__VestingWalletConfidential_init-address-uint48-uint48-[`++__VestingWalletConfidential_init++`]]
+:__VestingWalletConfidential_init_unchained-uint48-uint48: pass:normal[xref:#VestingWalletConfidential-__VestingWalletConfidential_init_unchained-uint48-uint48-[`++__VestingWalletConfidential_init_unchained++`]]
+:_vestingSchedule-euint128-uint48: pass:normal[xref:#VestingWalletConfidential-_vestingSchedule-euint128-uint48-[`++_vestingSchedule++`]]
+
+[.contract]
+[[VestingWalletConfidential]]
+=== `++VestingWalletConfidential++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/finance/VestingWalletConfidential.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/finance/VestingWalletConfidential.sol";
+```
+
+A vesting wallet is an ownable contract that can receive ERC7984 tokens, and release these
+assets to the wallet owner, also referred to as "beneficiary", according to a vesting schedule.
+
+Any assets transferred to this contract will follow the vesting schedule as if they were locked from the beginning.
+Consequently, if the vesting has already started, any amount of tokens sent to this contract will (at least partly)
+be immediately releasable.
+
+By setting the duration to 0, one can configure this contract to behave like an asset timelock that holds tokens for
+a beneficiary until a specified time.
+
+NOTE: Since the wallet is `Ownable`, and ownership can be transferred, it is possible to sell unvested tokens.
+
+NOTE: When using this contract with any token whose balance is adjusted automatically (i.e. a rebase token), make
+sure to account for the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
+
+Confidential vesting wallet contracts can be deployed (as clones) using the {VestingWalletConfidentialFactory}.
+
+[.contract-index]
+.Functions
+--
+* `++start()++`
+* `++duration()++`
+* `++end()++`
+* `++released(token)++`
+* `++releasable(token)++`
+* `++release(token)++`
+* `++vestedAmount(token, timestamp)++`
+* `++__VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds)++`
+* `++__VestingWalletConfidential_init_unchained(startTimestamp, durationSeconds)++`
+* `++_vestingSchedule(totalAllocation, timestamp)++`
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+* `++_reentrancyGuardEntered()++`
+* `++_reentrancyGuardStorageSlot()++`
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++__Ownable_init(initialOwner)++`
+* `++__Ownable_init_unchained(initialOwner)++`
+* `++owner()++`
+* `++_checkOwner()++`
+* `++renounceOwnership()++`
+* `++transferOwnership(newOwner)++`
+* `++_transferOwnership(newOwner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+* `++__Context_init()++`
+* `++__Context_init_unchained()++`
+* `++_msgSender()++`
+* `++_msgData()++`
+* `++_contextSuffixLength()++`
+
+[.contract-subindex-inherited]
+.Initializable
+* `++_checkInitializing()++`
+* `++_disableInitializers()++`
+* `++_getInitializedVersion()++`
+* `++_isInitializing()++`
+* `++_initializableStorageSlot()++`
+
+--
+
+[.contract-index]
+.Events
+--
+* `++VestingWalletConfidentialTokenReleased(token, amount)++`
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++OwnershipTransferred(previousOwner, newOwner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+
+[.contract-subindex-inherited]
+.Initializable
+* `++Initialized(version)++`
+
+--
+
+[.contract-index]
+.Errors
+--
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+* `++ReentrancyGuardReentrantCall()++`
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++OwnableUnauthorizedAccount(account)++`
+* `++OwnableInvalidOwner(owner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+
+[.contract-subindex-inherited]
+.Initializable
+* `++InvalidInitialization()++`
+* `++NotInitializing()++`
+
+--
+
+[.contract-item]
+[[VestingWalletConfidential-start--]]
+==== `[.contract-item-name]#++start++#++() → uint64++` [.item-kind]#public#
+
+Timestamp at which the vesting starts.
+
+[.contract-item]
+[[VestingWalletConfidential-duration--]]
+==== `[.contract-item-name]#++duration++#++() → uint64++` [.item-kind]#public#
+
+Duration of the vesting in seconds.
+
+[.contract-item]
+[[VestingWalletConfidential-end--]]
+==== `[.contract-item-name]#++end++#++() → uint64++` [.item-kind]#public#
+
+Timestamp at which the vesting ends.
+
+[.contract-item]
+[[VestingWalletConfidential-released-address-]]
+==== `[.contract-item-name]#++released++#++(address token) → euint128++` [.item-kind]#public#
+
+Amount of token already released
+
+[.contract-item]
+[[VestingWalletConfidential-releasable-address-]]
+==== `[.contract-item-name]#++releasable++#++(address token) → euint64++` [.item-kind]#public#
+
+Getter for the amount of releasable `token` tokens. `token` should be the address of an
+{IERC7984} contract.
+
+[.contract-item]
+[[VestingWalletConfidential-release-address-]]
+==== `[.contract-item-name]#++release++#++(address token)++` [.item-kind]#public#
+
+Release the tokens that have already vested.
+
+Emits a {VestingWalletConfidentialTokenReleased} event.
+
+[.contract-item]
+[[VestingWalletConfidential-vestedAmount-address-uint48-]]
+==== `[.contract-item-name]#++vestedAmount++#++(address token, uint48 timestamp) → euint128++` [.item-kind]#public#
+
+Calculates the amount of tokens that have been vested at the given timestamp.
+Default implementation is a linear vesting curve.
+
+[.contract-item]
+[[VestingWalletConfidential-__VestingWalletConfidential_init-address-uint48-uint48-]]
+==== `[.contract-item-name]#++__VestingWalletConfidential_init++#++(address beneficiary, uint48 startTimestamp, uint48 durationSeconds)++` [.item-kind]#internal#
+
+Initializes the vesting wallet for a given `beneficiary` with a start time of `startTimestamp`
+and an end time of `startTimestamp + durationSeconds`.
+
+[.contract-item]
+[[VestingWalletConfidential-__VestingWalletConfidential_init_unchained-uint48-uint48-]]
+==== `[.contract-item-name]#++__VestingWalletConfidential_init_unchained++#++(uint48 startTimestamp, uint48 durationSeconds)++` [.item-kind]#internal#
+
+[.contract-item]
+[[VestingWalletConfidential-_vestingSchedule-euint128-uint48-]]
+==== `[.contract-item-name]#++_vestingSchedule++#++(euint128 totalAllocation, uint48 timestamp) → euint128++` [.item-kind]#internal#
+
+This returns the amount vested, as a function of time, for an asset given its total historical allocation.
+
+[.contract-item]
+[[VestingWalletConfidential-VestingWalletConfidentialTokenReleased-address-euint64-]]
+==== `[.contract-item-name]#++VestingWalletConfidentialTokenReleased++#++(address indexed token, euint64 amount)++` [.item-kind]#event#
+
+Emitted when releasable vested tokens are released.
+
+:VestingWalletCliffStorage: pass:normal[xref:#VestingWalletCliffConfidential-VestingWalletCliffStorage[`++VestingWalletCliffStorage++`]]
+:VestingWalletCliffConfidentialInvalidCliffDuration: pass:normal[xref:#VestingWalletCliffConfidential-VestingWalletCliffConfidentialInvalidCliffDuration-uint64-uint64-[`++VestingWalletCliffConfidentialInvalidCliffDuration++`]]
+:cliff: pass:normal[xref:#VestingWalletCliffConfidential-cliff--[`++cliff++`]]
+:__VestingWalletCliffConfidential_init: pass:normal[xref:#VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init-address-uint48-uint48-uint48-[`++__VestingWalletCliffConfidential_init++`]]
+:__VestingWalletCliffConfidential_init_unchained: pass:normal[xref:#VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init_unchained-uint48-[`++__VestingWalletCliffConfidential_init_unchained++`]]
+:_vestingSchedule: pass:normal[xref:#VestingWalletCliffConfidential-_vestingSchedule-euint128-uint48-[`++_vestingSchedule++`]]
+
+:cliff-: pass:normal[xref:#VestingWalletCliffConfidential-cliff--[`++cliff++`]]
+:__VestingWalletCliffConfidential_init-address-uint48-uint48-uint48: pass:normal[xref:#VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init-address-uint48-uint48-uint48-[`++__VestingWalletCliffConfidential_init++`]]
+:__VestingWalletCliffConfidential_init_unchained-uint48: pass:normal[xref:#VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init_unchained-uint48-[`++__VestingWalletCliffConfidential_init_unchained++`]]
+:_vestingSchedule-euint128-uint48: pass:normal[xref:#VestingWalletCliffConfidential-_vestingSchedule-euint128-uint48-[`++_vestingSchedule++`]]
+
+[.contract]
+[[VestingWalletCliffConfidential]]
+=== `++VestingWalletCliffConfidential++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/finance/VestingWalletCliffConfidential.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/finance/VestingWalletCliffConfidential.sol";
+```
+
+An extension of {VestingWalletConfidential} that adds a cliff to the vesting schedule. The cliff is `cliffSeconds` long and
+starts at the vesting start timestamp (see {VestingWalletConfidential}).
+
+[.contract-index]
+.Functions
+--
+* `++cliff()++`
+* `++__VestingWalletCliffConfidential_init(beneficiary, startTimestamp, durationSeconds, cliffSeconds)++`
+* `++__VestingWalletCliffConfidential_init_unchained(cliffSeconds)++`
+* `++_vestingSchedule(totalAllocation, timestamp)++`
+
+[.contract-subindex-inherited]
+.VestingWalletConfidential
+* `++start()++`
+* `++duration()++`
+* `++end()++`
+* `++released(token)++`
+* `++releasable(token)++`
+* `++release(token)++`
+* `++vestedAmount(token, timestamp)++`
+* `++__VestingWalletConfidential_init(beneficiary, startTimestamp, durationSeconds)++`
+* `++__VestingWalletConfidential_init_unchained(startTimestamp, durationSeconds)++`
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+* `++_reentrancyGuardEntered()++`
+* `++_reentrancyGuardStorageSlot()++`
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++__Ownable_init(initialOwner)++`
+* `++__Ownable_init_unchained(initialOwner)++`
+* `++owner()++`
+* `++_checkOwner()++`
+* `++renounceOwnership()++`
+* `++transferOwnership(newOwner)++`
+* `++_transferOwnership(newOwner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+* `++__Context_init()++`
+* `++__Context_init_unchained()++`
+* `++_msgSender()++`
+* `++_msgData()++`
+* `++_contextSuffixLength()++`
+
+[.contract-subindex-inherited]
+.Initializable
+* `++_checkInitializing()++`
+* `++_disableInitializers()++`
+* `++_getInitializedVersion()++`
+* `++_isInitializing()++`
+* `++_initializableStorageSlot()++`
+
+--
+
+[.contract-index]
+.Events
+--
+
+[.contract-subindex-inherited]
+.VestingWalletConfidential
+* `++VestingWalletConfidentialTokenReleased(token, amount)++`
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++OwnershipTransferred(previousOwner, newOwner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+
+[.contract-subindex-inherited]
+.Initializable
+* `++Initialized(version)++`
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++VestingWalletCliffConfidentialInvalidCliffDuration(cliffSeconds, durationSeconds)++`
+
+[.contract-subindex-inherited]
+.VestingWalletConfidential
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+* `++ReentrancyGuardReentrantCall()++`
+
+[.contract-subindex-inherited]
+.OwnableUpgradeable
+* `++OwnableUnauthorizedAccount(account)++`
+* `++OwnableInvalidOwner(owner)++`
+
+[.contract-subindex-inherited]
+.ContextUpgradeable
+
+[.contract-subindex-inherited]
+.Initializable
+* `++InvalidInitialization()++`
+* `++NotInitializing()++`
+
+--
+
+[.contract-item]
+[[VestingWalletCliffConfidential-cliff--]]
+==== `[.contract-item-name]#++cliff++#++() → uint64++` [.item-kind]#public#
+
+The timestamp at which the cliff ends.
+
+[.contract-item]
+[[VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init-address-uint48-uint48-uint48-]]
+==== `[.contract-item-name]#++__VestingWalletCliffConfidential_init++#++(address beneficiary, uint48 startTimestamp, uint48 durationSeconds, uint48 cliffSeconds)++` [.item-kind]#internal#
+
+Set the duration of the cliff, in seconds. The cliff starts at the vesting
+start timestamp (see {VestingWalletConfidential-start}) and ends `cliffSeconds` later.
+
+[.contract-item]
+[[VestingWalletCliffConfidential-__VestingWalletCliffConfidential_init_unchained-uint48-]]
+==== `[.contract-item-name]#++__VestingWalletCliffConfidential_init_unchained++#++(uint48 cliffSeconds)++` [.item-kind]#internal#
+
+[.contract-item]
+[[VestingWalletCliffConfidential-_vestingSchedule-euint128-uint48-]]
+==== `[.contract-item-name]#++_vestingSchedule++#++(euint128 totalAllocation, uint48 timestamp) → euint128++` [.item-kind]#internal#
+
+This function returns the amount vested, as a function of time, for
+an asset given its total historical allocation. Returns 0 if the {cliff} timestamp is not met.
+
+IMPORTANT: The cliff not only makes the schedule return 0, but it also ignores every possible side
+effect from calling the inherited implementation (i.e. `super._vestingSchedule`). Carefully consider
+this caveat if the overridden implementation of this function has any (e.g. writing to memory or reverting).
+
+[.contract-item]
+[[VestingWalletCliffConfidential-VestingWalletCliffConfidentialInvalidCliffDuration-uint64-uint64-]]
+==== `[.contract-item-name]#++VestingWalletCliffConfidentialInvalidCliffDuration++#++(uint64 cliffSeconds, uint64 durationSeconds)++` [.item-kind]#error#
+
+The specified cliff duration is larger than the vesting duration.
+
+:VestingPlan: pass:normal[xref:#VestingWalletConfidentialFactory-VestingPlan[`++VestingPlan++`]]
+:VestingWalletConfidentialFunded: pass:normal[xref:#VestingWalletConfidentialFactory-VestingWalletConfidentialFunded-address-address-euint64-bytes-[`++VestingWalletConfidentialFunded++`]]
+:VestingWalletConfidentialCreated: pass:normal[xref:#VestingWalletConfidentialFactory-VestingWalletConfidentialCreated-address-bytes-[`++VestingWalletConfidentialCreated++`]]
+:constructor: pass:normal[xref:#VestingWalletConfidentialFactory-constructor--[`++constructor++`]]
+:batchFundVestingWalletConfidential: pass:normal[xref:#VestingWalletConfidentialFactory-batchFundVestingWalletConfidential-address-struct-VestingWalletConfidentialFactory-VestingPlan---bytes-[`++batchFundVestingWalletConfidential++`]]
+:createVestingWalletConfidential: pass:normal[xref:#VestingWalletConfidentialFactory-createVestingWalletConfidential-bytes-[`++createVestingWalletConfidential++`]]
+:predictVestingWalletConfidential: pass:normal[xref:#VestingWalletConfidentialFactory-predictVestingWalletConfidential-bytes-[`++predictVestingWalletConfidential++`]]
+:_validateVestingWalletInitArgs: pass:normal[xref:#VestingWalletConfidentialFactory-_validateVestingWalletInitArgs-bytes-[`++_validateVestingWalletInitArgs++`]]
+:_initializeVestingWallet: pass:normal[xref:#VestingWalletConfidentialFactory-_initializeVestingWallet-address-bytes-[`++_initializeVestingWallet++`]]
+:_deployVestingWalletImplementation: pass:normal[xref:#VestingWalletConfidentialFactory-_deployVestingWalletImplementation--[`++_deployVestingWalletImplementation++`]]
+:_getCreate2VestingWalletConfidentialSalt: pass:normal[xref:#VestingWalletConfidentialFactory-_getCreate2VestingWalletConfidentialSalt-bytes-[`++_getCreate2VestingWalletConfidentialSalt++`]]
+
+:constructor-: pass:normal[xref:#VestingWalletConfidentialFactory-constructor--[`++constructor++`]]
+:batchFundVestingWalletConfidential-address-struct-VestingWalletConfidentialFactory-VestingPlan---bytes: pass:normal[xref:#VestingWalletConfidentialFactory-batchFundVestingWalletConfidential-address-struct-VestingWalletConfidentialFactory-VestingPlan---bytes-[`++batchFundVestingWalletConfidential++`]]
+:createVestingWalletConfidential-bytes: pass:normal[xref:#VestingWalletConfidentialFactory-createVestingWalletConfidential-bytes-[`++createVestingWalletConfidential++`]]
+:predictVestingWalletConfidential-bytes: pass:normal[xref:#VestingWalletConfidentialFactory-predictVestingWalletConfidential-bytes-[`++predictVestingWalletConfidential++`]]
+:_validateVestingWalletInitArgs-bytes: pass:normal[xref:#VestingWalletConfidentialFactory-_validateVestingWalletInitArgs-bytes-[`++_validateVestingWalletInitArgs++`]]
+:_initializeVestingWallet-address-bytes: pass:normal[xref:#VestingWalletConfidentialFactory-_initializeVestingWallet-address-bytes-[`++_initializeVestingWallet++`]]
+:_deployVestingWalletImplementation-: pass:normal[xref:#VestingWalletConfidentialFactory-_deployVestingWalletImplementation--[`++_deployVestingWalletImplementation++`]]
+:_getCreate2VestingWalletConfidentialSalt-bytes: pass:normal[xref:#VestingWalletConfidentialFactory-_getCreate2VestingWalletConfidentialSalt-bytes-[`++_getCreate2VestingWalletConfidentialSalt++`]]
+
+[.contract]
+[[VestingWalletConfidentialFactory]]
+=== `++VestingWalletConfidentialFactory++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/finance/VestingWalletConfidentialFactory.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/finance/VestingWalletConfidentialFactory.sol";
+```
+
+A factory which enables batch funding of vesting wallets.
+
+The {_deployVestingWalletImplementation}, {_initializeVestingWallet}, and {_validateVestingWalletInitArgs}
+functions remain unimplemented to allow for custom implementations of the vesting wallet to be used.
+
+[.contract-index]
+.Functions
+--
+* `++constructor()++`
+* `++batchFundVestingWalletConfidential(token, vestingPlans, inputProof)++`
+* `++createVestingWalletConfidential(initArgs)++`
+* `++predictVestingWalletConfidential(initArgs)++`
+* `++_validateVestingWalletInitArgs(initArgs)++`
+* `++_initializeVestingWallet(vestingWalletAddress, initArgs)++`
+* `++_deployVestingWalletImplementation()++`
+* `++_getCreate2VestingWalletConfidentialSalt(initArgs)++`
+
+--
+
+[.contract-index]
+.Events
+--
+* `++VestingWalletConfidentialFunded(vestingWalletConfidential, token, transferredAmount, initArgs)++`
+* `++VestingWalletConfidentialCreated(vestingWalletConfidential, initArgs)++`
+
+--
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-constructor--]]
+==== `[.contract-item-name]#++constructor++#++()++` [.item-kind]#internal#
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-batchFundVestingWalletConfidential-address-struct-VestingWalletConfidentialFactory-VestingPlan---bytes-]]
+==== `[.contract-item-name]#++batchFundVestingWalletConfidential++#++(address token, struct VestingWalletConfidentialFactory.VestingPlan[] vestingPlans, bytes inputProof)++` [.item-kind]#public#
+
+Batches the funding of multiple confidential vesting wallets.
+
+Funds are sent to deterministic wallet addresses. Wallets can be created either
+before or after this operation.
+
+Emits a {VestingWalletConfidentialFunded} event for each funded vesting plan.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-createVestingWalletConfidential-bytes-]]
+==== `[.contract-item-name]#++createVestingWalletConfidential++#++(bytes initArgs) → address++` [.item-kind]#public#
+
+Creates a confidential vesting wallet.
+
+Emits a {VestingWalletConfidentialCreated}.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-predictVestingWalletConfidential-bytes-]]
+==== `[.contract-item-name]#++predictVestingWalletConfidential++#++(bytes initArgs) → address++` [.item-kind]#public#
+
+Predicts the deterministic address for a confidential vesting wallet.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-_validateVestingWalletInitArgs-bytes-]]
+==== `[.contract-item-name]#++_validateVestingWalletInitArgs++#++(bytes initArgs)++` [.item-kind]#internal#
+
+Virtual function that must be implemented to validate the initArgs bytes.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-_initializeVestingWallet-address-bytes-]]
+==== `[.contract-item-name]#++_initializeVestingWallet++#++(address vestingWalletAddress, bytes initArgs)++` [.item-kind]#internal#
+
+Virtual function that must be implemented to initialize the vesting wallet at `vestingWalletAddress`.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-_deployVestingWalletImplementation--]]
+==== `[.contract-item-name]#++_deployVestingWalletImplementation++#++() → address++` [.item-kind]#internal#
+
+Internal function that is called once to deploy the vesting wallet implementation.
+
+Vesting wallet clones will be initialized by calls to the {_initializeVestingWallet} function.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-_getCreate2VestingWalletConfidentialSalt-bytes-]]
+==== `[.contract-item-name]#++_getCreate2VestingWalletConfidentialSalt++#++(bytes initArgs) → bytes32++` [.item-kind]#internal#
+
+Gets create2 salt for a confidential vesting wallet.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-VestingWalletConfidentialFunded-address-address-euint64-bytes-]]
+==== `[.contract-item-name]#++VestingWalletConfidentialFunded++#++(address indexed vestingWalletConfidential, address indexed token, euint64 transferredAmount, bytes initArgs)++` [.item-kind]#event#
+
+Emitted for each vesting wallet funded within a batch.
+
+[.contract-item]
+[[VestingWalletConfidentialFactory-VestingWalletConfidentialCreated-address-bytes-]]
+==== `[.contract-item-name]#++VestingWalletConfidentialCreated++#++(address indexed vestingWalletConfidential, bytes initArgs)++` [.item-kind]#event#
+
+Emitted when a vesting wallet is deployed.
+
+:BatchState: pass:normal[xref:#BatcherConfidential-BatchState[`++BatchState++`]]
+:ExecuteOutcome: pass:normal[xref:#BatcherConfidential-ExecuteOutcome[`++ExecuteOutcome++`]]
+:Batch: pass:normal[xref:#BatcherConfidential-Batch[`++Batch++`]]
+:BatchDispatched: pass:normal[xref:#BatcherConfidential-BatchDispatched-uint256-[`++BatchDispatched++`]]
+:BatchCanceled: pass:normal[xref:#BatcherConfidential-BatchCanceled-uint256-[`++BatchCanceled++`]]
+:BatchFinalized: pass:normal[xref:#BatcherConfidential-BatchFinalized-uint256-uint64-[`++BatchFinalized++`]]
+:Joined: pass:normal[xref:#BatcherConfidential-Joined-uint256-address-euint64-[`++Joined++`]]
+:Claimed: pass:normal[xref:#BatcherConfidential-Claimed-uint256-address-euint64-[`++Claimed++`]]
+:Quit: pass:normal[xref:#BatcherConfidential-Quit-uint256-address-euint64-[`++Quit++`]]
+:BatchNonexistent: pass:normal[xref:#BatcherConfidential-BatchNonexistent-uint256-[`++BatchNonexistent++`]]
+:BatchUnexpectedState: pass:normal[xref:#BatcherConfidential-BatchUnexpectedState-uint256-enum-BatcherConfidential-BatchState-bytes32-[`++BatchUnexpectedState++`]]
+:InvalidExchangeRate: pass:normal[xref:#BatcherConfidential-InvalidExchangeRate-uint256-uint256-uint64-[`++InvalidExchangeRate++`]]
+:Unauthorized: pass:normal[xref:#BatcherConfidential-Unauthorized--[`++Unauthorized++`]]
+:InvalidWrapperToken: pass:normal[xref:#BatcherConfidential-InvalidWrapperToken-address-[`++InvalidWrapperToken++`]]
+:constructor: pass:normal[xref:#BatcherConfidential-constructor-contract-ERC7984ERC20Wrapper-contract-ERC7984ERC20Wrapper-[`++constructor++`]]
+:claim: pass:normal[xref:#BatcherConfidential-claim-uint256-[`++claim++`]]
+:quit: pass:normal[xref:#BatcherConfidential-quit-uint256-[`++quit++`]]
+:dispatchBatch: pass:normal[xref:#BatcherConfidential-dispatchBatch--[`++dispatchBatch++`]]
+:dispatchBatchCallback: pass:normal[xref:#BatcherConfidential-dispatchBatchCallback-uint256-uint64-bytes-[`++dispatchBatchCallback++`]]
+:onConfidentialTransferReceived: pass:normal[xref:#BatcherConfidential-onConfidentialTransferReceived-address-address-euint64-bytes-[`++onConfidentialTransferReceived++`]]
+:fromToken: pass:normal[xref:#BatcherConfidential-fromToken--[`++fromToken++`]]
+:toToken: pass:normal[xref:#BatcherConfidential-toToken--[`++toToken++`]]
+:currentBatchId: pass:normal[xref:#BatcherConfidential-currentBatchId--[`++currentBatchId++`]]
+:unwrapAmount: pass:normal[xref:#BatcherConfidential-unwrapAmount-uint256-[`++unwrapAmount++`]]
+:totalDeposits: pass:normal[xref:#BatcherConfidential-totalDeposits-uint256-[`++totalDeposits++`]]
+:deposits: pass:normal[xref:#BatcherConfidential-deposits-uint256-address-[`++deposits++`]]
+:exchangeRate: pass:normal[xref:#BatcherConfidential-exchangeRate-uint256-[`++exchangeRate++`]]
+:exchangeRateDecimals: pass:normal[xref:#BatcherConfidential-exchangeRateDecimals--[`++exchangeRateDecimals++`]]
+:routeDescription: pass:normal[xref:#BatcherConfidential-routeDescription--[`++routeDescription++`]]
+:batchState: pass:normal[xref:#BatcherConfidential-batchState-uint256-[`++batchState++`]]
+:_join: pass:normal[xref:#BatcherConfidential-_join-address-euint64-[`++_join++`]]
+:_executeRoute: pass:normal[xref:#BatcherConfidential-_executeRoute-uint256-uint256-[`++_executeRoute++`]]
+:_validateStateBitmap: pass:normal[xref:#BatcherConfidential-_validateStateBitmap-uint256-bytes32-[`++_validateStateBitmap++`]]
+:_getAndIncreaseBatchId: pass:normal[xref:#BatcherConfidential-_getAndIncreaseBatchId--[`++_getAndIncreaseBatchId++`]]
+:_encodeStateBitmap: pass:normal[xref:#BatcherConfidential-_encodeStateBitmap-enum-BatcherConfidential-BatchState-[`++_encodeStateBitmap++`]]
+
+:constructor-contract-ERC7984ERC20Wrapper-contract-ERC7984ERC20Wrapper: pass:normal[xref:#BatcherConfidential-constructor-contract-ERC7984ERC20Wrapper-contract-ERC7984ERC20Wrapper-[`++constructor++`]]
+:claim-uint256: pass:normal[xref:#BatcherConfidential-claim-uint256-[`++claim++`]]
+:quit-uint256: pass:normal[xref:#BatcherConfidential-quit-uint256-[`++quit++`]]
+:dispatchBatch-: pass:normal[xref:#BatcherConfidential-dispatchBatch--[`++dispatchBatch++`]]
+:dispatchBatchCallback-uint256-uint64-bytes: pass:normal[xref:#BatcherConfidential-dispatchBatchCallback-uint256-uint64-bytes-[`++dispatchBatchCallback++`]]
+:onConfidentialTransferReceived-address-address-euint64-bytes: pass:normal[xref:#BatcherConfidential-onConfidentialTransferReceived-address-address-euint64-bytes-[`++onConfidentialTransferReceived++`]]
+:fromToken-: pass:normal[xref:#BatcherConfidential-fromToken--[`++fromToken++`]]
+:toToken-: pass:normal[xref:#BatcherConfidential-toToken--[`++toToken++`]]
+:currentBatchId-: pass:normal[xref:#BatcherConfidential-currentBatchId--[`++currentBatchId++`]]
+:unwrapAmount-uint256: pass:normal[xref:#BatcherConfidential-unwrapAmount-uint256-[`++unwrapAmount++`]]
+:totalDeposits-uint256: pass:normal[xref:#BatcherConfidential-totalDeposits-uint256-[`++totalDeposits++`]]
+:deposits-uint256-address: pass:normal[xref:#BatcherConfidential-deposits-uint256-address-[`++deposits++`]]
+:exchangeRate-uint256: pass:normal[xref:#BatcherConfidential-exchangeRate-uint256-[`++exchangeRate++`]]
+:exchangeRateDecimals-: pass:normal[xref:#BatcherConfidential-exchangeRateDecimals--[`++exchangeRateDecimals++`]]
+:routeDescription-: pass:normal[xref:#BatcherConfidential-routeDescription--[`++routeDescription++`]]
+:batchState-uint256: pass:normal[xref:#BatcherConfidential-batchState-uint256-[`++batchState++`]]
+:_join-address-euint64: pass:normal[xref:#BatcherConfidential-_join-address-euint64-[`++_join++`]]
+:_executeRoute-uint256-uint256: pass:normal[xref:#BatcherConfidential-_executeRoute-uint256-uint256-[`++_executeRoute++`]]
+:_validateStateBitmap-uint256-bytes32: pass:normal[xref:#BatcherConfidential-_validateStateBitmap-uint256-bytes32-[`++_validateStateBitmap++`]]
+:_getAndIncreaseBatchId-: pass:normal[xref:#BatcherConfidential-_getAndIncreaseBatchId--[`++_getAndIncreaseBatchId++`]]
+:_encodeStateBitmap-enum-BatcherConfidential-BatchState: pass:normal[xref:#BatcherConfidential-_encodeStateBitmap-enum-BatcherConfidential-BatchState-[`++_encodeStateBitmap++`]]
+
+[.contract]
+[[BatcherConfidential]]
+=== `++BatcherConfidential++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/finance/BatcherConfidential.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/finance/BatcherConfidential.sol";
+```
+
+`BatcherConfidential` is a batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts
+via a non-confidential route. Users deposit {fromToken} into the batcher and receive {toToken} in exchange. Deposits are
+made by using `ERC7984` transfer and call functions such as {ERC7984-confidentialTransferAndCall}.
+
+Developers must implement the virtual function {_executeRoute} to perform the batch's route. This function is called
+once the batch deposits are unwrapped into the underlying tokens. The function should swap the underlying {fromToken} for
+underlying {toToken}. If an issue is encountered, the function should return {ExecuteOutcome.Cancel} to cancel the batch.
+
+Developers must also implement the virtual function {routeDescription} to provide a human readable description of the batch's route.
+
+NOTE: The batcher does not support {ERC7984ERC20Wrapper} contracts prior to v0.4.0.
+
+NOTE: The batcher could be used to maintain confidentiality of deposits--by default there are no confidentiality guarantees.
+If desired, developers should consider restricting certain functions to increase confidentiality.
+
+WARNING: The {toToken} and {fromToken} must be carefully inspected to ensure proper capacity is maintained. If {toToken} or
+{fromToken} are filled--resulting in denial of service--batches could get bricked. The batcher would be unable to wrap
+underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancellation would also fail on rewrap.
+
+[.contract-index]
+.Functions
+--
+* `++constructor(fromToken_, toToken_)++`
+* `++claim(batchId)++`
+* `++quit(batchId)++`
+* `++dispatchBatch()++`
+* `++dispatchBatchCallback(batchId, unwrapAmountCleartext, decryptionProof)++`
+* `++onConfidentialTransferReceived(, from, amount, )++`
+* `++fromToken()++`
+* `++toToken()++`
+* `++currentBatchId()++`
+* `++unwrapAmount(batchId)++`
+* `++totalDeposits(batchId)++`
+* `++deposits(batchId, account)++`
+* `++exchangeRate(batchId)++`
+* `++exchangeRateDecimals()++`
+* `++routeDescription()++`
+* `++batchState(batchId)++`
+* `++_join(to, amount)++`
+* `++_executeRoute(batchId, amount)++`
+* `++_validateStateBitmap(batchId, allowedStates)++`
+* `++_getAndIncreaseBatchId()++`
+* `++_encodeStateBitmap(batchState_)++`
+
+[.contract-subindex-inherited]
+.IERC7984Receiver
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+* `++_reentrancyGuardEntered()++`
+* `++_reentrancyGuardStorageSlot()++`
+
+--
+
+[.contract-index]
+.Events
+--
+* `++BatchDispatched(batchId)++`
+* `++BatchCanceled(batchId)++`
+* `++BatchFinalized(batchId, exchangeRate)++`
+* `++Joined(batchId, account, amount)++`
+* `++Claimed(batchId, account, amount)++`
+* `++Quit(batchId, account, amount)++`
+
+[.contract-subindex-inherited]
+.IERC7984Receiver
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++BatchNonexistent(batchId)++`
+* `++BatchUnexpectedState(batchId, current, expectedStates)++`
+* `++InvalidExchangeRate(batchId, totalDeposits, exchangeRate)++`
+* `++Unauthorized()++`
+* `++InvalidWrapperToken(token)++`
+
+[.contract-subindex-inherited]
+.IERC7984Receiver
+
+[.contract-subindex-inherited]
+.ReentrancyGuardTransient
+* `++ReentrancyGuardReentrantCall()++`
+
+--
+
+[.contract-item]
+[[BatcherConfidential-constructor-contract-ERC7984ERC20Wrapper-contract-ERC7984ERC20Wrapper-]]
+==== `[.contract-item-name]#++constructor++#++(contract ERC7984ERC20Wrapper fromToken_, contract ERC7984ERC20Wrapper toToken_)++` [.item-kind]#internal#
+
+[.contract-item]
+[[BatcherConfidential-claim-uint256-]]
+==== `[.contract-item-name]#++claim++#++(uint256 batchId) → euint64++` [.item-kind]#public#
+
+Claim the `toToken` corresponding to deposit in batch with id `batchId`.
+
+[.contract-item]
+[[BatcherConfidential-quit-uint256-]]
+==== `[.contract-item-name]#++quit++#++(uint256 batchId) → euint64++` [.item-kind]#public#
+
+Quit the batch with id `batchId`. Entire deposit is returned to the user.
+This can only be called if the batch has not yet been dispatched or if the batch was canceled.
+
+NOTE: Developers should consider adding additional restrictions to this function
+if maintaining confidentiality of deposits is critical to the application.
+
+WARNING: {dispatchBatch} may fail if an incompatible version of {ERC7984ERC20Wrapper} is used.
+This function must be unrestricted in cases where batch dispatching fails.
+
+[.contract-item]
+[[BatcherConfidential-dispatchBatch--]]
+==== `[.contract-item-name]#++dispatchBatch++#++()++` [.item-kind]#public#
+
+Permissionless function to dispatch the current batch. Increments the {currentBatchId}.
+
+NOTE: Developers should consider adding additional restrictions to this function
+if maintaining confidentiality of deposits is critical to the application.
+
+[.contract-item]
+[[BatcherConfidential-dispatchBatchCallback-uint256-uint64-bytes-]]
+==== `[.contract-item-name]#++dispatchBatchCallback++#++(uint256 batchId, uint64 unwrapAmountCleartext, bytes decryptionProof)++` [.item-kind]#public#
+
+Dispatch batch callback callable by anyone. This function finalizes the unwrap of {fromToken}
+and calls {_executeRoute} to perform the batch's route. If `_executeRoute` returns `ExecuteOutcome.Partial`,
+this function should be called again with the same `batchId`, `unwrapAmountCleartext`, and `decryptionProof`.
+
+[.contract-item]
+[[BatcherConfidential-onConfidentialTransferReceived-address-address-euint64-bytes-]]
+==== `[.contract-item-name]#++onConfidentialTransferReceived++#++(address, address from, euint64 amount, bytes) → ebool++` [.item-kind]#external#
+
+Called upon receiving a confidential token transfer. Returns an encrypted boolean indicating success
+of the callback. If false is returned, the token contract will attempt to refund the transfer.
+
+WARNING: Do not manually refund the transfer AND return false, as this can lead to double refunds.
+
+[.contract-item]
+[[BatcherConfidential-fromToken--]]
+==== `[.contract-item-name]#++fromToken++#++() → contract ERC7984ERC20Wrapper++` [.item-kind]#public#
+
+Batcher from token. Users deposit this token in exchange for {toToken}.
+
+[.contract-item]
+[[BatcherConfidential-toToken--]]
+==== `[.contract-item-name]#++toToken++#++() → contract ERC7984ERC20Wrapper++` [.item-kind]#public#
+
+Batcher to token. Users receive this token in exchange for their {fromToken} deposits.
+
+[.contract-item]
+[[BatcherConfidential-currentBatchId--]]
+==== `[.contract-item-name]#++currentBatchId++#++() → uint256++` [.item-kind]#public#
+
+The ongoing batch id. New deposits join this batch.
+
+[.contract-item]
+[[BatcherConfidential-unwrapAmount-uint256-]]
+==== `[.contract-item-name]#++unwrapAmount++#++(uint256 batchId) → euint64++` [.item-kind]#public#
+
+The amount of {fromToken} unwrapped during {dispatchBatch} for batch with id `batchId`.
+
+[.contract-item]
+[[BatcherConfidential-totalDeposits-uint256-]]
+==== `[.contract-item-name]#++totalDeposits++#++(uint256 batchId) → euint64++` [.item-kind]#public#
+
+The total deposits made in batch with id `batchId`.
+
+[.contract-item]
+[[BatcherConfidential-deposits-uint256-address-]]
+==== `[.contract-item-name]#++deposits++#++(uint256 batchId, address account) → euint64++` [.item-kind]#public#
+
+The deposits made by `account` in batch with id `batchId`.
+
+[.contract-item]
+[[BatcherConfidential-exchangeRate-uint256-]]
+==== `[.contract-item-name]#++exchangeRate++#++(uint256 batchId) → uint64++` [.item-kind]#public#
+
+The exchange rate set for batch with id `batchId`.
+
+[.contract-item]
+[[BatcherConfidential-exchangeRateDecimals--]]
+==== `[.contract-item-name]#++exchangeRateDecimals++#++() → uint8++` [.item-kind]#public#
+
+The number of decimals of precision for the exchange rate.
+
+[.contract-item]
+[[BatcherConfidential-routeDescription--]]
+==== `[.contract-item-name]#++routeDescription++#++() → string++` [.item-kind]#public#
+
+Human readable description of what the batcher does.
+
+[.contract-item]
+[[BatcherConfidential-batchState-uint256-]]
+==== `[.contract-item-name]#++batchState++#++(uint256 batchId) → enum BatcherConfidential.BatchState++` [.item-kind]#public#
+
+Returns the current state of a batch. Reverts if the batch does not exist.
+
+[.contract-item]
+[[BatcherConfidential-_join-address-euint64-]]
+==== `[.contract-item-name]#++_join++#++(address to, euint64 amount) → euint64++` [.item-kind]#internal#
+
+Joins a batch with amount `amount` on behalf of `to`. Does not do any transfers in.
+Returns the amount joined with.
+
+[.contract-item]
+[[BatcherConfidential-_executeRoute-uint256-uint256-]]
+==== `[.contract-item-name]#++_executeRoute++#++(uint256 batchId, uint256 amount) → enum BatcherConfidential.ExecuteOutcome++` [.item-kind]#internal#
+
+Function which is executed by {dispatchBatchCallback} after validation and unwrap finalization. The parameter
+`amount` is the plaintext amount of the `fromToken` which were unwrapped--to attain the underlying tokens received,
+evaluate `amount * fromToken().rate()`. This function should swap the underlying {fromToken} for underlying {toToken}.
+
+This function returns an {ExecuteOutcome} enum indicating the new state of the batch. If the route execution is complete,
+the balance of the underlying {toToken} is wrapped and the exchange rate is set.
+
+NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the route execution is complete.
+If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`. Intermediate steps *must* not
+result in underlying {toToken} being transferred into the batcher.
+
+WARNING: This function must eventually return `ExecuteOutcome.Complete` or `ExecuteOutcome.Cancel`. Failure to do so results
+in user deposits being locked indefinitely.
+
+[.contract-item]
+[[BatcherConfidential-_validateStateBitmap-uint256-bytes32-]]
+==== `[.contract-item-name]#++_validateStateBitmap++#++(uint256 batchId, bytes32 allowedStates) → enum BatcherConfidential.BatchState++` [.item-kind]#internal#
+
+Check that the current state of a batch matches the requirements described by the `allowedStates` bitmap.
+This bitmap should be built using `_encodeStateBitmap`.
+
+If requirements are not met, reverts with a {BatchUnexpectedState} error.
+
+[.contract-item]
+[[BatcherConfidential-_getAndIncreaseBatchId--]]
+==== `[.contract-item-name]#++_getAndIncreaseBatchId++#++() → uint256++` [.item-kind]#internal#
+
+Gets the current batch id and increments it.
+
+[.contract-item]
+[[BatcherConfidential-_encodeStateBitmap-enum-BatcherConfidential-BatchState-]]
+==== `[.contract-item-name]#++_encodeStateBitmap++#++(enum BatcherConfidential.BatchState batchState_) → bytes32++` [.item-kind]#internal#
+
+Encodes a `BatchState` into a `bytes32` representation where each bit enabled corresponds to
+the underlying position in the `BatchState` enum. For example:
+
+0x000...1000
+        ^--- Canceled
+         ^-- Finalized
+          ^- Dispatched
+           ^ Pending
+
+[.contract-item]
+[[BatcherConfidential-BatchDispatched-uint256-]]
+==== `[.contract-item-name]#++BatchDispatched++#++(uint256 indexed batchId)++` [.item-kind]#event#
+
+Emitted when a batch with id `batchId` is dispatched via {dispatchBatch}.
+
+[.contract-item]
+[[BatcherConfidential-BatchCanceled-uint256-]]
+==== `[.contract-item-name]#++BatchCanceled++#++(uint256 indexed batchId)++` [.item-kind]#event#
+
+Emitted when a batch with id `batchId` is canceled.
+
+[.contract-item]
+[[BatcherConfidential-BatchFinalized-uint256-uint64-]]
+==== `[.contract-item-name]#++BatchFinalized++#++(uint256 indexed batchId, uint64 exchangeRate)++` [.item-kind]#event#
+
+Emitted when a batch with id `batchId` is finalized with an exchange rate of `exchangeRate`.
+
+[.contract-item]
+[[BatcherConfidential-Joined-uint256-address-euint64-]]
+==== `[.contract-item-name]#++Joined++#++(uint256 indexed batchId, address indexed account, euint64 amount)++` [.item-kind]#event#
+
+Emitted when an `account` joins a batch with id `batchId` with a deposit of `amount`.
+
+[.contract-item]
+[[BatcherConfidential-Claimed-uint256-address-euint64-]]
+==== `[.contract-item-name]#++Claimed++#++(uint256 indexed batchId, address indexed account, euint64 amount)++` [.item-kind]#event#
+
+Emitted when an `account` claims their `amount` from batch with id `batchId`.
+
+[.contract-item]
+[[BatcherConfidential-Quit-uint256-address-euint64-]]
+==== `[.contract-item-name]#++Quit++#++(uint256 indexed batchId, address indexed account, euint64 amount)++` [.item-kind]#event#
+
+Emitted when an `account` quits a batch with id `batchId`.
+
+[.contract-item]
+[[BatcherConfidential-BatchNonexistent-uint256-]]
+==== `[.contract-item-name]#++BatchNonexistent++#++(uint256 batchId)++` [.item-kind]#error#
+
+The `batchId` does not exist. Batch IDs start at 1 and must be less than or equal to {currentBatchId}.
+
+[.contract-item]
+[[BatcherConfidential-BatchUnexpectedState-uint256-enum-BatcherConfidential-BatchState-bytes32-]]
+==== `[.contract-item-name]#++BatchUnexpectedState++#++(uint256 batchId, enum BatcherConfidential.BatchState current, bytes32 expectedStates)++` [.item-kind]#error#
+
+The batch `batchId` is in the state `current`, which is invalid for the operation.
+The `expectedStates` is a bitmap encoding the expected/allowed states for the operation.
+
+See {_encodeStateBitmap}.
+
+[.contract-item]
+[[BatcherConfidential-InvalidExchangeRate-uint256-uint256-uint64-]]
+==== `[.contract-item-name]#++InvalidExchangeRate++#++(uint256 batchId, uint256 totalDeposits, uint64 exchangeRate)++` [.item-kind]#error#
+
+Thrown when the given exchange rate is invalid. The exchange rate must be non-zero and the wrapped
+amount of {toToken} must be less than or equal to `type(uint64).max`.
+
+[.contract-item]
+[[BatcherConfidential-Unauthorized--]]
+==== `[.contract-item-name]#++Unauthorized++#++()++` [.item-kind]#error#
+
+The caller is not authorized to call this function.
+
+[.contract-item]
+[[BatcherConfidential-InvalidWrapperToken-address-]]
+==== `[.contract-item-name]#++InvalidWrapperToken++#++(address token)++` [.item-kind]#error#
+
+The given `token` does not support `IERC7984ERC20Wrapper` via `ERC165`.
+
