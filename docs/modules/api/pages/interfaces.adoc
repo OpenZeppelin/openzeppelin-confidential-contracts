@@ -469,13 +469,21 @@ Forces transfer of confidential amount of tokens from account to account with pr
 
 Forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
 
+:UnwrapRequested: pass:normal[xref:#IERC7984ERC20Wrapper-UnwrapRequested-address-bytes32-euint64-[`++UnwrapRequested++`]]
+:UnwrapFinalized: pass:normal[xref:#IERC7984ERC20Wrapper-UnwrapFinalized-address-bytes32-euint64-uint64-[`++UnwrapFinalized++`]]
 :wrap: pass:normal[xref:#IERC7984ERC20Wrapper-wrap-address-uint256-[`++wrap++`]]
 :unwrap: pass:normal[xref:#IERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-[`++unwrap++`]]
 :underlying: pass:normal[xref:#IERC7984ERC20Wrapper-underlying--[`++underlying++`]]
+:finalizeUnwrap: pass:normal[xref:#IERC7984ERC20Wrapper-finalizeUnwrap-bytes32-uint64-bytes-[`++finalizeUnwrap++`]]
+:rate: pass:normal[xref:#IERC7984ERC20Wrapper-rate--[`++rate++`]]
+:unwrapAmount: pass:normal[xref:#IERC7984ERC20Wrapper-unwrapAmount-bytes32-[`++unwrapAmount++`]]
 
 :wrap-address-uint256: pass:normal[xref:#IERC7984ERC20Wrapper-wrap-address-uint256-[`++wrap++`]]
 :unwrap-address-address-externalEuint64-bytes: pass:normal[xref:#IERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-[`++unwrap++`]]
 :underlying-: pass:normal[xref:#IERC7984ERC20Wrapper-underlying--[`++underlying++`]]
+:finalizeUnwrap-bytes32-uint64-bytes: pass:normal[xref:#IERC7984ERC20Wrapper-finalizeUnwrap-bytes32-uint64-bytes-[`++finalizeUnwrap++`]]
+:rate-: pass:normal[xref:#IERC7984ERC20Wrapper-rate--[`++rate++`]]
+:unwrapAmount-bytes32: pass:normal[xref:#IERC7984ERC20Wrapper-unwrapAmount-bytes32-[`++unwrapAmount++`]]
 
 [.contract]
 [[IERC7984ERC20Wrapper]]
@@ -494,6 +502,9 @@ Interface for ERC7984ERC20Wrapper contract.
 * `++wrap(to, amount)++`
 * `++unwrap(from, to, encryptedAmount, inputProof)++`
 * `++underlying()++`
+* `++finalizeUnwrap(unwrapRequestId, unwrapAmountCleartext, decryptionProof)++`
+* `++rate()++`
+* `++unwrapAmount(unwrapRequestId)++`
 
 [.contract-subindex-inherited]
 .IERC7984
@@ -523,6 +534,8 @@ Interface for ERC7984ERC20Wrapper contract.
 [.contract-index]
 .Events
 --
+* `++UnwrapRequested(receiver, unwrapRequestId, amount)++`
+* `++UnwrapFinalized(receiver, unwrapRequestId, encryptedAmount, cleartextAmount)++`
 
 [.contract-subindex-inherited]
 .IERC7984
@@ -545,18 +558,49 @@ Returns amount of wrapped token sent.
 
 [.contract-item]
 [[IERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-]]
-==== `[.contract-item-name]#++unwrap++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#external#
+==== `[.contract-item-name]#++unwrap++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof) → bytes32++` [.item-kind]#external#
 
 Unwraps tokens from `from` and sends the underlying tokens to `to`. The caller must be `from`
 or be an approved operator for `from`.
 
-Returns amount unwrapped.
+Returns the unwrap request id.
 
-NOTE: The caller *must* already be approved by ACL for the given `amount`.
+NOTE: The returned unwrap request id must never be zero.
 
 [.contract-item]
 [[IERC7984ERC20Wrapper-underlying--]]
 ==== `[.contract-item-name]#++underlying++#++() → address++` [.item-kind]#external#
 
 Returns the address of the underlying ERC-20 token that is being wrapped.
+
+[.contract-item]
+[[IERC7984ERC20Wrapper-finalizeUnwrap-bytes32-uint64-bytes-]]
+==== `[.contract-item-name]#++finalizeUnwrap++#++(bytes32 unwrapRequestId, uint64 unwrapAmountCleartext, bytes decryptionProof)++` [.item-kind]#external#
+
+Finalizes an unwrap request identified by `unwrapRequestId` with the given `unwrapAmountCleartext` and `decryptionProof`.
+
+[.contract-item]
+[[IERC7984ERC20Wrapper-rate--]]
+==== `[.contract-item-name]#++rate++#++() → uint256++` [.item-kind]#external#
+
+Returns the rate at which the underlying token is converted to the wrapped token.
+For example, if the `rate` is 1000, then 1000 units of the underlying token equal 1 unit of the wrapped token.
+
+[.contract-item]
+[[IERC7984ERC20Wrapper-unwrapAmount-bytes32-]]
+==== `[.contract-item-name]#++unwrapAmount++#++(bytes32 unwrapRequestId) → euint64++` [.item-kind]#external#
+
+Returns the amount of wrapper tokens that were unwrapped for a given `unwrapRequestId`.
+
+[.contract-item]
+[[IERC7984ERC20Wrapper-UnwrapRequested-address-bytes32-euint64-]]
+==== `[.contract-item-name]#++UnwrapRequested++#++(address indexed receiver, bytes32 indexed unwrapRequestId, euint64 amount)++` [.item-kind]#event#
+
+Emitted when an unwrap request is made for a given `receiver`, `unwrapRequestId`, and `amount`.
+
+[.contract-item]
+[[IERC7984ERC20Wrapper-UnwrapFinalized-address-bytes32-euint64-uint64-]]
+==== `[.contract-item-name]#++UnwrapFinalized++#++(address indexed receiver, bytes32 indexed unwrapRequestId, euint64 encryptedAmount, uint64 cleartextAmount)++` [.item-kind]#event#
+
+Emitted when an unwrap request is finalized for a given `receiver`, `unwrapRequestId`, `encryptedAmount`, and `cleartextAmount`.
 

@@ -541,7 +541,7 @@ Emitted when a vesting wallet is deployed.
 :InvalidExchangeRate: pass:normal[xref:#BatcherConfidential-InvalidExchangeRate-uint256-uint256-uint64-[`++InvalidExchangeRate++`]]
 :Unauthorized: pass:normal[xref:#BatcherConfidential-Unauthorized--[`++Unauthorized++`]]
 :InvalidWrapperToken: pass:normal[xref:#BatcherConfidential-InvalidWrapperToken-address-[`++InvalidWrapperToken++`]]
-:constructor: pass:normal[xref:#BatcherConfidential-constructor-contract-ERC7984ERC20Wrapper-contract-ERC7984ERC20Wrapper-[`++constructor++`]]
+:constructor: pass:normal[xref:#BatcherConfidential-constructor-contract-IERC7984ERC20Wrapper-contract-IERC7984ERC20Wrapper-[`++constructor++`]]
 :claim: pass:normal[xref:#BatcherConfidential-claim-uint256-[`++claim++`]]
 :quit: pass:normal[xref:#BatcherConfidential-quit-uint256-[`++quit++`]]
 :dispatchBatch: pass:normal[xref:#BatcherConfidential-dispatchBatch--[`++dispatchBatch++`]]
@@ -550,7 +550,7 @@ Emitted when a vesting wallet is deployed.
 :fromToken: pass:normal[xref:#BatcherConfidential-fromToken--[`++fromToken++`]]
 :toToken: pass:normal[xref:#BatcherConfidential-toToken--[`++toToken++`]]
 :currentBatchId: pass:normal[xref:#BatcherConfidential-currentBatchId--[`++currentBatchId++`]]
-:unwrapAmount: pass:normal[xref:#BatcherConfidential-unwrapAmount-uint256-[`++unwrapAmount++`]]
+:unwrapRequestId: pass:normal[xref:#BatcherConfidential-unwrapRequestId-uint256-[`++unwrapRequestId++`]]
 :totalDeposits: pass:normal[xref:#BatcherConfidential-totalDeposits-uint256-[`++totalDeposits++`]]
 :deposits: pass:normal[xref:#BatcherConfidential-deposits-uint256-address-[`++deposits++`]]
 :exchangeRate: pass:normal[xref:#BatcherConfidential-exchangeRate-uint256-[`++exchangeRate++`]]
@@ -563,7 +563,7 @@ Emitted when a vesting wallet is deployed.
 :_getAndIncreaseBatchId: pass:normal[xref:#BatcherConfidential-_getAndIncreaseBatchId--[`++_getAndIncreaseBatchId++`]]
 :_encodeStateBitmap: pass:normal[xref:#BatcherConfidential-_encodeStateBitmap-enum-BatcherConfidential-BatchState-[`++_encodeStateBitmap++`]]
 
-:constructor-contract-ERC7984ERC20Wrapper-contract-ERC7984ERC20Wrapper: pass:normal[xref:#BatcherConfidential-constructor-contract-ERC7984ERC20Wrapper-contract-ERC7984ERC20Wrapper-[`++constructor++`]]
+:constructor-contract-IERC7984ERC20Wrapper-contract-IERC7984ERC20Wrapper: pass:normal[xref:#BatcherConfidential-constructor-contract-IERC7984ERC20Wrapper-contract-IERC7984ERC20Wrapper-[`++constructor++`]]
 :claim-uint256: pass:normal[xref:#BatcherConfidential-claim-uint256-[`++claim++`]]
 :quit-uint256: pass:normal[xref:#BatcherConfidential-quit-uint256-[`++quit++`]]
 :dispatchBatch-: pass:normal[xref:#BatcherConfidential-dispatchBatch--[`++dispatchBatch++`]]
@@ -572,7 +572,7 @@ Emitted when a vesting wallet is deployed.
 :fromToken-: pass:normal[xref:#BatcherConfidential-fromToken--[`++fromToken++`]]
 :toToken-: pass:normal[xref:#BatcherConfidential-toToken--[`++toToken++`]]
 :currentBatchId-: pass:normal[xref:#BatcherConfidential-currentBatchId--[`++currentBatchId++`]]
-:unwrapAmount-uint256: pass:normal[xref:#BatcherConfidential-unwrapAmount-uint256-[`++unwrapAmount++`]]
+:unwrapRequestId-uint256: pass:normal[xref:#BatcherConfidential-unwrapRequestId-uint256-[`++unwrapRequestId++`]]
 :totalDeposits-uint256: pass:normal[xref:#BatcherConfidential-totalDeposits-uint256-[`++totalDeposits++`]]
 :deposits-uint256-address: pass:normal[xref:#BatcherConfidential-deposits-uint256-address-[`++deposits++`]]
 :exchangeRate-uint256: pass:normal[xref:#BatcherConfidential-exchangeRate-uint256-[`++exchangeRate++`]]
@@ -625,7 +625,7 @@ underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancel
 * `++fromToken()++`
 * `++toToken()++`
 * `++currentBatchId()++`
-* `++unwrapAmount(batchId)++`
+* `++unwrapRequestId(batchId)++`
 * `++totalDeposits(batchId)++`
 * `++deposits(batchId, account)++`
 * `++exchangeRate(batchId)++`
@@ -685,8 +685,8 @@ underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancel
 --
 
 [.contract-item]
-[[BatcherConfidential-constructor-contract-ERC7984ERC20Wrapper-contract-ERC7984ERC20Wrapper-]]
-==== `[.contract-item-name]#++constructor++#++(contract ERC7984ERC20Wrapper fromToken_, contract ERC7984ERC20Wrapper toToken_)++` [.item-kind]#internal#
+[[BatcherConfidential-constructor-contract-IERC7984ERC20Wrapper-contract-IERC7984ERC20Wrapper-]]
+==== `[.contract-item-name]#++constructor++#++(contract IERC7984ERC20Wrapper fromToken_, contract IERC7984ERC20Wrapper toToken_)++` [.item-kind]#internal#
 
 [.contract-item]
 [[BatcherConfidential-claim-uint256-]]
@@ -735,13 +735,13 @@ WARNING: Do not manually refund the transfer AND return false, as this can lead 
 
 [.contract-item]
 [[BatcherConfidential-fromToken--]]
-==== `[.contract-item-name]#++fromToken++#++() → contract ERC7984ERC20Wrapper++` [.item-kind]#public#
+==== `[.contract-item-name]#++fromToken++#++() → contract IERC7984ERC20Wrapper++` [.item-kind]#public#
 
 Batcher from token. Users deposit this token in exchange for {toToken}.
 
 [.contract-item]
 [[BatcherConfidential-toToken--]]
-==== `[.contract-item-name]#++toToken++#++() → contract ERC7984ERC20Wrapper++` [.item-kind]#public#
+==== `[.contract-item-name]#++toToken++#++() → contract IERC7984ERC20Wrapper++` [.item-kind]#public#
 
 Batcher to token. Users receive this token in exchange for their {fromToken} deposits.
 
@@ -752,10 +752,10 @@ Batcher to token. Users receive this token in exchange for their {fromToken} dep
 The ongoing batch id. New deposits join this batch.
 
 [.contract-item]
-[[BatcherConfidential-unwrapAmount-uint256-]]
-==== `[.contract-item-name]#++unwrapAmount++#++(uint256 batchId) → euint64++` [.item-kind]#public#
+[[BatcherConfidential-unwrapRequestId-uint256-]]
+==== `[.contract-item-name]#++unwrapRequestId++#++(uint256 batchId) → bytes32++` [.item-kind]#public#
 
-The amount of {fromToken} unwrapped during {dispatchBatch} for batch with id `batchId`.
+The unwrap request id for a batch with id `batchId`.
 
 [.contract-item]
 [[BatcherConfidential-totalDeposits-uint256-]]

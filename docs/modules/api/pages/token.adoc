@@ -441,23 +441,22 @@ The given caller `caller` is not authorized for the current operation.
 The given gateway request ID `requestId` is invalid.
 
 == Extensions
-:UnwrapRequested: pass:normal[xref:#ERC7984ERC20Wrapper-UnwrapRequested-address-euint64-[`++UnwrapRequested++`]]
-:UnwrapFinalized: pass:normal[xref:#ERC7984ERC20Wrapper-UnwrapFinalized-address-euint64-uint64-[`++UnwrapFinalized++`]]
-:InvalidUnwrapRequest: pass:normal[xref:#ERC7984ERC20Wrapper-InvalidUnwrapRequest-euint64-[`++InvalidUnwrapRequest++`]]
+:InvalidUnwrapRequest: pass:normal[xref:#ERC7984ERC20Wrapper-InvalidUnwrapRequest-bytes32-[`++InvalidUnwrapRequest++`]]
 :ERC7984TotalSupplyOverflow: pass:normal[xref:#ERC7984ERC20Wrapper-ERC7984TotalSupplyOverflow--[`++ERC7984TotalSupplyOverflow++`]]
 :constructor: pass:normal[xref:#ERC7984ERC20Wrapper-constructor-contract-IERC20-[`++constructor++`]]
 :onTransferReceived: pass:normal[xref:#ERC7984ERC20Wrapper-onTransferReceived-address-address-uint256-bytes-[`++onTransferReceived++`]]
 :wrap: pass:normal[xref:#ERC7984ERC20Wrapper-wrap-address-uint256-[`++wrap++`]]
 :unwrap: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-euint64-[`++unwrap++`]]
 :unwrap: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-[`++unwrap++`]]
-:finalizeUnwrap: pass:normal[xref:#ERC7984ERC20Wrapper-finalizeUnwrap-euint64-uint64-bytes-[`++finalizeUnwrap++`]]
+:finalizeUnwrap: pass:normal[xref:#ERC7984ERC20Wrapper-finalizeUnwrap-bytes32-uint64-bytes-[`++finalizeUnwrap++`]]
 :decimals: pass:normal[xref:#ERC7984ERC20Wrapper-decimals--[`++decimals++`]]
 :rate: pass:normal[xref:#ERC7984ERC20Wrapper-rate--[`++rate++`]]
 :underlying: pass:normal[xref:#ERC7984ERC20Wrapper-underlying--[`++underlying++`]]
+:unwrapAmount: pass:normal[xref:#ERC7984ERC20Wrapper-unwrapAmount-bytes32-[`++unwrapAmount++`]]
 :supportsInterface: pass:normal[xref:#ERC7984ERC20Wrapper-supportsInterface-bytes4-[`++supportsInterface++`]]
 :inferredTotalSupply: pass:normal[xref:#ERC7984ERC20Wrapper-inferredTotalSupply--[`++inferredTotalSupply++`]]
 :maxTotalSupply: pass:normal[xref:#ERC7984ERC20Wrapper-maxTotalSupply--[`++maxTotalSupply++`]]
-:unwrapRequester: pass:normal[xref:#ERC7984ERC20Wrapper-unwrapRequester-euint64-[`++unwrapRequester++`]]
+:unwrapRequester: pass:normal[xref:#ERC7984ERC20Wrapper-unwrapRequester-bytes32-[`++unwrapRequester++`]]
 :_checkConfidentialTotalSupply: pass:normal[xref:#ERC7984ERC20Wrapper-_checkConfidentialTotalSupply--[`++_checkConfidentialTotalSupply++`]]
 :_update: pass:normal[xref:#ERC7984ERC20Wrapper-_update-address-address-euint64-[`++_update++`]]
 :_unwrap: pass:normal[xref:#ERC7984ERC20Wrapper-_unwrap-address-address-euint64-[`++_unwrap++`]]
@@ -469,14 +468,15 @@ The given gateway request ID `requestId` is invalid.
 :wrap-address-uint256: pass:normal[xref:#ERC7984ERC20Wrapper-wrap-address-uint256-[`++wrap++`]]
 :unwrap-address-address-euint64: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-euint64-[`++unwrap++`]]
 :unwrap-address-address-externalEuint64-bytes: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-[`++unwrap++`]]
-:finalizeUnwrap-euint64-uint64-bytes: pass:normal[xref:#ERC7984ERC20Wrapper-finalizeUnwrap-euint64-uint64-bytes-[`++finalizeUnwrap++`]]
+:finalizeUnwrap-bytes32-uint64-bytes: pass:normal[xref:#ERC7984ERC20Wrapper-finalizeUnwrap-bytes32-uint64-bytes-[`++finalizeUnwrap++`]]
 :decimals-: pass:normal[xref:#ERC7984ERC20Wrapper-decimals--[`++decimals++`]]
 :rate-: pass:normal[xref:#ERC7984ERC20Wrapper-rate--[`++rate++`]]
 :underlying-: pass:normal[xref:#ERC7984ERC20Wrapper-underlying--[`++underlying++`]]
+:unwrapAmount-bytes32: pass:normal[xref:#ERC7984ERC20Wrapper-unwrapAmount-bytes32-[`++unwrapAmount++`]]
 :supportsInterface-bytes4: pass:normal[xref:#ERC7984ERC20Wrapper-supportsInterface-bytes4-[`++supportsInterface++`]]
 :inferredTotalSupply-: pass:normal[xref:#ERC7984ERC20Wrapper-inferredTotalSupply--[`++inferredTotalSupply++`]]
 :maxTotalSupply-: pass:normal[xref:#ERC7984ERC20Wrapper-maxTotalSupply--[`++maxTotalSupply++`]]
-:unwrapRequester-euint64: pass:normal[xref:#ERC7984ERC20Wrapper-unwrapRequester-euint64-[`++unwrapRequester++`]]
+:unwrapRequester-bytes32: pass:normal[xref:#ERC7984ERC20Wrapper-unwrapRequester-bytes32-[`++unwrapRequester++`]]
 :_checkConfidentialTotalSupply-: pass:normal[xref:#ERC7984ERC20Wrapper-_checkConfidentialTotalSupply--[`++_checkConfidentialTotalSupply++`]]
 :_update-address-address-euint64: pass:normal[xref:#ERC7984ERC20Wrapper-_update-address-address-euint64-[`++_update++`]]
 :_unwrap-address-address-euint64: pass:normal[xref:#ERC7984ERC20Wrapper-_unwrap-address-address-euint64-[`++_unwrap++`]]
@@ -507,14 +507,15 @@ tokens such as fee-on-transfer or other deflationary-type tokens are not support
 * `++wrap(to, amount)++`
 * `++unwrap(from, to, amount)++`
 * `++unwrap(from, to, encryptedAmount, inputProof)++`
-* `++finalizeUnwrap(unwrapAmount, unwrapAmountCleartext, decryptionProof)++`
+* `++finalizeUnwrap(unwrapRequestId, unwrapAmountCleartext, decryptionProof)++`
 * `++decimals()++`
 * `++rate()++`
 * `++underlying()++`
+* `++unwrapAmount(unwrapRequestId)++`
 * `++supportsInterface(interfaceId)++`
 * `++inferredTotalSupply()++`
 * `++maxTotalSupply()++`
-* `++unwrapRequester(unwrapAmount)++`
+* `++unwrapRequester(unwrapRequestId)++`
 * `++_checkConfidentialTotalSupply()++`
 * `++_update(from, to, amount)++`
 * `++_unwrap(from, to, amount)++`
@@ -566,14 +567,14 @@ tokens such as fee-on-transfer or other deflationary-type tokens are not support
 [.contract-index]
 .Events
 --
-* `++UnwrapRequested(receiver, amount)++`
-* `++UnwrapFinalized(receiver, encryptedAmount, cleartextAmount)++`
 
 [.contract-subindex-inherited]
 .IERC1363Receiver
 
 [.contract-subindex-inherited]
 .IERC7984ERC20Wrapper
+* `++UnwrapRequested(receiver, unwrapRequestId, amount)++`
+* `++UnwrapFinalized(receiver, unwrapRequestId, encryptedAmount, cleartextAmount)++`
 
 [.contract-subindex-inherited]
 .ERC7984
@@ -596,7 +597,7 @@ tokens such as fee-on-transfer or other deflationary-type tokens are not support
 [.contract-index]
 .Errors
 --
-* `++InvalidUnwrapRequest(amount)++`
+* `++InvalidUnwrapRequest(unwrapRequestId)++`
 * `++ERC7984TotalSupplyOverflow()++`
 
 [.contract-subindex-inherited]
@@ -650,23 +651,23 @@ Returns the amount of wrapped token sent.
 
 [.contract-item]
 [[ERC7984ERC20Wrapper-unwrap-address-address-euint64-]]
-==== `[.contract-item-name]#++unwrap++#++(address from, address to, euint64 amount) → euint64++` [.item-kind]#public#
+==== `[.contract-item-name]#++unwrap++#++(address from, address to, euint64 amount) → bytes32++` [.item-kind]#public#
 
 Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
 
 [.contract-item]
 [[ERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-]]
-==== `[.contract-item-name]#++unwrap++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+==== `[.contract-item-name]#++unwrap++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof) → bytes32++` [.item-kind]#public#
 
 See {IERC7984ERC20Wrapper-unwrap}. `amount * rate()` underlying tokens are sent to `to`.
 
 NOTE: The unwrap request created by this function must be finalized by calling {finalizeUnwrap}.
 
 [.contract-item]
-[[ERC7984ERC20Wrapper-finalizeUnwrap-euint64-uint64-bytes-]]
-==== `[.contract-item-name]#++finalizeUnwrap++#++(euint64 unwrapAmount, uint64 unwrapAmountCleartext, bytes decryptionProof)++` [.item-kind]#public#
+[[ERC7984ERC20Wrapper-finalizeUnwrap-bytes32-uint64-bytes-]]
+==== `[.contract-item-name]#++finalizeUnwrap++#++(bytes32 unwrapRequestId, uint64 unwrapAmountCleartext, bytes decryptionProof)++` [.item-kind]#public#
 
-Fills an unwrap request for a given cipher-text `unwrapAmount` with the `cleartextAmount` and `decryptionProof`.
+Finalizes an unwrap request identified by `unwrapRequestId` with the given `unwrapAmountCleartext` and `decryptionProof`.
 
 [.contract-item]
 [[ERC7984ERC20Wrapper-decimals--]]
@@ -686,6 +687,12 @@ For example, if the `rate` is 1000, then 1000 units of the underlying token equa
 ==== `[.contract-item-name]#++underlying++#++() → address++` [.item-kind]#public#
 
 Returns the address of the underlying ERC-20 token that is being wrapped.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-unwrapAmount-bytes32-]]
+==== `[.contract-item-name]#++unwrapAmount++#++(bytes32 unwrapRequestId) → euint64++` [.item-kind]#public#
+
+Returns the amount of wrapper tokens that were unwrapped for a given `unwrapRequestId`.
 
 [.contract-item]
 [[ERC7984ERC20Wrapper-supportsInterface-bytes4-]]
@@ -716,8 +723,8 @@ on {finalizeUnwrap}.
 Returns the maximum total supply of wrapped tokens supported by the encrypted datatype.
 
 [.contract-item]
-[[ERC7984ERC20Wrapper-unwrapRequester-euint64-]]
-==== `[.contract-item-name]#++unwrapRequester++#++(euint64 unwrapAmount) → address++` [.item-kind]#public#
+[[ERC7984ERC20Wrapper-unwrapRequester-bytes32-]]
+==== `[.contract-item-name]#++unwrapRequester++#++(bytes32 unwrapRequestId) → address++` [.item-kind]#public#
 
 Get the address that has a pending unwrap request for the given `unwrapAmount`. Returns `address(0)` if no pending
 unwrap request for the amount `unwrapAmount` exists.
@@ -757,16 +764,8 @@ ERC-20 token.
 Returns the maximum number that will be used for {decimals} by the wrapper.
 
 [.contract-item]
-[[ERC7984ERC20Wrapper-UnwrapRequested-address-euint64-]]
-==== `[.contract-item-name]#++UnwrapRequested++#++(address indexed receiver, euint64 amount)++` [.item-kind]#event#
-
-[.contract-item]
-[[ERC7984ERC20Wrapper-UnwrapFinalized-address-euint64-uint64-]]
-==== `[.contract-item-name]#++UnwrapFinalized++#++(address indexed receiver, euint64 encryptedAmount, uint64 cleartextAmount)++` [.item-kind]#event#
-
-[.contract-item]
-[[ERC7984ERC20Wrapper-InvalidUnwrapRequest-euint64-]]
-==== `[.contract-item-name]#++InvalidUnwrapRequest++#++(euint64 amount)++` [.item-kind]#error#
+[[ERC7984ERC20Wrapper-InvalidUnwrapRequest-bytes32-]]
+==== `[.contract-item-name]#++InvalidUnwrapRequest++#++(bytes32 unwrapRequestId)++` [.item-kind]#error#
 
 [.contract-item]
 [[ERC7984ERC20Wrapper-ERC7984TotalSupplyOverflow--]]
