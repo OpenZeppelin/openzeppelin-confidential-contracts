@@ -390,5 +390,5 @@ async function publicDecryptAndFinalizeUnwrap(wrapper: ERC7984ERC20WrapperMock, 
   const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
   await expect(wrapper.connect(caller).finalizeUnwrap(amount, abiEncodedClearValues, decryptionProof))
     .to.emit(wrapper, 'UnwrapFinalized')
-    .withArgs(to, amount, abiEncodedClearValues);
+    .withArgs(to, amount, amount, abiEncodedClearValues);
 }
