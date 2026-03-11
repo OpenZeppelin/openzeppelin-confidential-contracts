@@ -84,7 +84,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     error BatchNonexistent(uint256 batchId);
 
     /// @dev The `account` has a zero deposits in batch `batchId`.
-    error ZeroClaimableBalance(uint256 batchId, address account);
+    error ZeroDeposits(uint256 batchId, address account);
 
     /**
      * @dev The batch `batchId` is in the state `current`, which is invalid for the operation.
@@ -147,6 +147,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
 
         euint64 deposit = deposits(batchId, msg.sender);
+        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, msg.sender));
+
         euint64 totalDeposits_ = totalDeposits(batchId);
 
         FHE.allowTransient(deposit, address(fromToken()));
@@ -330,7 +332,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
 
         euint64 deposit = deposits(batchId, account);
-        require(FHE.isInitialized(deposit), ZeroClaimableBalance(batchId, account));
+        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, account));
 
         // Overflow is not possible on mul since `type(uint64).max ** 2 < type(uint128).max`.
         // Given that the output of the entire batch must fit in uint64, individual user outputs must also fit.

@@ -297,7 +297,7 @@ describe('BatcherConfidential', function () {
 
     it('should revert if account did not participate in the batch', async function () {
       await expect(this.batcher.claim(this.batchId, this.recipient))
-        .to.be.revertedWithCustomError(this.batcher, 'ZeroClaimableBalance')
+        .to.be.revertedWithCustomError(this.batcher, 'ZeroDeposits')
         .withArgs(this.batchId, this.recipient.address);
     });
 
@@ -462,6 +462,12 @@ describe('BatcherConfidential', function () {
       await expect(this.batcher.quit(this.batchId))
         .to.be.revertedWithCustomError(this.batcher, 'BatchUnexpectedState')
         .withArgs(this.batchId, BatchState.Dispatched, encodeStateBitmap(BatchState.Pending, BatchState.Canceled));
+    });
+
+    it('should revert if caller did not participate in the batch', async function () {
+      await expect(this.batcher.connect(this.recipient).quit(this.batchId))
+        .to.be.revertedWithCustomError(this.batcher, 'ZeroDeposits')
+        .withArgs(this.batchId, this.recipient.address);
     });
 
     it('should emit event', async function () {
