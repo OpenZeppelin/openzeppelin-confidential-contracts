@@ -537,12 +537,13 @@ Emitted when a vesting wallet is deployed.
 :Claimed: pass:normal[xref:#BatcherConfidential-Claimed-uint256-address-euint64-[`++Claimed++`]]
 :Quit: pass:normal[xref:#BatcherConfidential-Quit-uint256-address-euint64-[`++Quit++`]]
 :BatchNonexistent: pass:normal[xref:#BatcherConfidential-BatchNonexistent-uint256-[`++BatchNonexistent++`]]
+:ZeroDeposits: pass:normal[xref:#BatcherConfidential-ZeroDeposits-uint256-address-[`++ZeroDeposits++`]]
 :BatchUnexpectedState: pass:normal[xref:#BatcherConfidential-BatchUnexpectedState-uint256-enum-BatcherConfidential-BatchState-bytes32-[`++BatchUnexpectedState++`]]
 :InvalidExchangeRate: pass:normal[xref:#BatcherConfidential-InvalidExchangeRate-uint256-uint256-uint64-[`++InvalidExchangeRate++`]]
 :Unauthorized: pass:normal[xref:#BatcherConfidential-Unauthorized--[`++Unauthorized++`]]
 :InvalidWrapperToken: pass:normal[xref:#BatcherConfidential-InvalidWrapperToken-address-[`++InvalidWrapperToken++`]]
 :constructor: pass:normal[xref:#BatcherConfidential-constructor-contract-IERC7984ERC20Wrapper-contract-IERC7984ERC20Wrapper-[`++constructor++`]]
-:claim: pass:normal[xref:#BatcherConfidential-claim-uint256-[`++claim++`]]
+:claim: pass:normal[xref:#BatcherConfidential-claim-uint256-address-[`++claim++`]]
 :quit: pass:normal[xref:#BatcherConfidential-quit-uint256-[`++quit++`]]
 :dispatchBatch: pass:normal[xref:#BatcherConfidential-dispatchBatch--[`++dispatchBatch++`]]
 :dispatchBatchCallback: pass:normal[xref:#BatcherConfidential-dispatchBatchCallback-uint256-uint64-bytes-[`++dispatchBatchCallback++`]]
@@ -557,6 +558,7 @@ Emitted when a vesting wallet is deployed.
 :exchangeRateDecimals: pass:normal[xref:#BatcherConfidential-exchangeRateDecimals--[`++exchangeRateDecimals++`]]
 :routeDescription: pass:normal[xref:#BatcherConfidential-routeDescription--[`++routeDescription++`]]
 :batchState: pass:normal[xref:#BatcherConfidential-batchState-uint256-[`++batchState++`]]
+:_claim: pass:normal[xref:#BatcherConfidential-_claim-uint256-address-[`++_claim++`]]
 :_join: pass:normal[xref:#BatcherConfidential-_join-address-euint64-[`++_join++`]]
 :_executeRoute: pass:normal[xref:#BatcherConfidential-_executeRoute-uint256-uint256-[`++_executeRoute++`]]
 :_validateStateBitmap: pass:normal[xref:#BatcherConfidential-_validateStateBitmap-uint256-bytes32-[`++_validateStateBitmap++`]]
@@ -564,7 +566,7 @@ Emitted when a vesting wallet is deployed.
 :_encodeStateBitmap: pass:normal[xref:#BatcherConfidential-_encodeStateBitmap-enum-BatcherConfidential-BatchState-[`++_encodeStateBitmap++`]]
 
 :constructor-contract-IERC7984ERC20Wrapper-contract-IERC7984ERC20Wrapper: pass:normal[xref:#BatcherConfidential-constructor-contract-IERC7984ERC20Wrapper-contract-IERC7984ERC20Wrapper-[`++constructor++`]]
-:claim-uint256: pass:normal[xref:#BatcherConfidential-claim-uint256-[`++claim++`]]
+:claim-uint256-address: pass:normal[xref:#BatcherConfidential-claim-uint256-address-[`++claim++`]]
 :quit-uint256: pass:normal[xref:#BatcherConfidential-quit-uint256-[`++quit++`]]
 :dispatchBatch-: pass:normal[xref:#BatcherConfidential-dispatchBatch--[`++dispatchBatch++`]]
 :dispatchBatchCallback-uint256-uint64-bytes: pass:normal[xref:#BatcherConfidential-dispatchBatchCallback-uint256-uint64-bytes-[`++dispatchBatchCallback++`]]
@@ -579,6 +581,7 @@ Emitted when a vesting wallet is deployed.
 :exchangeRateDecimals-: pass:normal[xref:#BatcherConfidential-exchangeRateDecimals--[`++exchangeRateDecimals++`]]
 :routeDescription-: pass:normal[xref:#BatcherConfidential-routeDescription--[`++routeDescription++`]]
 :batchState-uint256: pass:normal[xref:#BatcherConfidential-batchState-uint256-[`++batchState++`]]
+:_claim-uint256-address: pass:normal[xref:#BatcherConfidential-_claim-uint256-address-[`++_claim++`]]
 :_join-address-euint64: pass:normal[xref:#BatcherConfidential-_join-address-euint64-[`++_join++`]]
 :_executeRoute-uint256-uint256: pass:normal[xref:#BatcherConfidential-_executeRoute-uint256-uint256-[`++_executeRoute++`]]
 :_validateStateBitmap-uint256-bytes32: pass:normal[xref:#BatcherConfidential-_validateStateBitmap-uint256-bytes32-[`++_validateStateBitmap++`]]
@@ -617,7 +620,7 @@ underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancel
 .Functions
 --
 * `++constructor(fromToken_, toToken_)++`
-* `++claim(batchId)++`
+* `++claim(batchId, account)++`
 * `++quit(batchId)++`
 * `++dispatchBatch()++`
 * `++dispatchBatchCallback(batchId, unwrapAmountCleartext, decryptionProof)++`
@@ -632,6 +635,7 @@ underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancel
 * `++exchangeRateDecimals()++`
 * `++routeDescription()++`
 * `++batchState(batchId)++`
+* `++_claim(batchId, account)++`
 * `++_join(to, amount)++`
 * `++_executeRoute(batchId, amount)++`
 * `++_validateStateBitmap(batchId, allowedStates)++`
@@ -670,6 +674,7 @@ underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancel
 .Errors
 --
 * `++BatchNonexistent(batchId)++`
+* `++ZeroDeposits(batchId, account)++`
 * `++BatchUnexpectedState(batchId, current, expectedStates)++`
 * `++InvalidExchangeRate(batchId, totalDeposits, exchangeRate)++`
 * `++Unauthorized()++`
@@ -689,10 +694,12 @@ underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancel
 ==== `[.contract-item-name]#++constructor++#++(contract IERC7984ERC20Wrapper fromToken_, contract IERC7984ERC20Wrapper toToken_)++` [.item-kind]#internal#
 
 [.contract-item]
-[[BatcherConfidential-claim-uint256-]]
-==== `[.contract-item-name]#++claim++#++(uint256 batchId) → euint64++` [.item-kind]#public#
+[[BatcherConfidential-claim-uint256-address-]]
+==== `[.contract-item-name]#++claim++#++(uint256 batchId, address account) → euint64++` [.item-kind]#public#
 
-Claim the `toToken` corresponding to deposit in batch with id `batchId`.
+Claim the `toToken` corresponding to `account`'s deposit in batch with id `batchId`.
+
+NOTE: This function is not gated and can be called by anyone. Claims could be frontrun.
 
 [.contract-item]
 [[BatcherConfidential-quit-uint256-]]
@@ -794,6 +801,13 @@ Human readable description of what the batcher does.
 Returns the current state of a batch. Reverts if the batch does not exist.
 
 [.contract-item]
+[[BatcherConfidential-_claim-uint256-address-]]
+==== `[.contract-item-name]#++_claim++#++(uint256 batchId, address account) → euint64++` [.item-kind]#internal#
+
+Claims `toToken` for `account`'s deposit in batch with id `batchId`. Tokens are always
+sent to `account`, enabling third-party relayers to claim on behalf of depositors.
+
+[.contract-item]
 [[BatcherConfidential-_join-address-euint64-]]
 ==== `[.contract-item-name]#++_join++#++(address to, euint64 amount) → euint64++` [.item-kind]#internal#
 
@@ -887,6 +901,12 @@ Emitted when an `account` quits a batch with id `batchId`.
 ==== `[.contract-item-name]#++BatchNonexistent++#++(uint256 batchId)++` [.item-kind]#error#
 
 The `batchId` does not exist. Batch IDs start at 1 and must be less than or equal to {currentBatchId}.
+
+[.contract-item]
+[[BatcherConfidential-ZeroDeposits-uint256-address-]]
+==== `[.contract-item-name]#++ZeroDeposits++#++(uint256 batchId, address account)++` [.item-kind]#error#
+
+The `account` has a zero deposits in batch `batchId`.
 
 [.contract-item]
 [[BatcherConfidential-BatchUnexpectedState-uint256-enum-BatcherConfidential-BatchState-bytes32-]]

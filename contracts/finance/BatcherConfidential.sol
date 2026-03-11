@@ -83,6 +83,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The `batchId` does not exist. Batch IDs start at 1 and must be less than or equal to {currentBatchId}.
     error BatchNonexistent(uint256 batchId);
 
+    /// @dev The `account` has a zero deposits in batch `batchId`.
+    error ZeroDeposits(uint256 batchId, address account);
+
     /**
      * @dev The batch `batchId` is in the state `current`, which is invalid for the operation.
      * The `expectedStates` is a bitmap encoding the expected/allowed states for the operation.
@@ -121,31 +124,13 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         SafeERC20.forceApprove(IERC20(toToken().underlying()), address(toToken()), type(uint256).max);
     }
 
-    /// @dev Claim the `toToken` corresponding to deposit in batch with id `batchId`.
-    function claim(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
-
-        euint64 deposit = deposits(batchId, msg.sender);
-
-        // Overflow is not possible on mul since `type(uint64).max ** 2 < type(uint128).max`.
-        // Given that the output of the entire batch must fit in uint64, individual user outputs must also fit.
-        euint64 amountToSend = FHE.asEuint64(
-            FHE.div(FHE.mul(FHE.asEuint128(deposit), exchangeRate(batchId)), uint128(10) ** exchangeRateDecimals())
-        );
-        FHE.allowTransient(amountToSend, address(toToken()));
-
-        euint64 amountTransferred = toToken().confidentialTransfer(msg.sender, amountToSend);
-
-        ebool transferSuccess = FHE.ne(amountTransferred, FHE.asEuint64(0));
-        euint64 newDeposit = FHE.select(transferSuccess, FHE.asEuint64(0), deposit);
-
-        FHE.allowThis(newDeposit);
-        FHE.allow(newDeposit, msg.sender);
-        _batches[batchId].deposits[msg.sender] = newDeposit;
-
-        emit Claimed(batchId, msg.sender, amountTransferred);
-
-        return amountTransferred;
+    /**
+     * @dev Claim the `toToken` corresponding to `account`'s deposit in batch with id `batchId`.
+     *
+     * NOTE: This function is not gated and can be called by anyone. Claims could be frontrun.
+     */
+    function claim(uint256 batchId, address account) public virtual nonReentrant returns (euint64) {
+        return _claim(batchId, account);
     }
 
     /**
@@ -162,6 +147,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
 
         euint64 deposit = deposits(batchId, msg.sender);
+        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, msg.sender));
+
         euint64 totalDeposits_ = totalDeposits(batchId);
 
         FHE.allowTransient(deposit, address(fromToken()));
@@ -335,6 +322,37 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         }
 
         revert BatchNonexistent(batchId);
+    }
+
+    /**
+     * @dev Claims `toToken` for `account`'s deposit in batch with id `batchId`. Tokens are always
+     * sent to `account`, enabling third-party relayers to claim on behalf of depositors.
+     */
+    function _claim(uint256 batchId, address account) internal virtual returns (euint64) {
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
+
+        euint64 deposit = deposits(batchId, account);
+        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, account));
+
+        // Overflow is not possible on mul since `type(uint64).max ** 2 < type(uint128).max`.
+        // Given that the output of the entire batch must fit in uint64, individual user outputs must also fit.
+        euint64 amountToSend = FHE.asEuint64(
+            FHE.div(FHE.mul(FHE.asEuint128(deposit), exchangeRate(batchId)), uint128(10) ** exchangeRateDecimals())
+        );
+        FHE.allowTransient(amountToSend, address(toToken()));
+
+        euint64 amountTransferred = toToken().confidentialTransfer(account, amountToSend);
+
+        ebool transferSuccess = FHE.ne(amountTransferred, FHE.asEuint64(0));
+        euint64 newDeposit = FHE.select(transferSuccess, FHE.asEuint64(0), deposit);
+
+        FHE.allowThis(newDeposit);
+        FHE.allow(newDeposit, account);
+        _batches[batchId].deposits[account] = newDeposit;
+
+        emit Claimed(batchId, account, amountTransferred);
+
+        return amountTransferred;
     }
 
     /**
