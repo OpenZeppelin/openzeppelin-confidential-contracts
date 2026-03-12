@@ -250,7 +250,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         }
     }
 
-    /// @inheritdoc IERC7984Receiver
+    /**
+     * @dev See {IERC7984Receiver-onConfidentialTransferReceived}.
+     *
+     * Deposit {fromToken} into the current batch.
+     *
+     * NOTE: See {_claim} to understand how the {toToken} amount is calculated. Claim amounts are rounded down. Small
+     * deposits may be rounded down to 0 if the exchange rate is less than 1:1.
+     */
     function onConfidentialTransferReceived(
         address,
         address from,
