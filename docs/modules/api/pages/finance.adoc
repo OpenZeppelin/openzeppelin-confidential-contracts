@@ -14,6 +14,7 @@
 :ERC7984-confidentialTransferAndCall: pass:normal[xref:token.adoc#ERC7984-confidentialTransferAndCall-address-euint64-bytes-[`ERC7984.confidentialTransferAndCall`]]
 :ERC7984ERC20Wrapper: pass:normal[xref:token.adoc#ERC7984ERC20Wrapper[`ERC7984ERC20Wrapper`]]
 :ERC7984ERC20Wrapper: pass:normal[xref:token.adoc#ERC7984ERC20Wrapper[`ERC7984ERC20Wrapper`]]
+:IERC7984Receiver-onConfidentialTransferReceived: pass:normal[xref:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`IERC7984Receiver.onConfidentialTransferReceived`]]
 
 = Finance
 
@@ -607,6 +608,9 @@ underlying {toToken}. If an issue is encountered, the function should return {Ex
 
 Developers must also implement the virtual function {routeDescription} to provide a human readable description of the batch's route.
 
+Claim outputs are rounded down. This may result in small deposits being rounded down to 0 if the exchange rate is less than 1:1.
+{toToken} dust from rounding down will accumulate in the batcher over time.
+
 NOTE: The batcher does not support {ERC7984ERC20Wrapper} contracts prior to v0.4.0.
 
 NOTE: The batcher could be used to maintain confidentiality of deposits--by default there are no confidentiality guarantees.
@@ -735,10 +739,12 @@ this function should be called again with the same `batchId`, `unwrapAmountClear
 [[BatcherConfidential-onConfidentialTransferReceived-address-address-euint64-bytes-]]
 ==== `[.contract-item-name]#++onConfidentialTransferReceived++#++(address, address from, euint64 amount, bytes) → ebool++` [.item-kind]#external#
 
-Called upon receiving a confidential token transfer. Returns an encrypted boolean indicating success
-of the callback. If false is returned, the token contract will attempt to refund the transfer.
+See {IERC7984Receiver-onConfidentialTransferReceived}.
 
-WARNING: Do not manually refund the transfer AND return false, as this can lead to double refunds.
+Deposit {fromToken} into the current batch.
+
+NOTE: See {_claim} to understand how the {toToken} amount is calculated. Claim amounts are rounded down. Small
+deposits may be rounded down to 0 if the exchange rate is less than 1:1.
 
 [.contract-item]
 [[BatcherConfidential-fromToken--]]
