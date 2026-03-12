@@ -829,8 +829,16 @@ NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly ca
 If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`. Intermediate steps *must* not
 result in underlying {toToken} being transferred into the batcher.
 
-WARNING: This function must eventually return `ExecuteOutcome.Complete` or `ExecuteOutcome.Cancel`. Failure to do so results
+[WARNING]
+====
+This function must eventually return `ExecuteOutcome.Complete` or `ExecuteOutcome.Cancel`. Failure to do so results
 in user deposits being locked indefinitely.
+
+Additionally, the following must hold:
+
+- `swappedAmount >= ceil(unwrapAmountCleartext / 10 ** exchangeRateDecimals()) * toToken().rate()` (the exchange rate must not be 0)
+- `swappedAmount \<= type(uint64).max * toToken().rate()` (the wrapped amount of {toToken} must fit in `uint64`)
+====
 
 [.contract-item]
 [[BatcherConfidential-_validateStateBitmap-uint256-bytes32-]]
