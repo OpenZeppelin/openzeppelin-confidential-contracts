@@ -219,7 +219,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
         assert(unwrapRequester(euint64.unwrap(unwrapAmount_)) == address(0));
 
-        // WARNING: Storing unwrap requests in a mapping from cipher-text to address assumes that
+        // WARNING: Directly using the cipher-text as the unwrap request id assumes that
         // cipher-texts are unique--this holds here but is not always true. Be cautious when assuming
         // cipher-text uniqueness.
         bytes32 unwrapRequestId = euint64.unwrap(unwrapAmount_);
