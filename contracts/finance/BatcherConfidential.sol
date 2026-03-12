@@ -391,8 +391,16 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`. Intermediate steps *must* not
      * result in underlying {toToken} being transferred into the batcher.
      *
-     * WARNING: This function must eventually return `ExecuteOutcome.Complete` or `ExecuteOutcome.Cancel`. Failure to do so results
+     * [WARNING]
+     * ====
+     * This function must eventually return `ExecuteOutcome.Complete` or `ExecuteOutcome.Cancel`. Failure to do so results
      * in user deposits being locked indefinitely.
+     *
+     * Additionally, the following must hold:
+     *
+     * - `swappedAmount >= ceil(unwrapAmountCleartext / 10 ** exchangeRateDecimals()) * toToken().rate()` (the exchange rate must not be 0)
+     * - `swappedAmount \<= type(uint64).max * toToken().rate()` (the wrapped amount of {toToken} must fit in `uint64`)
+     * ====
      */
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (ExecuteOutcome);
 
