@@ -24,6 +24,9 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
  *
  * Developers must also implement the virtual function {routeDescription} to provide a human readable description of the batch's route.
  *
+ * Claim outputs are rounded down. This may result in small deposits being rounded down to 0 if the exchange rate is less than 1:1.
+ * {toToken} dust from rounding down will accumulate in the batcher over time.
+ *
  * NOTE: The batcher does not support {ERC7984ERC20Wrapper} contracts prior to v0.4.0.
  *
  * NOTE: The batcher could be used to maintain confidentiality of deposits--by default there are no confidentiality guarantees.
@@ -250,7 +253,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         }
     }
 
-    /// @inheritdoc IERC7984Receiver
+    /**
+     * @dev See {IERC7984Receiver-onConfidentialTransferReceived}.
+     *
+     * Deposit {fromToken} into the current batch.
+     *
+     * NOTE: See {_claim} to understand how the {toToken} amount is calculated. Claim amounts are rounded down. Small
+     * deposits may be rounded down to 0 if the exchange rate is less than 1:1.
+     */
     function onConfidentialTransferReceived(
         address,
         address from,
