@@ -25,7 +25,7 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
  * Developers must also implement the virtual function {routeDescription} to provide a human readable description of the batch's route.
  *
  * Claim outputs are rounded down. This may result in small deposits being rounded down to 0 if the exchange rate is less than 1:1.
- * Additionally, {toToken} dust from rounding down will accumulate in the batcher
+ * {toToken} dust from rounding down will accumulate in the batcher over time.
  *
  * NOTE: The batcher does not support {ERC7984ERC20Wrapper} contracts prior to v0.4.0.
  *
