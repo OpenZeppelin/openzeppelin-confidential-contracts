@@ -149,12 +149,15 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         euint64 encryptedAmount
     ) internal virtual override returns (euint64 transferred) {
         euint64 amountToTransfer = FHE.select(
-            FHE.and(_checkAlwaysBefore(from, to, encryptedAmount), _checkOnlyBeforeTransfer(from, to, encryptedAmount)),
+            FHE.and(
+                _checkForceTransferCompliance(from, to, encryptedAmount),
+                _checkStandardCompliance(from, to, encryptedAmount)
+            ),
             encryptedAmount,
             FHE.asEuint64(0)
         );
         transferred = super._update(from, to, amountToTransfer);
-        _onTransferCompliance(from, to, transferred);
+        _postTransferCompliance(from, to, transferred);
     }
 
     /**
@@ -167,16 +170,16 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         euint64 encryptedAmount
     ) internal virtual override returns (euint64 transferred) {
         euint64 amountToTransfer = FHE.select(
-            _checkAlwaysBefore(from, to, encryptedAmount),
+            _checkForceTransferCompliance(from, to, encryptedAmount),
             encryptedAmount,
             FHE.asEuint64(0)
         );
         transferred = super._forceUpdate(from, to, amountToTransfer);
-        _onTransferCompliance(from, to, transferred);
+        _postTransferCompliance(from, to, transferred);
     }
 
-    /// @dev Checks always-on compliance.
-    function _checkAlwaysBefore(
+    /// @dev Checks force transfer compliance modules (applied to both normal and force transfers).
+    function _checkForceTransferCompliance(
         address from,
         address to,
         euint64 encryptedAmount
@@ -195,8 +198,8 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         }
     }
 
-    /// @dev Checks transfer-only compliance.
-    function _checkOnlyBeforeTransfer(
+    /// @dev Checks standard compliance modules (applied to normal transfers only).
+    function _checkStandardCompliance(
         address from,
         address to,
         euint64 encryptedAmount
@@ -213,7 +216,8 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         }
     }
 
-    function _onTransferCompliance(address from, address to, euint64 encryptedAmount) internal virtual {
+    /// @dev Runs the post-transfer hooks for all compliance modules. This runs after all transfers (including force transfers).
+    function _postTransferCompliance(address from, address to, euint64 encryptedAmount) internal virtual {
         address[] memory modules = _forceTransferComplianceModules.values();
         uint256 modulesLength = modules.length;
         for (uint256 i = 0; i < modulesLength; i++) {
