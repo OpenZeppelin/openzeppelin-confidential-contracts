@@ -49,7 +49,10 @@ abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential 
 
     function onUninstall(bytes calldata deinitData) public virtual {}
 
-    /// @dev Internal function which checks if a transfer is compliant.
+    /**
+     * @dev Internal function which checks if a transfer is compliant. The function should return an encrypted boolean
+     * indicating if the transfer is compliant or revert. This function should be non-mutating.
+     */
     function _isCompliantTransfer(
         address token,
         address from,
@@ -57,7 +60,7 @@ abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential 
         euint64 encryptedAmount
     ) internal virtual returns (ebool);
 
-    /// @dev Internal function which performs operation after transfer.
+    /// @dev Internal function which reacts to a transfer. The function may be mutating.
     function _postTransfer(
         address /*token*/,
         address /*from*/,
