@@ -17,7 +17,7 @@
 
 ### Finance
 
-- `BatcherConfidential`: A batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts via a non-confidential route. ([#293](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/293))
+- `BatcherConfidential`: A batching primitive that enables routing between two `ERC7984ERC20Wrapper` contracts via a non-confidential route. ([#293](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/293))
 
 ### Utils
 
