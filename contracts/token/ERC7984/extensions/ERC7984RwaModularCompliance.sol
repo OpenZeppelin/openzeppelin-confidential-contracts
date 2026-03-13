@@ -36,12 +36,14 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
 
     /// @dev The module type is not supported.
     error ERC7984RwaUnsupportedModuleType(ComplianceModuleType moduleType);
-    /// @dev The address is not a transfer compliance module.
-    error ERC7984RwaNotTransferComplianceModule(address module);
+    /// @dev The address is not a valid compliance module.
+    error ERC7984RwaInvalidModule(address module);
     /// @dev The module is already installed.
-    error ERC7984RwaAlreadyInstalledModule(ComplianceModuleType moduleType, address module);
-    /// @dev The module is already uninstalled.
-    error ERC7984RwaAlreadyUninstalledModule(ComplianceModuleType moduleType, address module);
+    error ERC7984RwaDuplicateModule(ComplianceModuleType moduleType, address module);
+    /// @dev The module is not installed.
+    error ERC7984RwaNonexistentModule(ComplianceModuleType moduleType, address module);
+    /// @dev The maximum number of modules has been exceeded.
+    error ERC7984RwaExceededMaxModules();
 
     /**
      * @dev Check if a certain module typeId is supported.
@@ -82,6 +84,11 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         _uninstallModule(moduleType, module, deinitData);
     }
 
+    /// @dev Returns the maximum number of modules that can be installed.
+    function maxComplianceModules() public view virtual returns (uint256) {
+        return 15;
+    }
+
     /// @inheritdoc ERC7984Rwa
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IERC7984RwaModularCompliance).interfaceId || super.supportsInterface(interfaceId);
@@ -98,19 +105,23 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
 
     /// @dev Internal function which installs a transfer compliance module.
     function _installModule(ComplianceModuleType moduleType, address module, bytes memory initData) internal virtual {
+        require(
+            _forceTransferComplianceModules.length() + _complianceModules.length() < maxComplianceModules(),
+            ERC7984RwaExceededMaxModules()
+        );
         require(supportsModule(moduleType), ERC7984RwaUnsupportedModuleType(moduleType));
         (bool success, bytes memory returnData) = module.staticcall(
             abi.encodePacked(IComplianceModuleConfidential.isModule.selector)
         );
         require(
             success && bytes4(returnData) == IComplianceModuleConfidential.isModule.selector,
-            ERC7984RwaNotTransferComplianceModule(module)
+            ERC7984RwaInvalidModule(module)
         );
 
         EnumerableSet.AddressSet storage modules = moduleType == ComplianceModuleType.ForceTransfer
             ? _forceTransferComplianceModules
             : _complianceModules;
-        require(modules.add(module), ERC7984RwaAlreadyInstalledModule(moduleType, module));
+        require(modules.add(module), ERC7984RwaDuplicateModule(moduleType, module));
 
         IComplianceModuleConfidential(module).onInstall(initData);
 
@@ -131,7 +142,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         } else {
             modules = _complianceModules;
         }
-        require(modules.remove(module), ERC7984RwaAlreadyUninstalledModule(moduleType, module));
+        require(modules.remove(module), ERC7984RwaNonexistentModule(moduleType, module));
 
         // ignore success purposely to avoid modules that revert on uninstall
         LowLevelCall.callNoReturn(module, abi.encodeCall(IComplianceModuleConfidential.onUninstall, (deinitData)));

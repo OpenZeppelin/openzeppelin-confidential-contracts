@@ -1,5 +1,6 @@
 import { $ERC7984RwaModularCompliance } from '../../../../types/contracts-exposed/token/ERC7984/extensions/rwa/ERC7984RwaModularCompliance.sol/$ERC7984RwaModularCompliance';
 import { callAndGetResult } from '../../../helpers/event';
+import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
@@ -10,28 +11,7 @@ enum ModuleType {
   ForceTransfer,
 }
 
-const transferEventSignature = 'ConfidentialTransfer(address,address,bytes32)';
 const adminRole = ethers.ZeroHash;
-
-const fixture = async () => {
-  const [admin, agent1, agent2, holder, recipient, anyone] = await ethers.getSigners();
-  const token = (
-    await ethers.deployContract('$ERC7984RwaModularComplianceMock', ['name', 'symbol', 'uri', admin])
-  ).connect(anyone) as $ERC7984RwaModularCompliance;
-  await token.connect(admin).addAgent(agent1);
-  const complianceModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
-
-  return {
-    token,
-    holder,
-    complianceModule,
-    admin,
-    agent1,
-    agent2,
-    recipient,
-    anyone,
-  };
-};
 
 describe('ERC7984RwaModularCompliance', function () {
   beforeEach(async function () {
@@ -51,6 +31,18 @@ describe('ERC7984RwaModularCompliance', function () {
       recipient,
       holder,
       anyone,
+    });
+  });
+
+  describe('ERC165', async function () {
+    it('should support interface', async function () {
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.true;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWAModularCompliance)).to.eventually.be.true;
+    });
+
+    it('should not support interface', async function () {
+      await expect(this.token.supportsInterface(INVALID_ID)).to.eventually.be.false;
     });
   });
 
@@ -97,14 +89,29 @@ describe('ERC7984RwaModularCompliance', function () {
     it('should run module check', async function () {
       const notModule = '0x0000000000000000000000000000000000000001';
       await expect(this.token.$_installModule(ModuleType.Standard, notModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaNotTransferComplianceModule')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaInvalidModule')
         .withArgs(notModule);
+    });
+
+    it('should not install module if max modules exceeded', async function () {
+      const max = Number(await this.token.maxComplianceModules());
+
+      for (let i = 0; i < max; i++) {
+        const module = await ethers.deployContract('$ComplianceModuleConfidentialMock');
+        await this.token.$_installModule(i % 2 === 0 ? ModuleType.Standard : ModuleType.ForceTransfer, module, '0x');
+      }
+
+      const extraModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
+      await expect(this.token.$_installModule(ModuleType.Standard, extraModule, '0x')).to.be.revertedWithCustomError(
+        this.token,
+        'ERC7984RwaExceededMaxModules',
+      );
     });
 
     it('should not install module if already installed', async function () {
       await this.token.$_installModule(ModuleType.Standard, this.complianceModule, '0x');
       await expect(this.token.$_installModule(ModuleType.Standard, this.complianceModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaAlreadyInstalledModule')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaDuplicateModule')
         .withArgs(ModuleType.Standard, this.complianceModule);
     });
   });
@@ -126,7 +133,7 @@ describe('ERC7984RwaModularCompliance', function () {
       const newComplianceModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
 
       await expect(this.token.$_uninstallModule(ModuleType.Standard, newComplianceModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaAlreadyUninstalledModule')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaNonexistentModule')
         .withArgs(ModuleType.Standard, newComplianceModule);
     });
 
