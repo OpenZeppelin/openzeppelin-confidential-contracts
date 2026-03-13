@@ -41,6 +41,8 @@ export const SIGNATURES = {
     'forceConfidentialTransferFrom(address,address,bytes32,bytes)',
     'forceConfidentialTransferFrom(address,address,bytes32)',
     'canTransact(address)',
+    'isAdmin(address)',
+    'isAgent(address)',
     'pause()',
     'paused()',
     'setConfidentialFrozen(address,bytes32,bytes)',
