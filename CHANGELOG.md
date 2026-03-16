@@ -8,7 +8,7 @@
 
 ### Token
 
-- `ERC7984ERC20Wrapper`: use a bytes32 unwrap request identifier instead of identifying batches by the euint64 unwrap amount. ([#318](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/318))
+- `ERC7984ERC20Wrapper`: use a bytes32 unwrap request identifier instead of identifying batches by the euint64 unwrap amount. ([#326](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/326))
 - `ERC7984ERC20Wrapper`: Support ERC-165 interface detection on `ERC7984ERC20Wrapper`. ([#267](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/267))
 - `ERC7984ERC20Wrapper`: return the amount of wrapped token sent on wrap calls. ([#307](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/307))
 - `ERC7984ERC20Wrapper`: return unwrapped amount on `unwrap` calls ([#288](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/288))
