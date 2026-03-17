@@ -197,9 +197,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         uint256 modulesLength = modules.length;
         compliant = FHE.asEbool(true);
         for (uint256 i = 0; i < modulesLength; i++) {
-            // TODO: Can the encrypted amount ever be 0? Applies to all allowances for compliance.
-            // Should we optimistically be granting allowances at all?
-            FHE.allowTransient(encryptedAmount, modules[i]);
+            if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules[i]);
             compliant = FHE.and(
                 compliant,
                 IComplianceModuleConfidential(modules[i]).isCompliantTransfer(from, to, encryptedAmount)
