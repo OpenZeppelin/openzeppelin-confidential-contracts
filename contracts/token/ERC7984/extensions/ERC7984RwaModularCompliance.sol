@@ -21,46 +21,30 @@ import {ERC7984Rwa} from "./ERC7984Rwa.sol";
  * amount and may do accounting as necessary. Compliance modules may revert on either call, which will propagate
  * and revert the entire transaction.
  *
- * NOTE: Only force transfer compliance modules are called before force transfers--all compliance modules are called
- * after force transfers. Normal transfers call all compliance modules (including force transfer compliance modules).
+ * NOTE: Force transfers bypass the compliance checks before the transfer. All transfers call compliance modules after the transfer.
  */
 abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularCompliance, HandleAccessManager {
     using EnumerableSet for *;
 
-    EnumerableSet.AddressSet private _forceTransferComplianceModules;
     EnumerableSet.AddressSet private _complianceModules;
 
     /// @dev Emitted when a module is installed.
-    event ModuleInstalled(ComplianceModuleType moduleType, address module);
+    event ModuleInstalled(address module);
     /// @dev Emitted when a module is uninstalled.
-    event ModuleUninstalled(ComplianceModuleType moduleType, address module);
+    event ModuleUninstalled(address module);
 
-    /// @dev The module type is not supported.
-    error ERC7984RwaUnsupportedModuleType(ComplianceModuleType moduleType);
     /// @dev The address is not a valid compliance module.
     error ERC7984RwaInvalidModule(address module);
     /// @dev The module is already installed.
-    error ERC7984RwaDuplicateModule(ComplianceModuleType moduleType, address module);
+    error ERC7984RwaDuplicateModule(address module);
     /// @dev The module is not installed.
-    error ERC7984RwaNonexistentModule(ComplianceModuleType moduleType, address module);
+    error ERC7984RwaNonexistentModule(address module);
     /// @dev The maximum number of modules has been exceeded.
     error ERC7984RwaExceededMaxModules();
 
-    /**
-     * @dev Check if a certain module typeId is supported.
-     *
-     * Supported module types:
-     *
-     * * Transfer compliance module
-     * * Force transfer compliance module
-     */
-    function supportsModule(ComplianceModuleType moduleType) public view virtual returns (bool) {
-        return moduleType == ComplianceModuleType.Standard || moduleType == ComplianceModuleType.ForceTransfer;
-    }
-
     /// @inheritdoc IERC7984RwaModularCompliance
-    function isModuleInstalled(ComplianceModuleType moduleType, address module) public view virtual returns (bool) {
-        return _isModuleInstalled(moduleType, module);
+    function isModuleInstalled(address module) public view virtual returns (bool) {
+        return _complianceModules.contains(module);
     }
 
     /**
@@ -68,21 +52,13 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
      * @dev Consider gas footprint of the module before adding it since all modules will perform
      * all steps (pre-check, compliance check, post-hook) in a single transaction.
      */
-    function installModule(
-        ComplianceModuleType moduleType,
-        address module,
-        bytes memory initData
-    ) public virtual onlyAdmin {
-        _installModule(moduleType, module, initData);
+    function installModule(address module, bytes memory initData) public virtual onlyAdmin {
+        _installModule(module, initData);
     }
 
     /// @inheritdoc IERC7984RwaModularCompliance
-    function uninstallModule(
-        ComplianceModuleType moduleType,
-        address module,
-        bytes memory deinitData
-    ) public virtual onlyAdmin {
-        _uninstallModule(moduleType, module, deinitData);
+    function uninstallModule(address module, bytes memory deinitData) public virtual onlyAdmin {
+        _uninstallModule(module, deinitData);
     }
 
     /// @dev Returns the maximum number of modules that can be installed.
@@ -95,57 +71,28 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         return interfaceId == type(IERC7984RwaModularCompliance).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    /// @dev Checks if a compliance module is installed.
-    function _isModuleInstalled(
-        ComplianceModuleType moduleType,
-        address module
-    ) internal view virtual returns (bool installed) {
-        if (moduleType == ComplianceModuleType.ForceTransfer) return _forceTransferComplianceModules.contains(module);
-        if (moduleType == ComplianceModuleType.Standard) return _complianceModules.contains(module);
-    }
-
     /// @dev Internal function which installs a transfer compliance module.
-    function _installModule(ComplianceModuleType moduleType, address module, bytes memory initData) internal virtual {
-        require(
-            _forceTransferComplianceModules.length() + _complianceModules.length() < maxComplianceModules(),
-            ERC7984RwaExceededMaxModules()
-        );
-        require(supportsModule(moduleType), ERC7984RwaUnsupportedModuleType(moduleType));
+    function _installModule(address module, bytes memory initData) internal virtual {
+        require(_complianceModules.length() < maxComplianceModules(), ERC7984RwaExceededMaxModules());
         require(
             ERC165Checker.supportsInterface(module, type(IComplianceModuleConfidential).interfaceId),
             ERC7984RwaInvalidModule(module)
         );
-
-        EnumerableSet.AddressSet storage modules = moduleType == ComplianceModuleType.ForceTransfer
-            ? _forceTransferComplianceModules
-            : _complianceModules;
-        require(modules.add(module), ERC7984RwaDuplicateModule(moduleType, module));
+        require(_complianceModules.add(module), ERC7984RwaDuplicateModule(module));
 
         IComplianceModuleConfidential(module).onInstall(initData);
 
-        emit ModuleInstalled(moduleType, module);
+        emit ModuleInstalled(module);
     }
 
     /// @dev Internal function which uninstalls a compliance module.
-    function _uninstallModule(
-        ComplianceModuleType moduleType,
-        address module,
-        bytes memory deinitData
-    ) internal virtual {
-        require(supportsModule(moduleType), ERC7984RwaUnsupportedModuleType(moduleType));
-
-        EnumerableSet.AddressSet storage modules;
-        if (moduleType == ComplianceModuleType.ForceTransfer) {
-            modules = _forceTransferComplianceModules;
-        } else {
-            modules = _complianceModules;
-        }
-        require(modules.remove(module), ERC7984RwaNonexistentModule(moduleType, module));
+    function _uninstallModule(address module, bytes memory deinitData) internal virtual {
+        require(_complianceModules.remove(module), ERC7984RwaNonexistentModule(module));
 
         // ignore success purposely to avoid modules that revert on uninstall
         LowLevelCall.callNoReturn(module, abi.encodeCall(IComplianceModuleConfidential.onUninstall, (deinitData)));
 
-        emit ModuleUninstalled(moduleType, module);
+        emit ModuleUninstalled(module);
     }
 
     /**
@@ -158,10 +105,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         euint64 encryptedAmount
     ) internal virtual override returns (euint64 transferred) {
         euint64 amountToTransfer = FHE.select(
-            FHE.and(
-                _checkForceTransferCompliance(from, to, encryptedAmount),
-                _checkStandardCompliance(from, to, encryptedAmount)
-            ),
+            _checkCompliance(from, to, encryptedAmount),
             encryptedAmount,
             FHE.asEuint64(0)
         );
@@ -170,30 +114,25 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
     }
 
     /**
-     * @dev Forces the update of confidential balances. It transfers zero if it does not
-     * follow force transfer compliance. Runs hooks after the force transfer.
+     * @dev Forces the update of confidential balances. Bypasses compliance checks
+     * before the transfer. Runs hooks after the force transfer.
      */
     function _forceUpdate(
         address from,
         address to,
         euint64 encryptedAmount
     ) internal virtual override returns (euint64 transferred) {
-        euint64 amountToTransfer = FHE.select(
-            _checkForceTransferCompliance(from, to, encryptedAmount),
-            encryptedAmount,
-            FHE.asEuint64(0)
-        );
-        transferred = super._forceUpdate(from, to, amountToTransfer);
+        transferred = super._forceUpdate(from, to, encryptedAmount);
         _postTransferCompliance(from, to, transferred);
     }
 
-    /// @dev Checks force transfer compliance modules (applied to both normal and force transfers).
-    function _checkForceTransferCompliance(
+    /// @dev Checks all compliance modules.
+    function _checkCompliance(
         address from,
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (ebool compliant) {
-        address[] memory modules = _forceTransferComplianceModules.values();
+        address[] memory modules = _complianceModules.values();
         uint256 modulesLength = modules.length;
         compliant = FHE.asEbool(true);
         for (uint256 i = 0; i < modulesLength; i++) {
@@ -205,35 +144,10 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         }
     }
 
-    /// @dev Checks standard compliance modules (applied to normal transfers only).
-    function _checkStandardCompliance(
-        address from,
-        address to,
-        euint64 encryptedAmount
-    ) internal virtual returns (ebool compliant) {
-        address[] memory modules = _complianceModules.values();
-        uint256 modulesLength = modules.length;
-        compliant = FHE.asEbool(true);
-        for (uint256 i = 0; i < modulesLength; i++) {
-            FHE.allowTransient(encryptedAmount, modules[i]);
-            compliant = FHE.and(
-                compliant,
-                IComplianceModuleConfidential(modules[i]).isCompliantTransfer(from, to, encryptedAmount)
-            );
-        }
-    }
-
     /// @dev Runs the post-transfer hooks for all compliance modules. This runs after all transfers (including force transfers).
     function _postTransferCompliance(address from, address to, euint64 encryptedAmount) internal virtual {
-        address[] memory modules = _forceTransferComplianceModules.values();
+        address[] memory modules = _complianceModules.values();
         uint256 modulesLength = modules.length;
-        for (uint256 i = 0; i < modulesLength; i++) {
-            FHE.allowTransient(encryptedAmount, modules[i]);
-            IComplianceModuleConfidential(modules[i]).postTransfer(from, to, encryptedAmount);
-        }
-
-        modules = _complianceModules.values();
-        modulesLength = modules.length;
         for (uint256 i = 0; i < modulesLength; i++) {
             FHE.allowTransient(encryptedAmount, modules[i]);
             IComplianceModuleConfidential(modules[i]).postTransfer(from, to, encryptedAmount);
@@ -242,6 +156,6 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
 
     /// @dev See {HandleAccessManager-_validateHandleAllowance}. Allow compliance modules to access any handle.
     function _validateHandleAllowance(bytes32) internal view override returns (bool) {
-        return _forceTransferComplianceModules.contains(msg.sender) || _complianceModules.contains(msg.sender);
+        return _complianceModules.contains(msg.sender);
     }
 }
