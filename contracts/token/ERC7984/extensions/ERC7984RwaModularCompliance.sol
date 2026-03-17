@@ -3,6 +3,7 @@
 pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {LowLevelCall} from "@openzeppelin/contracts/utils/LowLevelCall.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IComplianceModuleConfidential} from "./../../../interfaces/IComplianceModuleConfidential.sol";
@@ -110,11 +111,8 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
             ERC7984RwaExceededMaxModules()
         );
         require(supportsModule(moduleType), ERC7984RwaUnsupportedModuleType(moduleType));
-        (bool success, bytes memory returnData) = module.staticcall(
-            abi.encodePacked(IComplianceModuleConfidential.isModule.selector)
-        );
         require(
-            success && bytes4(returnData) == IComplianceModuleConfidential.isModule.selector,
+            ERC165Checker.supportsInterface(module, type(IComplianceModuleConfidential).interfaceId),
             ERC7984RwaInvalidModule(module)
         );
 

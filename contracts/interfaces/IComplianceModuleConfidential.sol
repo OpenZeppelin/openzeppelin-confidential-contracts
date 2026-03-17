@@ -3,12 +3,10 @@
 pragma solidity ^0.8.24;
 
 import {euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 /// @dev Interface for confidential RWA transfer compliance module.
-interface IComplianceModuleConfidential {
-    /// @dev Returns magic number if it is a module.
-    function isModule() external returns (bytes4);
-
+interface IComplianceModuleConfidential is IERC165 {
     /// @dev Checks if a transfer is compliant. Should be non-mutating.
     function isCompliantTransfer(address from, address to, euint64 encryptedAmount) external returns (ebool);
 

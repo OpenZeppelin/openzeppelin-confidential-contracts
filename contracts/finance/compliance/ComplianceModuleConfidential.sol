@@ -3,14 +3,15 @@
 pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IComplianceModuleConfidential} from "../../interfaces/IComplianceModuleConfidential.sol";
-import {IERC7984Rwa} from "../../interfaces/IERC7984Rwa.sol";
-import {HandleAccessManager} from "../../utils/HandleAccessManager.sol";
+import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IComplianceModuleConfidential} from "./../../interfaces/IComplianceModuleConfidential.sol";
+import {IERC7984Rwa} from "./../../interfaces/IERC7984Rwa.sol";
+import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
 
 /**
  * @dev A contract which allows to build a transfer compliance module for confidential Real World Assets (RWAs).
  */
-abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential {
+abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential, ERC165 {
     error UnauthorizedUseOfEncryptedAmount(euint64 encryptedAmount, address sender);
 
     /// @dev Thrown when the sender is not authorized to call the given function.
@@ -29,11 +30,6 @@ abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential 
     }
 
     /// @inheritdoc IComplianceModuleConfidential
-    function isModule() public pure override returns (bytes4) {
-        return this.isModule.selector;
-    }
-
-    /// @inheritdoc IComplianceModuleConfidential
     function isCompliantTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
         ebool compliant = _isCompliantTransfer(msg.sender, from, to, encryptedAmount);
         FHE.allowTransient(compliant, msg.sender);
@@ -48,6 +44,11 @@ abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential 
     function onInstall(bytes calldata initData) public virtual {}
 
     function onUninstall(bytes calldata deinitData) public virtual {}
+
+    /// @inheritdoc ERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
+        return interfaceId == type(IComplianceModuleConfidential).interfaceId || super.supportsInterface(interfaceId);
+    }
 
     /// @dev Internal function which checks if a transfer is compliant.
     function _isCompliantTransfer(
