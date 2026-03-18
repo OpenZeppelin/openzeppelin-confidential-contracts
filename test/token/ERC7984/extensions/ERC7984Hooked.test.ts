@@ -4,23 +4,18 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
-const adminRole = ethers.ZeroHash;
-
 describe('ERC7984Hooked', function () {
   beforeEach(async function () {
-    const [admin, agent1, agent2, holder, recipient, anyone] = await ethers.getSigners();
+    const [admin, holder, recipient, anyone] = await ethers.getSigners();
     const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])).connect(
       anyone,
     ) as $ERC7984Hooked;
-    await token.connect(admin).addAgent(agent1);
     const hookModule = await ethers.deployContract('$ERC7984HookModuleMock');
 
     Object.assign(this, {
       token,
       hookModule,
       admin,
-      agent1,
-      agent2,
       recipient,
       holder,
       anyone,
@@ -30,7 +25,6 @@ describe('ERC7984Hooked', function () {
   describe('ERC165', async function () {
     it('should support interface', async function () {
       await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
-      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.true;
       await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984Hooked)).to.eventually.be.true;
     });
 
@@ -57,10 +51,10 @@ describe('ERC7984Hooked', function () {
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.true;
     });
 
-    it('should gate to admin', async function () {
+    it('should gate to owner', async function () {
       await expect(this.token.connect(this.anyone).installModule(this.hookModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'AccessControlUnauthorizedAccount')
-        .withArgs(this.anyone, adminRole);
+        .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
+        .withArgs(this.anyone);
 
       await this.token.connect(this.admin).installModule(this.hookModule, '0x');
     });
@@ -130,10 +124,10 @@ describe('ERC7984Hooked', function () {
       await this.token.$_uninstallModule(this.hookModule, '0x');
     });
 
-    it('should gate to admin', async function () {
+    it('should gate to owner', async function () {
       await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'AccessControlUnauthorizedAccount')
-        .withArgs(this.anyone, adminRole);
+        .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
+        .withArgs(this.anyone);
 
       await this.token.connect(this.admin).uninstallModule(this.hookModule, '0x');
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.false;
@@ -169,66 +163,5 @@ describe('ERC7984Hooked', function () {
         ).to.eventually.equal(approve ? 100 : 0);
       });
     }
-
-    describe('force transfer', function () {
-      it('should not call pre-transfer hook', async function () {
-        const encryptedAmount = await fhevm
-          .createEncryptedInput(this.token.target, this.agent1.address)
-          .add64(100n)
-          .encrypt();
-
-        await expect(
-          this.token
-            .connect(this.agent1)
-            ['forceConfidentialTransferFrom(address,address,bytes32,bytes)'](
-              this.holder,
-              this.recipient,
-              encryptedAmount.handles[0],
-              encryptedAmount.inputProof,
-            ),
-        ).to.not.emit(this.hookModule, 'PreTransfer');
-      });
-
-      it('should call post-transfer hook', async function () {
-        const encryptedAmount = await fhevm
-          .createEncryptedInput(this.token.target, this.agent1.address)
-          .add64(100n)
-          .encrypt();
-
-        await expect(
-          this.token
-            .connect(this.agent1)
-            ['forceConfidentialTransferFrom(address,address,bytes32,bytes)'](
-              this.holder,
-              this.recipient,
-              encryptedAmount.handles[0],
-              encryptedAmount.inputProof,
-            ),
-        ).to.emit(this.hookModule, 'PostTransfer');
-      });
-
-      it('should bypass hooks even if module denies', async function () {
-        await this.hookModule.setIsCompliant(false);
-
-        const encryptedAmount = await fhevm
-          .createEncryptedInput(this.token.target, this.agent1.address)
-          .add64(100n)
-          .encrypt();
-
-        await this.token
-          .connect(this.agent1)
-          ['forceConfidentialTransferFrom(address,address,bytes32,bytes)'](
-            this.holder,
-            this.recipient,
-            encryptedAmount.handles[0],
-            encryptedAmount.inputProof,
-          );
-
-        const recipientBalance = await this.token.confidentialBalanceOf(this.recipient);
-        await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, recipientBalance, this.token.target, this.recipient),
-        ).to.eventually.equal(100);
-      });
-    });
   });
 });

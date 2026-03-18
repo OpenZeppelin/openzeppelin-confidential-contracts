@@ -4,18 +4,18 @@ pragma solidity ^0.8.24;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC7984} from "./../../token/ERC7984/ERC7984.sol";
 import {ERC7984Hooked} from "./../../token/ERC7984/extensions/ERC7984Hooked.sol";
-import {ERC7984Rwa} from "./../../token/ERC7984/extensions/ERC7984Rwa.sol";
 import {ERC7984Mock} from "./ERC7984Mock.sol";
 
-contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock {
+contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock, Ownable {
     constructor(
         string memory name,
         string memory symbol,
         string memory tokenUri,
         address admin
-    ) ERC7984Rwa(admin) ERC7984Mock(name, symbol, tokenUri) {}
+    ) ERC7984Mock(name, symbol, tokenUri) Ownable(admin) {}
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984, ERC7984Hooked) returns (bool) {
         return super.supportsInterface(interfaceId);
@@ -28,4 +28,6 @@ contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock {
     ) internal virtual override(ERC7984Mock, ERC7984Hooked) returns (euint64) {
         return super._update(from, to, amount);
     }
+
+    function _authorizeModuleChange() internal virtual override onlyOwner {}
 }

@@ -8,21 +8,18 @@ import {LowLevelCall} from "@openzeppelin/contracts/utils/LowLevelCall.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IERC7984HookModule} from "./../../../interfaces/IERC7984HookModule.sol";
 import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
-import {ERC7984Rwa} from "./ERC7984Rwa.sol";
+import {ERC7984} from "./../ERC7984.sol";
 
 /**
- * @dev Extension of {ERC7984Rwa} that supports hook modules for confidential Real World Assets (RWAs).
- * Inspired by ERC-7579 modules.
+ * @dev Extension of {ERC7984} that supports hook modules. Inspired by ERC-7579 modules.
  *
  * Modules are called before transfers and after transfers. Before the transfer, modules
  * conduct checks to see if they approve the given transfer and return an encrypted boolean. If any module
  * returns false, the transferred amount becomes 0. After the transfer, modules are notified of the final transfer
  * amount and may do accounting as necessary. Modules may revert on either call, which will propagate
  * and revert the entire transaction.
- *
- * NOTE: Force transfers bypass the module checks before the transfer. All transfers call modules after the transfer.
  */
-abstract contract ERC7984Hooked is ERC7984Rwa, HandleAccessManager {
+abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     using EnumerableSet for *;
 
     EnumerableSet.AddressSet private _modules;
@@ -52,12 +49,14 @@ abstract contract ERC7984Hooked is ERC7984Rwa, HandleAccessManager {
      * Consider gas footprint of the module before adding it since all modules will perform
      * all steps (pre-check, check, post-hook) in a single transaction.
      */
-    function installModule(address module, bytes memory initData) public virtual onlyAdmin {
+    function installModule(address module, bytes memory initData) public virtual {
+        _authorizeModuleChange();
         _installModule(module, initData);
     }
 
     /// @dev Uninstalls a hook module.
-    function uninstallModule(address module, bytes memory deinitData) public virtual onlyAdmin {
+    function uninstallModule(address module, bytes memory deinitData) public virtual {
+        _authorizeModuleChange();
         _uninstallModule(module, deinitData);
     }
 
@@ -71,10 +70,13 @@ abstract contract ERC7984Hooked is ERC7984Rwa, HandleAccessManager {
         return 15;
     }
 
-    /// @inheritdoc ERC7984Rwa
+    /// @inheritdoc ERC7984
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == 0x2e07e769 || super.supportsInterface(interfaceId);
     }
+
+    /// @dev Authorization logic for installing and uninstalling modules. Must be implemented by the concrete contract.
+    function _authorizeModuleChange() internal virtual;
 
     /// @dev Internal function which installs a hook module.
     function _installModule(address module, bytes memory initData) internal virtual {
@@ -117,41 +119,28 @@ abstract contract ERC7984Hooked is ERC7984Rwa, HandleAccessManager {
         _runAfterTransferHooks(from, to, transferred);
     }
 
-    /**
-     * @dev Forces the update of confidential balances. Bypasses module checks
-     * before the transfer. Runs hooks after the force transfer.
-     */
-    function _forceUpdate(
-        address from,
-        address to,
-        euint64 encryptedAmount
-    ) internal virtual override returns (euint64 transferred) {
-        transferred = super._forceUpdate(from, to, encryptedAmount);
-        _runAfterTransferHooks(from, to, transferred);
-    }
-
     /// @dev Runs the before-transfer hooks for all modules.
     function _runBeforeTransferHooks(
         address from,
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (ebool compliant) {
-        address[] memory modules = _modules.values();
-        uint256 modulesLength = modules.length;
+        address[] memory modules_ = modules();
+        uint256 modulesLength = modules_.length;
         compliant = FHE.asEbool(true);
         for (uint256 i = 0; i < modulesLength; i++) {
-            if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules[i]);
-            compliant = FHE.and(compliant, IERC7984HookModule(modules[i]).beforeTransfer(from, to, encryptedAmount));
+            if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules_[i]);
+            compliant = FHE.and(compliant, IERC7984HookModule(modules_[i]).beforeTransfer(from, to, encryptedAmount));
         }
     }
 
     /// @dev Runs the after-transfer hooks for all modules. This runs after all transfers (including force transfers).
     function _runAfterTransferHooks(address from, address to, euint64 encryptedAmount) internal virtual {
-        address[] memory modules = _modules.values();
-        uint256 modulesLength = modules.length;
+        address[] memory modules_ = modules();
+        uint256 modulesLength = modules_.length;
         for (uint256 i = 0; i < modulesLength; i++) {
-            if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules[i]);
-            IERC7984HookModule(modules[i]).postTransfer(from, to, encryptedAmount);
+            if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules_[i]);
+            IERC7984HookModule(modules_[i]).postTransfer(from, to, encryptedAmount);
         }
     }
 
