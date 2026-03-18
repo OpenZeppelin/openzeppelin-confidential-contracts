@@ -61,6 +61,11 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         _uninstallModule(module, deinitData);
     }
 
+    /// @dev Returns the list of modules installed on the token.
+    function maxComplianceModules() public view virtual returns (address[] memory) {
+        return _complianceModules.values();
+    }
+
     /// @dev Returns the maximum number of modules that can be installed.
     function maxComplianceModules() public view virtual returns (uint256) {
         return 15;
@@ -149,7 +154,7 @@ abstract contract ERC7984RwaModularCompliance is ERC7984Rwa, IERC7984RwaModularC
         address[] memory modules = _complianceModules.values();
         uint256 modulesLength = modules.length;
         for (uint256 i = 0; i < modulesLength; i++) {
-            FHE.allowTransient(encryptedAmount, modules[i]);
+            if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules[i]);
             IComplianceModuleConfidential(modules[i]).postTransfer(from, to, encryptedAmount);
         }
     }

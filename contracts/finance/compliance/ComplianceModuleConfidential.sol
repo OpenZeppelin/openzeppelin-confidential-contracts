@@ -41,8 +41,10 @@ abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential,
         _postTransfer(msg.sender, from, to, encryptedAmount);
     }
 
+    /// @inheritdoc IComplianceModuleConfidential
     function onInstall(bytes calldata initData) public virtual {}
 
+    /// @inheritdoc IComplianceModuleConfidential
     function onUninstall(bytes calldata deinitData) public virtual {}
 
     /// @inheritdoc ERC165
@@ -50,7 +52,10 @@ abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential,
         return interfaceId == type(IComplianceModuleConfidential).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    /// @dev Internal function which checks if a transfer is compliant.
+    /**
+     * @dev Internal function which checks if a transfer is compliant. Transient access is already granted to the module
+     * for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
+     */
     function _isCompliantTransfer(
         address token,
         address from,
@@ -58,7 +63,10 @@ abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential,
         euint64 encryptedAmount
     ) internal virtual returns (ebool);
 
-    /// @dev Internal function which performs operation after transfer.
+    /**
+     * @dev Internal function which performs operations after transfers. Transient access is already granted to the module
+     * for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
+     */
     function _postTransfer(
         address /*token*/,
         address /*from*/,
