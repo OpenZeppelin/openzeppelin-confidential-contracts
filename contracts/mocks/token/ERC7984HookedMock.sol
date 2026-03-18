@@ -17,10 +17,6 @@ contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock, Ownable {
         address admin
     ) ERC7984Mock(name, symbol, tokenUri) Ownable(admin) {}
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984, ERC7984Hooked) returns (bool) {
-        return super.supportsInterface(interfaceId);
-    }
-
     function _update(
         address from,
         address to,

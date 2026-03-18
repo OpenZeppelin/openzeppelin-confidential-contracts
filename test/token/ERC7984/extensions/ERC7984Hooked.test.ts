@@ -22,17 +22,6 @@ describe('ERC7984Hooked', function () {
     });
   });
 
-  describe('ERC165', async function () {
-    it('should support interface', async function () {
-      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
-      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984Hooked)).to.eventually.be.true;
-    });
-
-    it('should not support interface', async function () {
-      await expect(this.token.supportsInterface(INVALID_ID)).to.eventually.be.false;
-    });
-  });
-
   describe('install module', async function () {
     it('should emit event', async function () {
       await expect(this.token.$_installModule(this.hookModule, '0x'))
@@ -49,7 +38,7 @@ describe('ERC7984Hooked', function () {
     it('should add module to modules list', async function () {
       await this.token.$_installModule(this.hookModule, '0x');
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.true;
-      await expect(this.token.modules()).to.eventually.deep.equal([this.hookModule]);
+      await expect(this.token.modules()).to.eventually.deep.equal([this.hookModule.target]);
     });
 
     it('should gate via `_authorizeModuleChange`', async function () {
