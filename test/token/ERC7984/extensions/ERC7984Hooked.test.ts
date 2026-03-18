@@ -1,4 +1,4 @@
-import { $ERC7984RwaModularCompliance } from '../../../../types/contracts-exposed/token/ERC7984/extensions/rwa/ERC7984RwaModularCompliance.sol/$ERC7984RwaModularCompliance';
+import { $ERC7984Hooked } from '../../../../types/contracts-exposed/token/ERC7984/extensions/rwa/ERC7984Hooked.sol/$ERC7984Hooked';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
@@ -6,18 +6,18 @@ import { ethers, fhevm } from 'hardhat';
 
 const adminRole = ethers.ZeroHash;
 
-describe('ERC7984RwaModularCompliance', function () {
+describe('ERC7984Hooked', function () {
   beforeEach(async function () {
     const [admin, agent1, agent2, holder, recipient, anyone] = await ethers.getSigners();
-    const token = (
-      await ethers.deployContract('$ERC7984RwaModularComplianceMock', ['name', 'symbol', 'uri', admin])
-    ).connect(anyone) as $ERC7984RwaModularCompliance;
+    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])).connect(
+      anyone,
+    ) as $ERC7984Hooked;
     await token.connect(admin).addAgent(agent1);
-    const complianceModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
+    const hookModule = await ethers.deployContract('$ERC7984HookModuleMock');
 
     Object.assign(this, {
       token,
-      complianceModule,
+      hookModule,
       admin,
       agent1,
       agent2,
@@ -31,7 +31,7 @@ describe('ERC7984RwaModularCompliance', function () {
     it('should support interface', async function () {
       await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
       await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.true;
-      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWAModularCompliance)).to.eventually.be.true;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984Hooked)).to.eventually.be.true;
     });
 
     it('should not support interface', async function () {
@@ -41,126 +41,126 @@ describe('ERC7984RwaModularCompliance', function () {
 
   describe('install module', async function () {
     it('should emit event', async function () {
-      await expect(this.token.$_installModule(this.complianceModule, '0x'))
+      await expect(this.token.$_installModule(this.hookModule, '0x'))
         .to.emit(this.token, 'ModuleInstalled')
-        .withArgs(this.complianceModule);
+        .withArgs(this.hookModule);
     });
 
     it('should call `onInstall` on the module', async function () {
-      await expect(this.token.$_installModule(this.complianceModule, '0xffff'))
-        .to.emit(this.complianceModule, 'OnInstall')
+      await expect(this.token.$_installModule(this.hookModule, '0xffff'))
+        .to.emit(this.hookModule, 'OnInstall')
         .withArgs('0xffff');
     });
 
     it('should add module to modules list', async function () {
-      await this.token.$_installModule(this.complianceModule, '0x');
-      await expect(this.token.isModuleInstalled(this.complianceModule)).to.eventually.be.true;
+      await this.token.$_installModule(this.hookModule, '0x');
+      await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.true;
     });
 
     it('should gate to admin', async function () {
-      await expect(this.token.connect(this.anyone).installModule(this.complianceModule, '0x'))
+      await expect(this.token.connect(this.anyone).installModule(this.hookModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'AccessControlUnauthorizedAccount')
         .withArgs(this.anyone, adminRole);
 
-      await this.token.connect(this.admin).installModule(this.complianceModule, '0x');
+      await this.token.connect(this.admin).installModule(this.hookModule, '0x');
     });
 
     it('should run module check', async function () {
       const notModule = '0x0000000000000000000000000000000000000001';
       await expect(this.token.$_installModule(notModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaInvalidModule')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedInvalidModule')
         .withArgs(notModule);
     });
 
     it('should not install module if max modules exceeded', async function () {
-      const max = Number(await this.token.maxComplianceModules());
+      const max = Number(await this.token.maxModules());
 
       for (let i = 0; i < max; i++) {
-        const module = await ethers.deployContract('$ComplianceModuleConfidentialMock');
+        const module = await ethers.deployContract('$ERC7984HookModuleMock');
         await this.token.$_installModule(module, '0x');
       }
 
-      const extraModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
+      const extraModule = await ethers.deployContract('$ERC7984HookModuleMock');
       await expect(this.token.$_installModule(extraModule, '0x')).to.be.revertedWithCustomError(
         this.token,
-        'ERC7984RwaExceededMaxModules',
+        'ERC7984HookedExceededMaxModules',
       );
     });
 
     it('should not install module if already installed', async function () {
-      await this.token.$_installModule(this.complianceModule, '0x');
-      await expect(this.token.$_installModule(this.complianceModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaDuplicateModule')
-        .withArgs(this.complianceModule);
+      await this.token.$_installModule(this.hookModule, '0x');
+      await expect(this.token.$_installModule(this.hookModule, '0x'))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedDuplicateModule')
+        .withArgs(this.hookModule);
     });
   });
 
   describe('uninstall module', async function () {
     beforeEach(async function () {
-      await this.token.$_installModule(this.complianceModule, '0x');
+      await this.token.$_installModule(this.hookModule, '0x');
     });
 
     it('should emit event', async function () {
-      await expect(this.token.$_uninstallModule(this.complianceModule, '0x'))
+      await expect(this.token.$_uninstallModule(this.hookModule, '0x'))
         .to.emit(this.token, 'ModuleUninstalled')
-        .withArgs(this.complianceModule);
+        .withArgs(this.hookModule);
     });
 
     it('should fail if module not installed', async function () {
-      const newComplianceModule = await ethers.deployContract('$ComplianceModuleConfidentialMock');
+      const newModule = await ethers.deployContract('$ERC7984HookModuleMock');
 
-      await expect(this.token.$_uninstallModule(newComplianceModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'ERC7984RwaNonexistentModule')
-        .withArgs(newComplianceModule);
+      await expect(this.token.$_uninstallModule(newModule, '0x'))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedNonexistentModule')
+        .withArgs(newModule);
     });
 
     it('should call `onUninstall` on the module', async function () {
-      await expect(this.token.$_uninstallModule(this.complianceModule, '0xffff'))
-        .to.emit(this.complianceModule, 'OnUninstall')
+      await expect(this.token.$_uninstallModule(this.hookModule, '0xffff'))
+        .to.emit(this.hookModule, 'OnUninstall')
         .withArgs('0xffff');
     });
 
     it('should remove module from modules list', async function () {
-      await this.token.$_uninstallModule(this.complianceModule, '0x');
-      await expect(this.token.isModuleInstalled(this.complianceModule)).to.eventually.be.false;
+      await this.token.$_uninstallModule(this.hookModule, '0x');
+      await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.false;
     });
 
     it("should not revert if module's `onUninstall` reverts", async function () {
-      await this.complianceModule.setRevertOnUninstall(true);
-      await this.token.$_uninstallModule(this.complianceModule, '0x');
+      await this.hookModule.setRevertOnUninstall(true);
+      await this.token.$_uninstallModule(this.hookModule, '0x');
     });
 
     it('should gate to admin', async function () {
-      await expect(this.token.connect(this.anyone).uninstallModule(this.complianceModule, '0x'))
+      await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'AccessControlUnauthorizedAccount')
         .withArgs(this.anyone, adminRole);
 
-      await this.token.connect(this.admin).uninstallModule(this.complianceModule, '0x');
-      await expect(this.token.isModuleInstalled(this.complianceModule)).to.eventually.be.false;
+      await this.token.connect(this.admin).uninstallModule(this.hookModule, '0x');
+      await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.false;
     });
   });
 
-  describe('check compliance on transfer', async function () {
+  describe('hooks on transfer', async function () {
     beforeEach(async function () {
-      await this.token.$_installModule(this.complianceModule, '0x');
+      await this.token.$_installModule(this.hookModule, '0x');
       await this.token['$_mint(address,uint64)'](this.holder, 1000);
     });
 
     it('should call pre-transfer hooks', async function () {
       await expect(
         this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
-      ).to.emit(this.complianceModule, 'PreTransfer');
+      ).to.emit(this.hookModule, 'PreTransfer');
     });
 
     it('should call post-transfer hooks', async function () {
       await expect(
         this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
-      ).to.emit(this.complianceModule, 'PostTransfer');
+      ).to.emit(this.hookModule, 'PostTransfer');
     });
 
     for (const approve of [true, false]) {
-      it(`should react correctly to compliance ${approve ? 'approval' : 'denial'}`, async function () {
-        await this.complianceModule.setIsCompliant(approve);
+      it(`should react correctly to module ${approve ? 'approval' : 'denial'}`, async function () {
+        await this.hookModule.setIsCompliant(approve);
         await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n);
 
         const recipientBalance = await this.token.confidentialBalanceOf(this.recipient);
@@ -186,7 +186,7 @@ describe('ERC7984RwaModularCompliance', function () {
               encryptedAmount.handles[0],
               encryptedAmount.inputProof,
             ),
-        ).to.not.emit(this.complianceModule, 'PreTransfer');
+        ).to.not.emit(this.hookModule, 'PreTransfer');
       });
 
       it('should call post-transfer hook', async function () {
@@ -204,11 +204,11 @@ describe('ERC7984RwaModularCompliance', function () {
               encryptedAmount.handles[0],
               encryptedAmount.inputProof,
             ),
-        ).to.emit(this.complianceModule, 'PostTransfer');
+        ).to.emit(this.hookModule, 'PostTransfer');
       });
 
-      it('should pass compliance even if module denies', async function () {
-        await this.complianceModule.setIsCompliant(false);
+      it('should bypass hooks even if module denies', async function () {
+        await this.hookModule.setIsCompliant(false);
 
         const encryptedAmount = await fhevm
           .createEncryptedInput(this.token.target, this.agent1.address)

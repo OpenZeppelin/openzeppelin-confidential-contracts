@@ -82,15 +82,3 @@ interface IERC7984Rwa is IERC7984 {
         euint64 encryptedAmount
     ) external returns (euint64);
 }
-
-/// @dev Interface for confidential RWA with modular compliance.
-interface IERC7984RwaModularCompliance {
-    /// @dev Checks if a compliance module is installed.
-    function isModuleInstalled(address module) external view returns (bool);
-
-    /// @dev Installs a transfer compliance module.
-    function installModule(address module, bytes calldata initData) external;
-
-    /// @dev Uninstalls a transfer compliance module.
-    function uninstallModule(address module, bytes calldata deinitData) external;
-}

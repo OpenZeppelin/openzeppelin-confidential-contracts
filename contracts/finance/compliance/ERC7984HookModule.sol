@@ -4,14 +4,14 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import {IComplianceModuleConfidential} from "./../../interfaces/IComplianceModuleConfidential.sol";
+import {IERC7984HookModule} from "./../../interfaces/IERC7984HookModule.sol";
 import {IERC7984Rwa} from "./../../interfaces/IERC7984Rwa.sol";
 import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
 
 /**
- * @dev A contract which allows to build a transfer compliance module for confidential Real World Assets (RWAs).
+ * @dev A contract which allows to build an ERC-7984 hook module.
  */
-abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential, ERC165 {
+abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     error UnauthorizedUseOfEncryptedAmount(euint64 encryptedAmount, address sender);
 
     /// @dev Thrown when the sender is not authorized to call the given function.
@@ -29,34 +29,34 @@ abstract contract ComplianceModuleConfidential is IComplianceModuleConfidential,
         _;
     }
 
-    /// @inheritdoc IComplianceModuleConfidential
-    function isCompliantTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
-        ebool compliant = _isCompliantTransfer(msg.sender, from, to, encryptedAmount);
+    /// @inheritdoc IERC7984HookModule
+    function beforeTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
+        ebool compliant = _beforeTransfer(msg.sender, from, to, encryptedAmount);
         FHE.allowTransient(compliant, msg.sender);
         return compliant;
     }
 
-    /// @inheritdoc IComplianceModuleConfidential
+    /// @inheritdoc IERC7984HookModule
     function postTransfer(address from, address to, euint64 encryptedAmount) public virtual {
         _postTransfer(msg.sender, from, to, encryptedAmount);
     }
 
-    /// @inheritdoc IComplianceModuleConfidential
+    /// @inheritdoc IERC7984HookModule
     function onInstall(bytes calldata initData) public virtual {}
 
-    /// @inheritdoc IComplianceModuleConfidential
+    /// @inheritdoc IERC7984HookModule
     function onUninstall(bytes calldata deinitData) public virtual {}
 
     /// @inheritdoc ERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
-        return interfaceId == type(IComplianceModuleConfidential).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IERC7984HookModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /**
-     * @dev Internal function which checks if a transfer is compliant. Transient access is already granted to the module
+     * @dev Internal function which runs before a transfer. Transient access is already granted to the module
      * for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
      */
-    function _isCompliantTransfer(
+    function _beforeTransfer(
         address token,
         address from,
         address to,

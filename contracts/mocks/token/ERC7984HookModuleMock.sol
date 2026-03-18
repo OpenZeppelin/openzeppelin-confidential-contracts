@@ -4,10 +4,10 @@ pragma solidity ^0.8.24;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ComplianceModuleConfidential} from "./../../finance/compliance/ComplianceModuleConfidential.sol";
+import {ERC7984HookModule} from "./../../finance/compliance/ERC7984HookModule.sol";
 import {IERC7984} from "./../../interfaces/IERC7984.sol";
 
-contract ComplianceModuleConfidentialMock is ComplianceModuleConfidential, ZamaEthereumConfig {
+contract ERC7984HookModuleMock is ERC7984HookModule, ZamaEthereumConfig {
     bool public isCompliant = true;
     bool public revertOnUninstall = false;
 
@@ -39,7 +39,7 @@ contract ComplianceModuleConfidentialMock is ComplianceModuleConfidential, ZamaE
         revertOnUninstall = revertOnUninstall_;
     }
 
-    function _isCompliantTransfer(address token, address from, address, euint64) internal override returns (ebool) {
+    function _beforeTransfer(address token, address from, address, euint64) internal override returns (ebool) {
         euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
 
         if (euint64.unwrap(fromBalance) != 0) {
