@@ -39,7 +39,7 @@ contract ERC7984HookModuleMock is ERC7984HookModule, ZamaEthereumConfig {
         revertOnUninstall = revertOnUninstall_;
     }
 
-    function _beforeTransfer(address token, address from, address, euint64) internal override returns (ebool) {
+    function _preTransfer(address token, address from, address, euint64) internal override returns (ebool) {
         euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
 
         if (euint64.unwrap(fromBalance) != 0) {

@@ -30,8 +30,8 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     }
 
     /// @inheritdoc IERC7984HookModule
-    function beforeTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
-        ebool compliant = _beforeTransfer(msg.sender, from, to, encryptedAmount);
+    function preTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
+        ebool compliant = _preTransfer(msg.sender, from, to, encryptedAmount);
         FHE.allowTransient(compliant, msg.sender);
         return compliant;
     }
@@ -56,7 +56,7 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
      * @dev Internal function which runs before a transfer. Transient access is already granted to the module
      * for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
      */
-    function _beforeTransfer(
+    function _preTransfer(
         address token,
         address from,
         address to,

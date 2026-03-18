@@ -11,7 +11,7 @@ interface IERC7984HookModule is IERC165 {
      * @dev Hook that runs before a transfer. Should be non-mutating. Transient access is already granted
      * to the module for `encryptedAmount`.
      */
-    function beforeTransfer(address from, address to, euint64 encryptedAmount) external returns (ebool);
+    function preTransfer(address from, address to, euint64 encryptedAmount) external returns (ebool);
 
     /// @dev Performs operation after transfer.
     function postTransfer(address from, address to, euint64 encryptedAmount) external;

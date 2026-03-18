@@ -111,16 +111,16 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
         euint64 encryptedAmount
     ) internal virtual override returns (euint64 transferred) {
         euint64 amountToTransfer = FHE.select(
-            _runBeforeTransferHooks(from, to, encryptedAmount),
+            _runPreTransferHooks(from, to, encryptedAmount),
             encryptedAmount,
             FHE.asEuint64(0)
         );
         transferred = super._update(from, to, amountToTransfer);
-        _runAfterTransferHooks(from, to, transferred);
+        _runPostTransferHooks(from, to, transferred);
     }
 
-    /// @dev Runs the before-transfer hooks for all modules.
-    function _runBeforeTransferHooks(
+    /// @dev Runs the pre-transfer hooks for all modules.
+    function _runPreTransferHooks(
         address from,
         address to,
         euint64 encryptedAmount
@@ -130,12 +130,12 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
         compliant = FHE.asEbool(true);
         for (uint256 i = 0; i < modulesLength; i++) {
             if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules_[i]);
-            compliant = FHE.and(compliant, IERC7984HookModule(modules_[i]).beforeTransfer(from, to, encryptedAmount));
+            compliant = FHE.and(compliant, IERC7984HookModule(modules_[i]).preTransfer(from, to, encryptedAmount));
         }
     }
 
-    /// @dev Runs the after-transfer hooks for all modules. This runs after all transfers (including force transfers).
-    function _runAfterTransferHooks(address from, address to, euint64 encryptedAmount) internal virtual {
+    /// @dev Runs the post-transfer hooks for all modules.
+    function _runPostTransferHooks(address from, address to, euint64 encryptedAmount) internal virtual {
         address[] memory modules_ = modules();
         uint256 modulesLength = modules_.length;
         for (uint256 i = 0; i < modulesLength; i++) {
