@@ -11,8 +11,6 @@ import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
  * @dev An abstract base contract for building ERC-7984 hook modules. Compatible with {ERC7984Hooked}.
  */
 abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
-    error UnauthorizedUseOfEncryptedAmount(euint64 encryptedAmount, address sender);
-
     /// @inheritdoc IERC7984HookModule
     function preTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
         ebool compliant = _preTransfer(msg.sender, from, to, encryptedAmount);
