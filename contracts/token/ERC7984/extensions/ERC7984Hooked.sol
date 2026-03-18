@@ -13,11 +13,13 @@ import {ERC7984} from "./../ERC7984.sol";
 /**
  * @dev Extension of {ERC7984} that supports hook modules. Inspired by ERC-7579 modules.
  *
- * Modules are called before transfers and after transfers. Before the transfer, modules
+ * Modules are called before and after transfers. Before the transfer, modules
  * conduct checks to see if they approve the given transfer and return an encrypted boolean. If any module
  * returns false, the transferred amount becomes 0. After the transfer, modules are notified of the final transfer
  * amount and may do accounting as necessary. Modules may revert on either call, which will propagate
  * and revert the entire transaction.
+ *
+ * NOTE: Hook modules are trusted contracts--they have access to any private state the token has access to.
  */
 abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     using EnumerableSet for *;
@@ -70,11 +72,6 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
         return 15;
     }
 
-    /// @inheritdoc ERC7984
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == 0x2e07e769 || super.supportsInterface(interfaceId);
-    }
-
     /// @dev Authorization logic for installing and uninstalling modules. Must be implemented by the concrete contract.
     function _authorizeModuleChange() internal virtual;
 
@@ -102,8 +99,10 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     }
 
     /**
-     * @dev Updates confidential balances. It transfers zero if it does not pass
-     * module checks. Runs hooks after the transfer.
+     * @dev See {ERC7984._update}.
+     *
+     * Modified to run pre and post transfer hooks. Zero tokens are transferred if a module does not approve
+     * the transfer.
      */
     function _update(
         address from,
@@ -144,7 +143,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
         }
     }
 
-    /// @dev See {HandleAccessManager-_validateHandleAllowance}. Allow modules to access any handle.
+    /// @dev See {HandleAccessManager-_validateHandleAllowance}. Allow modules to access any handle the token has access to.
     function _validateHandleAllowance(bytes32) internal view override returns (bool) {
         return _modules.contains(msg.sender);
     }

@@ -49,9 +49,10 @@ describe('ERC7984Hooked', function () {
     it('should add module to modules list', async function () {
       await this.token.$_installModule(this.hookModule, '0x');
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.true;
+      await expect(this.token.modules()).to.eventually.deep.equal([this.hookModule]);
     });
 
-    it('should gate to owner', async function () {
+    it('should gate via `_authorizeModuleChange`', async function () {
       await expect(this.token.connect(this.anyone).installModule(this.hookModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
         .withArgs(this.anyone);
@@ -124,7 +125,7 @@ describe('ERC7984Hooked', function () {
       await this.token.$_uninstallModule(this.hookModule, '0x');
     });
 
-    it('should gate to owner', async function () {
+    it('should gate via `_authorizeModuleChange`', async function () {
       await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
         .withArgs(this.anyone);

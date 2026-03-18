@@ -23,7 +23,6 @@ export const SIGNATURES = {
     'symbol()',
   ],
   ERC7984ERC20Wrapper: ['underlying()', 'unwrap(address,address,bytes32,bytes)', 'wrap(address,uint256)'],
-  ERC7984Hooked: ['isModuleInstalled(address)', 'installModule(address,bytes)', 'uninstallModule(address,bytes)'],
   ERC7984RWA: [
     'blockUser(address)',
     'confidentialAvailable(address)',
