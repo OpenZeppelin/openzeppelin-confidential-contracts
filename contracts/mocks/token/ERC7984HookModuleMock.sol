@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ERC7984HookModule} from "./../../finance/compliance/ERC7984HookModule.sol";
+import {ERC7984HookModule} from "./../../token/ERC7984/utils/ERC7984HookModule.sol";
 import {IERC7984} from "./../../interfaces/IERC7984.sol";
 
 contract ERC7984HookModuleMock is ERC7984HookModule, ZamaEthereumConfig {

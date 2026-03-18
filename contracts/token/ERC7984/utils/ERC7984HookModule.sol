@@ -4,30 +4,14 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import {IERC7984HookModule} from "./../../interfaces/IERC7984HookModule.sol";
-import {IERC7984Rwa} from "./../../interfaces/IERC7984Rwa.sol";
-import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
+import {IERC7984HookModule} from "./../../../interfaces/IERC7984HookModule.sol";
+import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
 
 /**
  * @dev An abstract base contract for building ERC-7984 hook modules. Compatible with {ERC7984Hooked}.
  */
 abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     error UnauthorizedUseOfEncryptedAmount(euint64 encryptedAmount, address sender);
-
-    /// @dev Thrown when the sender is not authorized to call the given function.
-    error NotAuthorized(address account);
-
-    /// @dev Thrown when the sender is not an admin of the token.
-    modifier onlyTokenAdmin(address token) {
-        require(IERC7984Rwa(token).isAdmin(msg.sender), NotAuthorized(msg.sender));
-        _;
-    }
-
-    /// @dev Thrown when the sender is not an agent of the token.
-    modifier onlyTokenAgent(address token) {
-        require(IERC7984Rwa(token).isAgent(msg.sender), NotAuthorized(msg.sender));
-        _;
-    }
 
     /// @inheritdoc IERC7984HookModule
     function preTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
