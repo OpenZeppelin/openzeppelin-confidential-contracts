@@ -24,6 +24,20 @@ describe('ERC7984IdentityCheck', function () {
     Object.assign(this, { identityRegistry, token, holder, recipient, operator, anyone });
   });
 
+  describe('constructor', function () {
+    it('reverts if the registry address is zero', async function () {
+      await expect(ethers.deployContract('$ERC7984IdentityCheckMock', [ethers.ZeroAddress, name, symbol, uri]))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidIdentityRegistry')
+        .withArgs(ethers.ZeroAddress);
+    });
+
+    it('reverts if the registry address is not a contract', async function () {
+      await expect(ethers.deployContract('$ERC7984IdentityCheckMock', [this.holder.address, name, symbol, uri]))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidIdentityRegistry')
+        .withArgs(this.holder.address);
+    });
+  });
+
   it('returns the identity registry address', async function () {
     await expect(this.token.identityRegistry()).to.eventually.equal(this.identityRegistry.target);
   });

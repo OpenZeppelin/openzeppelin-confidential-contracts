@@ -15,10 +15,17 @@ import {ERC7984} from "../ERC7984.sol";
 abstract contract ERC7984IdentityCheck is ERC7984 {
     address private immutable _identityRegistry;
 
+    /// @dev The provided registry address is invalid.
+    error ERC7984InvalidIdentityRegistry(address registry);
+
     /// @dev The `account` is not verified in the identity registry.
     error ERC7984InvalidIdentity(address account);
 
     constructor(address identityRegistry_) {
+        require(
+            identityRegistry_ != address(0) && identityRegistry_.code.length != 0,
+            ERC7984InvalidIdentityRegistry(identityRegistry_)
+        );
         _identityRegistry = identityRegistry_;
     }
 
