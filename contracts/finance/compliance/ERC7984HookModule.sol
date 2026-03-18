@@ -9,7 +9,7 @@ import {IERC7984Rwa} from "./../../interfaces/IERC7984Rwa.sol";
 import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
 
 /**
- * @dev A contract which allows to build an ERC-7984 hook module.
+ * @dev An abstract base contract for building ERC-7984 hook modules. Compatible with {ERC7984Hooked}.
  */
 abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     error UnauthorizedUseOfEncryptedAmount(euint64 encryptedAmount, address sender);
