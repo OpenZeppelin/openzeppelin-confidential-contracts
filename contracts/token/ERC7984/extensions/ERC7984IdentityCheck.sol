@@ -5,6 +5,13 @@ pragma solidity ^0.8.27;
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984} from "../ERC7984.sol";
 
+/**
+ * @dev Extension of {ERC7984} that enforces identity verification
+ * on token recipients by querying an external identity registry.
+ *
+ * See https://github.com/ERC-3643/ERC-3643/blob/main/contracts/registry/interface/IIdentityRegistry.sol[IIdentityRegistry]
+ * for more information.
+ */
 abstract contract ERC7984IdentityCheck is ERC7984 {
     address private immutable _identityRegistry;
 
