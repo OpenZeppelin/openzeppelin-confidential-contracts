@@ -40,6 +40,11 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     /// @dev The maximum number of modules has been exceeded.
     error ERC7984HookedExceededMaxModules();
 
+    modifier onlyAuthorizedModuleChange() {
+        _authorizeModuleChange();
+        _;
+    }
+
     /// @dev Checks if a module is installed.
     function isModuleInstalled(address module) public view virtual returns (bool) {
         return _modules.contains(module);
@@ -49,14 +54,14 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
      * @dev Installs a hook module.
      *
      * Consider gas footprint of the module before adding it since all modules will perform
-     * all steps (pre-check, check, post-hook) in a single transaction.
+     * both steps (pre-hook, post-hook) on all transfers.
      */
-    function installModule(address module, bytes memory initData) public virtual onlyModuleChange {
+    function installModule(address module, bytes memory initData) public virtual onlyAuthorizedModuleChange {
         _installModule(module, initData);
     }
 
     /// @dev Uninstalls a hook module.
-    function uninstallModule(address module, bytes memory deinitData) public virtual onlyModuleChange {
+    function uninstallModule(address module, bytes memory deinitData) public virtual onlyAuthorizedModuleChange {
         _uninstallModule(module, deinitData);
     }
 
