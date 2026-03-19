@@ -2,7 +2,7 @@
 // OpenZeppelin Confidential Contracts (last updated v0.3.0) (interfaces/IERC7984Rwa.sol)
 pragma solidity ^0.8.24;
 
-import {ebool, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC7984} from "./IERC7984.sol";
 
 /// @dev Interface for confidential RWA contracts.

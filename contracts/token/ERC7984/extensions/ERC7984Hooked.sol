@@ -51,14 +51,12 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
      * Consider gas footprint of the module before adding it since all modules will perform
      * all steps (pre-check, check, post-hook) in a single transaction.
      */
-    function installModule(address module, bytes memory initData) public virtual {
-        _authorizeModuleChange();
+    function installModule(address module, bytes memory initData) public virtual onlyModuleChange {
         _installModule(module, initData);
     }
 
     /// @dev Uninstalls a hook module.
-    function uninstallModule(address module, bytes memory deinitData) public virtual {
-        _authorizeModuleChange();
+    function uninstallModule(address module, bytes memory deinitData) public virtual onlyModuleChange {
         _uninstallModule(module, deinitData);
     }
 
@@ -99,7 +97,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     }
 
     /**
-     * @dev See {ERC7984._update}.
+     * @dev See {ERC7984-_update}.
      *
      * Modified to run pre and post transfer hooks. Zero tokens are transferred if a module does not approve
      * the transfer.
