@@ -45,8 +45,8 @@
     "@changesets/read": "^0.6.0",
     "@eslint/compat": "^1.2.8",
     "@eslint/js": "^9.9.0",
-    "@fhevm/hardhat-plugin": "0.3.0-4",
-    "@fhevm/solidity": "0.10.0",
+    "@fhevm/hardhat-plugin": "0.4.2",
+    "@fhevm/solidity": "0.11.1",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.6",
     "@nomicfoundation/hardhat-ethers": "^3.0.4",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.3",
@@ -63,7 +63,7 @@
     "@types/node": "^18.19.59",
     "@typescript-eslint/eslint-plugin": "^8.0.1",
     "@typescript-eslint/parser": "^8.0.1",
-    "@zama-fhe/relayer-sdk": "0.3.0-8",
+    "@zama-fhe/relayer-sdk": "0.4.1",
     "chai": "^4.3.7",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.3",
@@ -83,6 +83,7 @@
     "lodash": "^4.17.21",
     "lodash.startcase": "^4.4.0",
     "mocha": "^10.1.0",
+    "p-limit": "^7.3.0",
     "prettier": "^2.8.4",
     "prettier-plugin-solidity": "^1.1.2",
     "rimraf": "^4.1.2",
@@ -97,7 +98,8 @@
     "typechain": "^8.2.0",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.0.1",
-    "web3-validator": "^2.0.6"
+    "web3-validator": "^2.0.6",
+    "yargs": "^18.0.0"
   },
   "overrides": {
     "elliptic": "6.6.1"

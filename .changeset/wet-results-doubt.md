@@ -2,4 +2,4 @@
 'openzeppelin-confidential-contracts': minor
 ---
 
-`ERC7984RwaModularCompliance`: Support compliance modules for confidential RWAs.
+`ERC7984Hooked`: Call external hooks before and after transfer of confidential tokens.
