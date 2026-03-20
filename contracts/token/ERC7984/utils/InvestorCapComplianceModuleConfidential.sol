@@ -12,6 +12,8 @@ abstract contract InvestorCapComplianceModuleConfidential is ERC7984HookModule {
     mapping(address => uint64) private _maxInvestors;
     mapping(address => euint64) private _investorCounts;
 
+    error Unauthorized();
+
     event MaxInvestorSet(address indexed token, uint64 maxInvestor);
 
     function onInstall(bytes calldata initData) public override {
@@ -22,7 +24,7 @@ abstract contract InvestorCapComplianceModuleConfidential is ERC7984HookModule {
 
     /// @dev Sets max number of investors for the given token `token` to `maxInvestor`.
     function setMaxInvestors(address token, uint64 maxInvestors_) public virtual {
-        require(IERC7984Rwa(token).isAgent(msg.sender), "ERC7984HookModule: caller is not an agent");
+        require(IERC7984Rwa(token).isAgent(msg.sender), Unauthorized());
         _setMaxInvestors(token, maxInvestors_);
     }
 

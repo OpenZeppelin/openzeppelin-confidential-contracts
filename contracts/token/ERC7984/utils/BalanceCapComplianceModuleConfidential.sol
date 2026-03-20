@@ -15,6 +15,8 @@ abstract contract BalanceCapComplianceModuleConfidential is ERC7984HookModule {
 
     event MaxBalanceSet(address token, uint64 newMaxBalance);
 
+    error Unauthorized();
+
     mapping(address => uint64) private _maxBalances;
 
     function onInstall(bytes calldata initData) public override {
@@ -26,7 +28,7 @@ abstract contract BalanceCapComplianceModuleConfidential is ERC7984HookModule {
 
     /// @dev Sets the max balance for a given token `token` to `maxBalance`.
     function setMaxBalance(address token, uint64 maxBalance) public virtual {
-        require(IERC7984Rwa(token).isAgent(msg.sender), "ERC7984HookModule: caller is not an agent");
+        require(IERC7984Rwa(token).isAgent(msg.sender), Unauthorized());
         _setMaxBalance(token, maxBalance);
     }
 

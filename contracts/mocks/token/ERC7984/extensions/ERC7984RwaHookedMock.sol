@@ -34,4 +34,6 @@ abstract contract ERC7984RwaHookedMock is ERC7984RwaMock, ERC7984Hooked {
     ) internal view override(ERC7984Hooked, ERC7984RwaMock) returns (bool) {
         return super._validateHandleAllowance(handle);
     }
+
+    function _authorizeModuleChange() internal virtual override onlyAdmin {}
 }

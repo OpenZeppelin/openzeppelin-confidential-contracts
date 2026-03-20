@@ -2,10 +2,10 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
-describe.only('BalanceCapComplianceModuleConfidential', function () {
+describe('BalanceCapComplianceModuleConfidential', function () {
   beforeEach(async function () {
     const [anyone, admin, agent1, holder, recipient] = await ethers.getSigners();
-    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])) as any;
+    const token = (await ethers.deployContract('$ERC7984RwaHookedMock', ['name', 'symbol', 'uri', admin])) as any;
     const complianceModule = await ethers.deployContract('$BalanceCapComplianceModuleConfidentialMock');
 
     await token['$_mint(address,uint64)'](holder, 20000n.toString());
@@ -13,6 +13,7 @@ describe.only('BalanceCapComplianceModuleConfidential', function () {
     await token
       .connect(admin)
       .installModule(complianceModule, ethers.AbiCoder.defaultAbiCoder().encode(['uint64'], [10_000]));
+    await token.connect(admin).addAgent(agent1);
 
     await expect(complianceModule.maxBalances(token)).to.eventually.eq(10_000);
 
@@ -85,9 +86,10 @@ describe.only('BalanceCapComplianceModuleConfidential', function () {
 
     describe('setMaxBalance', function () {
       it('should be gated to agent', async function () {
-        await expect(this.complianceModule.setMaxBalance(this.token, 100))
-          .to.be.revertedWithCustomError(this.complianceModule, 'NotAuthorized')
-          .withArgs(this.anyone);
+        await expect(this.complianceModule.setMaxBalance(this.token, 100)).to.be.revertedWithCustomError(
+          this.complianceModule,
+          'Unauthorized',
+        );
       });
 
       it('should set max balance', async function () {
