@@ -3,9 +3,7 @@
 
 ## 0.4.0 (2026-03-20)
 
-- `ERC7984ERC20Wrapper`: use a bytes32 unwrap request identifier instead of identifying batches by the euint64 unwrap amount.
 - Migrate `@fhevm/solidity` dependency to `0.11.1` ([#311](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/311))
-- Migrate `@fhevm/solidity` dependency to `0.10.0` ([#290](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/290))
 - Upgrade openzeppelin/contracts and openzeppelin/contracts-upgradeable to v5.6.1 ([#314](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/314))
 
 ### Token
