@@ -2,11 +2,11 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
-describe('BalanceCapComplianceModuleConfidential', function () {
+describe('ERC7984BalanceCapHookModule', function () {
   beforeEach(async function () {
     const [anyone, admin, agent1, holder, recipient] = await ethers.getSigners();
     const token = (await ethers.deployContract('$ERC7984RwaHookedMock', ['name', 'symbol', 'uri', admin])) as any;
-    const complianceModule = await ethers.deployContract('$BalanceCapComplianceModuleConfidentialMock');
+    const complianceModule = await ethers.deployContract('$ERC7984BalanceCapHookModule');
 
     await token['$_mint(address,uint64)'](holder, 20000n.toString());
 
@@ -83,25 +83,25 @@ describe('BalanceCapComplianceModuleConfidential', function () {
         fhevm.userDecryptEuint(FhevmType.euint64, afterBalance, this.token.target, this.recipient),
       ).to.eventually.equal(0n);
     });
+  });
+  
+  describe('setMaxBalance', function () {
+    it('should be gated to agent', async function () {
+      await expect(this.complianceModule.setMaxBalance(this.token, 100)).to.be.revertedWithCustomError(
+        this.complianceModule,
+        'Unauthorized',
+      );
+    });
 
-    describe('setMaxBalance', function () {
-      it('should be gated to agent', async function () {
-        await expect(this.complianceModule.setMaxBalance(this.token, 100)).to.be.revertedWithCustomError(
-          this.complianceModule,
-          'Unauthorized',
-        );
-      });
+    it('should set max balance', async function () {
+      await this.complianceModule.connect(this.agent1).setMaxBalance(this.token, 100);
+      await expect(this.complianceModule.maxBalances(this.token)).to.eventually.eq(100);
+    });
 
-      it('should set max balance', async function () {
-        await this.complianceModule.connect(this.agent1).setMaxBalance(this.token, 100);
-        await expect(this.complianceModule.maxBalances(this.token)).to.eventually.eq(100);
-      });
-
-      it('should emit event', async function () {
-        await expect(this.complianceModule.connect(this.agent1).setMaxBalance(this.token, 100))
-          .to.emit(this.complianceModule, 'MaxBalanceSet')
-          .withArgs(this.token, 100);
-      });
+    it('should emit event', async function () {
+      await expect(this.complianceModule.connect(this.agent1).setMaxBalance(this.token, 100))
+        .to.emit(this.complianceModule, 'MaxBalanceSet')
+        .withArgs(this.token, 100);
     });
   });
 });

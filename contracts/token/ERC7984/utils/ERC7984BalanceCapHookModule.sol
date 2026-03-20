@@ -9,7 +9,7 @@ import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
 /// @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the balance of an investor.
-abstract contract BalanceCapComplianceModuleConfidential is ERC7984HookModule {
+abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
     using EnumerableSet for *;
 
     event MaxBalanceSet(address token, uint64 newMaxBalance);

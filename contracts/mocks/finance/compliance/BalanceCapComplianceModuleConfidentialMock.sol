@@ -2,6 +2,6 @@
 pragma solidity ^0.8.24;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {BalanceCapComplianceModuleConfidential} from "../../../token/ERC7984/utils/BalanceCapComplianceModuleConfidential.sol";
+import {ERC7984BalanceCapHookModule} from "../../../token/ERC7984/utils/ERC7984BalanceCapHookModule.sol";
 
-contract BalanceCapComplianceModuleConfidentialMock is BalanceCapComplianceModuleConfidential, ZamaEthereumConfig {}
+contract ERC7984BalanceCapHookModuleMock is ERC7984BalanceCapHookModule, ZamaEthereumConfig {}

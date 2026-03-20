@@ -7,7 +7,7 @@ import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
 import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
 /// @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the number of investors.
-abstract contract InvestorCapComplianceModuleConfidential is ERC7984HookModule {
+abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
     mapping(address => uint64) private _maxInvestors;
     mapping(address => euint64) private _investorCounts;
 
