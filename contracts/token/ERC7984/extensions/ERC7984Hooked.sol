@@ -130,7 +130,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
         address[] memory modules_ = modules();
         uint256 modulesLength = modules_.length;
         compliant = FHE.asEbool(true);
-        for (uint256 i = 0; i < modulesLength; i++) {
+        for (uint256 i = 0; i < modulesLength; ++i) {
             if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules_[i]);
             compliant = FHE.and(compliant, IERC7984HookModule(modules_[i]).preTransfer(from, to, encryptedAmount));
         }
