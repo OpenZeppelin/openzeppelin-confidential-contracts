@@ -6,7 +6,7 @@ describe('ERC7984BalanceCapHookModule', function () {
   beforeEach(async function () {
     const [anyone, admin, agent1, holder, recipient] = await ethers.getSigners();
     const token = (await ethers.deployContract('$ERC7984RwaHookedMock', ['name', 'symbol', 'uri', admin])) as any;
-    const complianceModule = await ethers.deployContract('$ERC7984BalanceCapHookModule');
+    const complianceModule = await ethers.deployContract('$ERC7984BalanceCapHookModuleMock');
 
     await token['$_mint(address,uint64)'](holder, 20000n.toString());
 
@@ -84,7 +84,7 @@ describe('ERC7984BalanceCapHookModule', function () {
       ).to.eventually.equal(0n);
     });
   });
-  
+
   describe('setMaxBalance', function () {
     it('should be gated to agent', async function () {
       await expect(this.complianceModule.setMaxBalance(this.token, 100)).to.be.revertedWithCustomError(
