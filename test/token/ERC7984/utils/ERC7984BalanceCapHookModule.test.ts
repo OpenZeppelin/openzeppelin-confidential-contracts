@@ -15,7 +15,7 @@ describe('ERC7984BalanceCapHookModule', function () {
       .installModule(complianceModule, ethers.AbiCoder.defaultAbiCoder().encode(['uint64'], [10_000]));
     await token.connect(admin).addAgent(agent1);
 
-    await expect(complianceModule.maxBalances(token)).to.eventually.eq(10_000);
+    await expect(complianceModule.maxBalance(token)).to.eventually.eq(10_000);
 
     Object.assign(this, {
       token,
@@ -95,7 +95,7 @@ describe('ERC7984BalanceCapHookModule', function () {
 
     it('should set max balance', async function () {
       await this.complianceModule.connect(this.agent1).setMaxBalance(this.token, 100);
-      await expect(this.complianceModule.maxBalances(this.token)).to.eventually.eq(100);
+      await expect(this.complianceModule.maxBalance(this.token)).to.eventually.eq(100);
     });
 
     it('should emit event', async function () {

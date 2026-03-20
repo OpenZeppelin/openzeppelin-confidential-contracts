@@ -8,38 +8,38 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
 /// @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the number of investors.
 abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
-    mapping(address => uint64) private _maxInvestors;
-    mapping(address => euint64) private _investorCounts;
+    event MaxInvestorCountSet(address indexed token, uint64 maxInvestorCount);
 
     error Unauthorized();
 
-    event MaxInvestorSet(address indexed token, uint64 maxInvestor);
+    mapping(address => uint64) private _maxInvestorCounts;
+    mapping(address => euint64) private _investorCounts;
 
     function onInstall(bytes calldata initData) public override {
-        uint64 maxInvestorCount = abi.decode(initData, (uint64));
-        _setMaxInvestors(msg.sender, maxInvestorCount);
+        uint64 maxInvestorCount_ = abi.decode(initData, (uint64));
+        _setMaxInvestorCount(msg.sender, maxInvestorCount_);
         super.onInstall(initData);
     }
 
-    /// @dev Sets max number of investors for the given token `token` to `maxInvestor`.
-    function setMaxInvestors(address token, uint64 maxInvestors_) public virtual {
+    /// @dev Sets the max number of investors for the given token `token` to `maxInvestorCount_`.
+    function setMaxInvestorCount(address token, uint64 maxInvestorCount_) public virtual {
         require(IERC7984Rwa(token).isAgent(msg.sender), Unauthorized());
-        _setMaxInvestors(token, maxInvestors_);
+        _setMaxInvestorCount(token, maxInvestorCount_);
     }
 
     /// @dev Gets max number of investors for the given token `token`.
-    function maxInvestors(address token) public view virtual returns (uint64) {
-        return _maxInvestors[token];
+    function maxInvestorCount(address token) public view virtual returns (uint64) {
+        return _maxInvestorCounts[token];
     }
 
     /// @dev Gets current number of investors for the given token `token`.
-    function investorCounts(address token) public view virtual returns (euint64) {
+    function investorCount(address token) public view virtual returns (euint64) {
         return _investorCounts[token];
     }
 
-    function _setMaxInvestors(address token, uint64 maxInvestorCount) internal {
-        _maxInvestors[token] = maxInvestorCount;
-        emit MaxInvestorSet(token, maxInvestorCount);
+    function _setMaxInvestorCount(address token, uint64 maxInvestorCount_) internal {
+        _maxInvestorCounts[token] = maxInvestorCount_;
+        emit MaxInvestorCountSet(token, maxInvestorCount_);
     }
 
     /// @inheritdoc ERC7984HookModule
@@ -49,7 +49,7 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
         address to,
         euint64 encryptedAmount
     ) internal override returns (ebool) {
-        if (to == address(0) || to == from || euint64.unwrap(encryptedAmount) == 0) {
+        if (to == address(0) || to == from || !FHE.isInitialized(encryptedAmount)) {
             return FHE.asEbool(true);
         }
 
@@ -59,11 +59,16 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
         _getTokenHandleAllowance(token, fromBalance);
         _getTokenHandleAllowance(token, toBalance);
 
-        require(
-            FHE.isAllowed(fromBalance, token),
-            ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(fromBalance, token)
-        );
-        require(FHE.isAllowed(toBalance, token), ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(toBalance, token));
+        if (FHE.isInitialized(fromBalance))
+            require(
+                FHE.isAllowed(fromBalance, token),
+                ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(fromBalance, token)
+            );
+        if (FHE.isInitialized(toBalance))
+            require(
+                FHE.isAllowed(toBalance, token),
+                ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(toBalance, token)
+            );
 
         euint64 encryptedZero = FHE.asEuint64(0);
 
@@ -73,7 +78,7 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
                 FHE.eq(encryptedAmount, encryptedZero), // zero transfer
                 FHE.or(
                     FHE.ne(toBalance, encryptedZero), // already investor
-                    FHE.lt(investorCounts(token), maxInvestors(token)) // room for another investor
+                    FHE.lt(investorCount(token), maxInvestorCount(token)) // room for another investor
                 )
             );
     }
@@ -86,18 +91,20 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
         _getTokenHandleAllowance(token, fromBalance);
         _getTokenHandleAllowance(token, toBalance);
 
-        require(
-            FHE.isAllowed(fromBalance, token),
-            ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(fromBalance, msg.sender)
-        );
-        require(
-            FHE.isAllowed(toBalance, token),
-            ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(toBalance, msg.sender)
-        );
+        if (FHE.isInitialized(fromBalance))
+            require(
+                FHE.isAllowed(fromBalance, token),
+                ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(fromBalance, token)
+            );
+        if (FHE.isInitialized(toBalance))
+            require(
+                FHE.isAllowed(toBalance, token),
+                ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(toBalance, token)
+            );
 
         euint64 encryptedZero = FHE.asEuint64(0);
         ebool transferNotZero = FHE.ne(encryptedAmount, encryptedZero);
-        euint64 newInvestorCount = investorCounts(token);
+        euint64 newInvestorCount = investorCount(token);
 
         if (to != address(0)) {
             ebool addInvestor = FHE.and(transferNotZero, FHE.eq(toBalance, encryptedAmount));
