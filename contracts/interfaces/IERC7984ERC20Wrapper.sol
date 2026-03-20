@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0-rc.0) (interfaces/IERC7984ERC20Wrapper.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (interfaces/IERC7984ERC20Wrapper.sol)
 
 pragma solidity ^0.8.24;
 
