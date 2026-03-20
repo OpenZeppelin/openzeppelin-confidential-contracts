@@ -29,7 +29,7 @@ contract ERC7984RwaMock is ERC7984Rwa, ERC7984Mock, HandleAccessManager {
         return super._update(from, to, amount);
     }
 
-    function _validateHandleAllowance(bytes32) internal view override returns (bool) {
+    function _validateHandleAllowance(bytes32) internal view virtual override returns (bool) {
         return isAgent(msg.sender);
     }
 

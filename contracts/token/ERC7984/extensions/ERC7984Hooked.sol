@@ -147,7 +147,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     }
 
     /// @dev See {HandleAccessManager-_validateHandleAllowance}. Allow modules to access any handle the token has access to.
-    function _validateHandleAllowance(bytes32) internal view override returns (bool) {
+    function _validateHandleAllowance(bytes32) internal view virtual override returns (bool) {
         return _modules.contains(msg.sender);
     }
 }

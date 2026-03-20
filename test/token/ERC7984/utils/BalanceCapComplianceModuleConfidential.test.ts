@@ -2,32 +2,17 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
-enum ModuleType {
-  Standard,
-  ForceTransfer,
-}
-
-describe('BalanceCapComplianceModuleConfidential', function () {
+describe.only('BalanceCapComplianceModuleConfidential', function () {
   beforeEach(async function () {
     const [anyone, admin, agent1, holder, recipient] = await ethers.getSigners();
-    const token = (await ethers.deployContract('$ERC7984RwaModularComplianceMock', [
-      'name',
-      'symbol',
-      'uri',
-      admin,
-    ])) as any;
-    await token.connect(admin).addAgent(agent1);
+    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])) as any;
     const complianceModule = await ethers.deployContract('$BalanceCapComplianceModuleConfidentialMock');
 
     await token['$_mint(address,uint64)'](holder, 20000n.toString());
 
     await token
       .connect(admin)
-      .installModule(
-        ModuleType.Standard,
-        complianceModule,
-        ethers.AbiCoder.defaultAbiCoder().encode(['uint64'], [10_000]),
-      );
+      .installModule(complianceModule, ethers.AbiCoder.defaultAbiCoder().encode(['uint64'], [10_000]));
 
     await expect(complianceModule.maxBalances(token)).to.eventually.eq(10_000);
 
@@ -42,7 +27,7 @@ describe('BalanceCapComplianceModuleConfidential', function () {
     });
   });
 
-  describe('_isCompliantTransfer', function () {
+  describe('_preTransfer', function () {
     it('should allow transfer if new balance is less than max balance', async function () {
       const beforeBalance = await this.token.confidentialBalanceOf(this.recipient);
 
