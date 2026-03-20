@@ -3,7 +3,6 @@
 pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IERC7984} from "./../../../interfaces/IERC7984.sol";
 import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
 import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
@@ -54,8 +53,8 @@ abstract contract InvestorCapComplianceModuleConfidential is ERC7984HookModule {
             return FHE.asEbool(true);
         }
 
-        euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
-        euint64 toBalance = IERC7984(token).confidentialBalanceOf(to);
+        euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
+        euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
 
         _getTokenHandleAllowance(token, fromBalance);
         _getTokenHandleAllowance(token, toBalance);
@@ -81,8 +80,8 @@ abstract contract InvestorCapComplianceModuleConfidential is ERC7984HookModule {
 
     /// @inheritdoc ERC7984HookModule
     function _postTransfer(address token, address from, address to, euint64 encryptedAmount) internal override {
-        euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
-        euint64 toBalance = IERC7984(token).confidentialBalanceOf(to);
+        euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
+        euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
 
         _getTokenHandleAllowance(token, fromBalance);
         _getTokenHandleAllowance(token, toBalance);

@@ -2,9 +2,8 @@
 
 pragma solidity ^0.8.27;
 
-import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IERC7984} from "./../../../interfaces/IERC7984.sol";
 import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
 import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984HookModule} from "./ERC7984HookModule.sol";
@@ -54,7 +53,7 @@ abstract contract BalanceCapComplianceModuleConfidential is ERC7984HookModule {
             return FHE.asEbool(true);
         }
 
-        euint64 balance = IERC7984(token).confidentialBalanceOf(to);
+        euint64 balance = IERC7984Rwa(token).confidentialBalanceOf(to);
         _getTokenHandleAllowance(token, balance);
 
         if (FHE.isInitialized(balance))
