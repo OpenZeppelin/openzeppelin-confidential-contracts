@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import {ERC7984, ERC7984Votes, VotesConfidential} from "../../token/ERC7984/extensions/ERC7984Votes.sol";
+import {ERC7984, ERC7984Votes} from "../../token/ERC7984/extensions/ERC7984Votes.sol";
 import {ERC7984Mock} from "./ERC7984Mock.sol";
 
 abstract contract ERC7984VotesMock is ERC7984Mock, ERC7984Votes {
