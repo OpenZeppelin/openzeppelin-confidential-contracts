@@ -43,6 +43,12 @@ export const SIGNATURES = {
     'unblockUser(address)',
     'unpause()',
   ],
+  ERC7984HookModule: [
+    'preTransfer(address,address,bytes32)',
+    'postTransfer(address,address,bytes32)',
+    'onInstall(bytes)',
+    'onUninstall(bytes)',
+  ],
 };
 
 export const INTERFACE_IDS = mapValues(SIGNATURES, interfaceId);
