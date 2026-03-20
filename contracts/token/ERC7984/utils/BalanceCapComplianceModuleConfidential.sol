@@ -4,12 +4,13 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IERC7984} from "../../interfaces/IERC7984.sol";
-import {FHESafeMath} from "../../utils/FHESafeMath.sol";
-import {ComplianceModuleConfidential} from "./ComplianceModuleConfidential.sol";
+import {IERC7984} from "./../../../interfaces/IERC7984.sol";
+import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
+import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
+import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
 /// @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the balance of an investor.
-abstract contract BalanceCapComplianceModuleConfidential is ComplianceModuleConfidential {
+abstract contract BalanceCapComplianceModuleConfidential is ERC7984HookModule {
     using EnumerableSet for *;
 
     event MaxBalanceSet(address token, uint64 newMaxBalance);
@@ -24,7 +25,8 @@ abstract contract BalanceCapComplianceModuleConfidential is ComplianceModuleConf
     }
 
     /// @dev Sets the max balance for a given token `token` to `maxBalance`.
-    function setMaxBalance(address token, uint64 maxBalance) public virtual onlyTokenAgent(token) {
+    function setMaxBalance(address token, uint64 maxBalance) public virtual {
+        require(IERC7984Rwa(token).isAgent(msg.sender), "ERC7984HookModule: caller is not an agent");
         _setMaxBalance(token, maxBalance);
     }
 
@@ -39,8 +41,8 @@ abstract contract BalanceCapComplianceModuleConfidential is ComplianceModuleConf
         emit MaxBalanceSet(token, maxBalance);
     }
 
-    /// @inheritdoc ComplianceModuleConfidential
-    function _isCompliantTransfer(
+    /// @inheritdoc ERC7984HookModule
+    function _preTransfer(
         address token,
         address from,
         address to,
@@ -54,10 +56,13 @@ abstract contract BalanceCapComplianceModuleConfidential is ComplianceModuleConf
         _getTokenHandleAllowance(token, balance);
 
         if (FHE.isInitialized(balance))
-            require(FHE.isAllowed(balance, token), UnauthorizedUseOfEncryptedAmount(balance, token));
+            require(FHE.isAllowed(balance, token), ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(balance, token));
 
         if (FHE.isInitialized(encryptedAmount))
-            require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
+            require(
+                FHE.isAllowed(encryptedAmount, token),
+                ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(encryptedAmount, token)
+            );
 
         (ebool increased, euint64 futureBalance) = FHESafeMath.tryIncrease(balance, encryptedAmount);
         return FHE.and(increased, FHE.le(futureBalance, maxBalances(token)));

@@ -3,11 +3,12 @@
 pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IERC7984} from "../../interfaces/IERC7984.sol";
-import {ComplianceModuleConfidential} from "./ComplianceModuleConfidential.sol";
+import {IERC7984} from "./../../../interfaces/IERC7984.sol";
+import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
+import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
 /// @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the number of investors.
-abstract contract InvestorCapComplianceModuleConfidential is ComplianceModuleConfidential {
+abstract contract InvestorCapComplianceModuleConfidential is ERC7984HookModule {
     mapping(address => uint64) private _maxInvestors;
     mapping(address => euint64) private _investorCounts;
 
@@ -20,7 +21,8 @@ abstract contract InvestorCapComplianceModuleConfidential is ComplianceModuleCon
     }
 
     /// @dev Sets max number of investors for the given token `token` to `maxInvestor`.
-    function setMaxInvestors(address token, uint64 maxInvestors_) public virtual onlyTokenAgent(token) {
+    function setMaxInvestors(address token, uint64 maxInvestors_) public virtual {
+        require(IERC7984Rwa(token).isAgent(msg.sender), "ERC7984HookModule: caller is not an agent");
         _setMaxInvestors(token, maxInvestors_);
     }
 
@@ -39,8 +41,8 @@ abstract contract InvestorCapComplianceModuleConfidential is ComplianceModuleCon
         emit MaxInvestorSet(token, maxInvestorCount);
     }
 
-    /// @inheritdoc ComplianceModuleConfidential
-    function _isCompliantTransfer(
+    /// @inheritdoc ERC7984HookModule
+    function _preTransfer(
         address token,
         address from,
         address to,
@@ -56,9 +58,11 @@ abstract contract InvestorCapComplianceModuleConfidential is ComplianceModuleCon
         _getTokenHandleAllowance(token, fromBalance);
         _getTokenHandleAllowance(token, toBalance);
 
-        require(FHE.isAllowed(fromBalance, token), UnauthorizedUseOfEncryptedAmount(fromBalance, token));
-        require(FHE.isAllowed(toBalance, token), UnauthorizedUseOfEncryptedAmount(toBalance, token));
-        require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
+        require(
+            FHE.isAllowed(fromBalance, token),
+            ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(fromBalance, token)
+        );
+        require(FHE.isAllowed(toBalance, token), ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(toBalance, token));
 
         euint64 encryptedZero = FHE.asEuint64(0);
 
@@ -73,7 +77,7 @@ abstract contract InvestorCapComplianceModuleConfidential is ComplianceModuleCon
             );
     }
 
-    /// @inheritdoc ComplianceModuleConfidential
+    /// @inheritdoc ERC7984HookModule
     function _postTransfer(address token, address from, address to, euint64 encryptedAmount) internal override {
         euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
         euint64 toBalance = IERC7984(token).confidentialBalanceOf(to);
@@ -81,9 +85,14 @@ abstract contract InvestorCapComplianceModuleConfidential is ComplianceModuleCon
         _getTokenHandleAllowance(token, fromBalance);
         _getTokenHandleAllowance(token, toBalance);
 
-        require(FHE.isAllowed(encryptedAmount, token), UnauthorizedUseOfEncryptedAmount(encryptedAmount, token));
-        require(FHE.isAllowed(fromBalance, token), UnauthorizedUseOfEncryptedAmount(fromBalance, msg.sender));
-        require(FHE.isAllowed(toBalance, token), UnauthorizedUseOfEncryptedAmount(toBalance, msg.sender));
+        require(
+            FHE.isAllowed(fromBalance, token),
+            ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(fromBalance, msg.sender)
+        );
+        require(
+            FHE.isAllowed(toBalance, token),
+            ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(toBalance, msg.sender)
+        );
 
         euint64 encryptedZero = FHE.asEuint64(0);
         ebool transferNotZero = FHE.ne(encryptedAmount, encryptedZero);
