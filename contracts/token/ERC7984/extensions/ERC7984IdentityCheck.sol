@@ -44,5 +44,5 @@ abstract contract ERC7984IdentityCheck is ERC7984 {
 }
 
 interface IIdentityRegistry {
-    function isVerified(address user) external view returns (bool);
+    function isVerified(address account) external view returns (bool);
 }
