@@ -41,7 +41,7 @@ describe('ERC7984InvestorCapHookModules', function () {
         .withArgs(this.token, 20);
     });
 
-    it.only('should be gated to agent', async function () {
+    it('should be gated to agent', async function () {
       await expect(this.complianceModule.setMaxInvestorCount(this.token, 20)).to.be.revertedWithCustomError(
         this.complianceModule,
         'Unauthorized',
@@ -125,7 +125,36 @@ describe('ERC7984InvestorCapHookModules', function () {
       ).to.eventually.equal(0);
     });
 
-    it('should require caller has allowance to `fromBalance` and `toBalance`', async function () {});
+    it('should revert if `fromBalance` is not allowed to the caller', async function () {
+      const maliciousCaller = await ethers.deployContract('ERC7984MaliciousHookCallerMock');
+
+      // investorCount is a real, initialized handle the compliance module owns — but the
+      // malicious caller has no FHE allowance for it, triggering the isAllowed guard.
+      const investorCountHandle = await this.complianceModule.investorCount(this.token);
+      await maliciousCaller.setConfidentialBalance(this.holder.address, investorCountHandle);
+
+      await expect(
+        maliciousCaller.callPreTransfer(this.complianceModule, this.holder.address, this.recipient.address, 1),
+      )
+        .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedUseOfEncryptedAmount')
+        .withArgs(investorCountHandle, maliciousCaller);
+    });
+
+    it('should revert if `toBalance` is not allowed to the caller', async function () {
+      const maliciousCaller = await ethers.deployContract('ERC7984MaliciousHookCallerMock');
+
+      // Give `from` a real owned balance (>= transfer amount) so its check passes
+      await maliciousCaller.setConfidentialBalanceWithAllowance(this.holder.address, 1000);
+
+      const investorCountHandle = await this.complianceModule.investorCount(this.token);
+      await maliciousCaller.setConfidentialBalance(this.recipient.address, investorCountHandle);
+
+      await expect(
+        maliciousCaller.callPreTransfer(this.complianceModule, this.holder.address, this.recipient.address, 1),
+      )
+        .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedUseOfEncryptedAmount')
+        .withArgs(investorCountHandle, maliciousCaller);
+    });
   });
 
   describe('_postTransfer', function () {
