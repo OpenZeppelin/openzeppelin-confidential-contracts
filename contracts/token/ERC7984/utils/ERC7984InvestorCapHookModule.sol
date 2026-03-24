@@ -49,7 +49,7 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
         address to,
         euint64 encryptedAmount
     ) internal override returns (ebool) {
-        if (to == address(0) || to == from || !FHE.isInitialized(encryptedAmount)) {
+        if (to == address(0) || to == from) {
             return FHE.asEbool(true);
         }
 
@@ -84,7 +84,7 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
     }
 
     /// @inheritdoc ERC7984HookModule
-    function _postTransfer(address token, address from, address to, euint64 encryptedAmount) internal override {
+    function _postTransfer(address token, address from, address to, euint64 encryptedAmount) internal virtual override {
         euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
         euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
 
