@@ -23,8 +23,10 @@ abstract contract HandleAccessManager {
     }
 
     /**
-     * @dev Unimplemented function that must return true if the message sender is allowed to call
+     * @dev Validation function that must return true if the message sender is allowed to call
      * {getHandleAllowance} for the given handle.
      */
-    function _validateHandleAllowance(bytes32 handle) internal view virtual returns (bool);
+    function _validateHandleAllowance(bytes32) internal view virtual returns (bool) {
+        return false;
+    }
 }
