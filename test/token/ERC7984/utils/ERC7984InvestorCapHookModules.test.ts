@@ -86,6 +86,22 @@ describe('ERC7984InvestorCapHookModules', function () {
       ).to.eventually.equal(3);
     });
 
+    it('should not increment investor count if recipient is already an investor', async function () {
+      await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
+
+      const beforeInvestorCount = await this.complianceModule.investorCount(this.token);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, beforeInvestorCount, this.complianceModule.target, this.admin),
+      ).to.eventually.equal(2);
+
+      await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
+
+      const afterInvestorCount = await this.complianceModule.investorCount(this.token);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, afterInvestorCount, this.complianceModule.target, this.admin),
+      ).to.eventually.equal(2);
+    });
+
     it('should allow burning always', async function () {
       await this.complianceModule.connect(this.agent1).setMaxInvestorCount(this.token, 1);
 
