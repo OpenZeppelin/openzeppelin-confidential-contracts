@@ -156,6 +156,28 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return burntAmount;
     }
 
+    function recoverAddress(address lostAccount, address newAccount) public virtual onlyAgent returns (euint64) {
+        require(FHE.isInitialized(confidentialBalanceOf(lostAccount)), ERC7984ZeroBalance(lostAccount));
+
+        euint64 balance = confidentialBalanceOf(lostAccount);
+        euint64 frozenBalance = confidentialFrozen(lostAccount);
+
+        if (FHE.isInitialized(frozenBalance)) {
+            _setConfidentialFrozen(lostAccount, euint64.wrap(0));
+        }
+
+        euint64 tokensRecovered = _forceUpdate(lostAccount, newAccount, balance);
+
+        if (FHE.isInitialized(frozenBalance)) {
+            _setConfidentialFrozen(newAccount, FHE.min(tokensRecovered, frozenBalance));
+            _setConfidentialFrozen(lostAccount, FHE.sub(balance, tokensRecovered));
+        }
+
+        emit TokensRecovered(lostAccount, newAccount, tokensRecovered);
+
+        return tokensRecovered;
+    }
+
     /// @dev Variant of {forceConfidentialTransferFrom-address-address-euint64} with an input proof.
     function forceConfidentialTransferFrom(
         address from,

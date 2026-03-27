@@ -1,6 +1,7 @@
 import { callAndGetResult } from '../../../helpers/event';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
 import { AddressLike, BytesLike } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
@@ -10,11 +11,11 @@ const adminRole = ethers.ZeroHash;
 const agentRole = ethers.id('AGENT_ROLE');
 
 const fixture = async () => {
-  const [admin, agent1, agent2, recipient, anyone] = await ethers.getSigners();
+  const [admin, agent1, agent2, recipient, anyone, ...others] = await ethers.getSigners();
   const token = await ethers.deployContract('ERC7984RwaMock', ['name', 'symbol', 'uri', admin.address]);
   await token.connect(admin).addAgent(agent1);
   token.connect(anyone);
-  return { token, admin, agent1, agent2, recipient, anyone };
+  return { token, admin, agent1, agent2, recipient, anyone, others };
 };
 
 describe('ERC7984Rwa', function () {
@@ -676,5 +677,78 @@ describe('ERC7984Rwa', function () {
           .withArgs(account);
       });
     }
+  });
+
+  describe('Recover', function () {
+    it('should be gated to agents', async function () {
+      const { token, anyone, others, recipient } = await fixture();
+      await expect(token.connect(anyone).recoverAddress(recipient, others[0]))
+        .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
+        .withArgs(anyone.address, agentRole);
+    });
+
+    it('should fail if address has an initialized balance', async function () {
+      const { token, anyone, others, agent1 } = await fixture();
+      await expect(token.connect(agent1).recoverAddress(anyone, others[0]))
+        .to.be.revertedWithCustomError(token, 'ERC7984ZeroBalance')
+        .withArgs(anyone);
+    });
+
+    it('should emit recovered event', async function () {
+      const { token, anyone, recipient, agent1 } = await fixture();
+      await token['$_mint(address,uint64)'](recipient, 100);
+      await expect(token.connect(agent1).recoverAddress(recipient, anyone))
+        .to.emit(token, 'TokensRecovered')
+        .withArgs(recipient, anyone, anyValue);
+
+      const [, , amount] = (await token.queryFilter(token.filters.TokensRecovered()))[0].args;
+      await expect(fhevm.userDecryptEuint(FhevmType.euint64, amount, token, agent1)).to.eventually.eq(100);
+    });
+
+    it('should transfer frozen tokens', async function () {
+      const { token, anyone, recipient, agent1 } = await fixture();
+      await token['$_mint(address,uint64)'](recipient, 100);
+
+      await token.$_setConfidentialFrozen(recipient, 50);
+
+      await token.connect(agent1).recoverAddress(recipient, anyone);
+
+      const transferEvent = (await token.queryFilter(token.filters.ConfidentialTransfer()))[1];
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], token.target, anyone),
+      ).to.eventually.eq(100);
+    });
+
+    it('should properly pass on frozen', async function () {
+      const { token, anyone, recipient, agent1 } = await fixture();
+      await token['$_mint(address,uint64)'](recipient, 100);
+
+      await token.$_setConfidentialFrozen(recipient, 50);
+
+      const logs = (await (await token.connect(agent1).recoverAddress(recipient, anyone)).wait())!.logs;
+
+      const tokensFrozenTopic = ethers.id('TokensFrozen(address,bytes32)');
+      const rescuedAccountFreezeEvents = logs.filter(
+        log =>
+          log.address == token.target &&
+          log.topics[0] == tokensFrozenTopic &&
+          log.topics[1] == ethers.AbiCoder.defaultAbiCoder().encode(['address'], [recipient.address]),
+      );
+
+      expect(rescuedAccountFreezeEvents[0].data).to.eq(ethers.ZeroHash);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, rescuedAccountFreezeEvents[1].data, token.target, recipient),
+      ).to.eventually.eq(0);
+
+      const newAccountFreezeEvents = logs.filter(
+        log =>
+          log.address == token.target &&
+          log.topics[0] == tokensFrozenTopic &&
+          log.topics[1] == ethers.AbiCoder.defaultAbiCoder().encode(['address'], [anyone.address]),
+      );
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, newAccountFreezeEvents[0].data, token.target, anyone),
+      ).to.eventually.eq(50);
+    });
   });
 });
