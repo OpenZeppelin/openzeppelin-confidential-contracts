@@ -22,12 +22,12 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
     /**
      * @dev Accounts granted the agent role have the following permissioned abilities:
      *
-     * - Mint/Burn to/from a given address (does not require permission)
-     * - Force transfer from a given address (does not require permission)
-     *   - Bypasses pause and restriction checks (not frozen)
-     * - Pause/Unpause the contract
-     * - Block/Unblock a given account
-     * - Set frozen amount of tokens for a given account.
+     * * Mint/Burn to/from a given address (does not require permission)
+     * * Force transfer from a given address (does not require permission)
+     * ** Bypasses pause and restriction checks (not frozen)
+     * * Pause/Unpause the contract
+     * * Block/Unblock a given account
+     * * Set frozen amount of tokens for a given account.
      */
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
