@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0-rc.0) (utils/HandleAccessManager.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (utils/HandleAccessManager.sol)
 pragma solidity ^0.8.26;
 
 import {Impl} from "@fhevm/solidity/lib/Impl.sol";

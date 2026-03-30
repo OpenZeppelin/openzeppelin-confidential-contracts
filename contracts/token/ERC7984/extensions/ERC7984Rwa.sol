@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0-rc.0) (token/ERC7984/extensions/ERC7984Rwa.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984Rwa.sol)
 
 pragma solidity ^0.8.27;
 

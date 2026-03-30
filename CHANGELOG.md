@@ -1,7 +1,7 @@
 # openzeppelin-confidential-contracts
 
 
-## 0.4.0-rc.0 (2026-03-12)
+## 0.4.0 (2026-03-20)
 
 - Migrate `@fhevm/solidity` dependency to `0.11.1` ([#311](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/311))
 - Upgrade openzeppelin/contracts and openzeppelin/contracts-upgradeable to v5.6.1 ([#314](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/314))
@@ -12,8 +12,8 @@
 - `ERC7984ERC20Wrapper`: Support ERC-165 interface detection on `ERC7984ERC20Wrapper`. ([#267](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/267))
 - `ERC7984ERC20Wrapper`: return the amount of wrapped token sent on wrap calls. ([#307](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/307))
 - `ERC7984ERC20Wrapper`: return unwrapped amount on `unwrap` calls ([#288](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/288))
-- `ERC7984Restricted`, `ERC7984Rwa`: Rename `isUserAllowed` to `canTransact` ([#291](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/291))
 - `ERC7984ERC20Wrapper`: revert on wrap if there is a chance of total supply overflow. ([#268](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/268))
+- `ERC7984Restricted`, `ERC7984Rwa`: Rename `isUserAllowed` to `canTransact` ([#291](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/291))
 
 ### Finance
 
