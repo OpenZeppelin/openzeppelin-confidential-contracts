@@ -163,7 +163,9 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /**
@@ -175,12 +177,14 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         address from,
         address to,
         euint64 encryptedAmount
-    ) public virtual onlyAgent returns (euint64 transferred) {
+    ) public virtual onlyAgent returns (euint64) {
         require(
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _forceUpdate(from, to, encryptedAmount);
+        euint64 transferred = _transfer(from, to, encryptedAmount);
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /// @inheritdoc ERC7984Freezable
@@ -215,16 +219,6 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
     ) internal virtual override(ERC7984Freezable, ERC7984Restricted) whenNotPaused returns (euint64) {
         // frozen and restriction checks performed through inheritance
         return super._update(from, to, encryptedAmount);
-    }
-
-    /**
-     * @dev Internal function which forces transfer of confidential amount of tokens from account to account.
-     * Some checks are bypassed by detecting the transaction selector.
-     */
-    function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
-        euint64 transferred = _update(from, to, encryptedAmount);
-        FHE.allow(transferred, msg.sender);
-        return transferred;
     }
 
     /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a {forceConfidentialTransferFrom}.
