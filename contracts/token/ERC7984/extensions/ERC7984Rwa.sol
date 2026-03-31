@@ -263,6 +263,6 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return
             msg.sig == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
             msg.sig == 0x44fd6e40 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
-            msg.sig == 0xa26772c4; // bytes4(keccak256("recoverAddress(address,address)"))
+            msg.sig == this.recoverAddress.selector;
     }
 }
