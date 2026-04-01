@@ -8,8 +8,6 @@ import {HandleAccessManager} from "../../utils/HandleAccessManager.sol";
 import {ERC7984Mock} from "./ERC7984Mock.sol";
 
 contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, HandleAccessManager {
-    error UnallowedHandleAccess(bytes32 handle, address account);
-
     constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984Mock(name, symbol, tokenUri) {}
 
     function _update(

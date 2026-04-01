@@ -57,9 +57,6 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /// @dev The given caller `caller` is not authorized for the current operation.
     error ERC7984UnauthorizedCaller(address caller);
 
-    /// @dev The given gateway request ID `requestId` is invalid.
-    error ERC7984InvalidGatewayRequest(uint256 requestId);
-
     constructor(string memory name_, string memory symbol_, string memory contractURI_) {
         _name = name_;
         _symbol = symbol_;
