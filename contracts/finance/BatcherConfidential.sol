@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (finance/BatcherConfidential.sol)
 
 pragma solidity ^0.8.27;
 
