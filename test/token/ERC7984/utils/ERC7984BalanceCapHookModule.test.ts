@@ -101,7 +101,7 @@ describe('ERC7984BalanceCapHookModule', function () {
     it('should be gated to agent', async function () {
       await expect(this.complianceModule.setMaxBalance(this.token, 100)).to.be.revertedWithCustomError(
         this.complianceModule,
-        'Unauthorized',
+        'ERC7984HookModuleUnauthorizedAccount',
       );
     });
 

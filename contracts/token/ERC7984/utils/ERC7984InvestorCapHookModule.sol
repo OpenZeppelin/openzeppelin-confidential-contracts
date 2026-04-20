@@ -10,8 +10,6 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
     event MaxInvestorCountSet(address indexed token, uint64 maxInvestorCount);
 
-    error Unauthorized();
-
     mapping(address => uint64) private _maxInvestorCounts;
     mapping(address => euint64) private _investorCounts;
 
@@ -23,7 +21,7 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
 
     /// @dev Sets the max number of investors for the given token `token` to `maxInvestorCount_`.
     function setMaxInvestorCount(address token, uint64 maxInvestorCount_) public virtual {
-        require(IERC7984Rwa(token).isAgent(msg.sender), Unauthorized());
+        require(IERC7984Rwa(token).isAgent(msg.sender), ERC7984HookModuleUnauthorizedAccount(msg.sender));
         _setMaxInvestorCount(token, maxInvestorCount_);
     }
 

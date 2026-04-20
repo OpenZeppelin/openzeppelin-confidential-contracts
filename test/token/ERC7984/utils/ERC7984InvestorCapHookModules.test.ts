@@ -44,7 +44,7 @@ describe('ERC7984InvestorCapHookModules', function () {
     it('should be gated to agent', async function () {
       await expect(this.complianceModule.setMaxInvestorCount(this.token, 20)).to.be.revertedWithCustomError(
         this.complianceModule,
-        'Unauthorized',
+        'ERC7984HookModuleUnauthorizedAccount',
       );
     });
   });

@@ -11,6 +11,9 @@ import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
  * @dev An abstract base contract for building ERC-7984 hook modules. Compatible with {ERC7984Hooked}.
  */
 abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
+    /// @dev The caller `account` is not authorized to perform the operation.
+    error ERC7984HookModuleUnauthorizedAccount(address account);
+
     /// @dev The caller `user` does not have access to the encrypted amount `amount`.
     error ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(euint64 amount, address user);
 

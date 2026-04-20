@@ -7,14 +7,18 @@ import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
 import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
-/// @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the balance of an investor.
+/**
+ * @dev An ERC-7984 hook module that limits the balance of each investor.
+ *
+ * This module is compatible with {ERC7984Hooked}.
+ */
 abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
-    event MaxBalanceSet(address token, uint64 newMaxBalance);
-
-    error Unauthorized();
+    /// @dev Emitted when the max balance for a given token is set.
+    event ERC7984BalanceCapHookModuleMaxBalanceSet(address token, uint64 newMaxBalance);
 
     mapping(address => uint64) private _maxBalances;
 
+    /// @dev See {ERC7984HookModule-onInstall}. The `initData` should contain the initial max balance for the token.
     function onInstall(bytes calldata initData) public override {
         uint64 maxBalance_ = abi.decode(initData, (uint64));
         _setMaxBalance(msg.sender, maxBalance_);
@@ -22,26 +26,26 @@ abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
         super.onInstall(initData);
     }
 
-    /// @dev Sets the max balance for a given token `token` to `maxBalance_`.
+    /**
+     * @dev Sets the max balance for a given token `token` to `maxBalance_`.
+     *
+     * `msg.sender` must have the agent role on `token`
+     **/
     function setMaxBalance(address token, uint64 maxBalance_) public virtual {
-        require(IERC7984Rwa(token).isAgent(msg.sender), Unauthorized());
+        require(IERC7984Rwa(token).isAgent(msg.sender), ERC7984HookModuleUnauthorizedAccount(msg.sender));
         _setMaxBalance(token, maxBalance_);
     }
 
-    /// @dev Gets max balance for a given token `token`.
+    /// @dev Gets the max balance for a given token `token`.
     function maxBalance(address token) public view virtual returns (uint64) {
         return _maxBalances[token];
     }
 
-    /**
-     * @dev Sets the enforced max balance for a given token to `maxBalance`.
-     *
-     * `msg.sender` must have the agent role on `token`.
-     */
+    /// @dev Sets the max balance for a given token to `maxBalance` and emits an event.
     function _setMaxBalance(address token, uint64 maxBalance_) internal {
         _maxBalances[token] = maxBalance_;
 
-        emit MaxBalanceSet(token, maxBalance_);
+        emit ERC7984BalanceCapHookModuleMaxBalanceSet(token, maxBalance_);
     }
 
     /// @inheritdoc ERC7984HookModule
