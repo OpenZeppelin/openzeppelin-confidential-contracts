@@ -25,7 +25,7 @@ describe('ERC7984Hooked', function () {
   describe('install module', async function () {
     it('should emit event', async function () {
       await expect(this.token.$_installModule(this.hookModule, '0x'))
-        .to.emit(this.token, 'ModuleInstalled')
+        .to.emit(this.token, 'ERC7984HookedModuleInstalled')
         .withArgs(this.hookModule);
     });
 
@@ -86,7 +86,7 @@ describe('ERC7984Hooked', function () {
 
     it('should emit event', async function () {
       await expect(this.token.$_uninstallModule(this.hookModule, '0x'))
-        .to.emit(this.token, 'ModuleUninstalled')
+        .to.emit(this.token, 'ERC7984HookedModuleUninstalled')
         .withArgs(this.hookModule);
     });
 

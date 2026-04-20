@@ -27,9 +27,9 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     EnumerableSet.AddressSet private _modules;
 
     /// @dev Emitted when a module is installed.
-    event ModuleInstalled(address module);
+    event ERC7984HookedModuleInstalled(address module);
     /// @dev Emitted when a module is uninstalled.
-    event ModuleUninstalled(address module);
+    event ERC7984HookedModuleUninstalled(address module);
 
     /// @dev The address is not a valid module.
     error ERC7984HookedInvalidModule(address module);
@@ -93,7 +93,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
 
         IERC7984HookModule(module).onInstall(initData);
 
-        emit ModuleInstalled(module);
+        emit ERC7984HookedModuleInstalled(module);
     }
 
     /// @dev Internal function which uninstalls a module.
@@ -102,7 +102,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
 
         LowLevelCall.callNoReturn(module, abi.encodeCall(IERC7984HookModule.onUninstall, (deinitData)));
 
-        emit ModuleUninstalled(module);
+        emit ERC7984HookedModuleUninstalled(module);
     }
 
     /**
