@@ -27,9 +27,9 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     EnumerableSet.AddressSet private _modules;
 
     /// @dev Emitted when a module is installed.
-    event ModuleInstalled(address module);
+    event ERC7984HookedModuleInstalled(address module);
     /// @dev Emitted when a module is uninstalled.
-    event ModuleUninstalled(address module);
+    event ERC7984HookedModuleUninstalled(address module);
 
     /// @dev The address is not a valid module.
     error ERC7984HookedInvalidModule(address module);
@@ -65,9 +65,13 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
         _uninstallModule(module, deinitData);
     }
 
-    /// @dev Returns the list of modules installed on the token.
-    function modules() public view virtual returns (address[] memory) {
-        return _modules.values();
+    /**
+     * @dev Returns a slice of the list of modules installed on the token with inclusive start and exclusive end.
+     *
+     * TIP: Use an end value of type(uint256).max to get the entire list of modules.
+     */
+    function modules(uint256 start, uint256 end) public view virtual returns (address[] memory) {
+        return _modules.values(start, end);
     }
 
     /// @dev Returns the maximum number of modules that can be installed.
@@ -89,7 +93,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
 
         IERC7984HookModule(module).onInstall(initData);
 
-        emit ModuleInstalled(module);
+        emit ERC7984HookedModuleInstalled(module);
     }
 
     /// @dev Internal function which uninstalls a module.
@@ -98,7 +102,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
 
         LowLevelCall.callNoReturn(module, abi.encodeCall(IERC7984HookModule.onUninstall, (deinitData)));
 
-        emit ModuleUninstalled(module);
+        emit ERC7984HookedModuleUninstalled(module);
     }
 
     /**
@@ -127,7 +131,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
         address to,
         euint64 encryptedAmount
     ) internal virtual returns (ebool compliant) {
-        address[] memory modules_ = modules();
+        address[] memory modules_ = modules(0, type(uint256).max);
         uint256 modulesLength = modules_.length;
         compliant = FHE.asEbool(true);
         for (uint256 i = 0; i < modulesLength; ++i) {
@@ -138,7 +142,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
 
     /// @dev Runs the post-transfer hooks for all modules.
     function _runPostTransferHooks(address from, address to, euint64 encryptedAmount) internal virtual {
-        address[] memory modules_ = modules();
+        address[] memory modules_ = modules(0, type(uint256).max);
         uint256 modulesLength = modules_.length;
         for (uint256 i = 0; i < modulesLength; i++) {
             if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules_[i]);

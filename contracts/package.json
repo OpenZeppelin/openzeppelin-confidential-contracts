@@ -1,7 +1,7 @@
 {
   "name": "@openzeppelin/confidential-contracts",
   "description": "Smart Contract library for use with confidential coprocessors",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "files": [
     "**/*.sol",
     "/build/contracts/*.json",

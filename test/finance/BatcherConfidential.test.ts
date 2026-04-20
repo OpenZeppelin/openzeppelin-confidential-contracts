@@ -105,6 +105,36 @@ describe('BatcherConfidential', function () {
     });
   });
 
+  it('should reject invalid fromToken', async function () {
+    const confidentialToken = await ethers.deployContract('$ERC7984Mock', ['Mock Token', 'MTK', 'URI']);
+
+    await expect(
+      ethers.deployContract('$BatcherConfidentialSwapMock', [
+        confidentialToken,
+        this.toToken,
+        this.exchange,
+        this.operator,
+      ]),
+    )
+      .to.be.revertedWithCustomError(this.batcher, 'InvalidWrapperToken')
+      .withArgs(confidentialToken.target);
+  });
+
+  it('should reject invalid toToken', async function () {
+    const confidentialToken = await ethers.deployContract('$ERC7984Mock', ['Mock Token', 'MTK', 'URI']);
+
+    await expect(
+      ethers.deployContract('$BatcherConfidentialSwapMock', [
+        this.fromToken,
+        confidentialToken,
+        this.exchange,
+        this.operator,
+      ]),
+    )
+      .to.be.revertedWithCustomError(this.batcher, 'InvalidWrapperToken')
+      .withArgs(confidentialToken.target);
+  });
+
   for (const viaCallback of [true, false]) {
     describe(`join ${viaCallback ? 'via callback' : 'directly'}`, async function () {
       const join = async function (
@@ -224,7 +254,7 @@ describe('BatcherConfidential', function () {
     });
 
     it('should clear deposits', async function () {
-      await this.batcher.claim(this.batchId);
+      await this.batcher.claim(this.batchId, this.holder);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -244,7 +274,7 @@ describe('BatcherConfidential', function () {
         this.holder,
       );
 
-      await this.batcher.claim(this.batchId);
+      await this.batcher.claim(this.batchId, this.holder);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -260,22 +290,26 @@ describe('BatcherConfidential', function () {
 
     it('should revert if not finalized', async function () {
       const currentBatchId = await this.batcher.currentBatchId();
-      await expect(this.batcher.claim(currentBatchId))
+      await expect(this.batcher.claim(currentBatchId, this.holder))
         .to.be.revertedWithCustomError(this.batcher, 'BatchUnexpectedState')
         .withArgs(currentBatchId, BatchState.Pending, encodeStateBitmap(BatchState.Finalized));
     });
 
+    it('should revert if account did not participate in the batch', async function () {
+      await expect(this.batcher.claim(this.batchId, this.recipient))
+        .to.be.revertedWithCustomError(this.batcher, 'ZeroDeposits')
+        .withArgs(this.batchId, this.recipient.address);
+    });
+
     it('should emit event', async function () {
-      await expect(this.batcher.claim(this.batchId))
+      await expect(this.batcher.claim(this.batchId, this.holder))
         .to.emit(this.batcher, 'Claimed')
         .withArgs(this.batchId, this.holder.address, anyValue);
     });
 
     it('should allow retry claim (idempotent when fully claimed)', async function () {
-      // First claim should succeed and clear deposits
-      await this.batcher.claim(this.batchId);
+      await this.batcher.claim(this.batchId, this.holder);
 
-      // Verify deposits are cleared
       await expect(
         fhevm.userDecryptEuint(
           FhevmType.euint64,
@@ -285,10 +319,8 @@ describe('BatcherConfidential', function () {
         ),
       ).to.eventually.eq(0);
 
-      // Second claim should succeed (return 0, no-op since no deposit left)
-      await expect(this.batcher.claim(this.batchId)).to.emit(this.batcher, 'Claimed');
+      await expect(this.batcher.claim(this.batchId, this.holder)).to.emit(this.batcher, 'Claimed');
 
-      // Deposits should still be zero
       await expect(
         fhevm.userDecryptEuint(
           FhevmType.euint64,
@@ -303,7 +335,7 @@ describe('BatcherConfidential', function () {
       // will burn `toToken` from batcher to induce failed transfer
       await this.toToken['$_burn(address,uint64)'](this.batcher, 100n);
 
-      let claimEvent = (await (await this.batcher.claim(this.batchId)).wait()).logs.filter(
+      let claimEvent = (await (await this.batcher.claim(this.batchId, this.holder)).wait()).logs.filter(
         (log: any) => log.address === this.batcher.target,
       )[0];
       let claimAmount = claimEvent.args[2];
@@ -314,7 +346,7 @@ describe('BatcherConfidential', function () {
 
       await this.toToken['$_mint(address,uint64)'](this.batcher, 100n);
 
-      claimEvent = (await (await this.batcher.claim(this.batchId)).wait()).logs.filter(
+      claimEvent = (await (await this.batcher.claim(this.batchId, this.holder)).wait()).logs.filter(
         (log: any) => log.address === this.batcher.target,
       )[0];
       claimAmount = claimEvent.args[2];
@@ -322,6 +354,55 @@ describe('BatcherConfidential', function () {
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, claimAmount, this.toToken.target, this.holder),
       ).to.eventually.eq(1000n);
+    });
+
+    describe('on behalf of (relayer)', function () {
+      it('should send tokens to the depositor, not the relayer', async function () {
+        const relayer = this.accounts[0];
+
+        const holderBalanceBefore = await fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.toToken.confidentialBalanceOf(this.holder),
+          this.toToken,
+          this.holder,
+        );
+
+        await this.batcher.connect(relayer).claim(this.batchId, this.holder);
+
+        const expectedAmount = BigInt(this.exchangeRate * this.deposit) / exchangeRateMantissa;
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.toToken.confidentialBalanceOf(this.holder),
+            this.toToken,
+            this.holder,
+          ),
+        ).to.eventually.eq(BigInt(holderBalanceBefore) + expectedAmount);
+      });
+
+      it('should clear the depositor deposits', async function () {
+        const relayer = this.accounts[0];
+
+        await this.batcher.connect(relayer).claim(this.batchId, this.holder);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.deposits(this.batchId, this.holder),
+            this.batcher,
+            this.holder,
+          ),
+        ).to.eventually.eq(0);
+      });
+
+      it('should emit event with the depositor address', async function () {
+        const relayer = this.accounts[0];
+
+        await expect(this.batcher.connect(relayer).claim(this.batchId, this.holder))
+          .to.emit(this.batcher, 'Claimed')
+          .withArgs(this.batchId, this.holder.address, anyValue);
+      });
     });
   });
 
@@ -383,6 +464,12 @@ describe('BatcherConfidential', function () {
         .withArgs(this.batchId, BatchState.Dispatched, encodeStateBitmap(BatchState.Pending, BatchState.Canceled));
     });
 
+    it('should revert if caller did not participate in the batch', async function () {
+      await expect(this.batcher.connect(this.recipient).quit(this.batchId))
+        .to.be.revertedWithCustomError(this.batcher, 'ZeroDeposits')
+        .withArgs(this.batchId, this.recipient.address);
+    });
+
     it('should emit event', async function () {
       await expect(this.batcher.quit(this.batchId))
         .to.emit(this.batcher, 'Quit')
@@ -401,7 +488,7 @@ describe('BatcherConfidential', function () {
       const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
       const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
 
-      await expect(this.batcher.unwrapAmount(batchId)).to.eventually.eq(amount);
+      await expect(this.batcher.unwrapRequestId(batchId)).to.eventually.eq(amount);
 
       Object.assign(this, { joinAmount, batchId, unwrapAmount: amount, abiEncodedClearValues, decryptionProof });
     });
@@ -409,7 +496,7 @@ describe('BatcherConfidential', function () {
     it('should finalize unwrap', async function () {
       await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
         .to.emit(this.fromToken, 'UnwrapFinalized')
-        .withArgs(this.batcher, this.unwrapAmount, this.abiEncodedClearValues);
+        .withArgs(this.batcher, this.unwrapAmount, this.unwrapAmount, this.abiEncodedClearValues);
     });
 
     it('should revert if proof validation fails', async function () {
@@ -563,7 +650,7 @@ describe('BatcherConfidential', function () {
 
     // dispatch amount is publicly decryptable
     const { abiEncodedClearValues, decryptionProof } = await batcher
-      .unwrapAmount(batchId1)
+      .unwrapRequestId(batchId1)
       .then(amount => fhevm.publicDecrypt([amount]));
 
     expect(abiEncodedClearValues).to.eq(amount1);
@@ -621,7 +708,7 @@ describe('BatcherConfidential', function () {
     // Check unwrap amount
     await expect(
       batcher
-        .unwrapAmount(batchId2)
+        .unwrapRequestId(batchId2)
         .then(amount => fhevm.publicDecrypt([amount]))
         .then(({ abiEncodedClearValues }) => abiEncodedClearValues),
     ).to.eventually.eq(amount2);

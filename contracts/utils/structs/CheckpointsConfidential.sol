@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (utils/structs/CheckpointsConfidential.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (utils/structs/CheckpointsConfidential.sol)
 // This file was procedurally generated from scripts/generate/templates/CheckpointsConfidential.js.
 
 pragma solidity ^0.8.24;
 
 import {euint32, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 
 /**

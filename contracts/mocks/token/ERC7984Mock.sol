@@ -44,10 +44,6 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         return confidentialTransfer(to, ciphertext);
     }
 
-    function _owner() internal view returns (address) {
-        return _OWNER;
-    }
-
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
         transferred = super._update(from, to, amount);
         FHE.allow(confidentialTotalSupply(), _OWNER);
