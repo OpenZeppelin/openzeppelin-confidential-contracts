@@ -41,12 +41,20 @@ export const SIGNATURES = {
     'forceConfidentialTransferFrom(address,address,bytes32,bytes)',
     'forceConfidentialTransferFrom(address,address,bytes32)',
     'canTransact(address)',
+    'isAdmin(address)',
+    'isAgent(address)',
     'pause()',
     'paused()',
     'setConfidentialFrozen(address,bytes32,bytes)',
     'setConfidentialFrozen(address,bytes32)',
     'unblockUser(address)',
     'unpause()',
+  ],
+  ERC7984HookModule: [
+    'preTransfer(address,address,bytes32)',
+    'postTransfer(address,address,bytes32)',
+    'onInstall(bytes)',
+    'onUninstall(bytes)',
   ],
 };
 
