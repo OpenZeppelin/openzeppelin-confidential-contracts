@@ -94,6 +94,7 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
      * Additionally verifies that the token is authorized to access the handle.
      */
     function _accessHandle(address token, euint64 handle) internal {
+        if (!FHE.isInitialized(handle)) return;
         require(FHE.isAllowed(handle, token), ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(handle, token));
         _getTokenHandleAllowance(token, handle, false);
     }

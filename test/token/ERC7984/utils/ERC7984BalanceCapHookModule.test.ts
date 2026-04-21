@@ -95,6 +95,17 @@ describe('ERC7984BalanceCapHookModule', function () {
         fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.holder),
       ).to.eventually.equal(1000n);
     });
+
+    it('should allow burning', async function () {
+      const tx = await this.token['$_burn(address,uint64)'](this.holder, 1000n);
+      const transferEvent = await tx.wait().then((res: any) => {
+        return res.logs.filter((log: any) => log.address == this.token.target)[0];
+      });
+
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.holder),
+      ).to.eventually.equal(1000n);
+    });
   });
 
   describe('setMaxBalance', function () {
@@ -112,7 +123,7 @@ describe('ERC7984BalanceCapHookModule', function () {
 
     it('should emit event', async function () {
       await expect(this.complianceModule.connect(this.agent1).setMaxBalance(this.token, 100))
-        .to.emit(this.complianceModule, 'MaxBalanceSet')
+        .to.emit(this.complianceModule, 'ERC7984BalanceCapHookModuleMaxBalanceSet')
         .withArgs(this.token, 100);
     });
   });

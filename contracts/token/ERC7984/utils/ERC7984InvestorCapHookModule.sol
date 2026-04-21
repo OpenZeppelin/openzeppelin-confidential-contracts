@@ -6,7 +6,7 @@ import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
 import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
-/// @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the number of investors.
+/// @dev An ERC-7984 hook module that limits the number of holders for a given token.
 abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
     /// @dev Emitted when the max investor count for a given token is set.
     event ERC7984InvestorCapHookModuleMaxInvestorCountSet(address indexed token, uint64 maxInvestorCount);
@@ -82,6 +82,8 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
 
     /// @inheritdoc ERC7984HookModule
     function _postTransfer(address token, address from, address to, euint64 encryptedAmount) internal virtual override {
+        super._postTransfer(token, from, to, encryptedAmount);
+
         euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
         euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
 

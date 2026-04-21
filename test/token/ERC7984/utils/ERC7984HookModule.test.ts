@@ -2,7 +2,7 @@ import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
-describe('ERC7984HookModules', function () {
+describe('ERC7984HookModule', function () {
   beforeEach(async function () {
     const [admin, holder, recipient, anyone] = await ethers.getSigners();
     const hookModule = await ethers.deployContract('$ERC7984HookModuleMock');

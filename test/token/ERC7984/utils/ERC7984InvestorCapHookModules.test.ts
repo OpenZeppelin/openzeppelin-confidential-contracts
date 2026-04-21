@@ -37,7 +37,7 @@ describe('ERC7984InvestorCapHookModules', function () {
 
     it('should emit event', async function () {
       await expect(this.complianceModule.connect(this.agent1).setMaxInvestorCount(this.token, 20))
-        .to.emit(this.complianceModule, 'MaxInvestorCountSet')
+        .to.emit(this.complianceModule, 'ERC7984InvestorCapHookModuleMaxInvestorCountSet')
         .withArgs(this.token, 20);
     });
 
