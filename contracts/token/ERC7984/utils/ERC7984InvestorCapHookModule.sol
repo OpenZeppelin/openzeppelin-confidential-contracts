@@ -8,18 +8,27 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
 /// @dev A transfer compliance module for confidential Real World Assets (RWAs) which limits the number of investors.
 abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
-    event MaxInvestorCountSet(address indexed token, uint64 maxInvestorCount);
+    /// @dev Emitted when the max investor count for a given token is set.
+    event ERC7984InvestorCapHookModuleMaxInvestorCountSet(address indexed token, uint64 maxInvestorCount);
 
     mapping(address => uint64) private _maxInvestorCounts;
     mapping(address => euint64) private _investorCounts;
 
+    /**
+     * @dev See {ERC7984HookModule-onInstall}. The `initData` should contain the initial max investor count for the token
+     * as a standard ABI encoded uint64.
+     **/
     function onInstall(bytes calldata initData) public override {
         uint64 maxInvestorCount_ = abi.decode(initData, (uint64));
         _setMaxInvestorCount(msg.sender, maxInvestorCount_);
         super.onInstall(initData);
     }
 
-    /// @dev Sets the max number of investors for the given token `token` to `maxInvestorCount_`.
+    /**
+     * @dev Sets the max number of investors for the given token `token` to `maxInvestorCount_`.
+     *
+     * `msg.sender` must have the agent role on `token`
+     **/
     function setMaxInvestorCount(address token, uint64 maxInvestorCount_) public virtual {
         require(IERC7984Rwa(token).isAgent(msg.sender), ERC7984HookModuleUnauthorizedAccount(msg.sender));
         _setMaxInvestorCount(token, maxInvestorCount_);
@@ -35,9 +44,10 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
         return _investorCounts[token];
     }
 
+    /// @dev Sets the max investor count for a given token to `maxInvestorCount_` and emits an event.
     function _setMaxInvestorCount(address token, uint64 maxInvestorCount_) internal {
         _maxInvestorCounts[token] = maxInvestorCount_;
-        emit MaxInvestorCountSet(token, maxInvestorCount_);
+        emit ERC7984InvestorCapHookModuleMaxInvestorCountSet(token, maxInvestorCount_);
     }
 
     /// @inheritdoc ERC7984HookModule
@@ -54,19 +64,8 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
         euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
         euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
 
-        _getTokenHandleAllowance(token, fromBalance);
-        _getTokenHandleAllowance(token, toBalance);
-
-        if (FHE.isInitialized(fromBalance))
-            require(
-                FHE.isAllowed(fromBalance, token),
-                ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(fromBalance, token)
-            );
-        if (FHE.isInitialized(toBalance))
-            require(
-                FHE.isAllowed(toBalance, token),
-                ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(toBalance, token)
-            );
+        _accessHandle(token, fromBalance);
+        _accessHandle(token, toBalance);
 
         euint64 encryptedZero = FHE.asEuint64(0);
 
@@ -86,19 +85,8 @@ abstract contract ERC7984InvestorCapHookModule is ERC7984HookModule {
         euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
         euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
 
-        _getTokenHandleAllowance(token, fromBalance);
-        _getTokenHandleAllowance(token, toBalance);
-
-        if (FHE.isInitialized(fromBalance))
-            require(
-                FHE.isAllowed(fromBalance, token),
-                ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(fromBalance, token)
-            );
-        if (FHE.isInitialized(toBalance))
-            require(
-                FHE.isAllowed(toBalance, token),
-                ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(toBalance, token)
-            );
+        _accessHandle(token, fromBalance);
+        _accessHandle(token, toBalance);
 
         euint64 encryptedZero = FHE.asEuint64(0);
         ebool transferNotZero = FHE.ne(encryptedAmount, encryptedZero);

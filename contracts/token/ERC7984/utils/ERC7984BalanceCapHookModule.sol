@@ -60,10 +60,7 @@ abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
         }
 
         euint64 balance = IERC7984Rwa(token).confidentialBalanceOf(to);
-        _getTokenHandleAllowance(token, balance);
-
-        if (FHE.isInitialized(balance))
-            require(FHE.isAllowed(balance, token), ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(balance, token));
+        _accessHandle(token, balance);
 
         (ebool increased, euint64 futureBalance) = FHESafeMath.tryIncrease(balance, encryptedAmount);
         return FHE.and(increased, FHE.le(futureBalance, maxBalance(token)));

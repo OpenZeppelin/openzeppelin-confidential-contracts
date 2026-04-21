@@ -87,4 +87,14 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
             HandleAccessManager(token).getHandleAllowance(euint64.unwrap(handle), address(this), persistent);
         }
     }
+
+    /**
+     * @dev Get transient ACL allowance for the given handle from a contract that inherits {HandleAccessManager}.
+     *
+     * Additionally verifies that the token is authorized to access the handle.
+     */
+    function _accessHandle(address token, euint64 handle) internal {
+        require(FHE.isAllowed(handle, token), ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(handle, token));
+        _getTokenHandleAllowance(token, handle, false);
+    }
 }
