@@ -252,6 +252,15 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         return _update(from, to, amount);
     }
 
+    /**
+     * @dev Transfers the given amount of tokens from `from` to `to` and calls the `onConfidentialTransferReceived` function on the recipient.
+     *
+     * The token contract initiates a second transfer refunding the tokens from the recipient to the sender--the amount is 0 if the callback succeeds,
+     * otherwise the amount is the amount that was transferred.
+     *
+     * WARNING: The second transfer is subject to the same flow as the first transfer and may fail for a variety of reasons (such as insufficient balance).
+     * In this case, the tokens do not return to the sender.
+     */
     function _transferAndCall(
         address from,
         address to,
