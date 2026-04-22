@@ -6,7 +6,11 @@ import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
 import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
-/// @dev An ERC-7984 hook module that limits the number of holders for a given token.
+/**
+ * @dev An ERC-7984 hook module that limits the number of holders for a given token.
+ *
+ * WARNING: This module may not function correctly with non-standard tokens such as fee on transfer.
+ **/
 abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
     /// @dev Emitted when the max holder count for a given token is set.
     event ERC7984HolderCapHookModuleMaxHolderCountSet(address indexed token, uint64 maxHolderCount);
@@ -83,6 +87,8 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
     /// @inheritdoc ERC7984HookModule
     function _postTransfer(address token, address from, address to, euint64 encryptedAmount) internal virtual override {
         super._postTransfer(token, from, to, encryptedAmount);
+
+        if (from == to) return;
 
         euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
         euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
