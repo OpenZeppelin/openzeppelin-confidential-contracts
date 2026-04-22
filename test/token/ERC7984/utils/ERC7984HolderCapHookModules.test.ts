@@ -2,11 +2,11 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
-describe('ERC7984InvestorCapHookModules', function () {
+describe('ERC7984HolderCapHookModules', function () {
   beforeEach(async function () {
     const [anyone, admin, agent1, holder, recipient, ...others] = await ethers.getSigners();
     const token = (await ethers.deployContract('$ERC7984RwaHookedMock', ['name', 'symbol', 'uri', admin])) as any;
-    const complianceModule = await ethers.deployContract('$ERC7984InvestorCapHookModuleMock', [admin]);
+    const complianceModule = await ethers.deployContract('$ERC7984HolderCapHookModuleMock', [admin]);
 
     await token
       .connect(admin)
@@ -15,7 +15,7 @@ describe('ERC7984InvestorCapHookModules', function () {
 
     await token['$_mint(address,uint64)'](holder, 20000);
 
-    await expect(complianceModule.maxInvestorCount(token)).to.eventually.eq(10);
+    await expect(complianceModule.maxHolderCount(token)).to.eventually.eq(10);
 
     Object.assign(this, {
       token,
@@ -29,20 +29,20 @@ describe('ERC7984InvestorCapHookModules', function () {
     });
   });
 
-  describe('setMaxInvestorCount', function () {
-    it('should set the max investor count', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxInvestorCount(this.token, 20);
-      await expect(this.complianceModule.maxInvestorCount(this.token)).to.eventually.eq(20);
+  describe('setMaxHolderCount', function () {
+    it('should set the max holder count', async function () {
+      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 20);
+      await expect(this.complianceModule.maxHolderCount(this.token)).to.eventually.eq(20);
     });
 
     it('should emit event', async function () {
-      await expect(this.complianceModule.connect(this.agent1).setMaxInvestorCount(this.token, 20))
-        .to.emit(this.complianceModule, 'ERC7984InvestorCapHookModuleMaxInvestorCountSet')
+      await expect(this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 20))
+        .to.emit(this.complianceModule, 'ERC7984HolderCapHookModuleMaxHolderCountSet')
         .withArgs(this.token, 20);
     });
 
     it('should be gated to agent', async function () {
-      await expect(this.complianceModule.setMaxInvestorCount(this.token, 20)).to.be.revertedWithCustomError(
+      await expect(this.complianceModule.setMaxHolderCount(this.token, 20)).to.be.revertedWithCustomError(
         this.complianceModule,
         'ERC7984HookModuleUnauthorizedAccount',
       );
@@ -50,7 +50,7 @@ describe('ERC7984InvestorCapHookModules', function () {
   });
 
   describe('_preTransfer', function () {
-    it('should allow transfer if new investor count is less than max investor count', async function () {
+    it('should allow transfer if new holder count is less than max holder count', async function () {
       const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
       const transferEvent = await tx.wait().then((res: any) => {
         return res.logs.filter((log: any) => log.address == this.token.target)[0];
@@ -61,8 +61,8 @@ describe('ERC7984InvestorCapHookModules', function () {
       ).to.eventually.equal(1000);
     });
 
-    it('should not allow transfer if new investor count is greater than max investor count', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxInvestorCount(this.token, 3);
+    it('should not allow transfer if new holder count is greater than max holder count', async function () {
+      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 3);
 
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.others[0], 1000);
@@ -79,31 +79,31 @@ describe('ERC7984InvestorCapHookModules', function () {
       await expect(
         fhevm.userDecryptEuint(
           FhevmType.euint64,
-          await this.complianceModule.investorCount(this.token),
+          await this.complianceModule.holderCount(this.token),
           this.complianceModule.target,
           this.admin,
         ),
       ).to.eventually.equal(3);
     });
 
-    it('should not increment investor count if recipient is already an investor', async function () {
+    it('should not increment holder count if recipient is already a holder', async function () {
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
 
-      const beforeInvestorCount = await this.complianceModule.investorCount(this.token);
+      const beforeHolderCount = await this.complianceModule.holderCount(this.token);
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, beforeInvestorCount, this.complianceModule.target, this.admin),
+        fhevm.userDecryptEuint(FhevmType.euint64, beforeHolderCount, this.complianceModule.target, this.admin),
       ).to.eventually.equal(2);
 
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
 
-      const afterInvestorCount = await this.complianceModule.investorCount(this.token);
+      const afterHolderCount = await this.complianceModule.holderCount(this.token);
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, afterInvestorCount, this.complianceModule.target, this.admin),
+        fhevm.userDecryptEuint(FhevmType.euint64, afterHolderCount, this.complianceModule.target, this.admin),
       ).to.eventually.equal(2);
     });
 
     it('should allow burning always', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxInvestorCount(this.token, 1);
+      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 1);
 
       const tx = await this.token['$_burn(address,uint64)'](this.holder, 1000);
       const transferEvent = await tx.wait().then((res: any) => {
@@ -116,7 +116,7 @@ describe('ERC7984InvestorCapHookModules', function () {
     });
 
     it('should allow self transfers always', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxInvestorCount(this.token, 1);
+      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 1);
 
       const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.holder, 1000);
       const transferEvent = await tx.wait().then((res: any) => {
@@ -129,7 +129,7 @@ describe('ERC7984InvestorCapHookModules', function () {
     });
 
     it('should allow zero transfers always', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxInvestorCount(this.token, 1);
+      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 1);
 
       const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 0);
       const transferEvent = await tx.wait().then((res: any) => {
@@ -144,16 +144,16 @@ describe('ERC7984InvestorCapHookModules', function () {
     it('should revert if `fromBalance` is not allowed to the caller', async function () {
       const maliciousCaller = await ethers.deployContract('ERC7984MaliciousHookCallerMock');
 
-      // investorCount is a real, initialized handle the compliance module owns — but the
+      // holderCount is a real, initialized handle the compliance module owns — but the
       // malicious caller has no FHE allowance for it, triggering the isAllowed guard.
-      const investorCountHandle = await this.complianceModule.investorCount(this.token);
-      await maliciousCaller.setConfidentialBalance(this.holder.address, investorCountHandle);
+      const holderCountHandle = await this.complianceModule.holderCount(this.token);
+      await maliciousCaller.setConfidentialBalance(this.holder.address, holderCountHandle);
 
       await expect(
         maliciousCaller.callPreTransfer(this.complianceModule, this.holder.address, this.recipient.address, 1),
       )
         .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedUseOfEncryptedAmount')
-        .withArgs(investorCountHandle, maliciousCaller);
+        .withArgs(holderCountHandle, maliciousCaller);
     });
 
     it('should revert if `toBalance` is not allowed to the caller', async function () {
@@ -162,69 +162,69 @@ describe('ERC7984InvestorCapHookModules', function () {
       // Give `from` a real owned balance (>= transfer amount) so its check passes
       await maliciousCaller.setConfidentialBalanceWithAllowance(this.holder.address, 1000);
 
-      const investorCountHandle = await this.complianceModule.investorCount(this.token);
-      await maliciousCaller.setConfidentialBalance(this.recipient.address, investorCountHandle);
+      const holderCountHandle = await this.complianceModule.holderCount(this.token);
+      await maliciousCaller.setConfidentialBalance(this.recipient.address, holderCountHandle);
 
       await expect(
         maliciousCaller.callPreTransfer(this.complianceModule, this.holder.address, this.recipient.address, 1),
       )
         .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedUseOfEncryptedAmount')
-        .withArgs(investorCountHandle, maliciousCaller);
+        .withArgs(holderCountHandle, maliciousCaller);
     });
   });
 
   describe('_postTransfer', function () {
-    it('should increment investor count for a new investor', async function () {
-      const beforeInvestorCount = await this.complianceModule.investorCount(this.token);
+    it('should increment holder count for a new holder', async function () {
+      const beforeHolderCount = await this.complianceModule.holderCount(this.token);
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, beforeInvestorCount, this.complianceModule.target, this.admin),
+        fhevm.userDecryptEuint(FhevmType.euint64, beforeHolderCount, this.complianceModule.target, this.admin),
       ).to.eventually.equal(1);
 
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
 
-      const afterInvestorCount = await this.complianceModule.investorCount(this.token);
+      const afterHolderCount = await this.complianceModule.holderCount(this.token);
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, afterInvestorCount, this.complianceModule.target, this.admin),
+        fhevm.userDecryptEuint(FhevmType.euint64, afterHolderCount, this.complianceModule.target, this.admin),
       ).to.eventually.equal(2);
     });
 
-    it('should decrement investor count if investor sends all their balance', async function () {
+    it('should decrement holder count if holder sends all their balance', async function () {
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
 
-      const beforeInvestorCount = await this.complianceModule.investorCount(this.token);
+      const beforeHolderCount = await this.complianceModule.holderCount(this.token);
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, beforeInvestorCount, this.complianceModule.target, this.admin),
+        fhevm.userDecryptEuint(FhevmType.euint64, beforeHolderCount, this.complianceModule.target, this.admin),
       ).to.eventually.equal(2);
 
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 19000);
 
-      const afterInvestorCount = await this.complianceModule.investorCount(this.token);
+      const afterHolderCount = await this.complianceModule.holderCount(this.token);
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, afterInvestorCount, this.complianceModule.target, this.admin),
+        fhevm.userDecryptEuint(FhevmType.euint64, afterHolderCount, this.complianceModule.target, this.admin),
       ).to.eventually.equal(1);
     });
 
-    it('should not increment investor count if transfer is zero', async function () {
+    it('should not increment holder count if transfer is zero', async function () {
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 0);
 
-      const afterInvestorCount = await this.complianceModule.investorCount(this.token);
+      const afterHolderCount = await this.complianceModule.holderCount(this.token);
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, afterInvestorCount, this.complianceModule.target, this.admin),
+        fhevm.userDecryptEuint(FhevmType.euint64, afterHolderCount, this.complianceModule.target, this.admin),
       ).to.eventually.equal(1);
     });
 
-    it('should not increment investor count on burn', async function () {
+    it('should not increment holder count on burn', async function () {
       await this.token['$_burn(address,uint64)'](this.holder, 1000);
 
-      const afterInvestorCount = await this.complianceModule.investorCount(this.token);
+      const afterHolderCount = await this.complianceModule.holderCount(this.token);
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, afterInvestorCount, this.complianceModule.target, this.admin),
+        fhevm.userDecryptEuint(FhevmType.euint64, afterHolderCount, this.complianceModule.target, this.admin),
       ).to.eventually.equal(1);
     });
 
     // Note this is a known limitation of the current implementation.
-    it('blocks full transfer to new investor when at max investors', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxInvestorCount(this.token, 1);
+    it('blocks full transfer to new holder when at max holders', async function () {
+      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 1);
 
       const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 20000);
       const transferEvent = await tx.wait().then((res: any) => {
