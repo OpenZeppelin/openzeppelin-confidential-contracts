@@ -158,6 +158,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
 
     function recoverAddress(address lostAccount, address newAccount) public virtual onlyAgent returns (euint64) {
         require(FHE.isInitialized(confidentialBalanceOf(lostAccount)), ERC7984ZeroBalance(lostAccount));
+        require(!FHE.isInitialized(confidentialFrozen(newAccount))); // New account must not have frozen tokens
 
         euint64 balance = confidentialBalanceOf(lostAccount);
         euint64 frozenBalance = confidentialFrozen(lostAccount);
@@ -170,7 +171,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
 
         if (FHE.isInitialized(frozenBalance)) {
             _setConfidentialFrozen(newAccount, FHE.min(tokensRecovered, frozenBalance));
-            _setConfidentialFrozen(lostAccount, FHE.sub(balance, tokensRecovered));
+            _setConfidentialFrozen(lostAccount, FHE.sub(frozenBalance, FHE.min(frozenBalance, tokensRecovered)));
         }
 
         emit TokensRecovered(lostAccount, newAccount, tokensRecovered);

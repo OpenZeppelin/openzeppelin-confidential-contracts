@@ -687,7 +687,7 @@ describe('ERC7984Rwa', function () {
         .withArgs(anyone.address, agentRole);
     });
 
-    it('should fail if address has an initialized balance', async function () {
+    it('should fail if address has an uninitialized balance', async function () {
       const { token, anyone, others, agent1 } = await fixture();
       await expect(token.connect(agent1).recoverAddress(anyone, others[0]))
         .to.be.revertedWithCustomError(token, 'ERC7984ZeroBalance')
@@ -719,7 +719,7 @@ describe('ERC7984Rwa', function () {
       ).to.eventually.eq(100);
     });
 
-    it('should properly pass on frozen', async function () {
+    it('should properly pass on frozen amounts', async function () {
       const { token, anyone, recipient, agent1 } = await fixture();
       await token['$_mint(address,uint64)'](recipient, 100);
 
@@ -749,6 +749,33 @@ describe('ERC7984Rwa', function () {
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, newAccountFreezeEvents[0].data, token.target, anyone),
       ).to.eventually.eq(50);
+    });
+
+    it('should properly retain frozen value if recovery fails', async function () {
+      const { token, anyone, recipient, agent1 } = await fixture();
+
+      await token['$_mint(address,uint64)'](recipient, 100);
+      await token.$_setConfidentialFrozen(recipient, 50);
+
+      await token.setFailTransfer(true);
+
+      await token.connect(agent1).recoverAddress(recipient, anyone);
+
+      const recipientFrozenAmount = await token.confidentialFrozen(recipient);
+      const anyoneFrozenAmount = await token.confidentialFrozen(anyone);
+
+      const recipientBalance = await token.confidentialBalanceOf(recipient);
+
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, recipientFrozenAmount, token.target, recipient),
+      ).to.eventually.eq(50);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, anyoneFrozenAmount, token.target, anyone),
+      ).to.eventually.eq(0);
+
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, recipientBalance, token.target, recipient),
+      ).to.eventually.eq(100);
     });
   });
 });
