@@ -14,7 +14,10 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
  */
 abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
     /// @dev Emitted when the max balance for a given token is set.
-    event ERC7984BalanceCapHookModuleMaxBalanceSet(address token, uint64 newMaxBalance);
+    event ERC7984BalanceCapHookModuleMaxBalanceSet(address indexed token, uint64 newMaxBalance);
+
+    /// @dev The new max balance `maxBalance` is invalid.
+    error ERC7984BalanceCapHookModuleInvalidMaxBalance(uint64 maxBalance);
 
     mapping(address => uint64) private _maxBalances;
 
@@ -43,6 +46,7 @@ abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
 
     /// @dev Sets the max balance for a given token to `maxBalance` and emits an event.
     function _setMaxBalance(address token, uint64 maxBalance_) internal {
+        require(maxBalance_ > 0, ERC7984BalanceCapHookModuleInvalidMaxBalance(maxBalance_));
         _maxBalances[token] = maxBalance_;
 
         emit ERC7984BalanceCapHookModuleMaxBalanceSet(token, maxBalance_);
