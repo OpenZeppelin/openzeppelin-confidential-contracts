@@ -174,6 +174,8 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             _setConfidentialFrozen(lostAccount, FHE.sub(frozenBalance, FHE.min(frozenBalance, tokensRecovered)));
         }
 
+        _setRestriction(newAccount, getRestriction(lostAccount));
+
         emit TokensRecovered(lostAccount, newAccount, tokensRecovered);
 
         return tokensRecovered;
