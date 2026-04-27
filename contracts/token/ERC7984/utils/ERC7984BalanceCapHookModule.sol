@@ -77,7 +77,7 @@ abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
 
     /// @inheritdoc ERC7984HookModule
     function _onUninstall(address token, bytes calldata deinitData) internal virtual override {
-        delete _maxBalances[token];
         super._onUninstall(token, deinitData);
+        delete _maxBalances[token];
     }
 }

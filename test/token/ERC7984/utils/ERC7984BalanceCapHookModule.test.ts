@@ -28,6 +28,13 @@ describe('ERC7984BalanceCapHookModule', function () {
     });
   });
 
+  describe('_onUninstall', function () {
+    it('should clean up state', async function () {
+      await this.token.connect(this.admin).uninstallModule(this.complianceModule, '0x');
+      await expect(this.complianceModule.maxBalance(this.token)).to.eventually.eq(0);
+    });
+  });
+
   describe('_preTransfer', function () {
     it('should allow transfer if new balance is less than max balance', async function () {
       const beforeBalance = await this.token.confidentialBalanceOf(this.recipient);
