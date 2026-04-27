@@ -15,18 +15,11 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
     /// @dev Emitted when the max holder count for a given token is set.
     event ERC7984HolderCapHookModuleMaxHolderCountSet(address indexed token, uint64 maxHolderCount);
 
+    /// @dev The new max holder count `maxHolderCount` is invalid.
+    error ERC7984HolderCapHookModuleInvalidMaxHolderCount(uint64 maxHolderCount);
+
     mapping(address => uint64) private _maxHolderCounts;
     mapping(address => euint64) private _holderCounts;
-
-    /**
-     * @dev See {ERC7984HookModule-onInstall}. The `initData` should contain the initial max holder count for the token
-     * as a standard ABI encoded uint64.
-     **/
-    function onInstall(bytes calldata initData) public override {
-        uint64 maxHolderCount_ = abi.decode(initData, (uint64));
-        _setMaxHolderCount(msg.sender, maxHolderCount_);
-        super.onInstall(initData);
-    }
 
     /**
      * @dev Sets the max number of holders for the given token `token` to `maxHolderCount_`.
@@ -34,6 +27,7 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
      * `msg.sender` must have the agent role on `token`
      **/
     function setMaxHolderCount(address token, uint64 maxHolderCount_) public virtual {
+        require(maxHolderCount_ != 0, ERC7984HolderCapHookModuleInvalidMaxHolderCount(maxHolderCount_));
         require(IERC7984Rwa(token).isAgent(msg.sender), ERC7984HookModuleUnauthorizedAccount(msg.sender));
         _setMaxHolderCount(token, maxHolderCount_);
     }
@@ -46,6 +40,26 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
     /// @dev Gets current number of holders for the given token `token`.
     function holderCount(address token) public view virtual returns (euint64) {
         return _holderCounts[token];
+    }
+
+    /**
+     * @dev See {ERC7984HookModule-_onInstall}. The `initData` should contain the initial max holder count for the token
+     * as a standard ABI encoded uint64.
+     **/
+    function _onInstall(address token, bytes calldata initData) internal virtual override {
+        uint64 maxHolderCount_ = abi.decode(initData, (uint64));
+        _setMaxHolderCount(token, maxHolderCount_);
+        super._onInstall(token, initData);
+    }
+
+    function _onUninstall(address token, bytes calldata deinitData) internal virtual override {
+        delete _maxHolderCounts[token];
+        _holderCounts[token] = euint64.wrap(0);
+        super._onUninstall(token, deinitData);
+    }
+
+    function _isModuleInstalled(address token) internal view virtual override returns (bool) {
+        return _maxHolderCounts[token] != 0;
     }
 
     /// @dev Sets the max holder count for a given token to `maxHolderCount_` and emits an event.

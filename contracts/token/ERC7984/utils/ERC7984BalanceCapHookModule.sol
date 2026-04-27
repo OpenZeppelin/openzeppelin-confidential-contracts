@@ -23,10 +23,10 @@ abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
 
     /// @dev See {ERC7984HookModule-onInstall}. The `initData` should contain the initial max balance for the token.
     function onInstall(bytes calldata initData) public override {
+        super.onInstall(initData);
+        
         uint64 maxBalance_ = abi.decode(initData, (uint64));
         _setMaxBalance(msg.sender, maxBalance_);
-
-        super.onInstall(initData);
     }
 
     /**
@@ -42,6 +42,10 @@ abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
     /// @dev Gets the max balance for a given token `token`.
     function maxBalance(address token) public view virtual returns (uint64) {
         return _maxBalances[token];
+    }
+
+    function _isModuleInstalled(address token) internal view virtual override returns (bool) {
+        return _maxBalances[token] != 0;
     }
 
     /// @dev Sets the max balance for a given token to `maxBalance` and emits an event.

@@ -17,9 +17,12 @@ contract ERC7984HookModuleMock is ERC7984HookModule, ZamaEthereumConfig {
     event OnInstall(bytes initData);
     event OnUninstall(bytes deinitData);
 
+    mapping(address => bool) public isInstalled;
+
     function onInstall(bytes calldata initData) public override {
         emit OnInstall(initData);
         super.onInstall(initData);
+        isInstalled[msg.sender] = true;
     }
 
     function onUninstall(bytes calldata deinitData) public override {
@@ -29,6 +32,7 @@ contract ERC7984HookModuleMock is ERC7984HookModule, ZamaEthereumConfig {
 
         emit OnUninstall(deinitData);
         super.onUninstall(deinitData);
+        isInstalled[msg.sender] = false;
     }
 
     function setIsCompliant(bool isCompliant_) public {
@@ -37,6 +41,10 @@ contract ERC7984HookModuleMock is ERC7984HookModule, ZamaEthereumConfig {
 
     function setRevertOnUninstall(bool revertOnUninstall_) public {
         revertOnUninstall = revertOnUninstall_;
+    }
+
+    function _isModuleInstalled(address token) internal view override returns (bool) {
+        return isInstalled[token];
     }
 
     function _preTransfer(address token, address from, address, euint64) internal override returns (ebool) {
