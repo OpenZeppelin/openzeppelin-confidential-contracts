@@ -223,24 +223,24 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
 
     /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a {forceConfidentialTransferFrom}.
     function _checkSenderRestriction(address account) internal view virtual override {
-        if (_isForceTransfer()) {
+        if (_isForceTransfer(msg.sig)) {
             return;
         }
         super._checkSenderRestriction(account);
     }
 
     /// @dev Bypasses {Pausable} check when performing a {forceConfidentialTransferFrom}.
-    function _requireNotPaused() internal view virtual override {
-        if (_isForceTransfer()) {
+    function _requireNotPaused() internal view override {
+        if (_isForceTransfer(msg.sig)) {
             return;
         }
         super._requireNotPaused();
     }
 
-    /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
-    function _isForceTransfer() private pure returns (bool) {
+    /// @dev Private function which checks if the function selector indicates a force transfer.
+    function _isForceTransfer(bytes4 selector) private pure returns (bool) {
         return
-            msg.sig == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
-            msg.sig == 0x44fd6e40; // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+            selector == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
+            selector == 0x44fd6e40; // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
     }
 }
