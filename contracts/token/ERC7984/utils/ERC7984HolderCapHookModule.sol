@@ -10,7 +10,7 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
  * @dev An ERC-7984 hook module that limits the number of holders for a given token.
  *
  * WARNING: This module may not function correctly with non-standard tokens such as fee on transfer.
- **/
+ */
 abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
     /// @dev Emitted when the max holder count for a given token is set.
     event ERC7984HolderCapHookModuleMaxHolderCountSet(address indexed token, uint64 maxHolderCount);
@@ -42,22 +42,7 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
         return _holderCounts[token];
     }
 
-    /**
-     * @dev See {ERC7984HookModule-_onInstall}. The `initData` should contain the initial max holder count for the token
-     * as a standard ABI encoded uint64.
-     **/
-    function _onInstall(address token, bytes calldata initData) internal virtual override {
-        uint64 maxHolderCount_ = abi.decode(initData, (uint64));
-        _setMaxHolderCount(token, maxHolderCount_);
-        super._onInstall(token, initData);
-    }
-
-    function _onUninstall(address token, bytes calldata deinitData) internal virtual override {
-        delete _maxHolderCounts[token];
-        _holderCounts[token] = euint64.wrap(0);
-        super._onUninstall(token, deinitData);
-    }
-
+    /// @inheritdoc ERC7984HookModule
     function _isModuleInstalled(address token) internal view virtual override returns (bool) {
         return _maxHolderCounts[token] != 0;
     }
@@ -126,5 +111,22 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
 
         _holderCounts[token] = newHolderCount;
         FHE.allowThis(newHolderCount);
+    }
+
+    /**
+     * @dev See {ERC7984HookModule-_onInstall}. The `initData` must contain the initial max holder count for the token
+     * as a standard ABI encoded uint64.
+     **/
+    function _onInstall(address token, bytes calldata initData) internal virtual override {
+        super._onInstall(token, initData);
+
+        uint64 maxHolderCount_ = abi.decode(initData, (uint64));
+        _setMaxHolderCount(token, maxHolderCount_);
+    }
+
+    function _onUninstall(address token, bytes calldata deinitData) internal virtual override {
+        delete _maxHolderCounts[token];
+        _holderCounts[token] = euint64.wrap(0);
+        super._onUninstall(token, deinitData);
     }
 }

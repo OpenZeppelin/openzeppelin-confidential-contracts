@@ -21,19 +21,11 @@ abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
 
     mapping(address => uint64) private _maxBalances;
 
-    /// @dev See {ERC7984HookModule-onInstall}. The `initData` should contain the initial max balance for the token.
-    function onInstall(bytes calldata initData) public override {
-        super.onInstall(initData);
-        
-        uint64 maxBalance_ = abi.decode(initData, (uint64));
-        _setMaxBalance(msg.sender, maxBalance_);
-    }
-
     /**
      * @dev Sets the max balance for a given token `token` to `maxBalance_`.
      *
      * `msg.sender` must have the agent role on `token`
-     **/
+     */
     function setMaxBalance(address token, uint64 maxBalance_) public virtual {
         require(IERC7984Rwa(token).isAgent(msg.sender), ERC7984HookModuleUnauthorizedAccount(msg.sender));
         _setMaxBalance(token, maxBalance_);
@@ -44,6 +36,7 @@ abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
         return _maxBalances[token];
     }
 
+    /// @inheritdoc ERC7984HookModule
     function _isModuleInstalled(address token) internal view virtual override returns (bool) {
         return _maxBalances[token] != 0;
     }
@@ -72,5 +65,19 @@ abstract contract ERC7984BalanceCapHookModule is ERC7984HookModule {
 
         (ebool increased, euint64 futureBalance) = FHESafeMath.tryIncrease(balance, encryptedAmount);
         return FHE.and(increased, FHE.le(futureBalance, maxBalance(token)));
+    }
+
+    /// @dev See {ERC7984HookModule-_onInstall}. The `initData` must contain the initial max balance for the token.
+    function _onInstall(address token, bytes calldata initData) internal virtual override {
+        super._onInstall(token, initData);
+
+        uint64 maxBalance_ = abi.decode(initData, (uint64));
+        _setMaxBalance(token, maxBalance_);
+    }
+
+    /// @inheritdoc ERC7984HookModule
+    function _onUninstall(address token, bytes calldata deinitData) internal virtual override {
+        delete _maxBalances[token];
+        super._onUninstall(token, deinitData);
     }
 }

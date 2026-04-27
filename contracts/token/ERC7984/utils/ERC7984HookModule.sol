@@ -17,8 +17,10 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     /// @dev The caller `user` does not have access to the encrypted amount `amount`.
     error ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(euint64 amount, address user);
 
+    /// @dev The module is already installed for the given token.
     error ERC7984HookModuleAlreadyInstalled(address token);
 
+    /// @dev The module is not installed for the given token.
     error ERC7984HookModuleNotInstalled(address token);
 
     /// @inheritdoc IERC7984HookModule
@@ -60,8 +62,16 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
         return interfaceId == type(IERC7984HookModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
+    /**
+     * @dev Internal function which may be overridden by the derived contract to perform actions
+     * when the module is installed.
+     */
     function _onInstall(address token, bytes calldata initData) internal virtual {}
 
+    /**
+     * @dev Internal function which may be overridden by the derived contract to perform actions
+     * when the module is uninstalled.
+     */
     function _onUninstall(address token, bytes calldata deinitData) internal virtual {}
 
     /**
@@ -92,12 +102,12 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
         // default to no-op
     }
 
-    /** 
+    /**
      * @dev Check if the module is installed for the given token. This function must be implemented by the derived contract.
-     * 
+     *
      * NOTE: This function should use internal storage to check if the module is installed for the given token.
      * Do not use external storage like {ERC7984Hooked-isModuleInstalled}.
-     */ 
+     */
     function _isModuleInstalled(address token) internal view virtual returns (bool);
 
     /// @dev Allow modules to get access to token handles during transaction.
