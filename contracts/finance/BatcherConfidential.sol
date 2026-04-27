@@ -110,6 +110,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The given `token` does not support `IERC7984ERC20Wrapper` via `ERC165`.
     error InvalidWrapperToken(address token);
 
+    /// @dev The underlying wrapper tokens are the same.
+    error DuplicateUnderlyingTokens();
+
     constructor(IERC7984ERC20Wrapper fromToken_, IERC7984ERC20Wrapper toToken_) {
         require(
             ERC165Checker.supportsInterface(address(fromToken_), type(IERC7984ERC20Wrapper).interfaceId),
@@ -119,6 +122,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             ERC165Checker.supportsInterface(address(toToken_), type(IERC7984ERC20Wrapper).interfaceId),
             InvalidWrapperToken(address(toToken_))
         );
+        require(address(fromToken_.underlying()) != address(toToken_.underlying()), DuplicateUnderlyingTokens());
 
         _fromToken = fromToken_;
         _toToken = toToken_;
