@@ -49,6 +49,25 @@ describe('ERC7984HolderCapHookModules', function () {
     });
   });
 
+  describe('_onUninstall', function () {
+    it('should clean up state', async function () {
+      await this.token.connect(this.admin).uninstallModule(this.complianceModule, '0x');
+      await expect(this.complianceModule.maxHolderCount(this.token)).to.eventually.eq(0);
+      await expect(this.complianceModule.holderCount(this.token)).to.eventually.eq(0n);
+    });
+  });
+
+  describe('_onInstall', function () {
+    it('should revert if total supply is already initialized', async function () {
+      await this.token.connect(this.admin).uninstallModule(this.complianceModule, '0x');
+      await expect(
+        this.token
+          .connect(this.admin)
+          .installModule(this.complianceModule, ethers.AbiCoder.defaultAbiCoder().encode(['uint64'], [10])),
+      ).to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HolderCapHookModuleTotalSupplyInitialized');
+    });
+  });
+
   describe('_preTransfer', function () {
     it('should allow transfer if new holder count is less than max holder count', async function () {
       const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);

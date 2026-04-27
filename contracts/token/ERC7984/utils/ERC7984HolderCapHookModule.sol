@@ -9,6 +9,9 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 /**
  * @dev An ERC-7984 hook module that limits the number of holders for a given token.
  *
+ * NOTE: This module must be installed prior to minting any tokens. After the total supply is initialized,
+ * it is not possible to guarantee that the number of holders is 0, so the module can not be installed.
+ *
  * WARNING: This module may not function correctly with non-standard tokens such as fee on transfer.
  */
 abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
@@ -17,6 +20,12 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
 
     /// @dev The new max holder count `maxHolderCount` is invalid.
     error ERC7984HolderCapHookModuleInvalidMaxHolderCount(uint64 maxHolderCount);
+
+    /**
+     * The total supply of the token is already initialized.
+     * This module must be installed before the total supply is initialized.
+     */
+    error ERC7984HolderCapHookModuleTotalSupplyInitialized();
 
     mapping(address => uint64) private _maxHolderCounts;
     mapping(address => euint64) private _holderCounts;
@@ -27,7 +36,6 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
      * `msg.sender` must have the agent role on `token`
      **/
     function setMaxHolderCount(address token, uint64 maxHolderCount_) public virtual {
-        require(maxHolderCount_ != 0, ERC7984HolderCapHookModuleInvalidMaxHolderCount(maxHolderCount_));
         require(IERC7984Rwa(token).isAgent(msg.sender), ERC7984HookModuleUnauthorizedAccount(msg.sender));
         _setMaxHolderCount(token, maxHolderCount_);
     }
@@ -49,6 +57,7 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
 
     /// @dev Sets the max holder count for a given token to `maxHolderCount_` and emits an event.
     function _setMaxHolderCount(address token, uint64 maxHolderCount_) internal {
+        require(maxHolderCount_ != 0, ERC7984HolderCapHookModuleInvalidMaxHolderCount(maxHolderCount_));
         _maxHolderCounts[token] = maxHolderCount_;
         emit ERC7984HolderCapHookModuleMaxHolderCountSet(token, maxHolderCount_);
     }
@@ -118,6 +127,11 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
      * as a standard ABI encoded uint64.
      **/
     function _onInstall(address token, bytes calldata initData) internal virtual override {
+        require(
+            !FHE.isInitialized(IERC7984Rwa(token).confidentialTotalSupply()),
+            ERC7984HolderCapHookModuleTotalSupplyInitialized()
+        );
+
         super._onInstall(token, initData);
 
         uint64 maxHolderCount_ = abi.decode(initData, (uint64));
