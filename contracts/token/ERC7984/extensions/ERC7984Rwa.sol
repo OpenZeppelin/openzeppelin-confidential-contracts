@@ -167,7 +167,8 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             _setConfidentialFrozen(lostAccount, euint64.wrap(0));
         }
 
-        euint64 tokensRecovered = _forceUpdate(lostAccount, newAccount, balance);
+        euint64 tokensRecovered = _transfer(lostAccount, newAccount, balance);
+        FHE.allow(tokensRecovered, msg.sender);
 
         if (FHE.isInitialized(frozenBalance)) {
             _setConfidentialFrozen(newAccount, FHE.min(tokensRecovered, frozenBalance));
@@ -263,10 +264,10 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
     }
 
     /// @dev Internal function which checks if the current function call should be treated as a force transfer.
-    function _isForceTransfer() internal pure returns (bool) {
+    function _isForceTransfer(bytes4 selector) internal pure returns (bool) {
         return
-            msg.sig == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
-            msg.sig == 0x44fd6e40 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
-            msg.sig == this.recoverAddress.selector;
+            selector == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
+            selector == 0x44fd6e40 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+            selector == this.recoverAddress.selector;
     }
 }

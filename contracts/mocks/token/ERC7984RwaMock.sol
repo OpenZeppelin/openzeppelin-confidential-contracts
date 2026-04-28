@@ -35,14 +35,6 @@ contract ERC7984RwaMock is ERC7984Rwa, ERC7984Mock, HandleAccessManager {
         return super._update(from, to, failTransfer ? FHE.asEuint64(0) : amount);
     }
 
-    function _forceUpdate(
-        address from,
-        address to,
-        euint64 encryptedAmount
-    ) internal virtual override returns (euint64) {
-        return super._forceUpdate(from, to, failTransfer ? FHE.asEuint64(0) : encryptedAmount);
-    }
-
     function _validateHandleAllowance(bytes32) internal view override returns (bool) {
         return isAgent(msg.sender);
     }
