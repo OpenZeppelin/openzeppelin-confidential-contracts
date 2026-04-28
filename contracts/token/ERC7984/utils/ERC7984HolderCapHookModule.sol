@@ -81,13 +81,17 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
 
         euint64 encryptedZero = FHE.asEuint64(0);
 
-        // Note, not checking if current transfer is the whole balance of the from address
+        euint64 adjustedHolderCount = holderCount(token);
+        if (from != address(0)) {
+            adjustedHolderCount = FHE.sub(adjustedHolderCount, FHE.asEuint64(FHE.eq(fromBalance, encryptedAmount)));
+        }
+
         return
             FHE.or(
                 FHE.eq(encryptedAmount, encryptedZero), // zero transfer
                 FHE.or(
                     FHE.ne(toBalance, encryptedZero), // already a holder
-                    FHE.lt(holderCount(token), maxHolderCount(token)) // room for another holder
+                    FHE.lt(adjustedHolderCount, maxHolderCount(token)) // room for another holder
                 )
             );
     }

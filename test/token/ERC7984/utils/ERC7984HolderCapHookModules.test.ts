@@ -242,7 +242,7 @@ describe('ERC7984HolderCapHookModules', function () {
     });
 
     // Note this is a known limitation of the current implementation.
-    it('blocks full transfer to new holder when at max holders', async function () {
+    it('allows full transfer to new holder when at max holders', async function () {
       await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 1);
 
       const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 20000);
@@ -251,7 +251,33 @@ describe('ERC7984HolderCapHookModules', function () {
       });
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.recipient),
+      ).to.eventually.equal(20000);
+    });
+
+    it('blocks full transfer to new holder when above max holders', async function () {
+      await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
+      await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.others[0], 1000);
+
+      const beforeHolderCount = await this.complianceModule.holderCount(this.token);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, beforeHolderCount, this.complianceModule.target, this.admin),
+      ).to.eventually.equal(3);
+
+      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 2);
+
+      const tx = await this.token.connect(this.recipient)['confidentialTransfer(address,uint64)'](this.anyone, 1000);
+      const transferEvent = await tx.wait().then((res: any) => {
+        return res.logs.filter((log: any) => log.address == this.token.target)[0];
+      });
+
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.anyone),
       ).to.eventually.equal(0);
+
+      const afterHolderCount = await this.complianceModule.holderCount(this.token);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, afterHolderCount, this.complianceModule.target, this.admin),
+      ).to.eventually.equal(3);
     });
   });
 });
