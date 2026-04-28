@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (finance/BatcherConfidential.sol)
 
 pragma solidity ^0.8.27;
 
@@ -15,8 +16,8 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
 /**
  * @dev `BatcherConfidential` is a batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts
- * via a non-confidential route. Users deposit {fromToken} into the batcher and receive {toToken} in exchange. Deposits are
- * made by using `ERC7984` transfer and call functions such as {ERC7984-confidentialTransferAndCall}.
+ * (with distinct underlying tokens) via a non-confidential route. Users deposit {fromToken} into the batcher and receive
+ * {toToken} in exchange. Deposits are made by using `ERC7984` transfer and call functions such as {ERC7984-confidentialTransferAndCall}.
  *
  * Developers must implement the virtual function {_executeRoute} to perform the batch's route. This function is called
  * once the batch deposits are unwrapped into the underlying tokens. The function should swap the underlying {fromToken} for

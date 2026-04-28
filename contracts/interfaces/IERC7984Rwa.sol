@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.3.0) (interfaces/IERC7984Rwa.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (interfaces/IERC7984Rwa.sol)
 pragma solidity ^0.8.24;
 
 import {externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
@@ -11,6 +11,12 @@ interface IERC7984Rwa is IERC7984 {
 
     /// @dev Returns true if the contract is paused, false otherwise.
     function paused() external view returns (bool);
+
+    /// @dev Returns true if has admin role, false otherwise.
+    function isAdmin(address account) external view returns (bool);
+
+    /// @dev Returns true if agent, false otherwise.
+    function isAgent(address account) external view returns (bool);
 
     /// @dev Returns whether an account is allowed to interact with the token.
     function canTransact(address account) external view returns (bool);

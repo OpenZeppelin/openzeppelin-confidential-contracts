@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/extensions/ERC7984Rwa.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984Rwa.sol)
 
 pragma solidity ^0.8.27;
 
@@ -22,12 +22,12 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
     /**
      * @dev Accounts granted the agent role have the following permissioned abilities:
      *
-     * - Mint/Burn to/from a given address (does not require permission)
-     * - Force transfer from a given address (does not require permission)
-     *   - Bypasses pause and restriction checks (not frozen)
-     * - Pause/Unpause the contract
-     * - Block/Unblock a given account
-     * - Set frozen amount of tokens for a given account.
+     * * Mint/Burn to/from a given address (does not require permission)
+     * * Force transfer from a given address (does not require permission)
+     * ** Bypasses pause and restriction checks (not frozen)
+     * * Pause/Unpause the contract
+     * * Block/Unblock a given account
+     * * Set frozen amount of tokens for a given account.
      */
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
@@ -188,7 +188,9 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /**
@@ -200,12 +202,14 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         address from,
         address to,
         euint64 encryptedAmount
-    ) public virtual onlyAgent returns (euint64 transferred) {
+    ) public virtual onlyAgent returns (euint64) {
         require(
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _forceUpdate(from, to, encryptedAmount);
+        euint64 transferred = _transfer(from, to, encryptedAmount);
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /// @inheritdoc ERC7984Freezable
@@ -242,23 +246,20 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return super._update(from, to, encryptedAmount);
     }
 
-    /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
-    function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
-        // bypassing `from` restriction check with {_checkSenderRestriction}. Still performing `to` restriction check.
-        // bypassing paused state by directly calling `super._update`
-        euint64 transferred = super._update(from, to, encryptedAmount);
-        FHE.allow(transferred, msg.sender);
-        return transferred;
-    }
-
-    /**
-     * @dev Bypasses the `from` restriction check when performing a {forceConfidentialTransferFrom}.
-     */
+    /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a {forceConfidentialTransferFrom}.
     function _checkSenderRestriction(address account) internal view override {
-        if (_isForceTransfer()) {
+        if (_isForceTransfer(msg.sig)) {
             return;
         }
         super._checkSenderRestriction(account);
+    }
+
+    /// @dev Bypasses {Pausable} check when performing a {forceConfidentialTransferFrom}.
+    function _requireNotPaused() internal view override {
+        if (_isForceTransfer(msg.sig)) {
+            return;
+        }
+        super._requireNotPaused();
     }
 
     /// @dev Internal function which checks if the current function call should be treated as a force transfer.
