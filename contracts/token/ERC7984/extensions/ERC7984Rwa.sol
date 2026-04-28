@@ -163,7 +163,9 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /**
@@ -175,12 +177,14 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         address from,
         address to,
         euint64 encryptedAmount
-    ) public virtual onlyAgent returns (euint64 transferred) {
+    ) public virtual onlyAgent returns (euint64) {
         require(
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _forceUpdate(from, to, encryptedAmount);
+        euint64 transferred = _transfer(from, to, encryptedAmount);
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /// @inheritdoc ERC7984Freezable
@@ -217,29 +221,26 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return super._update(from, to, encryptedAmount);
     }
 
-    /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
-    function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
-        // bypassing `from` restriction check with {_checkSenderRestriction}. Still performing `to` restriction check.
-        // bypassing paused state by directly calling `super._update`
-        euint64 transferred = super._update(from, to, encryptedAmount);
-        FHE.allow(transferred, msg.sender);
-        return transferred;
-    }
-
-    /**
-     * @dev Bypasses the `from` restriction check when performing a {forceConfidentialTransferFrom}.
-     */
+    /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a {forceConfidentialTransferFrom}.
     function _checkSenderRestriction(address account) internal view override {
-        if (_isForceTransfer()) {
+        if (_isForceTransfer(msg.sig)) {
             return;
         }
         super._checkSenderRestriction(account);
     }
 
-    /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
-    function _isForceTransfer() private pure returns (bool) {
+    /// @dev Bypasses {Pausable} check when performing a {forceConfidentialTransferFrom}.
+    function _requireNotPaused() internal view override {
+        if (_isForceTransfer(msg.sig)) {
+            return;
+        }
+        super._requireNotPaused();
+    }
+
+    /// @dev Private function which checks if the function selector indicates a force transfer.
+    function _isForceTransfer(bytes4 selector) private pure returns (bool) {
         return
-            msg.sig == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
-            msg.sig == 0x44fd6e40; // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+            selector == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
+            selector == 0x44fd6e40; // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
     }
 }
