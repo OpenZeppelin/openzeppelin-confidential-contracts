@@ -222,7 +222,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
     }
 
     /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a {forceConfidentialTransferFrom}.
-    function _checkSenderRestriction(address account) internal view virtual override {
+    function _checkSenderRestriction(address account) internal view override {
         if (_isForceTransfer(msg.sig)) {
             return;
         }
