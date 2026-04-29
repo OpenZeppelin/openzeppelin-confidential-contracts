@@ -16,8 +16,8 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
 /**
  * @dev `BatcherConfidential` is a batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts
- * via a non-confidential route. Users deposit {fromToken} into the batcher and receive {toToken} in exchange. Deposits are
- * made by using `ERC7984` transfer and call functions such as {ERC7984-confidentialTransferAndCall}.
+ * (with distinct underlying tokens) via a non-confidential route. Users deposit {fromToken} into the batcher and receive
+ * {toToken} in exchange. Deposits are made by using `ERC7984` transfer and call functions such as {ERC7984-confidentialTransferAndCall}.
  *
  * Developers must implement the virtual function {_executeRoute} to perform the batch's route. This function is called
  * once the batch deposits are unwrapped into the underlying tokens. The function should swap the underlying {fromToken} for
@@ -110,6 +110,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The given `token` does not support `IERC7984ERC20Wrapper` via `ERC165`.
     error InvalidWrapperToken(address token);
 
+    /// @dev The underlying wrapper tokens are the same.
+    error DuplicateUnderlyingTokens();
+
     constructor(IERC7984ERC20Wrapper fromToken_, IERC7984ERC20Wrapper toToken_) {
         require(
             ERC165Checker.supportsInterface(address(fromToken_), type(IERC7984ERC20Wrapper).interfaceId),
@@ -119,6 +122,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             ERC165Checker.supportsInterface(address(toToken_), type(IERC7984ERC20Wrapper).interfaceId),
             InvalidWrapperToken(address(toToken_))
         );
+        require(fromToken_.underlying() != toToken_.underlying(), DuplicateUnderlyingTokens());
 
         _fromToken = fromToken_;
         _toToken = toToken_;
