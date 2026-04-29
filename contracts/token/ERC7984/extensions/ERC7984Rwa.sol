@@ -156,6 +156,32 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return burntAmount;
     }
 
+    function recoverAddress(address lostAccount, address newAccount) public virtual onlyAgent returns (euint64) {
+        require(FHE.isInitialized(confidentialBalanceOf(lostAccount)), ERC7984ZeroBalance(lostAccount));
+        require(!FHE.isInitialized(confidentialFrozen(newAccount))); // New account must not have frozen tokens
+
+        euint64 balance = confidentialBalanceOf(lostAccount);
+        euint64 frozenBalance = confidentialFrozen(lostAccount);
+
+        if (FHE.isInitialized(frozenBalance)) {
+            _setConfidentialFrozen(lostAccount, euint64.wrap(0));
+        }
+
+        euint64 tokensRecovered = _transfer(lostAccount, newAccount, balance);
+        FHE.allow(tokensRecovered, msg.sender);
+
+        if (FHE.isInitialized(frozenBalance)) {
+            _setConfidentialFrozen(newAccount, FHE.min(tokensRecovered, frozenBalance));
+            _setConfidentialFrozen(lostAccount, FHE.sub(frozenBalance, FHE.min(frozenBalance, tokensRecovered)));
+        }
+
+        _setRestriction(newAccount, getRestriction(lostAccount));
+
+        emit TokensRecovered(lostAccount, newAccount, tokensRecovered);
+
+        return tokensRecovered;
+    }
+
     /// @dev Variant of {forceConfidentialTransferFrom-address-address-euint64} with an input proof.
     function forceConfidentialTransferFrom(
         address from,
@@ -237,10 +263,11 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         super._requireNotPaused();
     }
 
-    /// @dev Private function which checks if the function selector indicates a force transfer.
-    function _isForceTransfer(bytes4 selector) private pure returns (bool) {
+    /// @dev Internal function which checks if the current function call should be treated as a force transfer.
+    function _isForceTransfer(bytes4 selector) internal pure returns (bool) {
         return
             selector == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
-            selector == 0x44fd6e40; // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+            selector == 0x44fd6e40 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+            selector == this.recoverAddress.selector;
     }
 }
