@@ -153,9 +153,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
-    ) public virtual returns (euint64 transferred) {
-        transferred = _transferAndCall(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), data);
-        FHE.allowTransient(transferred, msg.sender);
+    ) public virtual returns (euint64) {
+        return _transferAndCall(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), data);
     }
 
     /// @inheritdoc IERC7984
@@ -163,10 +162,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         address to,
         euint64 amount,
         bytes calldata data
-    ) public virtual returns (euint64 transferred) {
+    ) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        transferred = _transferAndCall(msg.sender, to, amount, data);
-        FHE.allowTransient(transferred, msg.sender);
+        return _transferAndCall(msg.sender, to, amount, data);
     }
 
     /// @inheritdoc IERC7984
@@ -176,10 +174,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
-    ) public virtual returns (euint64 transferred) {
+    ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        transferred = _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data);
-        FHE.allowTransient(transferred, msg.sender);
+        return _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data);
     }
 
     /// @inheritdoc IERC7984
@@ -188,11 +185,10 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         address to,
         euint64 amount,
         bytes calldata data
-    ) public virtual returns (euint64 transferred) {
+    ) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        transferred = _transferAndCall(from, to, amount, data);
-        FHE.allowTransient(transferred, msg.sender);
+        return _transferAndCall(from, to, amount, data);
     }
 
     /**
@@ -253,10 +249,15 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     }
 
     /**
-     * @dev Transfers the given amount of tokens from `from` to `to` and calls the `onConfidentialTransferReceived` function on the recipient.
+     * @dev Transfers the given amount of tokens from `from` to `to` and calls the `onConfidentialTransferReceived`
+     * function on the recipient.
      *
-     * The token contract initiates a second transfer refunding the tokens from the recipient to the sender--the amount is 0 if the callback succeeds,
-     * otherwise the amount is the amount that was transferred.
+     * The token contract initiates a second transfer refunding the tokens from the recipient to the sender--the
+     * amount is 0 if the callback succeeds, otherwise the amount is the amount that was transferred.
+     *
+     * The returned `transferred` amount is a fresh ciphertext computed as `sent - refund`
+     * and `msg.sender` only receives a transient FHE allowance for it. This value is generally
+     * intended to be processed only in the same transaction. Event observers see `sent` and `refund` individually.
      *
      * WARNING: The refund triggered when {IERC7984Receiver-onConfidentialTransferReceived} returns an encrypted
      * false is best-effort only. A receiver that transfers, burns, or otherwise reduces its balance during
@@ -278,6 +279,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         // Try to refund if callback fails
         euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent));
         transferred = FHE.sub(sent, refund);
+        FHE.allowTransient(transferred, msg.sender);
     }
 
     /**
