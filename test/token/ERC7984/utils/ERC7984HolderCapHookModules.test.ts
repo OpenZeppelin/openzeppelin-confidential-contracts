@@ -241,7 +241,6 @@ describe('ERC7984HolderCapHookModules', function () {
       ).to.eventually.equal(1);
     });
 
-    // Note this is a known limitation of the current implementation.
     it('allows full transfer to new holder when at max holders', async function () {
       await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 1);
 

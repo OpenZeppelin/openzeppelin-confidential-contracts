@@ -16,7 +16,7 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
  */
 abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
     /// @dev Emitted when the max holder count for a given token is set.
-    event ERC7984HolderCapHookModuleMaxHolderCountSet(address indexed token, uint64 maxHolderCount);
+    event ERC7984HolderCapHookModuleMaxHolderCountSet(address indexed token, uint64 newMaxHolderCount);
 
     /// @dev The new max holder count `maxHolderCount` is invalid.
     error ERC7984HolderCapHookModuleInvalidMaxHolderCount(uint64 maxHolderCount);
