@@ -122,7 +122,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             ERC165Checker.supportsInterface(address(toToken_), type(IERC7984ERC20Wrapper).interfaceId),
             InvalidWrapperToken(address(toToken_))
         );
-        require(address(fromToken_.underlying()) != address(toToken_.underlying()), DuplicateUnderlyingTokens());
+        require(fromToken_.underlying() != toToken_.underlying(), DuplicateUnderlyingTokens());
 
         _fromToken = fromToken_;
         _toToken = toToken_;
