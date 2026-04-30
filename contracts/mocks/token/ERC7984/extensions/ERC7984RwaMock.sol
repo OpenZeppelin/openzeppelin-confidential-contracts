@@ -3,10 +3,10 @@
 pragma solidity ^0.8.24;
 
 import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ERC7984} from "./../../token/ERC7984/ERC7984.sol";
-import {ERC7984Rwa} from "./../../token/ERC7984/extensions/ERC7984Rwa.sol";
-import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
-import {ERC7984Mock} from "./ERC7984Mock.sol";
+import {ERC7984} from "../../../../token/ERC7984/ERC7984.sol";
+import {ERC7984Rwa} from "../../../../token/ERC7984/extensions/ERC7984Rwa.sol";
+import {HandleAccessManager} from "../../../../utils/HandleAccessManager.sol";
+import {ERC7984Mock} from "../ERC7984Mock.sol";
 
 // solhint-disable func-name-mixedcase
 contract ERC7984RwaMock is ERC7984Rwa, ERC7984Mock, HandleAccessManager {

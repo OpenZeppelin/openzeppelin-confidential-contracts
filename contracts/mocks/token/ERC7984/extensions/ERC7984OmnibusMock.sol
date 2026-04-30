@@ -3,8 +3,8 @@
 pragma solidity ^0.8.27;
 
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ERC7984Omnibus} from "../../token/ERC7984/extensions/ERC7984Omnibus.sol";
-import {ERC7984Mock, ERC7984} from "./ERC7984Mock.sol";
+import {ERC7984Omnibus} from "../../../../token/ERC7984/extensions/ERC7984Omnibus.sol";
+import {ERC7984Mock, ERC7984} from "../ERC7984Mock.sol";
 
 abstract contract ERC7984OmnibusMock is ERC7984Omnibus, ERC7984Mock {
     function _update(

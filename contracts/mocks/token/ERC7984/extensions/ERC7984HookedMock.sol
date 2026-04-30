@@ -5,7 +5,7 @@ pragma solidity ^0.8.24;
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC7984Hooked} from "../../../../token/ERC7984/extensions/ERC7984Hooked.sol";
-import {ERC7984Mock} from "../../ERC7984Mock.sol";
+import {ERC7984Mock} from "../ERC7984Mock.sol";
 
 contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock, Ownable {
     constructor(
