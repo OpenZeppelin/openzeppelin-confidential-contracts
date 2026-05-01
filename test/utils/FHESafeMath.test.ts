@@ -9,6 +9,7 @@ import { ethers, fhevm } from 'hardhat';
 const MaxUint64 = BigInt('0xffffffffffffffff');
 const handleCreatedSignature = 'HandleCreated(bytes32)';
 const resultComputedSignature = 'ResultComputed(bytes32,bytes32)';
+const saturatedResultComputedSignature = 'SaturatedResultComputed(bytes32)';
 let fheSafeMath: FHESafeMathMock;
 let account: HardhatEthersSigner;
 
@@ -155,6 +156,77 @@ describe('FHESafeMath', function () {
             expect(updated).to.eq(ethers.ZeroHash);
           }
           await expect(fhevm.userDecryptEbool(success, fheSafeMath.target, account)).to.eventually.equal(expected);
+        });
+      }
+    });
+  }
+
+  const saturatingAddArgsOptions: [BigNumberish | undefined, BigNumberish | undefined, BigNumberish | undefined][] = [
+    // a + b = c (saturating at MaxUint64)
+    [undefined, undefined, undefined],
+    [undefined, 0, 0],
+    [undefined, 1, 1],
+    [0, undefined, 0],
+    [1, undefined, 1],
+    [0, 0, 0],
+    [1, 1, 2],
+    [MaxUint64, 0, MaxUint64],
+    [0, MaxUint64, MaxUint64],
+    [MaxUint64, 1, MaxUint64],
+    [1, MaxUint64, MaxUint64],
+    [MaxUint64 - 1n, 2, MaxUint64],
+    [MaxUint64, MaxUint64, MaxUint64],
+  ];
+
+  const saturatingSubArgsOptions: [BigNumberish | undefined, BigNumberish | undefined, BigNumberish | undefined][] = [
+    // a - b = c (saturating at 0)
+    [0, 0, 0],
+    [1, 1, 0],
+    [5, 3, 2],
+    [0, 1, 0],
+    [3, 5, 0],
+    [MaxUint64, 0, MaxUint64],
+    [MaxUint64, 1, MaxUint64 - 1n],
+    [MaxUint64, MaxUint64, 0],
+    [0, MaxUint64, 0],
+    [1, MaxUint64, 0],
+  ];
+
+  for (const params of [
+    {
+      functionSignature: 'saturatingAdd(bytes32,bytes32)',
+      argsOptions: saturatingAddArgsOptions,
+      operation: '+',
+    },
+    {
+      functionSignature: 'saturatingSub(bytes32,bytes32)',
+      argsOptions: saturatingSubArgsOptions,
+      operation: '-',
+    },
+  ]) {
+    describe(`saturating ${params.functionSignature.startsWith('saturatingAdd') ? 'add' : 'sub'}`, function () {
+      for (const args of params.argsOptions) {
+        it(`${args[0]} ${params.operation} ${args[1]} = ${args[2]}`, async function () {
+          const [a, b, c] = args;
+          const [handleA] =
+            a !== undefined
+              ? await callAndGetResult(fheSafeMath.createHandle(a), handleCreatedSignature)
+              : [ethers.ZeroHash];
+          const [handleB] =
+            b !== undefined
+              ? await callAndGetResult(fheSafeMath.createHandle(b), handleCreatedSignature)
+              : [ethers.ZeroHash];
+          const [result] = await callAndGetResult(
+            (fheSafeMath as any)[params.functionSignature](handleA, handleB),
+            saturatedResultComputedSignature,
+          );
+          if (c !== undefined) {
+            await expect(
+              fhevm.userDecryptEuint(FhevmType.euint64, result, fheSafeMath.target, account),
+            ).to.eventually.equal(c);
+          } else {
+            expect(result).to.eq(ethers.ZeroHash);
+          }
         });
       }
     });

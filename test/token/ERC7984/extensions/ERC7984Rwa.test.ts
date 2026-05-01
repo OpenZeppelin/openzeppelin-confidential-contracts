@@ -770,6 +770,18 @@ describe('ERC7984Rwa', function () {
       ).to.eventually.eq(70);
     });
 
+    it('should block new account if lost account is blocked', async function () {
+      const { token, anyone, recipient, agent1 } = await fixture();
+      await token['$_mint(address,uint64)'](recipient, 100);
+      await token.connect(agent1).blockUser(recipient);
+
+      await expect(token.canTransact(anyone)).to.eventually.be.true;
+
+      await token.connect(agent1).recoverAddress(recipient, anyone);
+
+      await expect(token.canTransact(anyone)).to.eventually.be.false;
+    });
+
     it('should retain frozen value if recovery fails', async function () {
       const { token, anyone, recipient, agent1 } = await fixture();
 
