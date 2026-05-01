@@ -11,11 +11,11 @@ const adminRole = ethers.ZeroHash;
 const agentRole = ethers.id('AGENT_ROLE');
 
 const fixture = async () => {
-  const [admin, agent1, agent2, recipient, anyone, ...others] = await ethers.getSigners();
+  const [admin, agent1, agent2, recipient, anyone, holder, ...others] = await ethers.getSigners();
   const token = await ethers.deployContract('ERC7984RwaMock', ['name', 'symbol', 'uri', admin.address]);
   await token.connect(admin).addAgent(agent1);
   token.connect(anyone);
-  return { token, admin, agent1, agent2, recipient, anyone, others };
+  return { token, admin, agent1, agent2, recipient, anyone, holder, others };
 };
 
 describe('ERC7984Rwa', function () {
@@ -694,6 +694,14 @@ describe('ERC7984Rwa', function () {
         .withArgs(anyone);
     });
 
+    it('should fail if lost and new accounts are the same', async function () {
+      const { token, recipient, agent1 } = await fixture();
+      await expect(token.connect(agent1).recoverAddress(recipient, recipient)).to.be.revertedWithCustomError(
+        token,
+        'SelfRecoveryNotAllowed',
+      );
+    });
+
     it('should emit recovered event', async function () {
       const { token, anyone, recipient, agent1 } = await fixture();
       await token['$_mint(address,uint64)'](recipient, 100);
@@ -719,7 +727,7 @@ describe('ERC7984Rwa', function () {
       ).to.eventually.eq(100);
     });
 
-    it('should properly pass on frozen amounts', async function () {
+    it('should pass on frozen amounts', async function () {
       const { token, anyone, recipient, agent1 } = await fixture();
       await token['$_mint(address,uint64)'](recipient, 100);
 
@@ -740,18 +748,29 @@ describe('ERC7984Rwa', function () {
         fhevm.userDecryptEuint(FhevmType.euint64, rescuedAccountFreezeEvents[1].data, token.target, recipient),
       ).to.eventually.eq(0);
 
-      const newAccountFreezeEvents = logs.filter(
-        log =>
-          log.address == token.target &&
-          log.topics[0] == tokensFrozenTopic &&
-          log.topics[1] == ethers.AbiCoder.defaultAbiCoder().encode(['address'], [anyone.address]),
-      );
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, newAccountFreezeEvents[0].data, token.target, anyone),
+        fhevm.userDecryptEuint(FhevmType.euint64, await token.confidentialFrozen(anyone), token.target, anyone),
       ).to.eventually.eq(50);
     });
 
-    it('should properly retain frozen value if recovery fails', async function () {
+    it('should add to existing frozen value', async function () {
+      const { token, holder, recipient, agent1 } = await fixture();
+
+      await token['$_mint(address,uint64)'](holder, 100);
+      await token['$_mint(address,uint64)'](recipient, 50);
+
+      await token.$_setConfidentialFrozen(holder, 20);
+      await token.$_setConfidentialFrozen(recipient, 50);
+
+      await token.connect(agent1).recoverAddress(holder, recipient);
+
+      const recipientFrozenAmount = await token.confidentialFrozen(recipient);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, recipientFrozenAmount, token.target, recipient),
+      ).to.eventually.eq(70);
+    });
+
+    it('should retain frozen value if recovery fails', async function () {
       const { token, anyone, recipient, agent1 } = await fixture();
 
       await token['$_mint(address,uint64)'](recipient, 100);

@@ -83,4 +83,7 @@ interface IERC7984Rwa is IERC7984 {
         address to,
         euint64 encryptedAmount
     ) external returns (euint64);
+
+    /// @dev Recovers the address of a lost account to a new account.
+    function recoverAddress(address lostAccount, address newAccount) external returns (euint64);
 }

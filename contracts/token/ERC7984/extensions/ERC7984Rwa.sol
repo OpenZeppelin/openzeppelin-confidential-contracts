@@ -10,6 +10,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
+import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984} from "./../ERC7984.sol";
 import {ERC7984Freezable} from "./ERC7984Freezable.sol";
 import {ERC7984Restricted} from "./ERC7984Restricted.sol";
@@ -19,6 +20,9 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
 abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, AccessControl {
+    /// @dev The operation failed because the lost account is the same as the new account.
+    error SelfRecoveryNotAllowed();
+
     /**
      * @dev Accounts granted the agent role have the following permissioned abilities:
      *
@@ -156,26 +160,35 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return burntAmount;
     }
 
+    /// @inheritdoc IERC7984Rwa
     function recoverAddress(address lostAccount, address newAccount) public virtual onlyAgent returns (euint64) {
-        require(FHE.isInitialized(confidentialBalanceOf(lostAccount)), ERC7984ZeroBalance(lostAccount));
-        require(!FHE.isInitialized(confidentialFrozen(newAccount))); // New account must not have frozen tokens
+        require(lostAccount != newAccount, SelfRecoveryNotAllowed());
 
         euint64 balance = confidentialBalanceOf(lostAccount);
-        euint64 frozenBalance = confidentialFrozen(lostAccount);
+        require(FHE.isInitialized(balance), ERC7984ZeroBalance(lostAccount));
 
-        if (FHE.isInitialized(frozenBalance)) {
+        euint64 lostFrozenBalance = confidentialFrozen(lostAccount);
+        euint64 newFrozenBalance = confidentialFrozen(newAccount);
+
+        if (FHE.isInitialized(lostFrozenBalance)) {
             _setConfidentialFrozen(lostAccount, euint64.wrap(0));
         }
 
         euint64 tokensRecovered = _transfer(lostAccount, newAccount, balance);
         FHE.allow(tokensRecovered, msg.sender);
 
-        if (FHE.isInitialized(frozenBalance)) {
-            _setConfidentialFrozen(newAccount, FHE.min(tokensRecovered, frozenBalance));
-            _setConfidentialFrozen(lostAccount, FHE.sub(frozenBalance, FHE.min(frozenBalance, tokensRecovered)));
+        if (FHE.isInitialized(lostFrozenBalance)) {
+            _setConfidentialFrozen(
+                newAccount,
+                FHESafeMath.saturatingAdd(newFrozenBalance, FHE.min(tokensRecovered, lostFrozenBalance))
+            );
+            _setConfidentialFrozen(lostAccount, FHESafeMath.saturatingSub(lostFrozenBalance, tokensRecovered));
         }
 
-        _setRestriction(newAccount, getRestriction(lostAccount));
+        Restriction restriction = getRestriction(lostAccount);
+        if (restriction == Restriction.BLOCKED) {
+            _blockUser(newAccount);
+        }
 
         emit TokensRecovered(lostAccount, newAccount, tokensRecovered);
 
