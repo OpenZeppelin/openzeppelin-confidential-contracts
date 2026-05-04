@@ -129,22 +129,20 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual returns (euint64 transferred) {
+    ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
         FHE.allowTransient(transferred, msg.sender);
+        return transferred;
     }
 
     /// @inheritdoc IERC7984
-    function confidentialTransferFrom(
-        address from,
-        address to,
-        euint64 amount
-    ) public virtual returns (euint64 transferred) {
+    function confidentialTransferFrom(address from, address to, euint64 amount) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        transferred = _transfer(from, to, amount);
+        euint64 transferred = _transfer(from, to, amount);
         FHE.allowTransient(transferred, msg.sender);
+        return transferred;
     }
 
     /// @inheritdoc IERC7984
