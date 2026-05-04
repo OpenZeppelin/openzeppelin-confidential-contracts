@@ -1,5 +1,5 @@
 import { IACL__factory } from '../../../../types';
-import { $ERC7984FreezableMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984FreezableMock.sol/$ERC7984FreezableMock';
+import { $ERC7984FreezableMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984/extensions/ERC7984FreezableMock.sol/$ERC7984FreezableMock';
 import { getAclAddress } from '../../../helpers/accounts';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';

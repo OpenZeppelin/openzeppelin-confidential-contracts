@@ -3,9 +3,9 @@
 pragma solidity ^0.8.27;
 
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ERC7984Freezable} from "../../token/ERC7984/extensions/ERC7984Freezable.sol";
-import {HandleAccessManager} from "../../utils/HandleAccessManager.sol";
-import {ERC7984Mock} from "./ERC7984Mock.sol";
+import {ERC7984Freezable} from "../../../../token/ERC7984/extensions/ERC7984Freezable.sol";
+import {HandleAccessManager} from "../../../../utils/HandleAccessManager.sol";
+import {ERC7984Mock} from "../ERC7984Mock.sol";
 
 contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, HandleAccessManager {
     constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984Mock(name, symbol, tokenUri) {}
