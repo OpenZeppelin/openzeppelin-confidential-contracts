@@ -261,6 +261,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * false is best-effort only. A receiver that transfers, burns, or otherwise reduces its balance during
      * the hook can still return false, in which case the refund transfers zero tokens. The sender's tokens
      * end up with the recipient rather than being refunded.
+     *
+     * WARNING: Refunds are subject to the same validation flow as a normal transfer--they may fail for a variety of
+     * reasons (such as failed hook validation in {ERC7984Hooked}). In these cases, the tokens do not return to the sender.
      */
     function _transferAndCall(
         address from,
