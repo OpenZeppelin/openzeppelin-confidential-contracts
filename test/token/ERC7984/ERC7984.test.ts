@@ -228,25 +228,6 @@ describe('ERC7984', function () {
 
         // Edge cases to run with sender as caller
         if (asSender) {
-          it('with no balance should revert', async function () {
-            const encryptedInput = await fhevm
-              .createEncryptedInput(this.token.target, this.recipient.address)
-              .add64(100)
-              .encrypt();
-
-            await expect(
-              this.token
-                .connect(this.recipient)
-                ['confidentialTransfer(address,bytes32,bytes)'](
-                  this.holder.address,
-                  encryptedInput.handles[0],
-                  encryptedInput.inputProof,
-                ),
-            )
-              .to.be.revertedWithCustomError(this.token, 'ERC7984ZeroBalance')
-              .withArgs(this.recipient.address);
-          });
-
           it('to zero address', async function () {
             const encryptedInput = await fhevm
               .createEncryptedInput(this.token.target, this.holder.address)

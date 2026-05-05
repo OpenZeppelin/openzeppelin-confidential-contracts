@@ -44,9 +44,6 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /// @dev The given holder `holder` is not authorized to spend on behalf of `spender`.
     error ERC7984UnauthorizedSpender(address holder, address spender);
 
-    /// @dev The holder `holder` is trying to send tokens but has a balance of 0.
-    error ERC7984ZeroBalance(address holder);
-
     /**
      * @dev The caller `user` does not have access to the encrypted amount `amount`.
      *
@@ -286,9 +283,6 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /**
      * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
      * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
-     *
-     * NOTE: If the `from` account has never received tokens, it will revert with {ERC7984ZeroBalance}
-     * because their balance handle is uninitialized.
      */
     function _update(address from, address to, euint64 amount) internal virtual returns (euint64 transferred) {
         ebool success;
@@ -300,7 +294,6 @@ abstract contract ERC7984 is IERC7984, ERC165 {
             _totalSupply = ptr;
         } else {
             euint64 fromBalance = _balances[from];
-            require(FHE.isInitialized(fromBalance), ERC7984ZeroBalance(from));
             (success, ptr) = FHESafeMath.tryDecrease(fromBalance, amount);
             FHE.allowThis(ptr);
             FHE.allow(ptr, from);
