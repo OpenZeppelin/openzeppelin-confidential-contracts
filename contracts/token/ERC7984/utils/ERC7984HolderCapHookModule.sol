@@ -14,7 +14,7 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
  *
  * WARNING: This module may not function correctly with non-standard tokens such as fee on transfer.
  */
-abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
+contract ERC7984HolderCapHookModule is ERC7984HookModule {
     /// @dev Emitted when the max holder count for a given token is set.
     event ERC7984HolderCapHookModuleMaxHolderCountSet(address indexed token, uint64 newMaxHolderCount);
 
@@ -56,7 +56,7 @@ abstract contract ERC7984HolderCapHookModule is ERC7984HookModule {
     }
 
     /// @dev Sets the max holder count for a given token to `maxHolderCount_` and emits an event.
-    function _setMaxHolderCount(address token, uint64 maxHolderCount_) internal {
+    function _setMaxHolderCount(address token, uint64 maxHolderCount_) internal virtual {
         require(maxHolderCount_ != 0, ERC7984HolderCapHookModuleInvalidMaxHolderCount(maxHolderCount_));
         _maxHolderCounts[token] = maxHolderCount_;
         emit ERC7984HolderCapHookModuleMaxHolderCountSet(token, maxHolderCount_);
