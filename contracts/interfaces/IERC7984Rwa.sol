@@ -7,6 +7,8 @@ import {IERC7984} from "./IERC7984.sol";
 
 /// @dev Interface for confidential RWA contracts.
 interface IERC7984Rwa is IERC7984 {
+    event TokensRecovered(address indexed lostAccount, address indexed newAccount, euint64 amount);
+
     /// @dev Returns true if the contract is paused, false otherwise.
     function paused() external view returns (bool);
 
@@ -81,4 +83,7 @@ interface IERC7984Rwa is IERC7984 {
         address to,
         euint64 encryptedAmount
     ) external returns (euint64);
+
+    /// @dev Recovers the address of a lost account to a new account.
+    function recoverAddress(address lostAccount, address newAccount) external returns (euint64);
 }
