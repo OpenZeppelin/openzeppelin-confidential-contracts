@@ -687,18 +687,11 @@ describe('ERC7984Rwa', function () {
         .withArgs(anyone.address, agentRole);
     });
 
-    it('should fail if address has an uninitialized balance', async function () {
-      const { token, anyone, others, agent1 } = await fixture();
-      await expect(token.connect(agent1).recoverAddress(anyone, others[0]))
-        .to.be.revertedWithCustomError(token, 'ERC7984ZeroBalance')
-        .withArgs(anyone);
-    });
-
     it('should fail if lost and new accounts are the same', async function () {
       const { token, recipient, agent1 } = await fixture();
       await expect(token.connect(agent1).recoverAddress(recipient, recipient)).to.be.revertedWithCustomError(
         token,
-        'SelfRecoveryNotAllowed',
+        'ERC7984RwaSelfRecoveryNotAllowed',
       );
     });
 

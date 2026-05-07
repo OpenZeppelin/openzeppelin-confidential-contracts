@@ -21,7 +21,7 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  */
 abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, AccessControl {
     /// @dev The operation failed because the lost account is the same as the new account.
-    error SelfRecoveryNotAllowed();
+    error ERC7984RwaSelfRecoveryNotAllowed();
 
     /**
      * @dev Accounts granted the agent role have the following permissioned abilities:
@@ -162,11 +162,9 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
 
     /// @inheritdoc IERC7984Rwa
     function recoverAddress(address lostAccount, address newAccount) public virtual onlyAgent returns (euint64) {
-        require(lostAccount != newAccount, SelfRecoveryNotAllowed());
+        require(lostAccount != newAccount, ERC7984RwaSelfRecoveryNotAllowed());
 
         euint64 balance = confidentialBalanceOf(lostAccount);
-        require(FHE.isInitialized(balance), ERC7984ZeroBalance(lostAccount));
-
         euint64 lostFrozenBalance = confidentialFrozen(lostAccount);
         euint64 newFrozenBalance = confidentialFrozen(newAccount);
 
