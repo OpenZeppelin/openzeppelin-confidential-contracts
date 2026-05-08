@@ -50,11 +50,6 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
         return _holderCounts[token];
     }
 
-    /// @inheritdoc ERC7984HookModule
-    function _isModuleInstalled(address token) internal view virtual override returns (bool) {
-        return _maxHolderCounts[token] != 0;
-    }
-
     /// @dev Sets the max holder count for a given token to `maxHolderCount_` and emits an event.
     function _setMaxHolderCount(address token, uint64 maxHolderCount_) internal virtual {
         require(maxHolderCount_ != 0, ERC7984HolderCapHookModuleInvalidMaxHolderCount(maxHolderCount_));

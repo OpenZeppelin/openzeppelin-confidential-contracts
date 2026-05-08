@@ -23,6 +23,8 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     /// @dev The module is not installed for the given token.
     error ERC7984HookModuleNotInstalled(address token);
 
+    mapping(address token => bool) private _installed;
+
     /// @inheritdoc IERC7984HookModule
     function preTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
         require(
@@ -66,13 +68,17 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
      * @dev Internal function which may be overridden by the derived contract to perform actions
      * when the module is installed.
      */
-    function _onInstall(address token, bytes calldata initData) internal virtual {}
+    function _onInstall(address /* token */, bytes calldata /* initData */) internal virtual {
+        _installed[msg.sender] = true;
+    }
 
     /**
      * @dev Internal function which may be overridden by the derived contract to perform actions
      * when the module is uninstalled.
      */
-    function _onUninstall(address token, bytes calldata deinitData) internal virtual {}
+    function _onUninstall(address /* token */, bytes calldata /* deinitData */) internal virtual {
+        delete _installed[msg.sender];
+    }
 
     /**
      * @dev Internal function which runs before a transfer. Transient access is already granted to the module
@@ -103,12 +109,16 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     }
 
     /**
-     * @dev Check if the module is installed for the given token. This function must be implemented by the derived contract.
+     * @dev Check if the module is installed for the given token. The default implementation reads from
+     * an internal storage flag maintained by {onInstall} and {onUninstall}. Derived contracts may override
+     * to extend the check, but should typically rely on the default behavior.
      *
      * NOTE: This function should use internal storage to check if the module is installed for the given token.
      * Do not use external storage like {ERC7984Hooked-isModuleInstalled}.
      */
-    function _isModuleInstalled(address token) internal view virtual returns (bool);
+    function _isModuleInstalled(address token) internal view virtual returns (bool) {
+        return _installed[token];
+    }
 
     /// @dev Allow modules to get access to token handles during transaction.
     function _getTokenHandleAllowance(address token, euint64 handle) internal virtual {

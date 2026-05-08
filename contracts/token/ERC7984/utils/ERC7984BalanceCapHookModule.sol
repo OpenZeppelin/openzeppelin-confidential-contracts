@@ -27,7 +27,6 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
     event ERC7984BalanceCapHookModuleMaxBalanceSet(address indexed token, euint64 newMaxBalance);
 
     mapping(address => euint64) private _maxBalances;
-    mapping(address => bool) private _installed;
 
     /**
      * @dev Sets the max balance for a given token `token` to the encrypted value `newMaxBalance`.
@@ -42,11 +41,6 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
     /// @dev Gets the encrypted max balance for a given token `token`. Returns the zero handle if unset.
     function maxBalance(address token) public view virtual returns (euint64) {
         return _maxBalances[token];
-    }
-
-    /// @inheritdoc ERC7984HookModule
-    function _isModuleInstalled(address token) internal view virtual override returns (bool) {
-        return _installed[token];
     }
 
     /// @dev Sets the encrypted max balance for a given token, grants the module persistent ACL, and emits an event.
@@ -78,19 +72,9 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
         _emitPreTransferResults(token, from, to, encryptedAmount, compliant);
     }
 
-    /**
-     * @dev See {ERC7984HookModule-_onInstall}. The `initData` is ignored; the cap must be set
-     * separately via {setMaxBalance} after installation. Until then the module is default-open.
-     */
-    function _onInstall(address token, bytes calldata initData) internal virtual override {
-        super._onInstall(token, initData);
-        _installed[token] = true;
-    }
-
     /// @inheritdoc ERC7984HookModule
     function _onUninstall(address token, bytes calldata deinitData) internal virtual override {
         super._onUninstall(token, deinitData);
-        delete _installed[token];
         _maxBalances[token] = euint64.wrap(0);
     }
 }
