@@ -18,6 +18,10 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
  * on this module before or after installation to set the cap.
  *
  * This module is compatible with {ERC7984Hooked}.
+ *
+ * WARNING: This module notifies senders of the result of the pre-transfer hook. This can be used to leak
+ * information about the balance of the recipient. This is a potential security risk and should be used
+ * with caution.
  */
 contract ERC7984BalanceCapHookModule is ERC7984HookModule {
     /// @dev Emitted when the max balance for a given token is set.
