@@ -68,16 +68,16 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
      * @dev Internal function which may be overridden by the derived contract to perform actions
      * when the module is installed.
      */
-    function _onInstall(address /* token */, bytes calldata /* initData */) internal virtual {
-        _installed[msg.sender] = true;
+    function _onInstall(address token, bytes calldata /* initData */) internal virtual {
+        _installed[token] = true;
     }
 
     /**
      * @dev Internal function which may be overridden by the derived contract to perform actions
      * when the module is uninstalled.
      */
-    function _onUninstall(address /* token */, bytes calldata /* deinitData */) internal virtual {
-        delete _installed[msg.sender];
+    function _onUninstall(address token, bytes calldata /* deinitData */) internal virtual {
+        delete _installed[token];
     }
 
     /**
