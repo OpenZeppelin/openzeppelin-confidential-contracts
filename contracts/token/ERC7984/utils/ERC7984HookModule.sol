@@ -123,6 +123,27 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     }
 
     /**
+     * @dev Optionally emit the result of the pre-transfer hook.
+     *
+     * Grants persistent ACL on `compliant` to both this contract and `from`.
+     */
+    function _emitPreTransferResults(
+        address token,
+        address from,
+        address to,
+        euint64 encryptedAmount,
+        ebool compliant
+    ) internal {
+        if (FHE.isInitialized(compliant)) {
+            if (from != address(0)) {
+                FHE.allowThis(compliant);
+                FHE.allow(compliant, from);
+            }
+        }
+        emit ERC7984HookModuleResult(token, from, to, encryptedAmount, compliant);
+    }
+
+    /**
      * @dev Get transient ACL allowance for the given handle from a contract that inherits {HandleAccessManager}.
      *
      * Additionally verifies that the token is authorized to access the handle.

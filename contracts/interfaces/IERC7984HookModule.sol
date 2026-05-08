@@ -7,9 +7,18 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 /// @dev Interface for an ERC-7984 hook module.
 interface IERC7984HookModule is IERC165 {
+    /// @dev Optionally emitted by a module to indicate the result of its validation (pre-transfer) hook.
+    event ERC7984HookModuleResult(
+        address indexed token,
+        address indexed from,
+        address indexed to,
+        euint64 encryptedAmount,
+        ebool result
+    );
+
     /**
-     * @dev Hook that runs before a transfer. Should be non-mutating. Transient access is already granted
-     * to the module for `encryptedAmount`.
+     * @dev Hook that runs before a transfer. Should not mutate token state. Module is already
+     * granted transient access to `encryptedAmount`.
      */
     function preTransfer(address from, address to, euint64 encryptedAmount) external returns (ebool);
 
@@ -22,7 +31,7 @@ interface IERC7984HookModule is IERC165 {
     /**
      * @dev Performs operations after uninstallation.
      *
-     * NOTE: The module uninstallation will succeed even if the function reverts.
+     * NOTE: The module uninstallation will succeed even if this function reverts.
      */
     function onUninstall(bytes calldata deinitData) external;
 }
