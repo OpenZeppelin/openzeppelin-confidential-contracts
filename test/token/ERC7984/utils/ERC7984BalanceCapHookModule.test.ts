@@ -78,7 +78,7 @@ describe('ERC7984BalanceCapHookModule', function () {
       const afterBalance = await this.token.confidentialBalanceOf(this.recipient);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, beforeBalance, this.token.target, this.recipient),
-      ).to.equal(1000n);
+      ).to.eventually.equal(1000n);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, afterBalance, this.token.target, this.recipient),
       ).to.eventually.equal(10_000n);
