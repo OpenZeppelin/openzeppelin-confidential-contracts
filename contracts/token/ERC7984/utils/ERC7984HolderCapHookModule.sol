@@ -76,19 +76,16 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
 
         euint64 encryptedZero = FHE.asEuint64(0);
 
-        euint64 adjustedHolderCount = holderCount(token);
-        if (from != address(0)) {
-            adjustedHolderCount = FHE.sub(adjustedHolderCount, FHE.asEuint64(FHE.eq(fromBalance, encryptedAmount)));
-        }
+        // note, if from is address(0):
+        // - fromBalance is an encrypted zero
+        // - from will be (erroneously) removed from the holder count only encryptedAmount is a zero
+        // that is fine because if encryptedAmount is a zero, then this value is dropped anyway.
+        euint64 adjustedHolderCount = FHE.add(
+            FHE.sub(holderCount(token), FHE.asEuint64(FHE.eq(fromBalance, encryptedAmount))),
+            FHE.asEuint64(FHE.and(FHE.eq(toBalance, encryptedZero), FHE.ne(encryptedAmount, encryptedZero)))
+        );
 
-        return
-            FHE.or(
-                FHE.eq(encryptedAmount, encryptedZero), // zero transfer
-                FHE.or(
-                    FHE.ne(toBalance, encryptedZero), // already a holder
-                    FHE.lt(adjustedHolderCount, maxHolderCount(token)) // room for another holder
-                )
-            );
+        return FHE.le(adjustedHolderCount, maxHolderCount(token));
     }
 
     /// @inheritdoc ERC7984HookModule

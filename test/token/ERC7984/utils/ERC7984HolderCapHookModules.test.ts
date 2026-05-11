@@ -190,6 +190,32 @@ describe('ERC7984HolderCapHookModules', function () {
         .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedUseOfEncryptedAmount')
         .withArgs(holderCountHandle, maliciousCaller);
     });
+
+    it('should be allowed to transfer to an existing holder at cap', async function () {
+      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 3);
+
+      await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
+      await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.others[0], 1000);
+
+      const beforeHolderCount = await this.complianceModule.holderCount(this.token);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, beforeHolderCount, this.complianceModule.target, this.admin),
+      ).to.eventually.equal(3);
+
+      const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
+      const transferEvent = await tx.wait().then((res: any) => {
+        return res.logs.filter((log: any) => log.address == this.token.target)[0];
+      });
+
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.recipient),
+      ).to.eventually.equal(1000);
+
+      const afterHolderCount = await this.complianceModule.holderCount(this.token);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, afterHolderCount, this.complianceModule.target, this.admin),
+      ).to.eventually.equal(3);
+    });
   });
 
   describe('_postTransfer', function () {
