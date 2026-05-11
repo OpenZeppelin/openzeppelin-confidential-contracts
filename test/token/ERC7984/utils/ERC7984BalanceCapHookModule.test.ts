@@ -11,7 +11,20 @@ describe('ERC7984BalanceCapHookModule', function () {
 
     await token['$_mint(address,uint64)'](holder, 20000n.toString());
 
-    await token.connect(admin).installModule(complianceModule, '0x');
+    const encryptedInput = await fhevm
+      .createEncryptedInput(complianceModule.target, token.target)
+      .add64(10_000n)
+      .encrypt();
+
+    await token
+      .connect(admin)
+      .installModule(
+        complianceModule,
+        ethers.AbiCoder.defaultAbiCoder().encode(
+          ['bytes32', 'bytes'],
+          [encryptedInput.handles[0], encryptedInput.inputProof],
+        ),
+      );
     await token.connect(admin).addAgent(agent1);
 
     const encryptCap = async (signer: HardhatEthersSigner, value: number | bigint) =>
@@ -19,10 +32,6 @@ describe('ERC7984BalanceCapHookModule', function () {
         .createEncryptedInput(await complianceModule.getAddress(), signer.address)
         .add64(value)
         .encrypt();
-
-    // Set the initial cap to 10_000 (matches the precondition of the original suite).
-    const initialCap = await encryptCap(agent1, 10_000);
-    await complianceModule.connect(agent1).setMaxBalance(token, initialCap.handles[0], initialCap.inputProof);
 
     Object.assign(this, {
       token,
@@ -37,12 +46,28 @@ describe('ERC7984BalanceCapHookModule', function () {
   });
 
   describe('_onInstall', function () {
-    it('should mark the module as installed without an initial cap (default open)', async function () {
-      // Reset to a freshly-installed module that has no cap yet.
+    it('should mark the module as installed and set the initial cap from initData', async function () {
       await this.token.connect(this.admin).uninstallModule(this.complianceModule, '0x');
-      await this.token.connect(this.admin).installModule(this.complianceModule, '0x');
-      await expect(this.complianceModule.maxBalance(this.token)).to.eventually.eq(ethers.ZeroHash);
+
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.complianceModule.target, this.token.target)
+        .add64(10_000n)
+        .encrypt();
+
+      await this.token
+        .connect(this.admin)
+        .installModule(
+          this.complianceModule,
+          ethers.AbiCoder.defaultAbiCoder().encode(
+            ['bytes32', 'bytes'],
+            [encryptedInput.handles[0], encryptedInput.inputProof],
+          ),
+        );
+
       await expect(this.complianceModule.$_isModuleInstalled(this.token)).to.eventually.equal(true);
+      await expect(this.complianceModule.maxBalance(this.token)).to.eventually.eq(
+        ethers.hexlify(encryptedInput.handles[0]),
+      );
     });
   });
 

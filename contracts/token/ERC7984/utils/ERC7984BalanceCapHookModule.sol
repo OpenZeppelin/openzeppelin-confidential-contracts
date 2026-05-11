@@ -10,12 +10,8 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 /**
  * @dev An ERC-7984 hook module that limits the balance of each investor.
  *
- * The cap is stored as an encrypted `euint64` value. An unset cap behaves as default-open (no enforcement).
- * Once {setMaxBalance} is called, the pre-transfer hook compares the recipient's prospective balance to the
+ * The cap is stored as an encrypted `euint64` value. The pre-transfer hook compares the recipient's prospective balance to the
  * encrypted cap and emits an encrypted compliance result via {ERC7984HookModule-_emitPreTransferResults}.
- *
- * NOTE: The cap cannot be supplied during installation. Agents must directly call {setMaxBalance}
- * on this module before or after installation to set the cap.
  *
  * This module is compatible with {ERC7984Hooked}.
  *
@@ -71,6 +67,16 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
         }
 
         _emitPreTransferResults(token, from, to, encryptedAmount, compliant);
+    }
+
+    /**
+     * @dev See {ERC7984HookModule-_onInstall}. The `initData` must contain the initial max balance for the token
+     * along with the input proof for the max balance. These are encoded using standard ABI encoding.
+     */
+    function _onInstall(address token, bytes calldata initData) internal virtual override {
+        super._onInstall(token, initData);
+        (externalEuint64 maxBalance_, bytes memory inputProof) = abi.decode(initData, (externalEuint64, bytes));
+        _setMaxBalance(token, FHE.fromExternal(maxBalance_, inputProof));
     }
 
     /// @inheritdoc ERC7984HookModule

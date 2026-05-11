@@ -8,13 +8,6 @@ import {ERC7984Hooked} from "./../../../../token/ERC7984/extensions/ERC7984Hooke
 import {ERC7984RwaMock} from "./ERC7984RwaMock.sol";
 
 abstract contract ERC7984RwaHookedMock is ERC7984RwaMock, ERC7984Hooked {
-    constructor(
-        string memory name,
-        string memory symbol,
-        string memory tokenUri,
-        address admin
-    ) ERC7984RwaMock(name, symbol, tokenUri, admin) {}
-
     function supportsInterface(
         bytes4 interfaceId
     ) public view virtual override(ERC7984RwaMock, ERC7984) returns (bool) {
