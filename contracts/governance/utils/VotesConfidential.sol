@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (governance/utils/VotesConfidential.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (governance/utils/VotesConfidential.sol)
 
 pragma solidity ^0.8.26;
 

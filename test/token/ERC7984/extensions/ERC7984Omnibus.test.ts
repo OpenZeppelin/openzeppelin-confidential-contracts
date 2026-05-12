@@ -1,5 +1,5 @@
 import { IACL__factory } from '../../../../types';
-import { $ERC7984OmnibusMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984OmnibusMock.sol/$ERC7984OmnibusMock';
+import { $ERC7984OmnibusMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984/extensions/ERC7984OmnibusMock.sol/$ERC7984OmnibusMock';
 import { getAclAddress } from '../../../helpers/accounts';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';

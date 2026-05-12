@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.3.1) (token/ERC7984/extensions/ERC7984ERC20Wrapper.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984ERC20Wrapper.sol)
 
 pragma solidity ^0.8.27;
 
@@ -180,8 +180,8 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /**
-     * @dev Get the address that has a pending unwrap request for the given `unwrapAmount`. Returns `address(0)` if no pending
-     * unwrap request for the amount `unwrapAmount` exists.
+     * @dev Gets the address that will receive the ERC-20 tokens associated with a pending unwrap request identified by
+     * `unwrapRequestId`. Returns `address(0)` if there is no pending unwrap request with id `unwrapRequestId`.
      */
     function unwrapRequester(bytes32 unwrapRequestId) public view virtual returns (address) {
         return _unwrapRequests[unwrapRequestId];
