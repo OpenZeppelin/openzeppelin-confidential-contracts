@@ -166,7 +166,6 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
 
         euint64 balance = confidentialBalanceOf(lostAccount);
         euint64 lostFrozenBalance = confidentialFrozen(lostAccount);
-        euint64 newFrozenBalance = confidentialFrozen(newAccount);
 
         if (FHE.isInitialized(lostFrozenBalance)) {
             _setConfidentialFrozen(lostAccount, euint64.wrap(0));
@@ -178,7 +177,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         if (FHE.isInitialized(lostFrozenBalance)) {
             _setConfidentialFrozen(
                 newAccount,
-                FHESafeMath.saturatingAdd(newFrozenBalance, FHE.min(tokensRecovered, lostFrozenBalance))
+                FHESafeMath.saturatingAdd(confidentialFrozen(newAccount), FHE.min(tokensRecovered, lostFrozenBalance))
             );
             _setConfidentialFrozen(lostAccount, FHESafeMath.saturatingSub(lostFrozenBalance, tokensRecovered));
         }
