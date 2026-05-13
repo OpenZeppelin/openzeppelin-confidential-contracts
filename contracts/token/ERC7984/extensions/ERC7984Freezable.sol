@@ -40,11 +40,7 @@ abstract contract ERC7984Freezable is ERC7984 {
 
     /// @dev Internal function to calculate the available balance of an account. Does not give any allowances.
     function _confidentialAvailable(address account) internal virtual returns (euint64) {
-        (ebool success, euint64 unfrozen) = FHESafeMath.tryDecrease(
-            confidentialBalanceOf(account),
-            confidentialFrozen(account)
-        );
-        return FHE.select(success, unfrozen, FHE.asEuint64(0));
+        return FHESafeMath.saturatingSub(confidentialBalanceOf(account), confidentialFrozen(account));
     }
 
     /// @dev Internal function to freeze a confidential amount of tokens for an account.
