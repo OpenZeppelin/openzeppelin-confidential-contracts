@@ -13,7 +13,8 @@ interface IERC7984HookModule is IERC165 {
         address indexed from,
         address indexed to,
         euint64 encryptedAmount,
-        ebool result
+        ebool result,
+        bytes32 context
     );
 
     /**

@@ -66,7 +66,7 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
             compliant = FHE.le(futureBalance, maxBalance(token));
         }
 
-        _emitPreTransferResults(token, from, to, encryptedAmount, compliant);
+        _emitPreTransferResults(token, from, to, encryptedAmount, compliant, bytes32(0));
     }
 
     /**

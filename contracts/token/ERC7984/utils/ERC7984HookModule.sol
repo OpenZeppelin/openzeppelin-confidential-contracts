@@ -87,11 +87,13 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
      * NOTE: ACL allowance on `encryptedAmount` is already checked for `msg.sender` in {preTransfer}.
      */
     function _preTransfer(
-        address token,
-        address from,
-        address to,
-        euint64 encryptedAmount
-    ) internal virtual returns (ebool);
+        address /* token */,
+        address /* from */,
+        address /* to */,
+        euint64 /* encryptedAmount */
+    ) internal virtual returns (ebool) {
+        return FHE.asEbool(false);
+    }
 
     /**
      * @dev Internal function which performs operations after transfers. Transient access is already granted to the module
@@ -142,7 +144,8 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
         address from,
         address to,
         euint64 encryptedAmount,
-        ebool compliant
+        ebool compliant,
+        bytes32 context
     ) internal {
         if (FHE.isInitialized(compliant)) {
             if (from != address(0)) {
@@ -150,7 +153,7 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
                 FHE.allow(compliant, from);
             }
         }
-        emit ERC7984HookModuleResult(token, from, to, encryptedAmount, compliant);
+        emit ERC7984HookModuleResult(token, from, to, encryptedAmount, compliant, context);
     }
 
     /**
