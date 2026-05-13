@@ -49,6 +49,7 @@ export const SIGNATURES = {
     'setConfidentialFrozen(address,bytes32)',
     'unblockUser(address)',
     'unpause()',
+    'recoverAddress(address,address)',
   ],
   ERC7984HookModule: [
     'preTransfer(address,address,bytes32)',
