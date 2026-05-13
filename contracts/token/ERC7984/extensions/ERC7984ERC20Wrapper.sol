@@ -201,11 +201,16 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /// @inheritdoc ERC7984
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
+    function _update(
+        address from,
+        address to,
+        euint64 amount,
+        bool isForced
+    ) internal virtual override returns (euint64) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
         }
-        return super._update(from, to, amount);
+        return super._update(from, to, amount, isForced);
     }
 
     /// @dev Internal logic for handling the creation of unwrap requests. Returns the unwrap request id.

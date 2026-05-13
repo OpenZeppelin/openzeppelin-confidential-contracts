@@ -111,13 +111,13 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64) {
-        return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), false);
     }
 
     /// @inheritdoc IERC7984
     function confidentialTransfer(address to, euint64 amount) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        return _transfer(msg.sender, to, amount);
+        return _transfer(msg.sender, to, amount, false);
     }
 
     /// @inheritdoc IERC7984
@@ -128,7 +128,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof
     ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof), false);
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -137,7 +137,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     function confidentialTransferFrom(address from, address to, euint64 amount) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(from, to, amount);
+        euint64 transferred = _transfer(from, to, amount, false);
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -229,18 +229,18 @@ abstract contract ERC7984 is IERC7984, ERC165 {
 
     function _mint(address to, euint64 amount) internal returns (euint64 transferred) {
         require(to != address(0), ERC7984InvalidReceiver(address(0)));
-        return _update(address(0), to, amount);
+        return _update(address(0), to, amount, false);
     }
 
     function _burn(address from, euint64 amount) internal returns (euint64 transferred) {
         require(from != address(0), ERC7984InvalidSender(address(0)));
-        return _update(from, address(0), amount);
+        return _update(from, address(0), amount, false);
     }
 
-    function _transfer(address from, address to, euint64 amount) internal returns (euint64 transferred) {
+    function _transfer(address from, address to, euint64 amount, bool isForced) internal returns (euint64 transferred) {
         require(from != address(0), ERC7984InvalidSender(address(0)));
         require(to != address(0), ERC7984InvalidReceiver(address(0)));
-        return _update(from, to, amount);
+        return _update(from, to, amount, isForced);
     }
 
     /**
@@ -259,8 +259,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * the hook can still return false, in which case the refund transfers zero tokens. The sender's tokens
      * end up with the recipient rather than being refunded.
      *
-     * WARNING: Refunds are subject to the same validation flow as a normal transfer--they may fail for a variety of
-     * reasons (such as failed hook validation in {ERC7984Hooked}). In these cases, the tokens do not return to the sender.
+     * Refunds are treated as forced updates so extensions can identify and skip additional transfer restrictions.
+     * Extensions that ignore the forced update flag may still cause a refund to fail.
      */
     function _transferAndCall(
         address from,
@@ -269,22 +269,23 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata data
     ) internal returns (euint64 transferred) {
         // Try to transfer amount + replace input with actually transferred amount.
-        euint64 sent = _transfer(from, to, amount);
+        euint64 sent = _transfer(from, to, amount, false);
 
         // Perform callback
         ebool success = ERC7984Utils.checkOnTransferReceived(msg.sender, from, to, sent, data);
 
         // Try to refund if callback fails
-        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent));
+        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent), true);
         transferred = FHE.sub(sent, refund);
         FHE.allowTransient(transferred, msg.sender);
     }
 
     /**
      * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
+     * If `isForced` is true, extensions should treat the update as a permissioned flow such as a refund or force transfer.
      * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
      */
-    function _update(address from, address to, euint64 amount) internal virtual returns (euint64 transferred) {
+    function _update(address from, address to, euint64 amount, bool /* isForced */) internal virtual returns (euint64 transferred) {
         ebool success;
         euint64 ptr;
 

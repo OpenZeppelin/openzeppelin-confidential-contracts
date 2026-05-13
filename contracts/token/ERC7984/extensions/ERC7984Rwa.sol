@@ -28,7 +28,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
      *
      * * Mint/Burn to/from a given address (does not require permission)
      * * Force transfer from a given address (does not require permission)
-     * ** Bypasses pause and restriction checks (not frozen)
+     * ** Bypasses pause, restriction, and frozen-balance checks
      * * Pause/Unpause the contract
      * * Block/Unblock a given account
      * * Set frozen amount of tokens for a given account.
@@ -171,7 +171,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             _setConfidentialFrozen(lostAccount, euint64.wrap(0));
         }
 
-        euint64 tokensRecovered = _transfer(lostAccount, newAccount, balance);
+        euint64 tokensRecovered = _transfer(lostAccount, newAccount, balance, true);
         FHE.allow(tokensRecovered, msg.sender);
 
         if (FHE.isInitialized(lostFrozenBalance)) {
@@ -199,15 +199,15 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof), true);
         FHE.allow(transferred, msg.sender);
         return transferred;
     }
 
     /**
      * @dev Force transfer callable by the role {AGENT_ROLE} which transfers tokens from `from` to `to` and
-     * bypasses the {ERC7984Restricted} (only on from) and https://docs.openzeppelin.com/contracts/api/utils#pausable[`++Pausable++`]
-     * checks. Frozen tokens are not transferred and must be unfrozen first.
+     * bypasses extension-level transfer restrictions such as {ERC7984Restricted}, {ERC7984Freezable},
+     * and https://docs.openzeppelin.com/contracts/api/utils#pausable[`++Pausable++`] checks.
      */
     function forceConfidentialTransferFrom(
         address from,
@@ -218,7 +218,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        euint64 transferred = _transfer(from, to, encryptedAmount);
+        euint64 transferred = _transfer(from, to, encryptedAmount, true);
         FHE.allow(transferred, msg.sender);
         return transferred;
     }
@@ -247,37 +247,17 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return super.canTransact(account);
     }
 
-    /// @dev Internal function which updates confidential balances while performing frozen and restriction compliance checks.
+    /// @dev Internal function which updates confidential balances while performing compliance checks unless forced.
     function _update(
         address from,
         address to,
-        euint64 encryptedAmount
-    ) internal virtual override(ERC7984Freezable, ERC7984Restricted) whenNotPaused returns (euint64) {
+        euint64 encryptedAmount,
+        bool isForced
+    ) internal virtual override(ERC7984Freezable, ERC7984Restricted) returns (euint64) {
+        if (!isForced) {
+            _requireNotPaused();
+        }
         // frozen and restriction checks performed through inheritance
-        return super._update(from, to, encryptedAmount);
-    }
-
-    /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a {forceConfidentialTransferFrom}.
-    function _checkSenderRestriction(address account) internal view override {
-        if (_isForceTransfer(msg.sig)) {
-            return;
-        }
-        super._checkSenderRestriction(account);
-    }
-
-    /// @dev Bypasses {Pausable} check when performing a {forceConfidentialTransferFrom}.
-    function _requireNotPaused() internal view override {
-        if (_isForceTransfer(msg.sig)) {
-            return;
-        }
-        super._requireNotPaused();
-    }
-
-    /// @dev Internal function which checks if the current function call should be treated as a force transfer.
-    function _isForceTransfer(bytes4 selector) internal pure returns (bool) {
-        return
-            selector == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
-            selector == 0x44fd6e40 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
-            selector == this.recoverAddress.selector;
+        return super._update(from, to, encryptedAmount, isForced);
     }
 }
