@@ -55,7 +55,8 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal override returns (ebool compliant) {
+    ) internal override returns (ebool) {
+        ebool compliant;
         if (to == address(0) || from == to || !FHE.isInitialized(maxBalance(token))) {
             compliant = FHE.asEbool(true);
         } else {
@@ -67,6 +68,8 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
         }
 
         _emitPreTransferResults(token, from, to, encryptedAmount, compliant, bytes32(0));
+
+        return FHE.and(compliant, super._preTransfer(token, from, to, encryptedAmount));
     }
 
     /**

@@ -85,7 +85,9 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
             FHE.asEuint64(FHE.and(FHE.eq(toBalance, encryptedZero), FHE.ne(encryptedAmount, encryptedZero)))
         );
 
-        return FHE.le(adjustedHolderCount, maxHolderCount(token));
+        ebool compliant = FHE.le(adjustedHolderCount, maxHolderCount(token));
+
+        return FHE.and(compliant, super._preTransfer(token, from, to, encryptedAmount));
     }
 
     /// @inheritdoc ERC7984HookModule

@@ -92,7 +92,7 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
         address /* to */,
         euint64 /* encryptedAmount */
     ) internal virtual returns (ebool) {
-        return FHE.asEbool(false);
+        return FHE.asEbool(true);
     }
 
     /**
