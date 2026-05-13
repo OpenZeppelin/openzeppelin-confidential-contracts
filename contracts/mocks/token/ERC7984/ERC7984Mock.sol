@@ -61,6 +61,10 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         FHE.allow(confidentialTotalSupply(), _OWNER);
     }
 
+    function $_update(address from, address to, uint64 amount, bool isForced) public returns (euint64 transferred) {
+        return _update(from, to, FHE.asEuint64(amount), isForced);
+    }
+
     function $_mint(
         address to,
         externalEuint64 encryptedAmount,

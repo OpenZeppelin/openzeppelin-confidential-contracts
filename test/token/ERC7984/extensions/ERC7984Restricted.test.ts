@@ -107,26 +107,30 @@ describe('ERC7984Restricted', function () {
         await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, initialSupply);
       });
 
-      it('refund bypasses restrictions applied during callback', async function () {
-        const receiver = await ethers.deployContract('ERC7984ReceiverMutatorMock');
+      describe('forced update', function () {
+        it('bypasses sender restriction', async function () {
+          await this.token.$_blockUser(this.holder); // Sets to BLOCKED
+          await this.token['$_update(address,address,uint64,bool)'](this.holder, this.recipient, initialSupply, true);
 
-        await this.token
-          .connect(this.holder)
-          ['confidentialTransferAndCall(address,uint64,bytes)'](
-            receiver,
-            400,
-            ethers.AbiCoder.defaultAbiCoder().encode(['uint8', 'address'], [0, ethers.ZeroAddress]),
-          );
+          await expect(
+            fhevm.userDecryptEuint(
+              FhevmType.euint64,
+              await this.token.confidentialBalanceOf(this.holder),
+              this.token.target,
+              this.holder,
+            ),
+          ).to.eventually.equal(0n);
+        });
 
-        await expect(this.token.canTransact(receiver)).to.eventually.equal(false);
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await this.token.confidentialBalanceOf(this.holder),
-            this.token.target,
-            this.holder,
-          ),
-        ).to.eventually.equal(initialSupply);
+        it('bypasses recipient restriction', async function () {
+          await this.token.$_blockUser(this.recipient); // Sets to BLOCKED
+          await this.token['$_update(address,address,uint64,bool)'](this.holder, this.recipient, initialSupply, true);
+
+          const balance = await this.token.confidentialBalanceOf(this.holder);
+          await expect(
+            fhevm.userDecryptEuint(FhevmType.euint64, balance, this.token.target, this.holder),
+          ).to.eventually.equal(0n);
+        });
       });
     });
 
