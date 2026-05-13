@@ -16,6 +16,8 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 - {ERC7984Hooked}: An extension of {ERC7984} that calls pre and post transfer hooks on installed modules.
 - {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}.
 - {ERC7984HookModule}: A an abstract, base implementation for hook modules compatible with {ERC7984Hooked}.
+- {ERC7984BalanceCapHookModule}: An example hook module for {ERC7984Hooked} that enforces a per-account encrypted balance cap.
+- {ERC7984HolderCapHookModule}: An example hook module for {ERC7984Hooked} that enforces a maximum number of holders. Must be installed before any tokens are minted.
 
 == Core
 {{ERC7984}}
@@ -33,3 +35,5 @@ This set of interfaces, contracts, and utilities are all related to `ERC7984`, a
 == Utilities
 {{ERC7984Utils}}
 {{ERC7984HookModule}}
+{{ERC7984BalanceCapHookModule}}
+{{ERC7984HolderCapHookModule}}
