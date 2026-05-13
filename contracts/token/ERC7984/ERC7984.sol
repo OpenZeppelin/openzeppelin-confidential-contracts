@@ -285,7 +285,12 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * If `isForced` is true, extensions should treat the update as a permissioned flow such as a refund or force transfer.
      * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
      */
-    function _update(address from, address to, euint64 amount, bool /* isForced */) internal virtual returns (euint64 transferred) {
+    function _update(
+        address from,
+        address to,
+        euint64 amount,
+        bool /* isForced */
+    ) internal virtual returns (euint64 transferred) {
         ebool success;
         euint64 ptr;
 

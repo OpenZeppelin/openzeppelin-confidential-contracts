@@ -175,4 +175,27 @@ describe('ERC7984Freezable', function () {
       ),
     ).to.eventually.equal(1000);
   });
+
+  it('refund bypasses restrictions applied during callback', async function () {
+    const { token, holder } = await deployFixture();
+    const receiver = await ethers.deployContract('ERC7984ReceiverMutatorMock');
+    await token.connect(holder)['$_mint(address,uint64)'](holder.address, 1000);
+
+    await token
+      .connect(holder)
+      ['confidentialTransferAndCall(address,uint64,bytes)'](
+        receiver,
+        400,
+        ethers.AbiCoder.defaultAbiCoder().encode(['uint8', 'address'], [1, ethers.ZeroAddress]),
+      );
+
+    await expect(
+      fhevm.userDecryptEuint(
+        FhevmType.euint64,
+        await token.confidentialBalanceOf(holder.address),
+        await token.getAddress(),
+        holder,
+      ),
+    ).to.eventually.equal(1000);
+  });
 });
