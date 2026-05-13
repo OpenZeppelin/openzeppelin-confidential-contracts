@@ -38,7 +38,7 @@ abstract contract ERC7984IdentityCheck is ERC7984 {
     }
 
     /// @dev Returns the address of the identity registry.
-    function identityRegistry() public virtual view returns (address) {
+    function identityRegistry() public view virtual returns (address) {
         return _identityRegistry;
     }
 }
