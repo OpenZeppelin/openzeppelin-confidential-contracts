@@ -13,7 +13,8 @@ import {ERC7984} from "../ERC7984.sol";
  * for more information.
  */
 abstract contract ERC7984IdentityCheck is ERC7984 {
-    address private immutable _identityRegistry;
+    /// @dev Emitted when the identity registry is updated.
+    event IdentityRegistryUpdated(address indexed oldRegistry, address indexed newRegistry);
 
     /// @dev The provided registry address is invalid.
     error ERC7984InvalidIdentityRegistry(address registry);
@@ -21,15 +22,13 @@ abstract contract ERC7984IdentityCheck is ERC7984 {
     /// @dev The `account` is not verified in the identity registry.
     error ERC7984InvalidIdentity(address account);
 
+    address private _identityRegistry;
+
     constructor(address identityRegistry_) {
-        require(
-            identityRegistry_ != address(0) && identityRegistry_.code.length != 0,
-            ERC7984InvalidIdentityRegistry(identityRegistry_)
-        );
-        _identityRegistry = identityRegistry_;
+        _setIdentityRegistry(identityRegistry_);
     }
 
-    /// @dev See {ERC7984-_update}. Performs identity check before updating the balance.
+    /// @dev See {ERC7984-_update}. Performs identity check on the recipient before updating the balance.
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
         if (to != address(0) && !IIdentityRegistry(_identityRegistry).isVerified(to)) {
             revert ERC7984InvalidIdentity(to);
@@ -40,6 +39,16 @@ abstract contract ERC7984IdentityCheck is ERC7984 {
     /// @dev Returns the address of the identity registry.
     function identityRegistry() public view virtual returns (address) {
         return _identityRegistry;
+    }
+
+    /// @dev Sets the identity registry. Inheriting contracts are responsible for access control.
+    function _setIdentityRegistry(address identityRegistry_) internal virtual {
+        require(
+            identityRegistry_ != address(0) && identityRegistry_.code.length != 0,
+            ERC7984InvalidIdentityRegistry(identityRegistry_)
+        );
+        emit IdentityRegistryUpdated(_identityRegistry, identityRegistry_);
+        _identityRegistry = identityRegistry_;
     }
 }
 

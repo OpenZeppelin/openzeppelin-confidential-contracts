@@ -25,21 +25,49 @@ describe('ERC7984IdentityCheck', function () {
   });
 
   describe('constructor', function () {
-    it('reverts if the registry address is zero', async function () {
-      await expect(ethers.deployContract('$ERC7984IdentityCheckMock', [ethers.ZeroAddress, name, symbol, uri]))
-        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidIdentityRegistry')
-        .withArgs(ethers.ZeroAddress);
+    it('sets the identity registry', async function () {
+      await expect(this.token.identityRegistry()).to.eventually.equal(this.identityRegistry.target);
     });
 
-    it('reverts if the registry address is not a contract', async function () {
-      await expect(ethers.deployContract('$ERC7984IdentityCheckMock', [this.holder.address, name, symbol, uri]))
-        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidIdentityRegistry')
-        .withArgs(this.holder.address);
+    it('emits IdentityRegistryUpdated with zero previous registry', async function () {
+      const token = await ethers.deployContract('$ERC7984IdentityCheckMock', [
+        this.identityRegistry,
+        name,
+        symbol,
+        uri,
+      ]);
+      await expect(token.deploymentTransaction())
+        .to.emit(token, 'IdentityRegistryUpdated')
+        .withArgs(ethers.ZeroAddress, this.identityRegistry);
     });
   });
 
   it('returns the identity registry address', async function () {
     await expect(this.token.identityRegistry()).to.eventually.equal(this.identityRegistry.target);
+  });
+
+  describe('_setIdentityRegistry', function () {
+    it('updates the registry and emits an event', async function () {
+      const newRegistry = await ethers.deployContract('IdentityRegistryMock');
+
+      await expect(this.token.$_setIdentityRegistry(newRegistry.target))
+        .to.emit(this.token, 'IdentityRegistryUpdated')
+        .withArgs(this.identityRegistry.target, newRegistry.target);
+
+      await expect(this.token.identityRegistry()).to.eventually.equal(newRegistry.target);
+    });
+
+    it('reverts if the new registry address is zero', async function () {
+      await expect(this.token.$_setIdentityRegistry(ethers.ZeroAddress))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidIdentityRegistry')
+        .withArgs(ethers.ZeroAddress);
+    });
+
+    it('reverts if the new registry address is not a contract', async function () {
+      await expect(this.token.$_setIdentityRegistry(this.anyone.address))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidIdentityRegistry')
+        .withArgs(this.anyone.address);
+    });
   });
 
   describe('mint', function () {
