@@ -5,6 +5,7 @@ pragma solidity ^0.8.27;
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC7984} from "./../interfaces/IERC7984.sol";
+import {HandleHelper} from "./../utils/HandleHelper.sol";
 
 /**
  * @dev A factory which enables batch funding of vesting wallets.
@@ -13,6 +14,8 @@ import {IERC7984} from "./../interfaces/IERC7984.sol";
  * functions remain unimplemented to allow for custom implementations of the vesting wallet to be used.
  */
 abstract contract VestingWalletConfidentialFactory {
+    using HandleHelper for euint64;
+
     struct VestingPlan {
         externalEuint64 encryptedAmount;
         bytes initArgs;
@@ -59,7 +62,8 @@ abstract contract VestingWalletConfidentialFactory {
             euint64 transferredAmount = IERC7984(token).confidentialTransferFrom(
                 msg.sender,
                 vestingWalletAddress,
-                encryptedAmount
+                encryptedAmount.toExternal(),
+                hex""
             );
 
             emit VestingWalletConfidentialFunded(vestingWalletAddress, token, transferredAmount, vestingPlan.initArgs);

@@ -122,7 +122,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        euint64 mintedAmount = _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 mintedAmount = _mint(to, FHE.fromExternal(encryptedAmount, inputProof), hex"");
         FHE.allow(mintedAmount, msg.sender);
         return mintedAmount;
     }
@@ -133,7 +133,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        euint64 mintedAmount = _mint(to, encryptedAmount);
+        euint64 mintedAmount = _mint(to, encryptedAmount, hex"");
         FHE.allow(mintedAmount, msg.sender);
         return mintedAmount;
     }
@@ -144,7 +144,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        euint64 burntAmount = _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 burntAmount = _burn(account, FHE.fromExternal(encryptedAmount, inputProof), hex"");
         FHE.allow(burntAmount, msg.sender);
         return burntAmount;
     }
@@ -155,7 +155,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        euint64 burntAmount = _burn(account, encryptedAmount);
+        euint64 burntAmount = _burn(account, encryptedAmount, hex"");
         FHE.allow(burntAmount, msg.sender);
         return burntAmount;
     }
@@ -171,7 +171,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             _setConfidentialFrozen(lostAccount, euint64.wrap(0));
         }
 
-        euint64 tokensRecovered = _transfer(lostAccount, newAccount, balance);
+        euint64 tokensRecovered = _transfer(lostAccount, newAccount, balance, hex"");
         FHE.allow(tokensRecovered, msg.sender);
 
         if (FHE.isInitialized(lostFrozenBalance)) {
@@ -199,7 +199,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof), hex"");
         FHE.allow(transferred, msg.sender);
         return transferred;
     }
@@ -218,7 +218,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        euint64 transferred = _transfer(from, to, encryptedAmount);
+        euint64 transferred = _transfer(from, to, encryptedAmount, hex"");
         FHE.allow(transferred, msg.sender);
         return transferred;
     }
@@ -251,10 +251,11 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
     function _update(
         address from,
         address to,
-        euint64 encryptedAmount
+        euint64 encryptedAmount,
+        bytes32 memo
     ) internal virtual override(ERC7984Freezable, ERC7984Restricted) whenNotPaused returns (euint64) {
         // frozen and restriction checks performed through inheritance
-        return super._update(from, to, encryptedAmount);
+        return super._update(from, to, encryptedAmount, memo);
     }
 
     /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a {forceConfidentialTransferFrom}.

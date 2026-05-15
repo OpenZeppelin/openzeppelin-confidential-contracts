@@ -19,8 +19,13 @@ abstract contract ERC7984Votes is ERC7984, VotesConfidential {
         return super.confidentialTotalSupply();
     }
 
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
-        transferred = super._update(from, to, amount);
+    function _update(
+        address from,
+        address to,
+        euint64 amount,
+        bytes32 memo
+    ) internal virtual override returns (euint64 transferred) {
+        transferred = super._update(from, to, amount, memo);
 
         _transferVotingUnits(from, to, transferred);
     }

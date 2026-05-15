@@ -8,14 +8,14 @@ import {ERC7984Restricted} from "../../../../token/ERC7984/extensions/ERC7984Res
 
 abstract contract ERC7984RestrictedMock is ERC7984Restricted, ZamaEthereumConfig {
     function _mint(address to, uint64 amount) internal {
-        _mint(to, FHE.asEuint64(amount));
+        _mint(to, FHE.asEuint64(amount), hex"");
     }
 
     function _burn(address from, uint64 amount) internal {
-        _burn(from, FHE.asEuint64(amount));
+        _burn(from, FHE.asEuint64(amount), hex"");
     }
 
     function transfer(address to, uint64 amount) public {
-        _transfer(msg.sender, to, FHE.asEuint64(amount));
+        _transfer(msg.sender, to, FHE.asEuint64(amount), hex"");
     }
 }

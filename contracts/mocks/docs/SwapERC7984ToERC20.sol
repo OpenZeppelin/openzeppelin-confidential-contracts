@@ -5,8 +5,11 @@ import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC7984} from "../../interfaces/IERC7984.sol";
+import {HandleHelper} from "./../../utils/HandleHelper.sol";
 
 contract SwapERC7984ToERC20 {
+    using HandleHelper for euint64;
+
     error SwapERC7984ToERC20InvalidFinalization(euint64 amount);
 
     mapping(euint64 amount => address) private _receivers;
@@ -21,7 +24,12 @@ contract SwapERC7984ToERC20 {
     function swapConfidentialToERC20(externalEuint64 encryptedInput, bytes memory inputProof) public {
         euint64 amount = FHE.fromExternal(encryptedInput, inputProof);
         FHE.allowTransient(amount, address(_fromToken));
-        euint64 amountTransferred = _fromToken.confidentialTransferFrom(msg.sender, address(this), amount);
+        euint64 amountTransferred = _fromToken.confidentialTransferFrom(
+            msg.sender,
+            address(this),
+            amount.toExternal(),
+            hex""
+        );
 
         FHE.makePubliclyDecryptable(amountTransferred);
         _receivers[amountTransferred] = msg.sender;

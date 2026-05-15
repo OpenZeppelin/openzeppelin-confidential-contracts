@@ -60,11 +60,16 @@ abstract contract ERC7984Freezable is ERC7984 {
      * {_confidentialAvailable}. The internal function is used for actual gating (not the public function)
      * to avoid unnecessarily granting ACL allowances.
      */
-    function _update(address from, address to, euint64 encryptedAmount) internal virtual override returns (euint64) {
+    function _update(
+        address from,
+        address to,
+        euint64 encryptedAmount,
+        bytes32 memo
+    ) internal virtual override returns (euint64) {
         if (from != address(0)) {
             euint64 unfrozen = _confidentialAvailable(from);
             encryptedAmount = FHE.select(FHE.le(encryptedAmount, unfrozen), encryptedAmount, FHE.asEuint64(0));
         }
-        return super._update(from, to, encryptedAmount);
+        return super._update(from, to, encryptedAmount, memo);
     }
 }

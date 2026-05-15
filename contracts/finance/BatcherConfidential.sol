@@ -13,6 +13,7 @@ import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/Reentrancy
 import {IERC7984ERC20Wrapper} from "./../interfaces/IERC7984ERC20Wrapper.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
+import {HandleHelper} from "./../utils/HandleHelper.sol";
 
 /**
  * @dev `BatcherConfidential` is a batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts
@@ -38,6 +39,8 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
  * underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancellation would also fail on rewrap.
  */
 abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Receiver {
+    using HandleHelper for euint64;
+
     /// @dev Enum representing the lifecycle state of a batch.
     enum BatchState {
         Pending, // Batch is active and accepting deposits (batchId == currentBatchId)
@@ -160,7 +163,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         euint64 totalDeposits_ = totalDeposits(batchId);
 
         FHE.allowTransient(deposit, address(fromToken()));
-        euint64 sent = fromToken().confidentialTransfer(msg.sender, deposit);
+        euint64 sent = fromToken().confidentialTransfer(msg.sender, deposit.toExternal(), hex"");
         euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
         euint64 newDeposit = FHE.sub(deposit, sent);
 
@@ -356,7 +359,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         );
         FHE.allowTransient(amountToSend, address(toToken()));
 
-        euint64 amountTransferred = toToken().confidentialTransfer(account, amountToSend);
+        euint64 amountTransferred = toToken().confidentialTransfer(account, amountToSend.toExternal(), hex"");
 
         ebool transferSuccess = FHE.ne(amountTransferred, FHE.asEuint64(0));
         euint64 newDeposit = FHE.select(transferSuccess, FHE.asEuint64(0), deposit);

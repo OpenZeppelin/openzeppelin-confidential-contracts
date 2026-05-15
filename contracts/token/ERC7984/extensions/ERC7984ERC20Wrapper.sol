@@ -62,7 +62,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), hex"");
 
         // transfer excess back to the sender
         uint256 excess = amount % rate();
@@ -84,7 +84,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         SafeERC20.safeTransferFrom(IERC20(underlying()), msg.sender, address(this), amount - (amount % rate()));
 
         // mint confidential token
-        euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), hex"");
         FHE.allowTransient(wrappedAmountSent, msg.sender);
 
         return wrappedAmountSent;
@@ -201,11 +201,16 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /// @inheritdoc ERC7984
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
+    function _update(
+        address from,
+        address to,
+        euint64 amount,
+        bytes32 memo
+    ) internal virtual override returns (euint64) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
         }
-        return super._update(from, to, amount);
+        return super._update(from, to, amount, memo);
     }
 
     /// @dev Internal logic for handling the creation of unwrap requests. Returns the unwrap request id.
@@ -214,7 +219,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
         // try to burn, see how much we actually got
-        euint64 unwrapAmount_ = _burn(from, amount);
+        euint64 unwrapAmount_ = _burn(from, amount, hex"");
         FHE.makePubliclyDecryptable(unwrapAmount_);
 
         assert(unwrapRequester(euint64.unwrap(unwrapAmount_)) == address(0));

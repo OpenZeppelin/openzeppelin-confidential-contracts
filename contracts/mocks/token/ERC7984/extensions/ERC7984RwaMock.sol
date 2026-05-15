@@ -30,9 +30,10 @@ contract ERC7984RwaMock is ERC7984Rwa, ERC7984Mock, HandleAccessManager {
     function _update(
         address from,
         address to,
-        euint64 amount
+        euint64 amount,
+        bytes32 memo
     ) internal virtual override(ERC7984Mock, ERC7984Rwa) returns (euint64) {
-        return super._update(from, to, failTransfer ? FHE.asEuint64(0) : amount);
+        return super._update(from, to, failTransfer ? FHE.asEuint64(0) : amount, memo);
     }
 
     function _validateHandleAllowance(bytes32) internal view override returns (bool) {
