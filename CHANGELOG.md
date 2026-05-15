@@ -1,6 +1,20 @@
 # openzeppelin-confidential-contracts
 
 
+## 0.5.0-rc.0 (2026-05-15)
+
+- `ERC7984ERC20Wrapper`: use a bytes32 unwrap request identifier instead of identifying batches by the euint64 unwrap amount. ([#323](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/323))
+- `ERC7984IdentityCheck`: Add an `ERC7984` extension that checks the identity of the recipient on `_update`. ([#364](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/364))
+- `IERC7984Rwa`: Add token recovery function and event ([#341](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/341))
+- `HandleAccessManager`: return false by default in `_validateHandleAllowance` ([#338](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/338))
+- `ERC7984BalanceCapHookModule`: An example hook module that enforces a confidential balance cap for the token. ([#351](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/351))
+- `ERC7984Rwa`: Add token recovery functionality. ([#341](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/341))
+- `FHESafeMath`: Add `saturatingAdd` and `saturatingSub` functions ([#341](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/341))
+- `ERC7984HolderCapHookModule`: An example hook module that enforces a maximum number of holders for the token. ([#351](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/351))
+- `ERC7984Hooked`: Call external hooks before and after transfer of confidential tokens. ([#332](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/332))
+- `ERC7984`: Remove revert on transfer where the sender has an uninitialized balance. ([#357](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/357))
+- `ERC7984Rwa`: Always call `_update` on transfers (even force). Bypass restriction via restriction override. ([#339](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/339))
+
 ## 0.4.0 (2026-03-20)
 
 - Migrate `@fhevm/solidity` dependency to `0.11.1` ([#311](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/311))
