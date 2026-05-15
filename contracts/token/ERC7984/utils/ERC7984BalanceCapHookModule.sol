@@ -17,7 +17,7 @@ import {ERC7984HookModule} from "./ERC7984HookModule.sol";
  *
  * WARNING: This module notifies senders of the result of the pre-transfer hook. This can be used to leak
  * information about the balance of the recipient. This is a potential security risk and should be used
- * with caution.
+ * with caution. Production use-cases may want to remove this notification.
  */
 contract ERC7984BalanceCapHookModule is ERC7984HookModule {
     /// @dev Emitted when the max balance for a given token is set.
@@ -63,6 +63,7 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
             euint64 balance = IERC7984Rwa(token).confidentialBalanceOf(to);
             _accessHandle(token, balance);
 
+            // Note, if the balance would result in an overflow, transfer will fail due to total supply overflow.
             (, euint64 futureBalance) = FHESafeMath.tryIncrease(balance, encryptedAmount);
             compliant = FHE.le(futureBalance, maxBalance(token));
         }
