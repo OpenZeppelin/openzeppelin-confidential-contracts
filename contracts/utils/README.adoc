@@ -1,0 +1,22 @@
+
+= Utils
+
+[.readme-notice]
+NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api/utils
+
+Miscellaneous contracts and libraries containing utility functions you can use to improve security, and ease integrations when working with confidential contracts.
+
+- {FHESafeMath}: Implementation of safe math operations for encrypted values.
+- {CheckpointsConfidential}: Implementation of checkpoints for encrypted values.
+- {HandleAccessManager}: Minimal contract that adds a function to give allowance to callers for a given ciphertext handle.
+
+== Math
+
+{{FHESafeMath}}
+
+== Structs
+
+{{CheckpointsConfidential}}
+
+== Other
+{{HandleAccessManager}}

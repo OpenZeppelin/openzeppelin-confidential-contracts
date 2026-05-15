@@ -1,0 +1,1 @@
+../../lib/openzeppelin-contracts/scripts/release/synchronize-versions.js

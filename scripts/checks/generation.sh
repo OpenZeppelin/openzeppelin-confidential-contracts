@@ -1,0 +1,1 @@
+../../lib/openzeppelin-contracts/scripts/checks/generation.sh

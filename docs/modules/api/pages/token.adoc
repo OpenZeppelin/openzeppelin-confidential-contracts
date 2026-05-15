@@ -1,0 +1,3181 @@
+:github-icon: pass:[<svg class="icon"><use href="#github-icon"/></svg>]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:IERC7984: pass:normal[xref:interfaces.adoc#IERC7984[`IERC7984`]]
+:ERC7984ERC20Wrapper: pass:normal[xref:token.adoc#ERC7984ERC20Wrapper[`ERC7984ERC20Wrapper`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984Freezable: pass:normal[xref:token.adoc#ERC7984Freezable[`ERC7984Freezable`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984ObserverAccess: pass:normal[xref:token.adoc#ERC7984ObserverAccess[`ERC7984ObserverAccess`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984Restricted: pass:normal[xref:token.adoc#ERC7984Restricted[`ERC7984Restricted`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984Omnibus: pass:normal[xref:token.adoc#ERC7984Omnibus[`ERC7984Omnibus`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984Rwa: pass:normal[xref:token.adoc#ERC7984Rwa[`ERC7984Rwa`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984Votes: pass:normal[xref:token.adoc#ERC7984Votes[`ERC7984Votes`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:VotesConfidential: pass:normal[xref:governance.adoc#VotesConfidential[`VotesConfidential`]]
+:ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984Utils: pass:normal[xref:token.adoc#ERC7984Utils[`ERC7984Utils`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984HookModule: pass:normal[xref:token.adoc#ERC7984HookModule[`ERC7984HookModule`]]
+:ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
+:ERC7984BalanceCapHookModule: pass:normal[xref:token.adoc#ERC7984BalanceCapHookModule[`ERC7984BalanceCapHookModule`]]
+:ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
+:ERC7984HolderCapHookModule: pass:normal[xref:token.adoc#ERC7984HolderCapHookModule[`ERC7984HolderCapHookModule`]]
+:ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
+:IERC7984: pass:normal[xref:interfaces.adoc#IERC7984[`IERC7984`]]
+:IERC7984Receiver-onConfidentialTransferReceived: pass:normal[xref:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`IERC7984Receiver.onConfidentialTransferReceived`]]
+:IERC7984Receiver-onConfidentialTransferReceived: pass:normal[xref:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`IERC7984Receiver.onConfidentialTransferReceived`]]
+:ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:IERC7984ERC20Wrapper-wrap: pass:normal[xref:interfaces.adoc#IERC7984ERC20Wrapper-wrap-address-uint256-[`IERC7984ERC20Wrapper.wrap`]]
+:IERC7984ERC20Wrapper-unwrap: pass:normal[xref:interfaces.adoc#IERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-[`IERC7984ERC20Wrapper.unwrap`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984-_update: pass:normal[xref:token.adoc#ERC7984-_update-address-address-euint64-[`ERC7984._update`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984-_update: pass:normal[xref:token.adoc#ERC7984-_update-address-address-euint64-[`ERC7984._update`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:IERC7984-ConfidentialTransfer: pass:normal[xref:interfaces.adoc#IERC7984-ConfidentialTransfer-address-address-euint64-[`IERC7984.ConfidentialTransfer`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984Restricted: pass:normal[xref:token.adoc#ERC7984Restricted[`ERC7984Restricted`]]
+:ERC7984Restricted: pass:normal[xref:token.adoc#ERC7984Restricted[`ERC7984Restricted`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984-_update: pass:normal[xref:token.adoc#ERC7984-_update-address-address-euint64-[`ERC7984._update`]]
+:HandleAccessManager-_validateHandleAllowance: pass:normal[xref:utils.adoc#HandleAccessManager-_validateHandleAllowance-bytes32-[`HandleAccessManager._validateHandleAllowance`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
+:IERC7984Receiver-onConfidentialTransferReceived: pass:normal[xref:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`IERC7984Receiver.onConfidentialTransferReceived`]]
+:ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
+:ERC7984Hooked-isModuleInstalled: pass:normal[xref:token.adoc#ERC7984Hooked-isModuleInstalled-address-[`ERC7984Hooked.isModuleInstalled`]]
+:HandleAccessManager: pass:normal[xref:utils.adoc#HandleAccessManager[`HandleAccessManager`]]
+:ERC7984HookModule-_emitPreTransferResults: pass:normal[xref:token.adoc#ERC7984HookModule-_emitPreTransferResults-address-address-address-euint64-ebool-bytes32-[`ERC7984HookModule._emitPreTransferResults`]]
+:ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
+:ERC7984HookModule-_onInstall: pass:normal[xref:token.adoc#ERC7984HookModule-_onInstall-address-bytes-[`ERC7984HookModule._onInstall`]]
+:ERC7984HookModule-_onInstall: pass:normal[xref:token.adoc#ERC7984HookModule-_onInstall-address-bytes-[`ERC7984HookModule._onInstall`]]
+= Tokens
+
+[.readme-notice]
+NOTE: This document is better viewed at https://docs.openzeppelin.com/confidential-contracts/api/token
+
+This set of interfaces, contracts, and utilities are all related to `ERC7984`, an evolving confidential token standard. The standard utilizes the Zama fhEVM co-processor for manipulating FHE values. All amounts are stored on-chain as ciphertext handles (or pointers) to values stored on the co-processor.
+
+- {ERC7984}: Implementation of {IERC7984}.
+- {ERC7984ERC20Wrapper}: Extension of {ERC7984} which wraps an `ERC20` into a confidential token. The wrapper allows for free conversion in both directions at a fixed rate.
+- {ERC7984Freezable}: An extension of {ERC7984}, which allows accounts granted the "freezer" role to freeze and unfreeze tokens.
+- {ERC7984ObserverAccess}: An extension of {ERC7984}, which allows each account to add an observer who is given access to their transfer and balance amounts.
+- {ERC7984Restricted}: An extension of {ERC7984} that implements user account transfer restrictions.
+- {ERC7984Omnibus}: An extension of {ERC7984} that emits additional events for omnibus transfers, which contain encrypted addresses for the sub-account sender and recipient.
+- {ERC7984Rwa}: Extension of {ERC7984} that supports confidential Real World Assets (RWAs) by providing compliance checks, transfer controls and enforcement actions.
+- {ERC7984Votes}: An extension of {ERC7984} that supports confidential vote tracking and delegation via {VotesConfidential}.
+- {ERC7984Hooked}: An extension of {ERC7984} that calls pre and post transfer hooks on installed modules.
+- {ERC7984Utils}: A library that provides the on-transfer callback check used by {ERC7984}.
+- {ERC7984HookModule}: A an abstract, base implementation for hook modules compatible with {ERC7984Hooked}.
+- {ERC7984BalanceCapHookModule}: An example hook module for {ERC7984Hooked} that enforces a per-account encrypted balance cap.
+- {ERC7984HolderCapHookModule}: An example hook module for {ERC7984Hooked} that enforces a maximum number of holders. Must be installed before any tokens are minted.
+
+== Core
+:AmountDiscloseRequested: pass:normal[xref:#ERC7984-AmountDiscloseRequested-euint64-address-[`++AmountDiscloseRequested++`]]
+:ERC7984InvalidReceiver: pass:normal[xref:#ERC7984-ERC7984InvalidReceiver-address-[`++ERC7984InvalidReceiver++`]]
+:ERC7984InvalidSender: pass:normal[xref:#ERC7984-ERC7984InvalidSender-address-[`++ERC7984InvalidSender++`]]
+:ERC7984UnauthorizedSpender: pass:normal[xref:#ERC7984-ERC7984UnauthorizedSpender-address-address-[`++ERC7984UnauthorizedSpender++`]]
+:ERC7984UnauthorizedUseOfEncryptedAmount: pass:normal[xref:#ERC7984-ERC7984UnauthorizedUseOfEncryptedAmount-euint64-address-[`++ERC7984UnauthorizedUseOfEncryptedAmount++`]]
+:ERC7984UnauthorizedCaller: pass:normal[xref:#ERC7984-ERC7984UnauthorizedCaller-address-[`++ERC7984UnauthorizedCaller++`]]
+:constructor: pass:normal[xref:#ERC7984-constructor-string-string-string-[`++constructor++`]]
+:supportsInterface: pass:normal[xref:#ERC7984-supportsInterface-bytes4-[`++supportsInterface++`]]
+:name: pass:normal[xref:#ERC7984-name--[`++name++`]]
+:symbol: pass:normal[xref:#ERC7984-symbol--[`++symbol++`]]
+:decimals: pass:normal[xref:#ERC7984-decimals--[`++decimals++`]]
+:contractURI: pass:normal[xref:#ERC7984-contractURI--[`++contractURI++`]]
+:confidentialTotalSupply: pass:normal[xref:#ERC7984-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
+:confidentialBalanceOf: pass:normal[xref:#ERC7984-confidentialBalanceOf-address-[`++confidentialBalanceOf++`]]
+:isOperator: pass:normal[xref:#ERC7984-isOperator-address-address-[`++isOperator++`]]
+:setOperator: pass:normal[xref:#ERC7984-setOperator-address-uint48-[`++setOperator++`]]
+:confidentialTransfer: pass:normal[xref:#ERC7984-confidentialTransfer-address-externalEuint64-bytes-[`++confidentialTransfer++`]]
+:confidentialTransfer: pass:normal[xref:#ERC7984-confidentialTransfer-address-euint64-[`++confidentialTransfer++`]]
+:confidentialTransferFrom: pass:normal[xref:#ERC7984-confidentialTransferFrom-address-address-externalEuint64-bytes-[`++confidentialTransferFrom++`]]
+:confidentialTransferFrom: pass:normal[xref:#ERC7984-confidentialTransferFrom-address-address-euint64-[`++confidentialTransferFrom++`]]
+:confidentialTransferAndCall: pass:normal[xref:#ERC7984-confidentialTransferAndCall-address-externalEuint64-bytes-bytes-[`++confidentialTransferAndCall++`]]
+:confidentialTransferAndCall: pass:normal[xref:#ERC7984-confidentialTransferAndCall-address-euint64-bytes-[`++confidentialTransferAndCall++`]]
+:confidentialTransferFromAndCall: pass:normal[xref:#ERC7984-confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes-[`++confidentialTransferFromAndCall++`]]
+:confidentialTransferFromAndCall: pass:normal[xref:#ERC7984-confidentialTransferFromAndCall-address-address-euint64-bytes-[`++confidentialTransferFromAndCall++`]]
+:requestDiscloseEncryptedAmount: pass:normal[xref:#ERC7984-requestDiscloseEncryptedAmount-euint64-[`++requestDiscloseEncryptedAmount++`]]
+:discloseEncryptedAmount: pass:normal[xref:#ERC7984-discloseEncryptedAmount-euint64-uint64-bytes-[`++discloseEncryptedAmount++`]]
+:_setOperator: pass:normal[xref:#ERC7984-_setOperator-address-address-uint48-[`++_setOperator++`]]
+:_mint: pass:normal[xref:#ERC7984-_mint-address-euint64-[`++_mint++`]]
+:_burn: pass:normal[xref:#ERC7984-_burn-address-euint64-[`++_burn++`]]
+:_transfer: pass:normal[xref:#ERC7984-_transfer-address-address-euint64-[`++_transfer++`]]
+:_transferAndCall: pass:normal[xref:#ERC7984-_transferAndCall-address-address-euint64-bytes-[`++_transferAndCall++`]]
+:_update: pass:normal[xref:#ERC7984-_update-address-address-euint64-[`++_update++`]]
+
+:constructor-string-string-string: pass:normal[xref:#ERC7984-constructor-string-string-string-[`++constructor++`]]
+:supportsInterface-bytes4: pass:normal[xref:#ERC7984-supportsInterface-bytes4-[`++supportsInterface++`]]
+:name-: pass:normal[xref:#ERC7984-name--[`++name++`]]
+:symbol-: pass:normal[xref:#ERC7984-symbol--[`++symbol++`]]
+:decimals-: pass:normal[xref:#ERC7984-decimals--[`++decimals++`]]
+:contractURI-: pass:normal[xref:#ERC7984-contractURI--[`++contractURI++`]]
+:confidentialTotalSupply-: pass:normal[xref:#ERC7984-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
+:confidentialBalanceOf-address: pass:normal[xref:#ERC7984-confidentialBalanceOf-address-[`++confidentialBalanceOf++`]]
+:isOperator-address-address: pass:normal[xref:#ERC7984-isOperator-address-address-[`++isOperator++`]]
+:setOperator-address-uint48: pass:normal[xref:#ERC7984-setOperator-address-uint48-[`++setOperator++`]]
+:confidentialTransfer-address-externalEuint64-bytes: pass:normal[xref:#ERC7984-confidentialTransfer-address-externalEuint64-bytes-[`++confidentialTransfer++`]]
+:confidentialTransfer-address-euint64: pass:normal[xref:#ERC7984-confidentialTransfer-address-euint64-[`++confidentialTransfer++`]]
+:confidentialTransferFrom-address-address-externalEuint64-bytes: pass:normal[xref:#ERC7984-confidentialTransferFrom-address-address-externalEuint64-bytes-[`++confidentialTransferFrom++`]]
+:confidentialTransferFrom-address-address-euint64: pass:normal[xref:#ERC7984-confidentialTransferFrom-address-address-euint64-[`++confidentialTransferFrom++`]]
+:confidentialTransferAndCall-address-externalEuint64-bytes-bytes: pass:normal[xref:#ERC7984-confidentialTransferAndCall-address-externalEuint64-bytes-bytes-[`++confidentialTransferAndCall++`]]
+:confidentialTransferAndCall-address-euint64-bytes: pass:normal[xref:#ERC7984-confidentialTransferAndCall-address-euint64-bytes-[`++confidentialTransferAndCall++`]]
+:confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes: pass:normal[xref:#ERC7984-confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes-[`++confidentialTransferFromAndCall++`]]
+:confidentialTransferFromAndCall-address-address-euint64-bytes: pass:normal[xref:#ERC7984-confidentialTransferFromAndCall-address-address-euint64-bytes-[`++confidentialTransferFromAndCall++`]]
+:requestDiscloseEncryptedAmount-euint64: pass:normal[xref:#ERC7984-requestDiscloseEncryptedAmount-euint64-[`++requestDiscloseEncryptedAmount++`]]
+:discloseEncryptedAmount-euint64-uint64-bytes: pass:normal[xref:#ERC7984-discloseEncryptedAmount-euint64-uint64-bytes-[`++discloseEncryptedAmount++`]]
+:_setOperator-address-address-uint48: pass:normal[xref:#ERC7984-_setOperator-address-address-uint48-[`++_setOperator++`]]
+:_mint-address-euint64: pass:normal[xref:#ERC7984-_mint-address-euint64-[`++_mint++`]]
+:_burn-address-euint64: pass:normal[xref:#ERC7984-_burn-address-euint64-[`++_burn++`]]
+:_transfer-address-address-euint64: pass:normal[xref:#ERC7984-_transfer-address-address-euint64-[`++_transfer++`]]
+:_transferAndCall-address-address-euint64-bytes: pass:normal[xref:#ERC7984-_transferAndCall-address-address-euint64-bytes-[`++_transferAndCall++`]]
+:_update-address-address-euint64: pass:normal[xref:#ERC7984-_update-address-address-euint64-[`++_update++`]]
+
+[.contract]
+[[ERC7984]]
+=== `++ERC7984++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/ERC7984.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";
+```
+
+Reference implementation for {IERC7984}.
+
+This contract implements a fungible token where balances and transfers are encrypted using the Zama fhEVM,
+providing confidentiality to users. Token amounts are stored as encrypted, unsigned integers (`euint64`)
+that can only be decrypted by authorized parties.
+
+Key features:
+
+- All balances are encrypted
+- Transfers happen without revealing amounts
+- Support for operators (delegated transfer capabilities with time bounds)
+- Transfer and call pattern
+- Safe overflow/underflow handling for FHE operations
+
+[.contract-index]
+.Functions
+--
+* `++constructor(name_, symbol_, contractURI_)++`
+* `++supportsInterface(interfaceId)++`
+* `++name()++`
+* `++symbol()++`
+* `++decimals()++`
+* `++contractURI()++`
+* `++confidentialTotalSupply()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+* `++requestDiscloseEncryptedAmount(encryptedAmount)++`
+* `++discloseEncryptedAmount(encryptedAmount, cleartextAmount, decryptionProof)++`
+* `++_setOperator(holder, operator, until)++`
+* `++_mint(to, amount)++`
+* `++_burn(from, amount)++`
+* `++_transfer(from, to, amount)++`
+* `++_transferAndCall(from, to, amount, data)++`
+* `++_update(from, to, amount)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+* `++AmountDiscloseRequested(encryptedAmount, requester)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++ERC7984InvalidReceiver(receiver)++`
+* `++ERC7984InvalidSender(sender)++`
+* `++ERC7984UnauthorizedSpender(holder, spender)++`
+* `++ERC7984UnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984UnauthorizedCaller(caller)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984-constructor-string-string-string-]]
+==== `[.contract-item-name]#++constructor++#++(string name_, string symbol_, string contractURI_)++` [.item-kind]#internal#
+
+[.contract-item]
+[[ERC7984-supportsInterface-bytes4-]]
+==== `[.contract-item-name]#++supportsInterface++#++(bytes4 interfaceId) → bool++` [.item-kind]#public#
+
+Returns true if this contract implements the interface defined by
+`interfaceId`. See the corresponding
+https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
+to learn more about how these ids are created.
+
+This function call must use less than 30 000 gas.
+
+[.contract-item]
+[[ERC7984-name--]]
+==== `[.contract-item-name]#++name++#++() → string++` [.item-kind]#public#
+
+Returns the name of the token.
+
+[.contract-item]
+[[ERC7984-symbol--]]
+==== `[.contract-item-name]#++symbol++#++() → string++` [.item-kind]#public#
+
+Returns the symbol of the token.
+
+[.contract-item]
+[[ERC7984-decimals--]]
+==== `[.contract-item-name]#++decimals++#++() → uint8++` [.item-kind]#public#
+
+Returns the number of decimals of the token. Recommended to be 6.
+
+[.contract-item]
+[[ERC7984-contractURI--]]
+==== `[.contract-item-name]#++contractURI++#++() → string++` [.item-kind]#public#
+
+Returns the contract URI. See https://eips.ethereum.org/EIPS/eip-7572[ERC-7572] for details.
+
+[.contract-item]
+[[ERC7984-confidentialTotalSupply--]]
+==== `[.contract-item-name]#++confidentialTotalSupply++#++() → euint64++` [.item-kind]#public#
+
+Returns the confidential total supply of the token.
+
+[.contract-item]
+[[ERC7984-confidentialBalanceOf-address-]]
+==== `[.contract-item-name]#++confidentialBalanceOf++#++(address account) → euint64++` [.item-kind]#public#
+
+Returns the confidential balance of the account `account`.
+
+[.contract-item]
+[[ERC7984-isOperator-address-address-]]
+==== `[.contract-item-name]#++isOperator++#++(address holder, address spender) → bool++` [.item-kind]#public#
+
+Returns true if `spender` is currently an operator for `holder`.
+
+[.contract-item]
+[[ERC7984-setOperator-address-uint48-]]
+==== `[.contract-item-name]#++setOperator++#++(address operator, uint48 until)++` [.item-kind]#public#
+
+Sets `operator` as an operator for `holder` until the timestamp `until`.
+
+NOTE: An operator may transfer any amount of tokens on behalf of a holder while approved.
+
+[.contract-item]
+[[ERC7984-confidentialTransfer-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransfer++#++(address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+
+Transfers the encrypted amount `encryptedAmount` to `to` with the given input proof `inputProof`.
+
+Returns the encrypted amount that was actually transferred.
+
+[.contract-item]
+[[ERC7984-confidentialTransfer-address-euint64-]]
+==== `[.contract-item-name]#++confidentialTransfer++#++(address to, euint64 amount) → euint64++` [.item-kind]#public#
+
+Similar to {confidentialTransfer-address-externalEuint64-bytes} but without an input proof. The caller
+*must* already be allowed by ACL for the given `amount`.
+
+[.contract-item]
+[[ERC7984-confidentialTransferFrom-address-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferFrom++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+
+Transfers the encrypted amount `encryptedAmount` from `from` to `to` with the given input proof
+`inputProof`. `msg.sender` must be either `from` or an operator for `from`.
+
+Returns the encrypted amount that was actually transferred.
+
+[.contract-item]
+[[ERC7984-confidentialTransferFrom-address-address-euint64-]]
+==== `[.contract-item-name]#++confidentialTransferFrom++#++(address from, address to, euint64 amount) → euint64++` [.item-kind]#public#
+
+Similar to {confidentialTransferFrom-address-address-externalEuint64-bytes} but without an input proof.
+The caller *must* be already allowed by ACL for the given `amount`.
+
+[.contract-item]
+[[ERC7984-confidentialTransferAndCall-address-externalEuint64-bytes-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferAndCall++#++(address to, externalEuint64 encryptedAmount, bytes inputProof, bytes data) → euint64++` [.item-kind]#public#
+
+Similar to {confidentialTransfer-address-externalEuint64-bytes} but with a callback to `to` after
+the transfer.
+
+The callback is made to the {IERC7984Receiver-onConfidentialTransferReceived} function on the
+to address with the actual transferred amount (may differ from the given `encryptedAmount`) and the given
+data `data`.
+
+[.contract-item]
+[[ERC7984-confidentialTransferAndCall-address-euint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferAndCall++#++(address to, euint64 amount, bytes data) → euint64++` [.item-kind]#public#
+
+Similar to {confidentialTransfer-address-euint64} but with a callback to `to` after the transfer.
+
+[.contract-item]
+[[ERC7984-confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferFromAndCall++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof, bytes data) → euint64++` [.item-kind]#public#
+
+Similar to {confidentialTransferFrom-address-address-externalEuint64-bytes} but with a callback to `to`
+after the transfer.
+
+[.contract-item]
+[[ERC7984-confidentialTransferFromAndCall-address-address-euint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferFromAndCall++#++(address from, address to, euint64 amount, bytes data) → euint64++` [.item-kind]#public#
+
+Similar to {confidentialTransferFrom-address-address-euint64} but with a callback to `to`
+after the transfer.
+
+[.contract-item]
+[[ERC7984-requestDiscloseEncryptedAmount-euint64-]]
+==== `[.contract-item-name]#++requestDiscloseEncryptedAmount++#++(euint64 encryptedAmount)++` [.item-kind]#public#
+
+Starts the process to disclose an encrypted amount `encryptedAmount` publicly by making it
+publicly decryptable. Emits the {AmountDiscloseRequested} event.
+
+NOTE: Both `msg.sender` and `address(this)` must have permission to access the encrypted amount
+`encryptedAmount` to request disclosure of the encrypted amount `encryptedAmount`.
+
+[.contract-item]
+[[ERC7984-discloseEncryptedAmount-euint64-uint64-bytes-]]
+==== `[.contract-item-name]#++discloseEncryptedAmount++#++(euint64 encryptedAmount, uint64 cleartextAmount, bytes decryptionProof)++` [.item-kind]#public#
+
+Publicly discloses an encrypted value with a given decryption proof. Emits the {AmountDisclosed} event.
+
+NOTE: May not be tied to a prior request via {requestDiscloseEncryptedAmount}.
+
+[.contract-item]
+[[ERC7984-_setOperator-address-address-uint48-]]
+==== `[.contract-item-name]#++_setOperator++#++(address holder, address operator, uint48 until)++` [.item-kind]#internal#
+
+[.contract-item]
+[[ERC7984-_mint-address-euint64-]]
+==== `[.contract-item-name]#++_mint++#++(address to, euint64 amount) → euint64 transferred++` [.item-kind]#internal#
+
+[.contract-item]
+[[ERC7984-_burn-address-euint64-]]
+==== `[.contract-item-name]#++_burn++#++(address from, euint64 amount) → euint64 transferred++` [.item-kind]#internal#
+
+[.contract-item]
+[[ERC7984-_transfer-address-address-euint64-]]
+==== `[.contract-item-name]#++_transfer++#++(address from, address to, euint64 amount) → euint64 transferred++` [.item-kind]#internal#
+
+[.contract-item]
+[[ERC7984-_transferAndCall-address-address-euint64-bytes-]]
+==== `[.contract-item-name]#++_transferAndCall++#++(address from, address to, euint64 amount, bytes data) → euint64 transferred++` [.item-kind]#internal#
+
+Transfers the given amount of tokens from `from` to `to` and calls the `onConfidentialTransferReceived`
+function on the recipient.
+
+The token contract initiates a second transfer refunding the tokens from the recipient to the sender--the
+amount is 0 if the callback succeeds, otherwise the amount is the amount that was transferred.
+
+The returned `transferred` amount is a fresh ciphertext computed as `sent - refund`
+and `msg.sender` only receives a transient FHE allowance for it. This value is generally
+intended to be processed only in the same transaction. Event observers see `sent` and `refund` individually.
+
+WARNING: The refund triggered when {IERC7984Receiver-onConfidentialTransferReceived} returns an encrypted
+false is best-effort only. A receiver that transfers, burns, or otherwise reduces its balance during
+the hook can still return false, in which case the refund transfers zero tokens. The sender's tokens
+end up with the recipient rather than being refunded.
+
+WARNING: Refunds are subject to the same validation flow as a normal transfer--they may fail for a variety of
+reasons (such as failed hook validation in {ERC7984Hooked}). In these cases, the tokens do not return to the sender.
+
+[.contract-item]
+[[ERC7984-_update-address-address-euint64-]]
+==== `[.contract-item-name]#++_update++#++(address from, address to, euint64 amount) → euint64 transferred++` [.item-kind]#internal#
+
+Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
+Emits a {ConfidentialTransfer} event with the successfully transferred amount.
+
+[.contract-item]
+[[ERC7984-AmountDiscloseRequested-euint64-address-]]
+==== `[.contract-item-name]#++AmountDiscloseRequested++#++(euint64 indexed encryptedAmount, address indexed requester)++` [.item-kind]#event#
+
+Emitted when an encrypted amount `encryptedAmount` is requested for disclosure by `requester`.
+
+[.contract-item]
+[[ERC7984-ERC7984InvalidReceiver-address-]]
+==== `[.contract-item-name]#++ERC7984InvalidReceiver++#++(address receiver)++` [.item-kind]#error#
+
+The given receiver `receiver` is invalid for transfers.
+
+[.contract-item]
+[[ERC7984-ERC7984InvalidSender-address-]]
+==== `[.contract-item-name]#++ERC7984InvalidSender++#++(address sender)++` [.item-kind]#error#
+
+The given sender `sender` is invalid for transfers.
+
+[.contract-item]
+[[ERC7984-ERC7984UnauthorizedSpender-address-address-]]
+==== `[.contract-item-name]#++ERC7984UnauthorizedSpender++#++(address holder, address spender)++` [.item-kind]#error#
+
+The given holder `holder` is not authorized to spend on behalf of `spender`.
+
+[.contract-item]
+[[ERC7984-ERC7984UnauthorizedUseOfEncryptedAmount-euint64-address-]]
+==== `[.contract-item-name]#++ERC7984UnauthorizedUseOfEncryptedAmount++#++(euint64 amount, address user)++` [.item-kind]#error#
+
+The caller `user` does not have access to the encrypted amount `amount`.
+
+NOTE: Try using the equivalent transfer function with an input proof.
+
+[.contract-item]
+[[ERC7984-ERC7984UnauthorizedCaller-address-]]
+==== `[.contract-item-name]#++ERC7984UnauthorizedCaller++#++(address caller)++` [.item-kind]#error#
+
+The given caller `caller` is not authorized for the current operation.
+
+== Extensions
+:InvalidUnwrapRequest: pass:normal[xref:#ERC7984ERC20Wrapper-InvalidUnwrapRequest-bytes32-[`++InvalidUnwrapRequest++`]]
+:ERC7984TotalSupplyOverflow: pass:normal[xref:#ERC7984ERC20Wrapper-ERC7984TotalSupplyOverflow--[`++ERC7984TotalSupplyOverflow++`]]
+:constructor: pass:normal[xref:#ERC7984ERC20Wrapper-constructor-contract-IERC20-[`++constructor++`]]
+:onTransferReceived: pass:normal[xref:#ERC7984ERC20Wrapper-onTransferReceived-address-address-uint256-bytes-[`++onTransferReceived++`]]
+:wrap: pass:normal[xref:#ERC7984ERC20Wrapper-wrap-address-uint256-[`++wrap++`]]
+:unwrap: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-euint64-[`++unwrap++`]]
+:unwrap: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-[`++unwrap++`]]
+:finalizeUnwrap: pass:normal[xref:#ERC7984ERC20Wrapper-finalizeUnwrap-bytes32-uint64-bytes-[`++finalizeUnwrap++`]]
+:decimals: pass:normal[xref:#ERC7984ERC20Wrapper-decimals--[`++decimals++`]]
+:rate: pass:normal[xref:#ERC7984ERC20Wrapper-rate--[`++rate++`]]
+:underlying: pass:normal[xref:#ERC7984ERC20Wrapper-underlying--[`++underlying++`]]
+:unwrapAmount: pass:normal[xref:#ERC7984ERC20Wrapper-unwrapAmount-bytes32-[`++unwrapAmount++`]]
+:supportsInterface: pass:normal[xref:#ERC7984ERC20Wrapper-supportsInterface-bytes4-[`++supportsInterface++`]]
+:inferredTotalSupply: pass:normal[xref:#ERC7984ERC20Wrapper-inferredTotalSupply--[`++inferredTotalSupply++`]]
+:maxTotalSupply: pass:normal[xref:#ERC7984ERC20Wrapper-maxTotalSupply--[`++maxTotalSupply++`]]
+:unwrapRequester: pass:normal[xref:#ERC7984ERC20Wrapper-unwrapRequester-bytes32-[`++unwrapRequester++`]]
+:_checkConfidentialTotalSupply: pass:normal[xref:#ERC7984ERC20Wrapper-_checkConfidentialTotalSupply--[`++_checkConfidentialTotalSupply++`]]
+:_update: pass:normal[xref:#ERC7984ERC20Wrapper-_update-address-address-euint64-[`++_update++`]]
+:_unwrap: pass:normal[xref:#ERC7984ERC20Wrapper-_unwrap-address-address-euint64-[`++_unwrap++`]]
+:_fallbackUnderlyingDecimals: pass:normal[xref:#ERC7984ERC20Wrapper-_fallbackUnderlyingDecimals--[`++_fallbackUnderlyingDecimals++`]]
+:_maxDecimals: pass:normal[xref:#ERC7984ERC20Wrapper-_maxDecimals--[`++_maxDecimals++`]]
+
+:constructor-contract-IERC20: pass:normal[xref:#ERC7984ERC20Wrapper-constructor-contract-IERC20-[`++constructor++`]]
+:onTransferReceived-address-address-uint256-bytes: pass:normal[xref:#ERC7984ERC20Wrapper-onTransferReceived-address-address-uint256-bytes-[`++onTransferReceived++`]]
+:wrap-address-uint256: pass:normal[xref:#ERC7984ERC20Wrapper-wrap-address-uint256-[`++wrap++`]]
+:unwrap-address-address-euint64: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-euint64-[`++unwrap++`]]
+:unwrap-address-address-externalEuint64-bytes: pass:normal[xref:#ERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-[`++unwrap++`]]
+:finalizeUnwrap-bytes32-uint64-bytes: pass:normal[xref:#ERC7984ERC20Wrapper-finalizeUnwrap-bytes32-uint64-bytes-[`++finalizeUnwrap++`]]
+:decimals-: pass:normal[xref:#ERC7984ERC20Wrapper-decimals--[`++decimals++`]]
+:rate-: pass:normal[xref:#ERC7984ERC20Wrapper-rate--[`++rate++`]]
+:underlying-: pass:normal[xref:#ERC7984ERC20Wrapper-underlying--[`++underlying++`]]
+:unwrapAmount-bytes32: pass:normal[xref:#ERC7984ERC20Wrapper-unwrapAmount-bytes32-[`++unwrapAmount++`]]
+:supportsInterface-bytes4: pass:normal[xref:#ERC7984ERC20Wrapper-supportsInterface-bytes4-[`++supportsInterface++`]]
+:inferredTotalSupply-: pass:normal[xref:#ERC7984ERC20Wrapper-inferredTotalSupply--[`++inferredTotalSupply++`]]
+:maxTotalSupply-: pass:normal[xref:#ERC7984ERC20Wrapper-maxTotalSupply--[`++maxTotalSupply++`]]
+:unwrapRequester-bytes32: pass:normal[xref:#ERC7984ERC20Wrapper-unwrapRequester-bytes32-[`++unwrapRequester++`]]
+:_checkConfidentialTotalSupply-: pass:normal[xref:#ERC7984ERC20Wrapper-_checkConfidentialTotalSupply--[`++_checkConfidentialTotalSupply++`]]
+:_update-address-address-euint64: pass:normal[xref:#ERC7984ERC20Wrapper-_update-address-address-euint64-[`++_update++`]]
+:_unwrap-address-address-euint64: pass:normal[xref:#ERC7984ERC20Wrapper-_unwrap-address-address-euint64-[`++_unwrap++`]]
+:_fallbackUnderlyingDecimals-: pass:normal[xref:#ERC7984ERC20Wrapper-_fallbackUnderlyingDecimals--[`++_fallbackUnderlyingDecimals++`]]
+:_maxDecimals-: pass:normal[xref:#ERC7984ERC20Wrapper-_maxDecimals--[`++_maxDecimals++`]]
+
+[.contract]
+[[ERC7984ERC20Wrapper]]
+=== `++ERC7984ERC20Wrapper++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
+```
+
+A wrapper contract built on top of {ERC7984} that allows wrapping an `ERC20` token
+into an `ERC7984` token. The wrapper contract implements the `IERC1363Receiver` interface
+which allows users to transfer `ERC1363` tokens directly to the wrapper with a callback to wrap the tokens.
+
+WARNING: Minting assumes the full amount of the underlying token transfer has been received, hence some non-standard
+tokens such as fee-on-transfer or other deflationary-type tokens are not supported by this wrapper.
+
+[.contract-index]
+.Functions
+--
+* `++constructor(underlying_)++`
+* `++onTransferReceived(, from, amount, data)++`
+* `++wrap(to, amount)++`
+* `++unwrap(from, to, amount)++`
+* `++unwrap(from, to, encryptedAmount, inputProof)++`
+* `++finalizeUnwrap(unwrapRequestId, unwrapAmountCleartext, decryptionProof)++`
+* `++decimals()++`
+* `++rate()++`
+* `++underlying()++`
+* `++unwrapAmount(unwrapRequestId)++`
+* `++supportsInterface(interfaceId)++`
+* `++inferredTotalSupply()++`
+* `++maxTotalSupply()++`
+* `++unwrapRequester(unwrapRequestId)++`
+* `++_checkConfidentialTotalSupply()++`
+* `++_update(from, to, amount)++`
+* `++_unwrap(from, to, amount)++`
+* `++_fallbackUnderlyingDecimals()++`
+* `++_maxDecimals()++`
+
+[.contract-subindex-inherited]
+.IERC1363Receiver
+
+[.contract-subindex-inherited]
+.IERC7984ERC20Wrapper
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++name()++`
+* `++symbol()++`
+* `++contractURI()++`
+* `++confidentialTotalSupply()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+* `++requestDiscloseEncryptedAmount(encryptedAmount)++`
+* `++discloseEncryptedAmount(encryptedAmount, cleartextAmount, decryptionProof)++`
+* `++_setOperator(holder, operator, until)++`
+* `++_mint(to, amount)++`
+* `++_burn(from, amount)++`
+* `++_transfer(from, to, amount)++`
+* `++_transferAndCall(from, to, amount, data)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+
+[.contract-subindex-inherited]
+.IERC1363Receiver
+
+[.contract-subindex-inherited]
+.IERC7984ERC20Wrapper
+* `++UnwrapRequested(receiver, unwrapRequestId, amount)++`
+* `++UnwrapFinalized(receiver, unwrapRequestId, encryptedAmount, cleartextAmount)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++AmountDiscloseRequested(encryptedAmount, requester)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++InvalidUnwrapRequest(unwrapRequestId)++`
+* `++ERC7984TotalSupplyOverflow()++`
+
+[.contract-subindex-inherited]
+.IERC1363Receiver
+
+[.contract-subindex-inherited]
+.IERC7984ERC20Wrapper
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++ERC7984InvalidReceiver(receiver)++`
+* `++ERC7984InvalidSender(sender)++`
+* `++ERC7984UnauthorizedSpender(holder, spender)++`
+* `++ERC7984UnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984UnauthorizedCaller(caller)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-constructor-contract-IERC20-]]
+==== `[.contract-item-name]#++constructor++#++(contract IERC20 underlying_)++` [.item-kind]#internal#
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-onTransferReceived-address-address-uint256-bytes-]]
+==== `[.contract-item-name]#++onTransferReceived++#++(address, address from, uint256 amount, bytes data) → bytes4++` [.item-kind]#public#
+
+`ERC1363` callback function which wraps tokens to the address specified in `data` or
+the address `from` (if no address is specified in `data`). This function refunds any excess tokens
+sent beyond the nearest multiple of {rate} to `from`. See {wrap} for more details on wrapping tokens.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-wrap-address-uint256-]]
+==== `[.contract-item-name]#++wrap++#++(address to, uint256 amount) → euint64++` [.item-kind]#public#
+
+See {IERC7984ERC20Wrapper-wrap}. Tokens are exchanged at a fixed rate specified by {rate} such that
+`amount / rate()` confidential tokens are sent. The amount transferred in is rounded down to the nearest
+multiple of {rate}.
+
+Returns the amount of wrapped token sent.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-unwrap-address-address-euint64-]]
+==== `[.contract-item-name]#++unwrap++#++(address from, address to, euint64 amount) → bytes32++` [.item-kind]#public#
+
+Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-unwrap-address-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++unwrap++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof) → bytes32++` [.item-kind]#public#
+
+See {IERC7984ERC20Wrapper-unwrap}. `amount * rate()` underlying tokens are sent to `to`.
+
+NOTE: The unwrap request created by this function must be finalized by calling {finalizeUnwrap}.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-finalizeUnwrap-bytes32-uint64-bytes-]]
+==== `[.contract-item-name]#++finalizeUnwrap++#++(bytes32 unwrapRequestId, uint64 unwrapAmountCleartext, bytes decryptionProof)++` [.item-kind]#public#
+
+Finalizes an unwrap request identified by `unwrapRequestId` with the given `unwrapAmountCleartext` and `decryptionProof`.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-decimals--]]
+==== `[.contract-item-name]#++decimals++#++() → uint8++` [.item-kind]#public#
+
+Returns the number of decimals of the token. Recommended to be 6.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-rate--]]
+==== `[.contract-item-name]#++rate++#++() → uint256++` [.item-kind]#public#
+
+Returns the rate at which the underlying token is converted to the wrapped token.
+For example, if the `rate` is 1000, then 1000 units of the underlying token equal 1 unit of the wrapped token.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-underlying--]]
+==== `[.contract-item-name]#++underlying++#++() → address++` [.item-kind]#public#
+
+Returns the address of the underlying ERC-20 token that is being wrapped.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-unwrapAmount-bytes32-]]
+==== `[.contract-item-name]#++unwrapAmount++#++(bytes32 unwrapRequestId) → euint64++` [.item-kind]#public#
+
+Returns the amount of wrapper tokens that were unwrapped for a given `unwrapRequestId`.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-supportsInterface-bytes4-]]
+==== `[.contract-item-name]#++supportsInterface++#++(bytes4 interfaceId) → bool++` [.item-kind]#public#
+
+Returns true if this contract implements the interface defined by
+`interfaceId`. See the corresponding
+https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
+to learn more about how these ids are created.
+
+This function call must use less than 30 000 gas.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-inferredTotalSupply--]]
+==== `[.contract-item-name]#++inferredTotalSupply++#++() → uint256++` [.item-kind]#public#
+
+Returns the underlying balance divided by the {rate}, a value greater or equal to the actual
+{confidentialTotalSupply}.
+
+NOTE: The return value of this function can be inflated by directly sending underlying tokens to the wrapper contract.
+Reductions will lag compared to {confidentialTotalSupply} since it is updated on {unwrap} while this function updates
+on {finalizeUnwrap}.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-maxTotalSupply--]]
+==== `[.contract-item-name]#++maxTotalSupply++#++() → uint256++` [.item-kind]#public#
+
+Returns the maximum total supply of wrapped tokens supported by the encrypted datatype.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-unwrapRequester-bytes32-]]
+==== `[.contract-item-name]#++unwrapRequester++#++(bytes32 unwrapRequestId) → address++` [.item-kind]#public#
+
+Gets the address that will receive the ERC-20 tokens associated with a pending unwrap request identified by
+`unwrapRequestId`. Returns `address(0)` if there is no pending unwrap request with id `unwrapRequestId`.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-_checkConfidentialTotalSupply--]]
+==== `[.contract-item-name]#++_checkConfidentialTotalSupply++#++()++` [.item-kind]#internal#
+
+This function must revert if the new {confidentialTotalSupply} is invalid (overflow occurred).
+
+NOTE: Overflow can be detected here since the wrapper holdings are non-confidential. In other cases, it may be impossible
+to infer total supply overflow synchronously. This function may revert even if the {confidentialTotalSupply} did
+not overflow.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-_update-address-address-euint64-]]
+==== `[.contract-item-name]#++_update++#++(address from, address to, euint64 amount) → euint64++` [.item-kind]#internal#
+
+Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
+Emits a {ConfidentialTransfer} event with the successfully transferred amount.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-_unwrap-address-address-euint64-]]
+==== `[.contract-item-name]#++_unwrap++#++(address from, address to, euint64 amount) → bytes32++` [.item-kind]#internal#
+
+Internal logic for handling the creation of unwrap requests. Returns the unwrap request id.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-_fallbackUnderlyingDecimals--]]
+==== `[.contract-item-name]#++_fallbackUnderlyingDecimals++#++() → uint8++` [.item-kind]#internal#
+
+Returns the default number of decimals of the underlying ERC-20 token that is being wrapped.
+Used as a default fallback when {_tryGetAssetDecimals} fails to fetch decimals of the underlying
+ERC-20 token.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-_maxDecimals--]]
+==== `[.contract-item-name]#++_maxDecimals++#++() → uint8++` [.item-kind]#internal#
+
+Returns the maximum number that will be used for {decimals} by the wrapper.
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-InvalidUnwrapRequest-bytes32-]]
+==== `[.contract-item-name]#++InvalidUnwrapRequest++#++(bytes32 unwrapRequestId)++` [.item-kind]#error#
+
+[.contract-item]
+[[ERC7984ERC20Wrapper-ERC7984TotalSupplyOverflow--]]
+==== `[.contract-item-name]#++ERC7984TotalSupplyOverflow++#++()++` [.item-kind]#error#
+
+:TokensFrozen: pass:normal[xref:#ERC7984Freezable-TokensFrozen-address-euint64-[`++TokensFrozen++`]]
+:confidentialFrozen: pass:normal[xref:#ERC7984Freezable-confidentialFrozen-address-[`++confidentialFrozen++`]]
+:confidentialAvailable: pass:normal[xref:#ERC7984Freezable-confidentialAvailable-address-[`++confidentialAvailable++`]]
+:_confidentialAvailable: pass:normal[xref:#ERC7984Freezable-_confidentialAvailable-address-[`++_confidentialAvailable++`]]
+:_setConfidentialFrozen: pass:normal[xref:#ERC7984Freezable-_setConfidentialFrozen-address-euint64-[`++_setConfidentialFrozen++`]]
+:_update: pass:normal[xref:#ERC7984Freezable-_update-address-address-euint64-[`++_update++`]]
+
+:confidentialFrozen-address: pass:normal[xref:#ERC7984Freezable-confidentialFrozen-address-[`++confidentialFrozen++`]]
+:confidentialAvailable-address: pass:normal[xref:#ERC7984Freezable-confidentialAvailable-address-[`++confidentialAvailable++`]]
+:_confidentialAvailable-address: pass:normal[xref:#ERC7984Freezable-_confidentialAvailable-address-[`++_confidentialAvailable++`]]
+:_setConfidentialFrozen-address-euint64: pass:normal[xref:#ERC7984Freezable-_setConfidentialFrozen-address-euint64-[`++_setConfidentialFrozen++`]]
+:_update-address-address-euint64: pass:normal[xref:#ERC7984Freezable-_update-address-address-euint64-[`++_update++`]]
+
+[.contract]
+[[ERC7984Freezable]]
+=== `++ERC7984Freezable++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/extensions/ERC7984Freezable.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984Freezable.sol";
+```
+
+Extension of {ERC7984} that implements a confidential
+freezing mechanism that can be managed by calling the internal function
+{_setConfidentialFrozen} by an inheriting contract.
+
+The freezing mechanism provides the guarantee that a specific confidential
+amount of tokens held by an account won't be transferable until those
+tokens are unfrozen.
+
+Inspired by https://github.com/OpenZeppelin/openzeppelin-community-contracts/blob/master/contracts/token/ERC20/extensions/ERC20Freezable.sol
+
+[.contract-index]
+.Functions
+--
+* `++confidentialFrozen(account)++`
+* `++confidentialAvailable(account)++`
+* `++_confidentialAvailable(account)++`
+* `++_setConfidentialFrozen(account, encryptedAmount)++`
+* `++_update(from, to, encryptedAmount)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++supportsInterface(interfaceId)++`
+* `++name()++`
+* `++symbol()++`
+* `++decimals()++`
+* `++contractURI()++`
+* `++confidentialTotalSupply()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+* `++requestDiscloseEncryptedAmount(encryptedAmount)++`
+* `++discloseEncryptedAmount(encryptedAmount, cleartextAmount, decryptionProof)++`
+* `++_setOperator(holder, operator, until)++`
+* `++_mint(to, amount)++`
+* `++_burn(from, amount)++`
+* `++_transfer(from, to, amount)++`
+* `++_transferAndCall(from, to, amount, data)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+* `++TokensFrozen(account, encryptedAmount)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++AmountDiscloseRequested(encryptedAmount, requester)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++ERC7984InvalidReceiver(receiver)++`
+* `++ERC7984InvalidSender(sender)++`
+* `++ERC7984UnauthorizedSpender(holder, spender)++`
+* `++ERC7984UnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984UnauthorizedCaller(caller)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984Freezable-confidentialFrozen-address-]]
+==== `[.contract-item-name]#++confidentialFrozen++#++(address account) → euint64++` [.item-kind]#public#
+
+Returns the confidential frozen balance of an account.
+
+[.contract-item]
+[[ERC7984Freezable-confidentialAvailable-address-]]
+==== `[.contract-item-name]#++confidentialAvailable++#++(address account) → euint64++` [.item-kind]#public#
+
+Returns the confidential available (unfrozen) balance of an account. Gives ACL allowance to `account`.
+
+[.contract-item]
+[[ERC7984Freezable-_confidentialAvailable-address-]]
+==== `[.contract-item-name]#++_confidentialAvailable++#++(address account) → euint64++` [.item-kind]#internal#
+
+Internal function to calculate the available balance of an account. Does not give any allowances.
+
+[.contract-item]
+[[ERC7984Freezable-_setConfidentialFrozen-address-euint64-]]
+==== `[.contract-item-name]#++_setConfidentialFrozen++#++(address account, euint64 encryptedAmount)++` [.item-kind]#internal#
+
+Internal function to freeze a confidential amount of tokens for an account.
+
+[.contract-item]
+[[ERC7984Freezable-_update-address-address-euint64-]]
+==== `[.contract-item-name]#++_update++#++(address from, address to, euint64 encryptedAmount) → euint64++` [.item-kind]#internal#
+
+See {ERC7984-_update}.
+
+The `from` account must have sufficient unfrozen balance,
+otherwise 0 tokens are transferred.
+The default freezing behavior can be changed (for a pass-through for instance) by overriding
+{_confidentialAvailable}. The internal function is used for actual gating (not the public function)
+to avoid unnecessarily granting ACL allowances.
+
+[.contract-item]
+[[ERC7984Freezable-TokensFrozen-address-euint64-]]
+==== `[.contract-item-name]#++TokensFrozen++#++(address indexed account, euint64 encryptedAmount)++` [.item-kind]#event#
+
+Emitted when a confidential amount of token is frozen for an account
+
+:ERC7984ObserverAccessObserverSet: pass:normal[xref:#ERC7984ObserverAccess-ERC7984ObserverAccessObserverSet-address-address-address-[`++ERC7984ObserverAccessObserverSet++`]]
+:Unauthorized: pass:normal[xref:#ERC7984ObserverAccess-Unauthorized--[`++Unauthorized++`]]
+:setObserver: pass:normal[xref:#ERC7984ObserverAccess-setObserver-address-address-[`++setObserver++`]]
+:observer: pass:normal[xref:#ERC7984ObserverAccess-observer-address-[`++observer++`]]
+:_update: pass:normal[xref:#ERC7984ObserverAccess-_update-address-address-euint64-[`++_update++`]]
+
+:setObserver-address-address: pass:normal[xref:#ERC7984ObserverAccess-setObserver-address-address-[`++setObserver++`]]
+:observer-address: pass:normal[xref:#ERC7984ObserverAccess-observer-address-[`++observer++`]]
+:_update-address-address-euint64: pass:normal[xref:#ERC7984ObserverAccess-_update-address-address-euint64-[`++_update++`]]
+
+[.contract]
+[[ERC7984ObserverAccess]]
+=== `++ERC7984ObserverAccess++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/extensions/ERC7984ObserverAccess.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984ObserverAccess.sol";
+```
+
+Extension of {ERC7984} that allows each account to add an observer who is given
+permanent ACL access to its transfer and balance amounts. An observer can be added or removed at any point in time.
+
+[.contract-index]
+.Functions
+--
+* `++setObserver(account, newObserver)++`
+* `++observer(account)++`
+* `++_update(from, to, amount)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++supportsInterface(interfaceId)++`
+* `++name()++`
+* `++symbol()++`
+* `++decimals()++`
+* `++contractURI()++`
+* `++confidentialTotalSupply()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+* `++requestDiscloseEncryptedAmount(encryptedAmount)++`
+* `++discloseEncryptedAmount(encryptedAmount, cleartextAmount, decryptionProof)++`
+* `++_setOperator(holder, operator, until)++`
+* `++_mint(to, amount)++`
+* `++_burn(from, amount)++`
+* `++_transfer(from, to, amount)++`
+* `++_transferAndCall(from, to, amount, data)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+* `++ERC7984ObserverAccessObserverSet(account, oldObserver, newObserver)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++AmountDiscloseRequested(encryptedAmount, requester)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++Unauthorized()++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++ERC7984InvalidReceiver(receiver)++`
+* `++ERC7984InvalidSender(sender)++`
+* `++ERC7984UnauthorizedSpender(holder, spender)++`
+* `++ERC7984UnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984UnauthorizedCaller(caller)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984ObserverAccess-setObserver-address-address-]]
+==== `[.contract-item-name]#++setObserver++#++(address account, address newObserver)++` [.item-kind]#public#
+
+Sets the observer for the given account `account` to `newObserver`. Can be called by the
+account or the existing observer to abdicate the observer role (may only set to `address(0)`).
+
+[.contract-item]
+[[ERC7984ObserverAccess-observer-address-]]
+==== `[.contract-item-name]#++observer++#++(address account) → address++` [.item-kind]#public#
+
+Returns the observer for the given account `account`.
+
+[.contract-item]
+[[ERC7984ObserverAccess-_update-address-address-euint64-]]
+==== `[.contract-item-name]#++_update++#++(address from, address to, euint64 amount) → euint64 transferred++` [.item-kind]#internal#
+
+Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
+Emits a {ConfidentialTransfer} event with the successfully transferred amount.
+
+[.contract-item]
+[[ERC7984ObserverAccess-ERC7984ObserverAccessObserverSet-address-address-address-]]
+==== `[.contract-item-name]#++ERC7984ObserverAccessObserverSet++#++(address account, address oldObserver, address newObserver)++` [.item-kind]#event#
+
+Emitted when the observer is changed for the given account `account`.
+
+[.contract-item]
+[[ERC7984ObserverAccess-Unauthorized--]]
+==== `[.contract-item-name]#++Unauthorized++#++()++` [.item-kind]#error#
+
+Thrown when an account tries to set a `newObserver` for a given `account` without proper authority.
+
+:Restriction: pass:normal[xref:#ERC7984Restricted-Restriction[`++Restriction++`]]
+:UserRestrictionUpdated: pass:normal[xref:#ERC7984Restricted-UserRestrictionUpdated-address-enum-ERC7984Restricted-Restriction-[`++UserRestrictionUpdated++`]]
+:UserRestricted: pass:normal[xref:#ERC7984Restricted-UserRestricted-address-[`++UserRestricted++`]]
+:getRestriction: pass:normal[xref:#ERC7984Restricted-getRestriction-address-[`++getRestriction++`]]
+:canTransact: pass:normal[xref:#ERC7984Restricted-canTransact-address-[`++canTransact++`]]
+:_update: pass:normal[xref:#ERC7984Restricted-_update-address-address-euint64-[`++_update++`]]
+:_setRestriction: pass:normal[xref:#ERC7984Restricted-_setRestriction-address-enum-ERC7984Restricted-Restriction-[`++_setRestriction++`]]
+:_blockUser: pass:normal[xref:#ERC7984Restricted-_blockUser-address-[`++_blockUser++`]]
+:_allowUser: pass:normal[xref:#ERC7984Restricted-_allowUser-address-[`++_allowUser++`]]
+:_resetUser: pass:normal[xref:#ERC7984Restricted-_resetUser-address-[`++_resetUser++`]]
+:_checkRestriction: pass:normal[xref:#ERC7984Restricted-_checkRestriction-address-[`++_checkRestriction++`]]
+:_checkSenderRestriction: pass:normal[xref:#ERC7984Restricted-_checkSenderRestriction-address-[`++_checkSenderRestriction++`]]
+:_checkRecipientRestriction: pass:normal[xref:#ERC7984Restricted-_checkRecipientRestriction-address-[`++_checkRecipientRestriction++`]]
+
+:getRestriction-address: pass:normal[xref:#ERC7984Restricted-getRestriction-address-[`++getRestriction++`]]
+:canTransact-address: pass:normal[xref:#ERC7984Restricted-canTransact-address-[`++canTransact++`]]
+:_update-address-address-euint64: pass:normal[xref:#ERC7984Restricted-_update-address-address-euint64-[`++_update++`]]
+:_setRestriction-address-enum-ERC7984Restricted-Restriction: pass:normal[xref:#ERC7984Restricted-_setRestriction-address-enum-ERC7984Restricted-Restriction-[`++_setRestriction++`]]
+:_blockUser-address: pass:normal[xref:#ERC7984Restricted-_blockUser-address-[`++_blockUser++`]]
+:_allowUser-address: pass:normal[xref:#ERC7984Restricted-_allowUser-address-[`++_allowUser++`]]
+:_resetUser-address: pass:normal[xref:#ERC7984Restricted-_resetUser-address-[`++_resetUser++`]]
+:_checkRestriction-address: pass:normal[xref:#ERC7984Restricted-_checkRestriction-address-[`++_checkRestriction++`]]
+:_checkSenderRestriction-address: pass:normal[xref:#ERC7984Restricted-_checkSenderRestriction-address-[`++_checkSenderRestriction++`]]
+:_checkRecipientRestriction-address: pass:normal[xref:#ERC7984Restricted-_checkRecipientRestriction-address-[`++_checkRecipientRestriction++`]]
+
+[.contract]
+[[ERC7984Restricted]]
+=== `++ERC7984Restricted++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/extensions/ERC7984Restricted.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984Restricted.sol";
+```
+
+Extension of {ERC7984} that implements user account transfer restrictions through the
+{canTransact} function. Inspired by
+https://github.com/OpenZeppelin/openzeppelin-community-contracts/blob/master/contracts/token/ERC20/extensions/ERC20Restricted.sol.
+
+By default, each account has no explicit restriction. The {canTransact} function acts as
+a blocklist. Developers can override {canTransact} to check that `restriction == ALLOWED`
+to implement an allowlist.
+
+[.contract-index]
+.Functions
+--
+* `++getRestriction(account)++`
+* `++canTransact(account)++`
+* `++_update(from, to, value)++`
+* `++_setRestriction(account, restriction)++`
+* `++_blockUser(account)++`
+* `++_allowUser(account)++`
+* `++_resetUser(account)++`
+* `++_checkRestriction(account)++`
+* `++_checkSenderRestriction(account)++`
+* `++_checkRecipientRestriction(account)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++supportsInterface(interfaceId)++`
+* `++name()++`
+* `++symbol()++`
+* `++decimals()++`
+* `++contractURI()++`
+* `++confidentialTotalSupply()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+* `++requestDiscloseEncryptedAmount(encryptedAmount)++`
+* `++discloseEncryptedAmount(encryptedAmount, cleartextAmount, decryptionProof)++`
+* `++_setOperator(holder, operator, until)++`
+* `++_mint(to, amount)++`
+* `++_burn(from, amount)++`
+* `++_transfer(from, to, amount)++`
+* `++_transferAndCall(from, to, amount, data)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+* `++UserRestrictionUpdated(account, restriction)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++AmountDiscloseRequested(encryptedAmount, requester)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++UserRestricted(account)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++ERC7984InvalidReceiver(receiver)++`
+* `++ERC7984InvalidSender(sender)++`
+* `++ERC7984UnauthorizedSpender(holder, spender)++`
+* `++ERC7984UnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984UnauthorizedCaller(caller)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984Restricted-getRestriction-address-]]
+==== `[.contract-item-name]#++getRestriction++#++(address account) → enum ERC7984Restricted.Restriction++` [.item-kind]#public#
+
+Returns the restriction of a user account.
+
+[.contract-item]
+[[ERC7984Restricted-canTransact-address-]]
+==== `[.contract-item-name]#++canTransact++#++(address account) → bool++` [.item-kind]#public#
+
+Returns whether a user account is allowed to receive or send tokens.
+
+Default implementation only disallows explicitly BLOCKED accounts (i.e. a blocklist).
+
+[.contract-item]
+[[ERC7984Restricted-_update-address-address-euint64-]]
+==== `[.contract-item-name]#++_update++#++(address from, address to, euint64 value) → euint64++` [.item-kind]#internal#
+
+See {ERC7984-_update}. Enforces transfer restrictions.
+
+Requirements:
+
+* `from` must be allowed to transfer tokens (see {canTransact}).
+* `to` must be allowed to receive tokens (see {canTransact}).
+
+The default restriction behavior can be changed (for a pass-through for instance) by overriding
+{_checkSenderRestriction} and/or {_checkRecipientRestriction}.
+
+[.contract-item]
+[[ERC7984Restricted-_setRestriction-address-enum-ERC7984Restricted-Restriction-]]
+==== `[.contract-item-name]#++_setRestriction++#++(address account, enum ERC7984Restricted.Restriction restriction)++` [.item-kind]#internal#
+
+Updates the restriction of a user account.
+
+[.contract-item]
+[[ERC7984Restricted-_blockUser-address-]]
+==== `[.contract-item-name]#++_blockUser++#++(address account)++` [.item-kind]#internal#
+
+Convenience function to block a user account (set to BLOCKED).
+
+[.contract-item]
+[[ERC7984Restricted-_allowUser-address-]]
+==== `[.contract-item-name]#++_allowUser++#++(address account)++` [.item-kind]#internal#
+
+Convenience function to allow a user account (set to ALLOWED).
+
+[.contract-item]
+[[ERC7984Restricted-_resetUser-address-]]
+==== `[.contract-item-name]#++_resetUser++#++(address account)++` [.item-kind]#internal#
+
+Convenience function to reset a user account to default restriction.
+
+[.contract-item]
+[[ERC7984Restricted-_checkRestriction-address-]]
+==== `[.contract-item-name]#++_checkRestriction++#++(address account)++` [.item-kind]#internal#
+
+Checks if a user account is restricted. Reverts with {UserRestricted} if so.
+
+[.contract-item]
+[[ERC7984Restricted-_checkSenderRestriction-address-]]
+==== `[.contract-item-name]#++_checkSenderRestriction++#++(address account)++` [.item-kind]#internal#
+
+Internal function which checks restriction of the `from` account before a transfer.
+Working with {_update} function.
+
+[.contract-item]
+[[ERC7984Restricted-_checkRecipientRestriction-address-]]
+==== `[.contract-item-name]#++_checkRecipientRestriction++#++(address account)++` [.item-kind]#internal#
+
+Internal function which checks restriction of the `to` account before a transfer.
+Working with {_update} function.
+
+[.contract-item]
+[[ERC7984Restricted-UserRestrictionUpdated-address-enum-ERC7984Restricted-Restriction-]]
+==== `[.contract-item-name]#++UserRestrictionUpdated++#++(address indexed account, enum ERC7984Restricted.Restriction restriction)++` [.item-kind]#event#
+
+Emitted when a user account's restriction is updated.
+
+[.contract-item]
+[[ERC7984Restricted-UserRestricted-address-]]
+==== `[.contract-item-name]#++UserRestricted++#++(address account)++` [.item-kind]#error#
+
+The operation failed because the user account is restricted.
+
+:OmnibusConfidentialTransfer: pass:normal[xref:#ERC7984Omnibus-OmnibusConfidentialTransfer-address-address-eaddress-eaddress-euint64-[`++OmnibusConfidentialTransfer++`]]
+:ERC7984UnauthorizedUseOfEncryptedAddress: pass:normal[xref:#ERC7984Omnibus-ERC7984UnauthorizedUseOfEncryptedAddress-eaddress-address-[`++ERC7984UnauthorizedUseOfEncryptedAddress++`]]
+:confidentialTransferOmnibus: pass:normal[xref:#ERC7984Omnibus-confidentialTransferOmnibus-address-externalEaddress-externalEaddress-externalEuint64-bytes-[`++confidentialTransferOmnibus++`]]
+:confidentialTransferOmnibus: pass:normal[xref:#ERC7984Omnibus-confidentialTransferOmnibus-address-eaddress-eaddress-euint64-[`++confidentialTransferOmnibus++`]]
+:confidentialTransferFromOmnibus: pass:normal[xref:#ERC7984Omnibus-confidentialTransferFromOmnibus-address-address-externalEaddress-externalEaddress-externalEuint64-bytes-[`++confidentialTransferFromOmnibus++`]]
+:confidentialTransferFromOmnibus: pass:normal[xref:#ERC7984Omnibus-confidentialTransferFromOmnibus-address-address-eaddress-eaddress-euint64-[`++confidentialTransferFromOmnibus++`]]
+:confidentialTransferAndCallOmnibus: pass:normal[xref:#ERC7984Omnibus-confidentialTransferAndCallOmnibus-address-externalEaddress-externalEaddress-externalEuint64-bytes-bytes-[`++confidentialTransferAndCallOmnibus++`]]
+:confidentialTransferAndCallOmnibus: pass:normal[xref:#ERC7984Omnibus-confidentialTransferAndCallOmnibus-address-eaddress-eaddress-euint64-bytes-[`++confidentialTransferAndCallOmnibus++`]]
+:confidentialTransferFromAndCallOmnibus: pass:normal[xref:#ERC7984Omnibus-confidentialTransferFromAndCallOmnibus-address-address-externalEaddress-externalEaddress-externalEuint64-bytes-bytes-[`++confidentialTransferFromAndCallOmnibus++`]]
+:confidentialTransferFromAndCallOmnibus: pass:normal[xref:#ERC7984Omnibus-confidentialTransferFromAndCallOmnibus-address-address-eaddress-eaddress-euint64-bytes-[`++confidentialTransferFromAndCallOmnibus++`]]
+:_confidentialTransferFromOmnibus: pass:normal[xref:#ERC7984Omnibus-_confidentialTransferFromOmnibus-address-address-eaddress-eaddress-euint64-[`++_confidentialTransferFromOmnibus++`]]
+:_confidentialTransferFromAndCallOmnibus: pass:normal[xref:#ERC7984Omnibus-_confidentialTransferFromAndCallOmnibus-address-address-eaddress-eaddress-euint64-bytes-[`++_confidentialTransferFromAndCallOmnibus++`]]
+
+:confidentialTransferOmnibus-address-externalEaddress-externalEaddress-externalEuint64-bytes: pass:normal[xref:#ERC7984Omnibus-confidentialTransferOmnibus-address-externalEaddress-externalEaddress-externalEuint64-bytes-[`++confidentialTransferOmnibus++`]]
+:confidentialTransferOmnibus-address-eaddress-eaddress-euint64: pass:normal[xref:#ERC7984Omnibus-confidentialTransferOmnibus-address-eaddress-eaddress-euint64-[`++confidentialTransferOmnibus++`]]
+:confidentialTransferFromOmnibus-address-address-externalEaddress-externalEaddress-externalEuint64-bytes: pass:normal[xref:#ERC7984Omnibus-confidentialTransferFromOmnibus-address-address-externalEaddress-externalEaddress-externalEuint64-bytes-[`++confidentialTransferFromOmnibus++`]]
+:confidentialTransferFromOmnibus-address-address-eaddress-eaddress-euint64: pass:normal[xref:#ERC7984Omnibus-confidentialTransferFromOmnibus-address-address-eaddress-eaddress-euint64-[`++confidentialTransferFromOmnibus++`]]
+:confidentialTransferAndCallOmnibus-address-externalEaddress-externalEaddress-externalEuint64-bytes-bytes: pass:normal[xref:#ERC7984Omnibus-confidentialTransferAndCallOmnibus-address-externalEaddress-externalEaddress-externalEuint64-bytes-bytes-[`++confidentialTransferAndCallOmnibus++`]]
+:confidentialTransferAndCallOmnibus-address-eaddress-eaddress-euint64-bytes: pass:normal[xref:#ERC7984Omnibus-confidentialTransferAndCallOmnibus-address-eaddress-eaddress-euint64-bytes-[`++confidentialTransferAndCallOmnibus++`]]
+:confidentialTransferFromAndCallOmnibus-address-address-externalEaddress-externalEaddress-externalEuint64-bytes-bytes: pass:normal[xref:#ERC7984Omnibus-confidentialTransferFromAndCallOmnibus-address-address-externalEaddress-externalEaddress-externalEuint64-bytes-bytes-[`++confidentialTransferFromAndCallOmnibus++`]]
+:confidentialTransferFromAndCallOmnibus-address-address-eaddress-eaddress-euint64-bytes: pass:normal[xref:#ERC7984Omnibus-confidentialTransferFromAndCallOmnibus-address-address-eaddress-eaddress-euint64-bytes-[`++confidentialTransferFromAndCallOmnibus++`]]
+:_confidentialTransferFromOmnibus-address-address-eaddress-eaddress-euint64: pass:normal[xref:#ERC7984Omnibus-_confidentialTransferFromOmnibus-address-address-eaddress-eaddress-euint64-[`++_confidentialTransferFromOmnibus++`]]
+:_confidentialTransferFromAndCallOmnibus-address-address-eaddress-eaddress-euint64-bytes: pass:normal[xref:#ERC7984Omnibus-_confidentialTransferFromAndCallOmnibus-address-address-eaddress-eaddress-euint64-bytes-[`++_confidentialTransferFromAndCallOmnibus++`]]
+
+[.contract]
+[[ERC7984Omnibus]]
+=== `++ERC7984Omnibus++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/extensions/ERC7984Omnibus.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984Omnibus.sol";
+```
+
+Extension of {ERC7984} that emits additional events for omnibus transfers.
+These events contain encrypted addresses for the sub-account sender and recipient.
+
+NOTE: There is no onchain accounting for sub-accounts--integrators must track sub-account
+balances externally.
+
+[.contract-index]
+.Functions
+--
+* `++confidentialTransferOmnibus(omnibusTo, externalSender, externalRecipient, externalAmount, inputProof)++`
+* `++confidentialTransferOmnibus(omnibusTo, sender, recipient, amount)++`
+* `++confidentialTransferFromOmnibus(omnibusFrom, omnibusTo, externalSender, externalRecipient, externalAmount, inputProof)++`
+* `++confidentialTransferFromOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount)++`
+* `++confidentialTransferAndCallOmnibus(omnibusTo, externalSender, externalRecipient, externalAmount, inputProof, data)++`
+* `++confidentialTransferAndCallOmnibus(omnibusTo, sender, recipient, amount, data)++`
+* `++confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, externalSender, externalRecipient, externalAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data)++`
+* `++_confidentialTransferFromOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount)++`
+* `++_confidentialTransferFromAndCallOmnibus(omnibusFrom, omnibusTo, sender, recipient, amount, data)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++supportsInterface(interfaceId)++`
+* `++name()++`
+* `++symbol()++`
+* `++decimals()++`
+* `++contractURI()++`
+* `++confidentialTotalSupply()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+* `++requestDiscloseEncryptedAmount(encryptedAmount)++`
+* `++discloseEncryptedAmount(encryptedAmount, cleartextAmount, decryptionProof)++`
+* `++_setOperator(holder, operator, until)++`
+* `++_mint(to, amount)++`
+* `++_burn(from, amount)++`
+* `++_transfer(from, to, amount)++`
+* `++_transferAndCall(from, to, amount, data)++`
+* `++_update(from, to, amount)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+* `++OmnibusConfidentialTransfer(omnibusFrom, omnibusTo, sender, recipient, amount)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++AmountDiscloseRequested(encryptedAmount, requester)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++ERC7984UnauthorizedUseOfEncryptedAddress(addr, user)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++ERC7984InvalidReceiver(receiver)++`
+* `++ERC7984InvalidSender(sender)++`
+* `++ERC7984UnauthorizedSpender(holder, spender)++`
+* `++ERC7984UnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984UnauthorizedCaller(caller)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984Omnibus-confidentialTransferOmnibus-address-externalEaddress-externalEaddress-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferOmnibus++#++(address omnibusTo, externalEaddress externalSender, externalEaddress externalRecipient, externalEuint64 externalAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+
+Wraps the {confidentialTransfer-address-externalEuint64-bytes} function and emits the {OmnibusConfidentialTransfer} event.
+
+[.contract-item]
+[[ERC7984Omnibus-confidentialTransferOmnibus-address-eaddress-eaddress-euint64-]]
+==== `[.contract-item-name]#++confidentialTransferOmnibus++#++(address omnibusTo, eaddress sender, eaddress recipient, euint64 amount) → euint64++` [.item-kind]#public#
+
+Wraps the {confidentialTransfer-address-euint64} function and emits the {OmnibusConfidentialTransfer} event.
+
+[.contract-item]
+[[ERC7984Omnibus-confidentialTransferFromOmnibus-address-address-externalEaddress-externalEaddress-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferFromOmnibus++#++(address omnibusFrom, address omnibusTo, externalEaddress externalSender, externalEaddress externalRecipient, externalEuint64 externalAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+
+Wraps the {confidentialTransferFrom-address-address-externalEuint64-bytes} function and emits the {OmnibusConfidentialTransfer} event.
+
+[.contract-item]
+[[ERC7984Omnibus-confidentialTransferFromOmnibus-address-address-eaddress-eaddress-euint64-]]
+==== `[.contract-item-name]#++confidentialTransferFromOmnibus++#++(address omnibusFrom, address omnibusTo, eaddress sender, eaddress recipient, euint64 amount) → euint64++` [.item-kind]#public#
+
+Wraps the {confidentialTransferFrom-address-address-euint64} function and emits the {OmnibusConfidentialTransfer} event.
+
+[.contract-item]
+[[ERC7984Omnibus-confidentialTransferAndCallOmnibus-address-externalEaddress-externalEaddress-externalEuint64-bytes-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferAndCallOmnibus++#++(address omnibusTo, externalEaddress externalSender, externalEaddress externalRecipient, externalEuint64 externalAmount, bytes inputProof, bytes data) → euint64++` [.item-kind]#public#
+
+Wraps the {confidentialTransferAndCall-address-externalEuint64-bytes-bytes} function and emits the {OmnibusConfidentialTransfer} event.
+
+[.contract-item]
+[[ERC7984Omnibus-confidentialTransferAndCallOmnibus-address-eaddress-eaddress-euint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferAndCallOmnibus++#++(address omnibusTo, eaddress sender, eaddress recipient, euint64 amount, bytes data) → euint64++` [.item-kind]#public#
+
+Wraps the {confidentialTransferAndCall-address-euint64-bytes} function and emits the {OmnibusConfidentialTransfer} event.
+
+[.contract-item]
+[[ERC7984Omnibus-confidentialTransferFromAndCallOmnibus-address-address-externalEaddress-externalEaddress-externalEuint64-bytes-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferFromAndCallOmnibus++#++(address omnibusFrom, address omnibusTo, externalEaddress externalSender, externalEaddress externalRecipient, externalEuint64 externalAmount, bytes inputProof, bytes data) → euint64++` [.item-kind]#public#
+
+Wraps the {confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes} function and emits the {OmnibusConfidentialTransfer} event.
+
+[.contract-item]
+[[ERC7984Omnibus-confidentialTransferFromAndCallOmnibus-address-address-eaddress-eaddress-euint64-bytes-]]
+==== `[.contract-item-name]#++confidentialTransferFromAndCallOmnibus++#++(address omnibusFrom, address omnibusTo, eaddress sender, eaddress recipient, euint64 amount, bytes data) → euint64++` [.item-kind]#public#
+
+Wraps the {confidentialTransferFromAndCall-address-address-euint64-bytes} function and emits the {OmnibusConfidentialTransfer} event.
+
+[.contract-item]
+[[ERC7984Omnibus-_confidentialTransferFromOmnibus-address-address-eaddress-eaddress-euint64-]]
+==== `[.contract-item-name]#++_confidentialTransferFromOmnibus++#++(address omnibusFrom, address omnibusTo, eaddress sender, eaddress recipient, euint64 amount) → euint64++` [.item-kind]#internal#
+
+Handles the ACL allowances, does the transfer without a callback, and emits {OmnibusConfidentialTransfer}.
+
+[.contract-item]
+[[ERC7984Omnibus-_confidentialTransferFromAndCallOmnibus-address-address-eaddress-eaddress-euint64-bytes-]]
+==== `[.contract-item-name]#++_confidentialTransferFromAndCallOmnibus++#++(address omnibusFrom, address omnibusTo, eaddress sender, eaddress recipient, euint64 amount, bytes data) → euint64++` [.item-kind]#internal#
+
+Handles the ACL allowances, does the transfer with a callback, and emits {OmnibusConfidentialTransfer}.
+
+[.contract-item]
+[[ERC7984Omnibus-OmnibusConfidentialTransfer-address-address-eaddress-eaddress-euint64-]]
+==== `[.contract-item-name]#++OmnibusConfidentialTransfer++#++(address indexed omnibusFrom, address indexed omnibusTo, eaddress sender, eaddress indexed recipient, euint64 amount)++` [.item-kind]#event#
+
+Emitted when a confidential transfer is made representing the onchain settlement of
+an omnibus transfer from `sender` to `recipient` of amount `amount`. Settlement occurs between
+`omnibusFrom` and `omnibusTo` and is represented in a matching {IERC7984-ConfidentialTransfer} event.
+
+NOTE: `omnibusFrom` and `omnibusTo` get permanent ACL allowances for `sender` and `recipient`.
+
+[.contract-item]
+[[ERC7984Omnibus-ERC7984UnauthorizedUseOfEncryptedAddress-eaddress-address-]]
+==== `[.contract-item-name]#++ERC7984UnauthorizedUseOfEncryptedAddress++#++(eaddress addr, address user)++` [.item-kind]#error#
+
+The caller `user` does not have access to the encrypted address `addr`.
+
+NOTE: Try using the equivalent transfer function with an input proof.
+
+:ERC7984RwaSelfRecoveryNotAllowed: pass:normal[xref:#ERC7984Rwa-ERC7984RwaSelfRecoveryNotAllowed--[`++ERC7984RwaSelfRecoveryNotAllowed++`]]
+:AGENT_ROLE: pass:normal[xref:#ERC7984Rwa-AGENT_ROLE-bytes32[`++AGENT_ROLE++`]]
+:onlyAdmin: pass:normal[xref:#ERC7984Rwa-onlyAdmin--[`++onlyAdmin++`]]
+:onlyAgent: pass:normal[xref:#ERC7984Rwa-onlyAgent--[`++onlyAgent++`]]
+:constructor: pass:normal[xref:#ERC7984Rwa-constructor-address-[`++constructor++`]]
+:supportsInterface: pass:normal[xref:#ERC7984Rwa-supportsInterface-bytes4-[`++supportsInterface++`]]
+:isAdmin: pass:normal[xref:#ERC7984Rwa-isAdmin-address-[`++isAdmin++`]]
+:isAgent: pass:normal[xref:#ERC7984Rwa-isAgent-address-[`++isAgent++`]]
+:addAgent: pass:normal[xref:#ERC7984Rwa-addAgent-address-[`++addAgent++`]]
+:removeAgent: pass:normal[xref:#ERC7984Rwa-removeAgent-address-[`++removeAgent++`]]
+:pause: pass:normal[xref:#ERC7984Rwa-pause--[`++pause++`]]
+:unpause: pass:normal[xref:#ERC7984Rwa-unpause--[`++unpause++`]]
+:blockUser: pass:normal[xref:#ERC7984Rwa-blockUser-address-[`++blockUser++`]]
+:unblockUser: pass:normal[xref:#ERC7984Rwa-unblockUser-address-[`++unblockUser++`]]
+:setConfidentialFrozen: pass:normal[xref:#ERC7984Rwa-setConfidentialFrozen-address-externalEuint64-bytes-[`++setConfidentialFrozen++`]]
+:setConfidentialFrozen: pass:normal[xref:#ERC7984Rwa-setConfidentialFrozen-address-euint64-[`++setConfidentialFrozen++`]]
+:confidentialMint: pass:normal[xref:#ERC7984Rwa-confidentialMint-address-externalEuint64-bytes-[`++confidentialMint++`]]
+:confidentialMint: pass:normal[xref:#ERC7984Rwa-confidentialMint-address-euint64-[`++confidentialMint++`]]
+:confidentialBurn: pass:normal[xref:#ERC7984Rwa-confidentialBurn-address-externalEuint64-bytes-[`++confidentialBurn++`]]
+:confidentialBurn: pass:normal[xref:#ERC7984Rwa-confidentialBurn-address-euint64-[`++confidentialBurn++`]]
+:recoverAddress: pass:normal[xref:#ERC7984Rwa-recoverAddress-address-address-[`++recoverAddress++`]]
+:forceConfidentialTransferFrom: pass:normal[xref:#ERC7984Rwa-forceConfidentialTransferFrom-address-address-externalEuint64-bytes-[`++forceConfidentialTransferFrom++`]]
+:forceConfidentialTransferFrom: pass:normal[xref:#ERC7984Rwa-forceConfidentialTransferFrom-address-address-euint64-[`++forceConfidentialTransferFrom++`]]
+:confidentialAvailable: pass:normal[xref:#ERC7984Rwa-confidentialAvailable-address-[`++confidentialAvailable++`]]
+:confidentialFrozen: pass:normal[xref:#ERC7984Rwa-confidentialFrozen-address-[`++confidentialFrozen++`]]
+:paused: pass:normal[xref:#ERC7984Rwa-paused--[`++paused++`]]
+:canTransact: pass:normal[xref:#ERC7984Rwa-canTransact-address-[`++canTransact++`]]
+:_update: pass:normal[xref:#ERC7984Rwa-_update-address-address-euint64-[`++_update++`]]
+:_checkSenderRestriction: pass:normal[xref:#ERC7984Rwa-_checkSenderRestriction-address-[`++_checkSenderRestriction++`]]
+:_requireNotPaused: pass:normal[xref:#ERC7984Rwa-_requireNotPaused--[`++_requireNotPaused++`]]
+:_isForceTransfer: pass:normal[xref:#ERC7984Rwa-_isForceTransfer-bytes4-[`++_isForceTransfer++`]]
+
+:constructor-address: pass:normal[xref:#ERC7984Rwa-constructor-address-[`++constructor++`]]
+:supportsInterface-bytes4: pass:normal[xref:#ERC7984Rwa-supportsInterface-bytes4-[`++supportsInterface++`]]
+:isAdmin-address: pass:normal[xref:#ERC7984Rwa-isAdmin-address-[`++isAdmin++`]]
+:isAgent-address: pass:normal[xref:#ERC7984Rwa-isAgent-address-[`++isAgent++`]]
+:addAgent-address: pass:normal[xref:#ERC7984Rwa-addAgent-address-[`++addAgent++`]]
+:removeAgent-address: pass:normal[xref:#ERC7984Rwa-removeAgent-address-[`++removeAgent++`]]
+:pause-: pass:normal[xref:#ERC7984Rwa-pause--[`++pause++`]]
+:unpause-: pass:normal[xref:#ERC7984Rwa-unpause--[`++unpause++`]]
+:blockUser-address: pass:normal[xref:#ERC7984Rwa-blockUser-address-[`++blockUser++`]]
+:unblockUser-address: pass:normal[xref:#ERC7984Rwa-unblockUser-address-[`++unblockUser++`]]
+:setConfidentialFrozen-address-externalEuint64-bytes: pass:normal[xref:#ERC7984Rwa-setConfidentialFrozen-address-externalEuint64-bytes-[`++setConfidentialFrozen++`]]
+:setConfidentialFrozen-address-euint64: pass:normal[xref:#ERC7984Rwa-setConfidentialFrozen-address-euint64-[`++setConfidentialFrozen++`]]
+:confidentialMint-address-externalEuint64-bytes: pass:normal[xref:#ERC7984Rwa-confidentialMint-address-externalEuint64-bytes-[`++confidentialMint++`]]
+:confidentialMint-address-euint64: pass:normal[xref:#ERC7984Rwa-confidentialMint-address-euint64-[`++confidentialMint++`]]
+:confidentialBurn-address-externalEuint64-bytes: pass:normal[xref:#ERC7984Rwa-confidentialBurn-address-externalEuint64-bytes-[`++confidentialBurn++`]]
+:confidentialBurn-address-euint64: pass:normal[xref:#ERC7984Rwa-confidentialBurn-address-euint64-[`++confidentialBurn++`]]
+:recoverAddress-address-address: pass:normal[xref:#ERC7984Rwa-recoverAddress-address-address-[`++recoverAddress++`]]
+:forceConfidentialTransferFrom-address-address-externalEuint64-bytes: pass:normal[xref:#ERC7984Rwa-forceConfidentialTransferFrom-address-address-externalEuint64-bytes-[`++forceConfidentialTransferFrom++`]]
+:forceConfidentialTransferFrom-address-address-euint64: pass:normal[xref:#ERC7984Rwa-forceConfidentialTransferFrom-address-address-euint64-[`++forceConfidentialTransferFrom++`]]
+:confidentialAvailable-address: pass:normal[xref:#ERC7984Rwa-confidentialAvailable-address-[`++confidentialAvailable++`]]
+:confidentialFrozen-address: pass:normal[xref:#ERC7984Rwa-confidentialFrozen-address-[`++confidentialFrozen++`]]
+:paused-: pass:normal[xref:#ERC7984Rwa-paused--[`++paused++`]]
+:canTransact-address: pass:normal[xref:#ERC7984Rwa-canTransact-address-[`++canTransact++`]]
+:_update-address-address-euint64: pass:normal[xref:#ERC7984Rwa-_update-address-address-euint64-[`++_update++`]]
+:_checkSenderRestriction-address: pass:normal[xref:#ERC7984Rwa-_checkSenderRestriction-address-[`++_checkSenderRestriction++`]]
+:_requireNotPaused-: pass:normal[xref:#ERC7984Rwa-_requireNotPaused--[`++_requireNotPaused++`]]
+:_isForceTransfer-bytes4: pass:normal[xref:#ERC7984Rwa-_isForceTransfer-bytes4-[`++_isForceTransfer++`]]
+:AGENT_ROLE-bytes32: pass:normal[xref:#ERC7984Rwa-AGENT_ROLE-bytes32[`++AGENT_ROLE++`]]
+
+[.contract]
+[[ERC7984Rwa]]
+=== `++ERC7984Rwa++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/extensions/ERC7984Rwa.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984Rwa.sol";
+```
+
+Extension of {ERC7984} that supports confidential Real World Assets (RWAs).
+This interface provides compliance checks, transfer controls and enforcement actions.
+
+[.contract-index]
+.Modifiers
+--
+* `++onlyAdmin()++`
+* `++onlyAgent()++`
+--
+
+[.contract-index]
+.Functions
+--
+* `++constructor(admin)++`
+* `++supportsInterface(interfaceId)++`
+* `++isAdmin(account)++`
+* `++isAgent(account)++`
+* `++addAgent(account)++`
+* `++removeAgent(account)++`
+* `++pause()++`
+* `++unpause()++`
+* `++blockUser(account)++`
+* `++unblockUser(account)++`
+* `++setConfidentialFrozen(account, encryptedAmount, inputProof)++`
+* `++setConfidentialFrozen(account, encryptedAmount)++`
+* `++confidentialMint(to, encryptedAmount, inputProof)++`
+* `++confidentialMint(to, encryptedAmount)++`
+* `++confidentialBurn(account, encryptedAmount, inputProof)++`
+* `++confidentialBurn(account, encryptedAmount)++`
+* `++recoverAddress(lostAccount, newAccount)++`
+* `++forceConfidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++forceConfidentialTransferFrom(from, to, encryptedAmount)++`
+* `++confidentialAvailable(account)++`
+* `++confidentialFrozen(account)++`
+* `++paused()++`
+* `++canTransact(account)++`
+* `++_update(from, to, encryptedAmount)++`
+* `++_checkSenderRestriction(account)++`
+* `++_requireNotPaused()++`
+* `++_isForceTransfer(selector)++`
+* `++AGENT_ROLE()++`
+
+[.contract-subindex-inherited]
+.AccessControl
+* `++hasRole(role, account)++`
+* `++_checkRole(role)++`
+* `++_checkRole(role, account)++`
+* `++getRoleAdmin(role)++`
+* `++grantRole(role, account)++`
+* `++revokeRole(role, account)++`
+* `++renounceRole(role, callerConfirmation)++`
+* `++_setRoleAdmin(role, adminRole)++`
+* `++_grantRole(role, account)++`
+* `++_revokeRole(role, account)++`
+* `++DEFAULT_ADMIN_ROLE()++`
+
+[.contract-subindex-inherited]
+.Multicall
+* `++multicall(data)++`
+
+[.contract-subindex-inherited]
+.Pausable
+* `++_requirePaused()++`
+* `++_pause()++`
+* `++_unpause()++`
+
+[.contract-subindex-inherited]
+.ERC7984Restricted
+* `++getRestriction(account)++`
+* `++_setRestriction(account, restriction)++`
+* `++_blockUser(account)++`
+* `++_allowUser(account)++`
+* `++_resetUser(account)++`
+* `++_checkRestriction(account)++`
+* `++_checkRecipientRestriction(account)++`
+
+[.contract-subindex-inherited]
+.ERC7984Freezable
+* `++_confidentialAvailable(account)++`
+* `++_setConfidentialFrozen(account, encryptedAmount)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++name()++`
+* `++symbol()++`
+* `++decimals()++`
+* `++contractURI()++`
+* `++confidentialTotalSupply()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+* `++requestDiscloseEncryptedAmount(encryptedAmount)++`
+* `++discloseEncryptedAmount(encryptedAmount, cleartextAmount, decryptionProof)++`
+* `++_setOperator(holder, operator, until)++`
+* `++_mint(to, amount)++`
+* `++_burn(from, amount)++`
+* `++_transfer(from, to, amount)++`
+* `++_transferAndCall(from, to, amount, data)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984Rwa
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+[.contract-subindex-inherited]
+.IAccessControl
+
+--
+
+[.contract-index]
+.Events
+--
+
+[.contract-subindex-inherited]
+.AccessControl
+
+[.contract-subindex-inherited]
+.Multicall
+
+[.contract-subindex-inherited]
+.Pausable
+* `++Paused(account)++`
+* `++Unpaused(account)++`
+
+[.contract-subindex-inherited]
+.ERC7984Restricted
+* `++UserRestrictionUpdated(account, restriction)++`
+
+[.contract-subindex-inherited]
+.ERC7984Freezable
+* `++TokensFrozen(account, encryptedAmount)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++AmountDiscloseRequested(encryptedAmount, requester)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984Rwa
+* `++TokensRecovered(lostAccount, newAccount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC7984
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+[.contract-subindex-inherited]
+.IAccessControl
+* `++RoleAdminChanged(role, previousAdminRole, newAdminRole)++`
+* `++RoleGranted(role, account, sender)++`
+* `++RoleRevoked(role, account, sender)++`
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++ERC7984RwaSelfRecoveryNotAllowed()++`
+
+[.contract-subindex-inherited]
+.AccessControl
+
+[.contract-subindex-inherited]
+.Multicall
+
+[.contract-subindex-inherited]
+.Pausable
+* `++EnforcedPause()++`
+* `++ExpectedPause()++`
+
+[.contract-subindex-inherited]
+.ERC7984Restricted
+* `++UserRestricted(account)++`
+
+[.contract-subindex-inherited]
+.ERC7984Freezable
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++ERC7984InvalidReceiver(receiver)++`
+* `++ERC7984InvalidSender(sender)++`
+* `++ERC7984UnauthorizedSpender(holder, spender)++`
+* `++ERC7984UnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984UnauthorizedCaller(caller)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984Rwa
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+[.contract-subindex-inherited]
+.IAccessControl
+* `++AccessControlUnauthorizedAccount(account, neededRole)++`
+* `++AccessControlBadConfirmation()++`
+
+--
+
+[.contract-item]
+[[ERC7984Rwa-onlyAdmin--]]
+==== `[.contract-item-name]#++onlyAdmin++#++()++` [.item-kind]#modifier#
+
+Checks if the sender is an admin.
+
+[.contract-item]
+[[ERC7984Rwa-onlyAgent--]]
+==== `[.contract-item-name]#++onlyAgent++#++()++` [.item-kind]#modifier#
+
+Checks if the sender is an agent.
+
+[.contract-item]
+[[ERC7984Rwa-constructor-address-]]
+==== `[.contract-item-name]#++constructor++#++(address admin)++` [.item-kind]#internal#
+
+[.contract-item]
+[[ERC7984Rwa-supportsInterface-bytes4-]]
+==== `[.contract-item-name]#++supportsInterface++#++(bytes4 interfaceId) → bool++` [.item-kind]#public#
+
+[.contract-item]
+[[ERC7984Rwa-isAdmin-address-]]
+==== `[.contract-item-name]#++isAdmin++#++(address account) → bool++` [.item-kind]#public#
+
+Returns true if has admin role, false otherwise.
+
+[.contract-item]
+[[ERC7984Rwa-isAgent-address-]]
+==== `[.contract-item-name]#++isAgent++#++(address account) → bool++` [.item-kind]#public#
+
+Returns true if agent, false otherwise.
+
+[.contract-item]
+[[ERC7984Rwa-addAgent-address-]]
+==== `[.contract-item-name]#++addAgent++#++(address account)++` [.item-kind]#public#
+
+Adds agent.
+
+[.contract-item]
+[[ERC7984Rwa-removeAgent-address-]]
+==== `[.contract-item-name]#++removeAgent++#++(address account)++` [.item-kind]#public#
+
+Removes agent.
+
+[.contract-item]
+[[ERC7984Rwa-pause--]]
+==== `[.contract-item-name]#++pause++#++()++` [.item-kind]#public#
+
+Pauses contract.
+
+[.contract-item]
+[[ERC7984Rwa-unpause--]]
+==== `[.contract-item-name]#++unpause++#++()++` [.item-kind]#public#
+
+Unpauses contract.
+
+[.contract-item]
+[[ERC7984Rwa-blockUser-address-]]
+==== `[.contract-item-name]#++blockUser++#++(address account)++` [.item-kind]#public#
+
+Blocks a user account.
+
+[.contract-item]
+[[ERC7984Rwa-unblockUser-address-]]
+==== `[.contract-item-name]#++unblockUser++#++(address account)++` [.item-kind]#public#
+
+Unblocks a user account.
+
+[.contract-item]
+[[ERC7984Rwa-setConfidentialFrozen-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++setConfidentialFrozen++#++(address account, externalEuint64 encryptedAmount, bytes inputProof)++` [.item-kind]#public#
+
+Sets confidential frozen for an account with proof.
+
+[.contract-item]
+[[ERC7984Rwa-setConfidentialFrozen-address-euint64-]]
+==== `[.contract-item-name]#++setConfidentialFrozen++#++(address account, euint64 encryptedAmount)++` [.item-kind]#public#
+
+Sets confidential frozen for an account.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialMint-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++confidentialMint++#++(address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+
+Mints confidential amount of tokens to account with proof.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialMint-address-euint64-]]
+==== `[.contract-item-name]#++confidentialMint++#++(address to, euint64 encryptedAmount) → euint64++` [.item-kind]#public#
+
+Mints confidential amount of tokens to account.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialBurn-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++confidentialBurn++#++(address account, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+
+Burns confidential amount of tokens from account with proof.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialBurn-address-euint64-]]
+==== `[.contract-item-name]#++confidentialBurn++#++(address account, euint64 encryptedAmount) → euint64++` [.item-kind]#public#
+
+Burns confidential amount of tokens from account.
+
+[.contract-item]
+[[ERC7984Rwa-recoverAddress-address-address-]]
+==== `[.contract-item-name]#++recoverAddress++#++(address lostAccount, address newAccount) → euint64++` [.item-kind]#public#
+
+Recovers the address of a lost account to a new account.
+
+[.contract-item]
+[[ERC7984Rwa-forceConfidentialTransferFrom-address-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++forceConfidentialTransferFrom++#++(address from, address to, externalEuint64 encryptedAmount, bytes inputProof) → euint64++` [.item-kind]#public#
+
+Variant of {forceConfidentialTransferFrom-address-address-euint64} with an input proof.
+
+[.contract-item]
+[[ERC7984Rwa-forceConfidentialTransferFrom-address-address-euint64-]]
+==== `[.contract-item-name]#++forceConfidentialTransferFrom++#++(address from, address to, euint64 encryptedAmount) → euint64++` [.item-kind]#public#
+
+Force transfer callable by the role {AGENT_ROLE} which transfers tokens from `from` to `to` and
+bypasses the {ERC7984Restricted} (only on from) and https://docs.openzeppelin.com/contracts/api/utils#pausable[`++Pausable++`]
+checks. Frozen tokens are not transferred and must be unfrozen first.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialAvailable-address-]]
+==== `[.contract-item-name]#++confidentialAvailable++#++(address account) → euint64++` [.item-kind]#public#
+
+Returns the confidential available (unfrozen) balance of an account. Gives ACL allowance to `account`.
+
+[.contract-item]
+[[ERC7984Rwa-confidentialFrozen-address-]]
+==== `[.contract-item-name]#++confidentialFrozen++#++(address account) → euint64++` [.item-kind]#public#
+
+Returns the confidential frozen balance of an account.
+
+[.contract-item]
+[[ERC7984Rwa-paused--]]
+==== `[.contract-item-name]#++paused++#++() → bool++` [.item-kind]#public#
+
+Returns true if the contract is paused, and false otherwise.
+
+[.contract-item]
+[[ERC7984Rwa-canTransact-address-]]
+==== `[.contract-item-name]#++canTransact++#++(address account) → bool++` [.item-kind]#public#
+
+Returns whether a user account is allowed to receive or send tokens.
+
+Default implementation only disallows explicitly BLOCKED accounts (i.e. a blocklist).
+
+[.contract-item]
+[[ERC7984Rwa-_update-address-address-euint64-]]
+==== `[.contract-item-name]#++_update++#++(address from, address to, euint64 encryptedAmount) → euint64++` [.item-kind]#internal#
+
+Internal function which updates confidential balances while performing frozen and restriction compliance checks.
+
+[.contract-item]
+[[ERC7984Rwa-_checkSenderRestriction-address-]]
+==== `[.contract-item-name]#++_checkSenderRestriction++#++(address account)++` [.item-kind]#internal#
+
+Bypasses {ERC7984Restricted} `from` restriction check when performing a {forceConfidentialTransferFrom}.
+
+[.contract-item]
+[[ERC7984Rwa-_requireNotPaused--]]
+==== `[.contract-item-name]#++_requireNotPaused++#++()++` [.item-kind]#internal#
+
+Bypasses {Pausable} check when performing a {forceConfidentialTransferFrom}.
+
+[.contract-item]
+[[ERC7984Rwa-_isForceTransfer-bytes4-]]
+==== `[.contract-item-name]#++_isForceTransfer++#++(bytes4 selector) → bool++` [.item-kind]#internal#
+
+Internal function which checks if the current function call should be treated as a force transfer.
+
+[.contract-item]
+[[ERC7984Rwa-AGENT_ROLE-bytes32]]
+==== `[.contract-item-name]#++AGENT_ROLE++#++() → bytes32++` [.item-kind]#public#
+
+Accounts granted the agent role have the following permissioned abilities:
+
+* Mint/Burn to/from a given address (does not require permission)
+* Force transfer from a given address (does not require permission)
+** Bypasses pause and restriction checks (not frozen)
+* Pause/Unpause the contract
+* Block/Unblock a given account
+* Set frozen amount of tokens for a given account.
+
+[.contract-item]
+[[ERC7984Rwa-ERC7984RwaSelfRecoveryNotAllowed--]]
+==== `[.contract-item-name]#++ERC7984RwaSelfRecoveryNotAllowed++#++()++` [.item-kind]#error#
+
+The operation failed because the lost account is the same as the new account.
+
+:confidentialTotalSupply: pass:normal[xref:#ERC7984Votes-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
+:_update: pass:normal[xref:#ERC7984Votes-_update-address-address-euint64-[`++_update++`]]
+:_getVotingUnits: pass:normal[xref:#ERC7984Votes-_getVotingUnits-address-[`++_getVotingUnits++`]]
+
+:confidentialTotalSupply-: pass:normal[xref:#ERC7984Votes-confidentialTotalSupply--[`++confidentialTotalSupply++`]]
+:_update-address-address-euint64: pass:normal[xref:#ERC7984Votes-_update-address-address-euint64-[`++_update++`]]
+:_getVotingUnits-address: pass:normal[xref:#ERC7984Votes-_getVotingUnits-address-[`++_getVotingUnits++`]]
+
+[.contract]
+[[ERC7984Votes]]
+=== `++ERC7984Votes++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/extensions/ERC7984Votes.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984Votes.sol";
+```
+
+Extension of {ERC7984} supporting confidential votes tracking and delegation.
+
+The amount of confidential voting units an account has is equal to the balance of
+that account. Voting power is taken into account when an account delegates votes to itself or to another
+account.
+
+[.contract-index]
+.Functions
+--
+* `++confidentialTotalSupply()++`
+* `++_update(from, to, amount)++`
+* `++_getVotingUnits(account)++`
+
+[.contract-subindex-inherited]
+.VotesConfidential
+* `++clock()++`
+* `++CLOCK_MODE()++`
+* `++getVotes(account)++`
+* `++getPastVotes(account, timepoint)++`
+* `++getPastTotalSupply(timepoint)++`
+* `++delegates(account)++`
+* `++delegate(delegatee)++`
+* `++delegateBySig(delegatee, nonce, expiry, v, r, s)++`
+* `++_delegate(account, delegatee)++`
+* `++_transferVotingUnits(from, to, amount)++`
+* `++_moveDelegateVotes(from, to, amount)++`
+* `++_validateTimepoint(timepoint)++`
+
+[.contract-subindex-inherited]
+.HandleAccessManager
+* `++getHandleAllowance(handle, account, persistent)++`
+* `++_validateHandleAllowance()++`
+
+[.contract-subindex-inherited]
+.IERC6372
+
+[.contract-subindex-inherited]
+.EIP712
+* `++_domainSeparatorV4()++`
+* `++_hashTypedDataV4(structHash)++`
+* `++eip712Domain()++`
+* `++_EIP712Name()++`
+* `++_EIP712Version()++`
+
+[.contract-subindex-inherited]
+.IERC5267
+
+[.contract-subindex-inherited]
+.Nonces
+* `++nonces(owner)++`
+* `++_useNonce(owner)++`
+* `++_useCheckedNonce(owner, nonce)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++supportsInterface(interfaceId)++`
+* `++name()++`
+* `++symbol()++`
+* `++decimals()++`
+* `++contractURI()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+* `++requestDiscloseEncryptedAmount(encryptedAmount)++`
+* `++discloseEncryptedAmount(encryptedAmount, cleartextAmount, decryptionProof)++`
+* `++_setOperator(holder, operator, until)++`
+* `++_mint(to, amount)++`
+* `++_burn(from, amount)++`
+* `++_transfer(from, to, amount)++`
+* `++_transferAndCall(from, to, amount, data)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+
+[.contract-subindex-inherited]
+.VotesConfidential
+* `++DelegateVotesChanged(delegate, previousVotes, newVotes)++`
+* `++DelegateChanged(delegator, fromDelegate, toDelegate)++`
+
+[.contract-subindex-inherited]
+.HandleAccessManager
+
+[.contract-subindex-inherited]
+.IERC6372
+
+[.contract-subindex-inherited]
+.EIP712
+
+[.contract-subindex-inherited]
+.IERC5267
+* `++EIP712DomainChanged()++`
+
+[.contract-subindex-inherited]
+.Nonces
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++AmountDiscloseRequested(encryptedAmount, requester)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+
+[.contract-subindex-inherited]
+.VotesConfidential
+* `++VotesExpiredSignature(expiry)++`
+* `++ERC6372InconsistentClock()++`
+* `++ERC5805FutureLookup(timepoint, clock)++`
+
+[.contract-subindex-inherited]
+.HandleAccessManager
+* `++HandleAccessManagerNotAllowed(handle, account)++`
+
+[.contract-subindex-inherited]
+.IERC6372
+
+[.contract-subindex-inherited]
+.EIP712
+
+[.contract-subindex-inherited]
+.IERC5267
+
+[.contract-subindex-inherited]
+.Nonces
+* `++InvalidAccountNonce(account, currentNonce)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++ERC7984InvalidReceiver(receiver)++`
+* `++ERC7984InvalidSender(sender)++`
+* `++ERC7984UnauthorizedSpender(holder, spender)++`
+* `++ERC7984UnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984UnauthorizedCaller(caller)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984Votes-confidentialTotalSupply--]]
+==== `[.contract-item-name]#++confidentialTotalSupply++#++() → euint64++` [.item-kind]#public#
+
+Returns the confidential total supply of the token.
+
+[.contract-item]
+[[ERC7984Votes-_update-address-address-euint64-]]
+==== `[.contract-item-name]#++_update++#++(address from, address to, euint64 amount) → euint64 transferred++` [.item-kind]#internal#
+
+Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
+Emits a {ConfidentialTransfer} event with the successfully transferred amount.
+
+[.contract-item]
+[[ERC7984Votes-_getVotingUnits-address-]]
+==== `[.contract-item-name]#++_getVotingUnits++#++(address account) → euint64++` [.item-kind]#internal#
+
+:ERC7984HookedModuleInstalled: pass:normal[xref:#ERC7984Hooked-ERC7984HookedModuleInstalled-address-[`++ERC7984HookedModuleInstalled++`]]
+:ERC7984HookedModuleUninstalled: pass:normal[xref:#ERC7984Hooked-ERC7984HookedModuleUninstalled-address-[`++ERC7984HookedModuleUninstalled++`]]
+:ERC7984HookedInvalidModule: pass:normal[xref:#ERC7984Hooked-ERC7984HookedInvalidModule-address-[`++ERC7984HookedInvalidModule++`]]
+:ERC7984HookedDuplicateModule: pass:normal[xref:#ERC7984Hooked-ERC7984HookedDuplicateModule-address-[`++ERC7984HookedDuplicateModule++`]]
+:ERC7984HookedNonexistentModule: pass:normal[xref:#ERC7984Hooked-ERC7984HookedNonexistentModule-address-[`++ERC7984HookedNonexistentModule++`]]
+:ERC7984HookedExceededMaxModules: pass:normal[xref:#ERC7984Hooked-ERC7984HookedExceededMaxModules--[`++ERC7984HookedExceededMaxModules++`]]
+:onlyAuthorizedModuleChange: pass:normal[xref:#ERC7984Hooked-onlyAuthorizedModuleChange--[`++onlyAuthorizedModuleChange++`]]
+:isModuleInstalled: pass:normal[xref:#ERC7984Hooked-isModuleInstalled-address-[`++isModuleInstalled++`]]
+:installModule: pass:normal[xref:#ERC7984Hooked-installModule-address-bytes-[`++installModule++`]]
+:uninstallModule: pass:normal[xref:#ERC7984Hooked-uninstallModule-address-bytes-[`++uninstallModule++`]]
+:modules: pass:normal[xref:#ERC7984Hooked-modules-uint256-uint256-[`++modules++`]]
+:maxModules: pass:normal[xref:#ERC7984Hooked-maxModules--[`++maxModules++`]]
+:_authorizeModuleChange: pass:normal[xref:#ERC7984Hooked-_authorizeModuleChange--[`++_authorizeModuleChange++`]]
+:_installModule: pass:normal[xref:#ERC7984Hooked-_installModule-address-bytes-[`++_installModule++`]]
+:_uninstallModule: pass:normal[xref:#ERC7984Hooked-_uninstallModule-address-bytes-[`++_uninstallModule++`]]
+:_update: pass:normal[xref:#ERC7984Hooked-_update-address-address-euint64-[`++_update++`]]
+:_runPreTransferHooks: pass:normal[xref:#ERC7984Hooked-_runPreTransferHooks-address-address-euint64-[`++_runPreTransferHooks++`]]
+:_runPostTransferHooks: pass:normal[xref:#ERC7984Hooked-_runPostTransferHooks-address-address-euint64-[`++_runPostTransferHooks++`]]
+:_validateHandleAllowance: pass:normal[xref:#ERC7984Hooked-_validateHandleAllowance-bytes32-[`++_validateHandleAllowance++`]]
+
+:isModuleInstalled-address: pass:normal[xref:#ERC7984Hooked-isModuleInstalled-address-[`++isModuleInstalled++`]]
+:installModule-address-bytes: pass:normal[xref:#ERC7984Hooked-installModule-address-bytes-[`++installModule++`]]
+:uninstallModule-address-bytes: pass:normal[xref:#ERC7984Hooked-uninstallModule-address-bytes-[`++uninstallModule++`]]
+:modules-uint256-uint256: pass:normal[xref:#ERC7984Hooked-modules-uint256-uint256-[`++modules++`]]
+:maxModules-: pass:normal[xref:#ERC7984Hooked-maxModules--[`++maxModules++`]]
+:_authorizeModuleChange-: pass:normal[xref:#ERC7984Hooked-_authorizeModuleChange--[`++_authorizeModuleChange++`]]
+:_installModule-address-bytes: pass:normal[xref:#ERC7984Hooked-_installModule-address-bytes-[`++_installModule++`]]
+:_uninstallModule-address-bytes: pass:normal[xref:#ERC7984Hooked-_uninstallModule-address-bytes-[`++_uninstallModule++`]]
+:_update-address-address-euint64: pass:normal[xref:#ERC7984Hooked-_update-address-address-euint64-[`++_update++`]]
+:_runPreTransferHooks-address-address-euint64: pass:normal[xref:#ERC7984Hooked-_runPreTransferHooks-address-address-euint64-[`++_runPreTransferHooks++`]]
+:_runPostTransferHooks-address-address-euint64: pass:normal[xref:#ERC7984Hooked-_runPostTransferHooks-address-address-euint64-[`++_runPostTransferHooks++`]]
+:_validateHandleAllowance-bytes32: pass:normal[xref:#ERC7984Hooked-_validateHandleAllowance-bytes32-[`++_validateHandleAllowance++`]]
+
+[.contract]
+[[ERC7984Hooked]]
+=== `++ERC7984Hooked++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/extensions/ERC7984Hooked.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/extensions/ERC7984Hooked.sol";
+```
+
+Extension of {ERC7984} that supports hook modules. Inspired by ERC-7579 modules.
+
+Modules are called before and after transfers. Before the transfer, modules
+conduct checks to see if they approve the given transfer and return an encrypted boolean. If any module
+returns false, the transferred amount becomes 0. After the transfer, modules are notified of the final transfer
+amount and may do accounting as necessary. Modules may revert on either call, which will propagate
+and revert the entire transaction.
+
+NOTE: Hook modules are trusted contracts--they have access to any private state the token has access to.
+
+[.contract-index]
+.Modifiers
+--
+* `++onlyAuthorizedModuleChange()++`
+--
+
+[.contract-index]
+.Functions
+--
+* `++isModuleInstalled(module)++`
+* `++installModule(module, initData)++`
+* `++uninstallModule(module, deinitData)++`
+* `++modules(start, end)++`
+* `++maxModules()++`
+* `++_authorizeModuleChange()++`
+* `++_installModule(module, initData)++`
+* `++_uninstallModule(module, deinitData)++`
+* `++_update(from, to, encryptedAmount)++`
+* `++_runPreTransferHooks(from, to, encryptedAmount)++`
+* `++_runPostTransferHooks(from, to, encryptedAmount)++`
+* `++_validateHandleAllowance(handle)++`
+
+[.contract-subindex-inherited]
+.HandleAccessManager
+* `++getHandleAllowance(handle, account, persistent)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++supportsInterface(interfaceId)++`
+* `++name()++`
+* `++symbol()++`
+* `++decimals()++`
+* `++contractURI()++`
+* `++confidentialTotalSupply()++`
+* `++confidentialBalanceOf(account)++`
+* `++isOperator(holder, spender)++`
+* `++setOperator(operator, until)++`
+* `++confidentialTransfer(to, encryptedAmount, inputProof)++`
+* `++confidentialTransfer(to, amount)++`
+* `++confidentialTransferFrom(from, to, encryptedAmount, inputProof)++`
+* `++confidentialTransferFrom(from, to, amount)++`
+* `++confidentialTransferAndCall(to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferAndCall(to, amount, data)++`
+* `++confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data)++`
+* `++confidentialTransferFromAndCall(from, to, amount, data)++`
+* `++requestDiscloseEncryptedAmount(encryptedAmount)++`
+* `++discloseEncryptedAmount(encryptedAmount, cleartextAmount, decryptionProof)++`
+* `++_setOperator(holder, operator, until)++`
+* `++_mint(to, amount)++`
+* `++_burn(from, amount)++`
+* `++_transfer(from, to, amount)++`
+* `++_transferAndCall(from, to, amount, data)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+* `++ERC7984HookedModuleInstalled(module)++`
+* `++ERC7984HookedModuleUninstalled(module)++`
+
+[.contract-subindex-inherited]
+.HandleAccessManager
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++AmountDiscloseRequested(encryptedAmount, requester)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+* `++OperatorSet(holder, operator, until)++`
+* `++ConfidentialTransfer(from, to, amount)++`
+* `++AmountDisclosed(encryptedAmount, amount)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++ERC7984HookedInvalidModule(module)++`
+* `++ERC7984HookedDuplicateModule(module)++`
+* `++ERC7984HookedNonexistentModule(module)++`
+* `++ERC7984HookedExceededMaxModules()++`
+
+[.contract-subindex-inherited]
+.HandleAccessManager
+* `++HandleAccessManagerNotAllowed(handle, account)++`
+
+[.contract-subindex-inherited]
+.ERC7984
+* `++ERC7984InvalidReceiver(receiver)++`
+* `++ERC7984InvalidSender(sender)++`
+* `++ERC7984UnauthorizedSpender(holder, spender)++`
+* `++ERC7984UnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984UnauthorizedCaller(caller)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984Hooked-onlyAuthorizedModuleChange--]]
+==== `[.contract-item-name]#++onlyAuthorizedModuleChange++#++()++` [.item-kind]#modifier#
+
+[.contract-item]
+[[ERC7984Hooked-isModuleInstalled-address-]]
+==== `[.contract-item-name]#++isModuleInstalled++#++(address module) → bool++` [.item-kind]#public#
+
+Checks if a module is installed.
+
+[.contract-item]
+[[ERC7984Hooked-installModule-address-bytes-]]
+==== `[.contract-item-name]#++installModule++#++(address module, bytes initData)++` [.item-kind]#public#
+
+Installs a hook module.
+
+Consider gas footprint of the module before adding it since all modules will perform
+both steps (pre-hook, post-hook) on all transfers.
+
+[.contract-item]
+[[ERC7984Hooked-uninstallModule-address-bytes-]]
+==== `[.contract-item-name]#++uninstallModule++#++(address module, bytes deinitData)++` [.item-kind]#public#
+
+Uninstalls a hook module.
+
+[.contract-item]
+[[ERC7984Hooked-modules-uint256-uint256-]]
+==== `[.contract-item-name]#++modules++#++(uint256 start, uint256 end) → address[]++` [.item-kind]#public#
+
+Returns a slice of the list of modules installed on the token with inclusive start and exclusive end.
+
+TIP: Use an end value of type(uint256).max to get the entire list of modules.
+
+[.contract-item]
+[[ERC7984Hooked-maxModules--]]
+==== `[.contract-item-name]#++maxModules++#++() → uint256++` [.item-kind]#public#
+
+Returns the maximum number of modules that can be installed.
+
+[.contract-item]
+[[ERC7984Hooked-_authorizeModuleChange--]]
+==== `[.contract-item-name]#++_authorizeModuleChange++#++()++` [.item-kind]#internal#
+
+Authorization logic for installing and uninstalling modules. Must be implemented by the concrete contract.
+
+[.contract-item]
+[[ERC7984Hooked-_installModule-address-bytes-]]
+==== `[.contract-item-name]#++_installModule++#++(address module, bytes initData)++` [.item-kind]#internal#
+
+Internal function which installs a hook module.
+
+[.contract-item]
+[[ERC7984Hooked-_uninstallModule-address-bytes-]]
+==== `[.contract-item-name]#++_uninstallModule++#++(address module, bytes deinitData)++` [.item-kind]#internal#
+
+Internal function which uninstalls a module.
+
+[.contract-item]
+[[ERC7984Hooked-_update-address-address-euint64-]]
+==== `[.contract-item-name]#++_update++#++(address from, address to, euint64 encryptedAmount) → euint64 transferred++` [.item-kind]#internal#
+
+See {ERC7984-_update}.
+
+Modified to run pre and post transfer hooks. Zero tokens are transferred if a module does not approve
+the transfer.
+
+[.contract-item]
+[[ERC7984Hooked-_runPreTransferHooks-address-address-euint64-]]
+==== `[.contract-item-name]#++_runPreTransferHooks++#++(address from, address to, euint64 encryptedAmount) → ebool compliant++` [.item-kind]#internal#
+
+Runs the pre-transfer hooks for all modules.
+
+[.contract-item]
+[[ERC7984Hooked-_runPostTransferHooks-address-address-euint64-]]
+==== `[.contract-item-name]#++_runPostTransferHooks++#++(address from, address to, euint64 encryptedAmount)++` [.item-kind]#internal#
+
+Runs the post-transfer hooks for all modules.
+
+[.contract-item]
+[[ERC7984Hooked-_validateHandleAllowance-bytes32-]]
+==== `[.contract-item-name]#++_validateHandleAllowance++#++(bytes32 handle) → bool++` [.item-kind]#internal#
+
+See {HandleAccessManager-_validateHandleAllowance}. Allow modules to access any handle the token has access to.
+
+[.contract-item]
+[[ERC7984Hooked-ERC7984HookedModuleInstalled-address-]]
+==== `[.contract-item-name]#++ERC7984HookedModuleInstalled++#++(address module)++` [.item-kind]#event#
+
+Emitted when a module is installed.
+
+[.contract-item]
+[[ERC7984Hooked-ERC7984HookedModuleUninstalled-address-]]
+==== `[.contract-item-name]#++ERC7984HookedModuleUninstalled++#++(address module)++` [.item-kind]#event#
+
+Emitted when a module is uninstalled.
+
+[.contract-item]
+[[ERC7984Hooked-ERC7984HookedInvalidModule-address-]]
+==== `[.contract-item-name]#++ERC7984HookedInvalidModule++#++(address module)++` [.item-kind]#error#
+
+The address is not a valid module.
+
+[.contract-item]
+[[ERC7984Hooked-ERC7984HookedDuplicateModule-address-]]
+==== `[.contract-item-name]#++ERC7984HookedDuplicateModule++#++(address module)++` [.item-kind]#error#
+
+The module is already installed.
+
+[.contract-item]
+[[ERC7984Hooked-ERC7984HookedNonexistentModule-address-]]
+==== `[.contract-item-name]#++ERC7984HookedNonexistentModule++#++(address module)++` [.item-kind]#error#
+
+The module is not installed.
+
+[.contract-item]
+[[ERC7984Hooked-ERC7984HookedExceededMaxModules--]]
+==== `[.contract-item-name]#++ERC7984HookedExceededMaxModules++#++()++` [.item-kind]#error#
+
+The maximum number of modules has been exceeded.
+
+== Utilities
+:checkOnTransferReceived: pass:normal[xref:#ERC7984Utils-checkOnTransferReceived-address-address-address-euint64-bytes-[`++checkOnTransferReceived++`]]
+
+:checkOnTransferReceived-address-address-address-euint64-bytes: pass:normal[xref:#ERC7984Utils-checkOnTransferReceived-address-address-address-euint64-bytes-[`++checkOnTransferReceived++`]]
+
+[.contract]
+[[ERC7984Utils]]
+=== `++ERC7984Utils++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/utils/ERC7984Utils.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/utils/ERC7984Utils.sol";
+```
+
+Library that provides common {ERC7984} utility functions.
+
+[.contract-index]
+.Functions
+--
+* `++checkOnTransferReceived(operator, from, to, amount, data)++`
+
+--
+
+[.contract-item]
+[[ERC7984Utils-checkOnTransferReceived-address-address-address-euint64-bytes-]]
+==== `[.contract-item-name]#++checkOnTransferReceived++#++(address operator, address from, address to, euint64 amount, bytes data) → ebool++` [.item-kind]#internal#
+
+Performs a transfer callback to the recipient of the transfer `to`. Should be invoked
+after all transfers "withCallback" on a {ERC7984}.
+
+The transfer callback is not invoked on the recipient if the recipient has no code (i.e. is an EOA). If the
+recipient has non-zero code, it must implement
+{IERC7984Receiver-onConfidentialTransferReceived} and return an `ebool` indicating
+whether the transfer was accepted or not. If the `ebool` is `false`, the transfer function
+should try to refund the `from` address.
+
+:ERC7984HookModuleUnauthorizedAccount: pass:normal[xref:#ERC7984HookModule-ERC7984HookModuleUnauthorizedAccount-address-[`++ERC7984HookModuleUnauthorizedAccount++`]]
+:ERC7984HookModuleUnauthorizedUseOfEncryptedAmount: pass:normal[xref:#ERC7984HookModule-ERC7984HookModuleUnauthorizedUseOfEncryptedAmount-euint64-address-[`++ERC7984HookModuleUnauthorizedUseOfEncryptedAmount++`]]
+:ERC7984HookModuleAlreadyInstalled: pass:normal[xref:#ERC7984HookModule-ERC7984HookModuleAlreadyInstalled-address-[`++ERC7984HookModuleAlreadyInstalled++`]]
+:ERC7984HookModuleNotInstalled: pass:normal[xref:#ERC7984HookModule-ERC7984HookModuleNotInstalled-address-[`++ERC7984HookModuleNotInstalled++`]]
+:preTransfer: pass:normal[xref:#ERC7984HookModule-preTransfer-address-address-euint64-[`++preTransfer++`]]
+:postTransfer: pass:normal[xref:#ERC7984HookModule-postTransfer-address-address-euint64-[`++postTransfer++`]]
+:onInstall: pass:normal[xref:#ERC7984HookModule-onInstall-bytes-[`++onInstall++`]]
+:onUninstall: pass:normal[xref:#ERC7984HookModule-onUninstall-bytes-[`++onUninstall++`]]
+:supportsInterface: pass:normal[xref:#ERC7984HookModule-supportsInterface-bytes4-[`++supportsInterface++`]]
+:_onInstall: pass:normal[xref:#ERC7984HookModule-_onInstall-address-bytes-[`++_onInstall++`]]
+:_onUninstall: pass:normal[xref:#ERC7984HookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
+:_preTransfer: pass:normal[xref:#ERC7984HookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
+:_postTransfer: pass:normal[xref:#ERC7984HookModule-_postTransfer-address-address-address-euint64-[`++_postTransfer++`]]
+:_isModuleInstalled: pass:normal[xref:#ERC7984HookModule-_isModuleInstalled-address-[`++_isModuleInstalled++`]]
+:_getTokenHandleAllowance: pass:normal[xref:#ERC7984HookModule-_getTokenHandleAllowance-address-euint64-[`++_getTokenHandleAllowance++`]]
+:_getTokenHandleAllowance: pass:normal[xref:#ERC7984HookModule-_getTokenHandleAllowance-address-euint64-bool-[`++_getTokenHandleAllowance++`]]
+:_emitPreTransferResults: pass:normal[xref:#ERC7984HookModule-_emitPreTransferResults-address-address-address-euint64-ebool-bytes32-[`++_emitPreTransferResults++`]]
+:_accessHandle: pass:normal[xref:#ERC7984HookModule-_accessHandle-address-euint64-[`++_accessHandle++`]]
+
+:preTransfer-address-address-euint64: pass:normal[xref:#ERC7984HookModule-preTransfer-address-address-euint64-[`++preTransfer++`]]
+:postTransfer-address-address-euint64: pass:normal[xref:#ERC7984HookModule-postTransfer-address-address-euint64-[`++postTransfer++`]]
+:onInstall-bytes: pass:normal[xref:#ERC7984HookModule-onInstall-bytes-[`++onInstall++`]]
+:onUninstall-bytes: pass:normal[xref:#ERC7984HookModule-onUninstall-bytes-[`++onUninstall++`]]
+:supportsInterface-bytes4: pass:normal[xref:#ERC7984HookModule-supportsInterface-bytes4-[`++supportsInterface++`]]
+:_onInstall-address-bytes: pass:normal[xref:#ERC7984HookModule-_onInstall-address-bytes-[`++_onInstall++`]]
+:_onUninstall-address-bytes: pass:normal[xref:#ERC7984HookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
+:_preTransfer-address-address-address-euint64: pass:normal[xref:#ERC7984HookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
+:_postTransfer-address-address-address-euint64: pass:normal[xref:#ERC7984HookModule-_postTransfer-address-address-address-euint64-[`++_postTransfer++`]]
+:_isModuleInstalled-address: pass:normal[xref:#ERC7984HookModule-_isModuleInstalled-address-[`++_isModuleInstalled++`]]
+:_getTokenHandleAllowance-address-euint64: pass:normal[xref:#ERC7984HookModule-_getTokenHandleAllowance-address-euint64-[`++_getTokenHandleAllowance++`]]
+:_getTokenHandleAllowance-address-euint64-bool: pass:normal[xref:#ERC7984HookModule-_getTokenHandleAllowance-address-euint64-bool-[`++_getTokenHandleAllowance++`]]
+:_emitPreTransferResults-address-address-address-euint64-ebool-bytes32: pass:normal[xref:#ERC7984HookModule-_emitPreTransferResults-address-address-address-euint64-ebool-bytes32-[`++_emitPreTransferResults++`]]
+:_accessHandle-address-euint64: pass:normal[xref:#ERC7984HookModule-_accessHandle-address-euint64-[`++_accessHandle++`]]
+
+[.contract]
+[[ERC7984HookModule]]
+=== `++ERC7984HookModule++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/utils/ERC7984HookModule.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/utils/ERC7984HookModule.sol";
+```
+
+An abstract base contract for building ERC-7984 hook modules. Compatible with {ERC7984Hooked}.
+
+[.contract-index]
+.Functions
+--
+* `++preTransfer(from, to, encryptedAmount)++`
+* `++postTransfer(from, to, encryptedAmount)++`
+* `++onInstall(initData)++`
+* `++onUninstall(deinitData)++`
+* `++supportsInterface(interfaceId)++`
+* `++_onInstall(token, )++`
+* `++_onUninstall(token, )++`
+* `++_preTransfer(, , , )++`
+* `++_postTransfer(, , , )++`
+* `++_isModuleInstalled(token)++`
+* `++_getTokenHandleAllowance(token, handle)++`
+* `++_getTokenHandleAllowance(token, handle, persistent)++`
+* `++_emitPreTransferResults(token, from, to, encryptedAmount, compliant, context)++`
+* `++_accessHandle(token, handle)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984HookModule
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984HookModule
+* `++ERC7984HookModuleResult(token, from, to, encryptedAmount, result, context)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++ERC7984HookModuleUnauthorizedAccount(account)++`
+* `++ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984HookModuleAlreadyInstalled(token)++`
+* `++ERC7984HookModuleNotInstalled(token)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984HookModule
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984HookModule-preTransfer-address-address-euint64-]]
+==== `[.contract-item-name]#++preTransfer++#++(address from, address to, euint64 encryptedAmount) → ebool++` [.item-kind]#public#
+
+Hook that runs before a transfer. Should not mutate token state. Module is already
+granted transient access to `encryptedAmount`.
+
+[.contract-item]
+[[ERC7984HookModule-postTransfer-address-address-euint64-]]
+==== `[.contract-item-name]#++postTransfer++#++(address from, address to, euint64 encryptedAmount)++` [.item-kind]#public#
+
+Performs operation after transfer.
+
+[.contract-item]
+[[ERC7984HookModule-onInstall-bytes-]]
+==== `[.contract-item-name]#++onInstall++#++(bytes initData)++` [.item-kind]#public#
+
+Performs operations after installation.
+
+[.contract-item]
+[[ERC7984HookModule-onUninstall-bytes-]]
+==== `[.contract-item-name]#++onUninstall++#++(bytes deinitData)++` [.item-kind]#public#
+
+Performs operations after uninstallation.
+
+NOTE: The module uninstallation will succeed even if this function reverts.
+
+[.contract-item]
+[[ERC7984HookModule-supportsInterface-bytes4-]]
+==== `[.contract-item-name]#++supportsInterface++#++(bytes4 interfaceId) → bool++` [.item-kind]#public#
+
+Returns true if this contract implements the interface defined by
+`interfaceId`. See the corresponding
+https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
+to learn more about how these ids are created.
+
+This function call must use less than 30 000 gas.
+
+[.contract-item]
+[[ERC7984HookModule-_onInstall-address-bytes-]]
+==== `[.contract-item-name]#++_onInstall++#++(address token, bytes)++` [.item-kind]#internal#
+
+Internal function which may be overridden by the derived contract to perform actions
+when the module is installed.
+
+[.contract-item]
+[[ERC7984HookModule-_onUninstall-address-bytes-]]
+==== `[.contract-item-name]#++_onUninstall++#++(address token, bytes)++` [.item-kind]#internal#
+
+Internal function which may be overridden by the derived contract to perform actions
+when the module is uninstalled.
+
+[.contract-item]
+[[ERC7984HookModule-_preTransfer-address-address-address-euint64-]]
+==== `[.contract-item-name]#++_preTransfer++#++(address, address, address, euint64) → ebool++` [.item-kind]#internal#
+
+Internal function which runs before a transfer. Transient access is already granted to the module
+for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
+
+NOTE: ACL allowance on `encryptedAmount` is already checked for `msg.sender` in {preTransfer}.
+
+[.contract-item]
+[[ERC7984HookModule-_postTransfer-address-address-address-euint64-]]
+==== `[.contract-item-name]#++_postTransfer++#++(address, address, address, euint64)++` [.item-kind]#internal#
+
+Internal function which performs operations after transfers. Transient access is already granted to the module
+for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
+
+NOTE: ACL allowance on `encryptedAmount` is already checked for `msg.sender` in {postTransfer}.
+
+[.contract-item]
+[[ERC7984HookModule-_isModuleInstalled-address-]]
+==== `[.contract-item-name]#++_isModuleInstalled++#++(address token) → bool++` [.item-kind]#internal#
+
+Check if the module is installed for the given token. The default implementation reads from
+an internal storage flag maintained by {onInstall} and {onUninstall}. Derived contracts may override
+to extend the check, but should typically rely on the default behavior.
+
+NOTE: This function should use internal storage to check if the module is installed for the given token.
+Do not use external storage like {ERC7984Hooked-isModuleInstalled}.
+
+[.contract-item]
+[[ERC7984HookModule-_getTokenHandleAllowance-address-euint64-]]
+==== `[.contract-item-name]#++_getTokenHandleAllowance++#++(address token, euint64 handle)++` [.item-kind]#internal#
+
+Allow modules to get access to token handles during transaction.
+
+[.contract-item]
+[[ERC7984HookModule-_getTokenHandleAllowance-address-euint64-bool-]]
+==== `[.contract-item-name]#++_getTokenHandleAllowance++#++(address token, euint64 handle, bool persistent)++` [.item-kind]#internal#
+
+Allow modules to get access to token handles.
+
+[.contract-item]
+[[ERC7984HookModule-_emitPreTransferResults-address-address-address-euint64-ebool-bytes32-]]
+==== `[.contract-item-name]#++_emitPreTransferResults++#++(address token, address from, address to, euint64 encryptedAmount, ebool compliant, bytes32 context)++` [.item-kind]#internal#
+
+Optionally emit the result of the pre-transfer hook.
+
+Grants persistent ACL on `compliant` to both this contract and `from`.
+
+[.contract-item]
+[[ERC7984HookModule-_accessHandle-address-euint64-]]
+==== `[.contract-item-name]#++_accessHandle++#++(address token, euint64 handle)++` [.item-kind]#internal#
+
+Get transient ACL allowance for the given handle from a contract that inherits {HandleAccessManager}.
+
+Additionally verifies that the token is authorized to access the handle.
+
+[.contract-item]
+[[ERC7984HookModule-ERC7984HookModuleUnauthorizedAccount-address-]]
+==== `[.contract-item-name]#++ERC7984HookModuleUnauthorizedAccount++#++(address account)++` [.item-kind]#error#
+
+The caller `account` is not authorized to perform the operation.
+
+[.contract-item]
+[[ERC7984HookModule-ERC7984HookModuleUnauthorizedUseOfEncryptedAmount-euint64-address-]]
+==== `[.contract-item-name]#++ERC7984HookModuleUnauthorizedUseOfEncryptedAmount++#++(euint64 amount, address user)++` [.item-kind]#error#
+
+The caller `user` does not have access to the encrypted amount `amount`.
+
+[.contract-item]
+[[ERC7984HookModule-ERC7984HookModuleAlreadyInstalled-address-]]
+==== `[.contract-item-name]#++ERC7984HookModuleAlreadyInstalled++#++(address token)++` [.item-kind]#error#
+
+The module is already installed for the given token.
+
+[.contract-item]
+[[ERC7984HookModule-ERC7984HookModuleNotInstalled-address-]]
+==== `[.contract-item-name]#++ERC7984HookModuleNotInstalled++#++(address token)++` [.item-kind]#error#
+
+The module is not installed for the given token.
+
+:ERC7984BalanceCapHookModuleMaxBalanceSet: pass:normal[xref:#ERC7984BalanceCapHookModule-ERC7984BalanceCapHookModuleMaxBalanceSet-address-euint64-[`++ERC7984BalanceCapHookModuleMaxBalanceSet++`]]
+:setMaxBalance: pass:normal[xref:#ERC7984BalanceCapHookModule-setMaxBalance-address-externalEuint64-bytes-[`++setMaxBalance++`]]
+:maxBalance: pass:normal[xref:#ERC7984BalanceCapHookModule-maxBalance-address-[`++maxBalance++`]]
+:_setMaxBalance: pass:normal[xref:#ERC7984BalanceCapHookModule-_setMaxBalance-address-euint64-[`++_setMaxBalance++`]]
+:_preTransfer: pass:normal[xref:#ERC7984BalanceCapHookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
+:_onInstall: pass:normal[xref:#ERC7984BalanceCapHookModule-_onInstall-address-bytes-[`++_onInstall++`]]
+:_onUninstall: pass:normal[xref:#ERC7984BalanceCapHookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
+
+:setMaxBalance-address-externalEuint64-bytes: pass:normal[xref:#ERC7984BalanceCapHookModule-setMaxBalance-address-externalEuint64-bytes-[`++setMaxBalance++`]]
+:maxBalance-address: pass:normal[xref:#ERC7984BalanceCapHookModule-maxBalance-address-[`++maxBalance++`]]
+:_setMaxBalance-address-euint64: pass:normal[xref:#ERC7984BalanceCapHookModule-_setMaxBalance-address-euint64-[`++_setMaxBalance++`]]
+:_preTransfer-address-address-address-euint64: pass:normal[xref:#ERC7984BalanceCapHookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
+:_onInstall-address-bytes: pass:normal[xref:#ERC7984BalanceCapHookModule-_onInstall-address-bytes-[`++_onInstall++`]]
+:_onUninstall-address-bytes: pass:normal[xref:#ERC7984BalanceCapHookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
+
+[.contract]
+[[ERC7984BalanceCapHookModule]]
+=== `++ERC7984BalanceCapHookModule++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/utils/ERC7984BalanceCapHookModule.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/utils/ERC7984BalanceCapHookModule.sol";
+```
+
+An ERC-7984 hook module that limits the balance of each investor.
+
+The cap is stored as an encrypted `euint64` value. The pre-transfer hook compares the recipient's prospective balance to the
+encrypted cap and emits an encrypted compliance result via {ERC7984HookModule-_emitPreTransferResults}.
+
+This module is compatible with {ERC7984Hooked}.
+
+WARNING: This module notifies senders of the result of the pre-transfer hook. This can be used to leak
+information about the balance of the recipient. This is a potential security risk and should be used
+with caution. Production use-cases may want to remove this notification.
+
+[.contract-index]
+.Functions
+--
+* `++setMaxBalance(token, newMaxBalance, inputProof)++`
+* `++maxBalance(token)++`
+* `++_setMaxBalance(token, newMaxBalance)++`
+* `++_preTransfer(token, from, to, encryptedAmount)++`
+* `++_onInstall(token, initData)++`
+* `++_onUninstall(token, deinitData)++`
+
+[.contract-subindex-inherited]
+.ERC7984HookModule
+* `++preTransfer(from, to, encryptedAmount)++`
+* `++postTransfer(from, to, encryptedAmount)++`
+* `++onInstall(initData)++`
+* `++onUninstall(deinitData)++`
+* `++supportsInterface(interfaceId)++`
+* `++_postTransfer(, , , )++`
+* `++_isModuleInstalled(token)++`
+* `++_getTokenHandleAllowance(token, handle)++`
+* `++_getTokenHandleAllowance(token, handle, persistent)++`
+* `++_emitPreTransferResults(token, from, to, encryptedAmount, compliant, context)++`
+* `++_accessHandle(token, handle)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984HookModule
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+* `++ERC7984BalanceCapHookModuleMaxBalanceSet(token, newMaxBalance)++`
+
+[.contract-subindex-inherited]
+.ERC7984HookModule
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984HookModule
+* `++ERC7984HookModuleResult(token, from, to, encryptedAmount, result, context)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+
+[.contract-subindex-inherited]
+.ERC7984HookModule
+* `++ERC7984HookModuleUnauthorizedAccount(account)++`
+* `++ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984HookModuleAlreadyInstalled(token)++`
+* `++ERC7984HookModuleNotInstalled(token)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984HookModule
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984BalanceCapHookModule-setMaxBalance-address-externalEuint64-bytes-]]
+==== `[.contract-item-name]#++setMaxBalance++#++(address token, externalEuint64 newMaxBalance, bytes inputProof)++` [.item-kind]#public#
+
+Sets the max balance for a given token `token` to the encrypted value `newMaxBalance`.
+
+`msg.sender` must have the agent role on `token`.
+
+[.contract-item]
+[[ERC7984BalanceCapHookModule-maxBalance-address-]]
+==== `[.contract-item-name]#++maxBalance++#++(address token) → euint64++` [.item-kind]#public#
+
+Gets the encrypted max balance for a given token `token`. Returns the zero handle if unset.
+
+[.contract-item]
+[[ERC7984BalanceCapHookModule-_setMaxBalance-address-euint64-]]
+==== `[.contract-item-name]#++_setMaxBalance++#++(address token, euint64 newMaxBalance)++` [.item-kind]#internal#
+
+Sets the encrypted max balance for a given token, grants the module persistent ACL, and emits an event.
+
+[.contract-item]
+[[ERC7984BalanceCapHookModule-_preTransfer-address-address-address-euint64-]]
+==== `[.contract-item-name]#++_preTransfer++#++(address token, address from, address to, euint64 encryptedAmount) → ebool++` [.item-kind]#internal#
+
+Internal function which runs before a transfer. Transient access is already granted to the module
+for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
+
+NOTE: ACL allowance on `encryptedAmount` is already checked for `msg.sender` in {preTransfer}.
+
+[.contract-item]
+[[ERC7984BalanceCapHookModule-_onInstall-address-bytes-]]
+==== `[.contract-item-name]#++_onInstall++#++(address token, bytes initData)++` [.item-kind]#internal#
+
+See {ERC7984HookModule-_onInstall}. The `initData` must contain the initial max balance for the token
+along with the input proof for the max balance. These are encoded using standard ABI encoding.
+
+[.contract-item]
+[[ERC7984BalanceCapHookModule-_onUninstall-address-bytes-]]
+==== `[.contract-item-name]#++_onUninstall++#++(address token, bytes deinitData)++` [.item-kind]#internal#
+
+Internal function which may be overridden by the derived contract to perform actions
+when the module is uninstalled.
+
+[.contract-item]
+[[ERC7984BalanceCapHookModule-ERC7984BalanceCapHookModuleMaxBalanceSet-address-euint64-]]
+==== `[.contract-item-name]#++ERC7984BalanceCapHookModuleMaxBalanceSet++#++(address indexed token, euint64 newMaxBalance)++` [.item-kind]#event#
+
+Emitted when the max balance for a given token is set.
+
+:ERC7984HolderCapHookModuleMaxHolderCountSet: pass:normal[xref:#ERC7984HolderCapHookModule-ERC7984HolderCapHookModuleMaxHolderCountSet-address-uint64-[`++ERC7984HolderCapHookModuleMaxHolderCountSet++`]]
+:ERC7984HolderCapHookModuleInvalidMaxHolderCount: pass:normal[xref:#ERC7984HolderCapHookModule-ERC7984HolderCapHookModuleInvalidMaxHolderCount-uint64-[`++ERC7984HolderCapHookModuleInvalidMaxHolderCount++`]]
+:ERC7984HolderCapHookModuleTotalSupplyInitialized: pass:normal[xref:#ERC7984HolderCapHookModule-ERC7984HolderCapHookModuleTotalSupplyInitialized--[`++ERC7984HolderCapHookModuleTotalSupplyInitialized++`]]
+:setMaxHolderCount: pass:normal[xref:#ERC7984HolderCapHookModule-setMaxHolderCount-address-uint64-[`++setMaxHolderCount++`]]
+:maxHolderCount: pass:normal[xref:#ERC7984HolderCapHookModule-maxHolderCount-address-[`++maxHolderCount++`]]
+:holderCount: pass:normal[xref:#ERC7984HolderCapHookModule-holderCount-address-[`++holderCount++`]]
+:_setMaxHolderCount: pass:normal[xref:#ERC7984HolderCapHookModule-_setMaxHolderCount-address-uint64-[`++_setMaxHolderCount++`]]
+:_preTransfer: pass:normal[xref:#ERC7984HolderCapHookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
+:_postTransfer: pass:normal[xref:#ERC7984HolderCapHookModule-_postTransfer-address-address-address-euint64-[`++_postTransfer++`]]
+:_onInstall: pass:normal[xref:#ERC7984HolderCapHookModule-_onInstall-address-bytes-[`++_onInstall++`]]
+:_onUninstall: pass:normal[xref:#ERC7984HolderCapHookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
+
+:setMaxHolderCount-address-uint64: pass:normal[xref:#ERC7984HolderCapHookModule-setMaxHolderCount-address-uint64-[`++setMaxHolderCount++`]]
+:maxHolderCount-address: pass:normal[xref:#ERC7984HolderCapHookModule-maxHolderCount-address-[`++maxHolderCount++`]]
+:holderCount-address: pass:normal[xref:#ERC7984HolderCapHookModule-holderCount-address-[`++holderCount++`]]
+:_setMaxHolderCount-address-uint64: pass:normal[xref:#ERC7984HolderCapHookModule-_setMaxHolderCount-address-uint64-[`++_setMaxHolderCount++`]]
+:_preTransfer-address-address-address-euint64: pass:normal[xref:#ERC7984HolderCapHookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
+:_postTransfer-address-address-address-euint64: pass:normal[xref:#ERC7984HolderCapHookModule-_postTransfer-address-address-address-euint64-[`++_postTransfer++`]]
+:_onInstall-address-bytes: pass:normal[xref:#ERC7984HolderCapHookModule-_onInstall-address-bytes-[`++_onInstall++`]]
+:_onUninstall-address-bytes: pass:normal[xref:#ERC7984HolderCapHookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
+
+[.contract]
+[[ERC7984HolderCapHookModule]]
+=== `++ERC7984HolderCapHookModule++` link:https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/blob/master/contracts/token/ERC7984/utils/ERC7984HolderCapHookModule.sol[{github-icon},role=heading-link]
+
+[.hljs-theme-light.nopadding]
+```solidity
+import "@openzeppelin/confidential-contracts/token/ERC7984/utils/ERC7984HolderCapHookModule.sol";
+```
+
+An ERC-7984 hook module that limits the number of holders for a given token.
+
+NOTE: This module must be installed prior to minting any tokens. After the total supply is initialized,
+it is not possible to guarantee that the number of holders is 0, so the module can not be installed.
+
+WARNING: This module may not function correctly with non-standard tokens such as fee on transfer.
+
+[.contract-index]
+.Functions
+--
+* `++setMaxHolderCount(token, maxHolderCount_)++`
+* `++maxHolderCount(token)++`
+* `++holderCount(token)++`
+* `++_setMaxHolderCount(token, maxHolderCount_)++`
+* `++_preTransfer(token, from, to, encryptedAmount)++`
+* `++_postTransfer(token, from, to, encryptedAmount)++`
+* `++_onInstall(token, initData)++`
+* `++_onUninstall(token, deinitData)++`
+
+[.contract-subindex-inherited]
+.ERC7984HookModule
+* `++preTransfer(from, to, encryptedAmount)++`
+* `++postTransfer(from, to, encryptedAmount)++`
+* `++onInstall(initData)++`
+* `++onUninstall(deinitData)++`
+* `++supportsInterface(interfaceId)++`
+* `++_isModuleInstalled(token)++`
+* `++_getTokenHandleAllowance(token, handle)++`
+* `++_getTokenHandleAllowance(token, handle, persistent)++`
+* `++_emitPreTransferResults(token, from, to, encryptedAmount, compliant, context)++`
+* `++_accessHandle(token, handle)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984HookModule
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Events
+--
+* `++ERC7984HolderCapHookModuleMaxHolderCountSet(token, newMaxHolderCount)++`
+
+[.contract-subindex-inherited]
+.ERC7984HookModule
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984HookModule
+* `++ERC7984HookModuleResult(token, from, to, encryptedAmount, result, context)++`
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-index]
+.Errors
+--
+* `++ERC7984HolderCapHookModuleInvalidMaxHolderCount(maxHolderCount)++`
+* `++ERC7984HolderCapHookModuleTotalSupplyInitialized()++`
+
+[.contract-subindex-inherited]
+.ERC7984HookModule
+* `++ERC7984HookModuleUnauthorizedAccount(account)++`
+* `++ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(amount, user)++`
+* `++ERC7984HookModuleAlreadyInstalled(token)++`
+* `++ERC7984HookModuleNotInstalled(token)++`
+
+[.contract-subindex-inherited]
+.ERC165
+
+[.contract-subindex-inherited]
+.IERC7984HookModule
+
+[.contract-subindex-inherited]
+.IERC165
+
+--
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-setMaxHolderCount-address-uint64-]]
+==== `[.contract-item-name]#++setMaxHolderCount++#++(address token, uint64 maxHolderCount_)++` [.item-kind]#public#
+
+Sets the max number of holders for the given token `token` to `maxHolderCount_`.
+
+`msg.sender` must have the agent role on `token`
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-maxHolderCount-address-]]
+==== `[.contract-item-name]#++maxHolderCount++#++(address token) → uint64++` [.item-kind]#public#
+
+Gets max number of holders for the given token `token`.
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-holderCount-address-]]
+==== `[.contract-item-name]#++holderCount++#++(address token) → euint64++` [.item-kind]#public#
+
+Gets current number of holders for the given token `token`.
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-_setMaxHolderCount-address-uint64-]]
+==== `[.contract-item-name]#++_setMaxHolderCount++#++(address token, uint64 maxHolderCount_)++` [.item-kind]#internal#
+
+Sets the max holder count for a given token to `maxHolderCount_` and emits an event.
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-_preTransfer-address-address-address-euint64-]]
+==== `[.contract-item-name]#++_preTransfer++#++(address token, address from, address to, euint64 encryptedAmount) → ebool++` [.item-kind]#internal#
+
+Internal function which runs before a transfer. Transient access is already granted to the module
+for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
+
+NOTE: ACL allowance on `encryptedAmount` is already checked for `msg.sender` in {preTransfer}.
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-_postTransfer-address-address-address-euint64-]]
+==== `[.contract-item-name]#++_postTransfer++#++(address token, address from, address to, euint64 encryptedAmount)++` [.item-kind]#internal#
+
+Internal function which performs operations after transfers. Transient access is already granted to the module
+for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
+
+NOTE: ACL allowance on `encryptedAmount` is already checked for `msg.sender` in {postTransfer}.
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-_onInstall-address-bytes-]]
+==== `[.contract-item-name]#++_onInstall++#++(address token, bytes initData)++` [.item-kind]#internal#
+
+See {ERC7984HookModule-_onInstall}. The `initData` must contain the initial max holder count for the token
+as a standard ABI encoded uint64.
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-_onUninstall-address-bytes-]]
+==== `[.contract-item-name]#++_onUninstall++#++(address token, bytes deinitData)++` [.item-kind]#internal#
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-ERC7984HolderCapHookModuleMaxHolderCountSet-address-uint64-]]
+==== `[.contract-item-name]#++ERC7984HolderCapHookModuleMaxHolderCountSet++#++(address indexed token, uint64 newMaxHolderCount)++` [.item-kind]#event#
+
+Emitted when the max holder count for a given token is set.
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-ERC7984HolderCapHookModuleInvalidMaxHolderCount-uint64-]]
+==== `[.contract-item-name]#++ERC7984HolderCapHookModuleInvalidMaxHolderCount++#++(uint64 maxHolderCount)++` [.item-kind]#error#
+
+The new max holder count `maxHolderCount` is invalid.
+
+[.contract-item]
+[[ERC7984HolderCapHookModule-ERC7984HolderCapHookModuleTotalSupplyInitialized--]]
+==== `[.contract-item-name]#++ERC7984HolderCapHookModuleTotalSupplyInitialized++#++()++` [.item-kind]#error#
+

@@ -1,0 +1,20 @@
+{
+  "mode": "pre",
+  "tag": "rc",
+  "initialVersions": {
+    "openzeppelin-confidential-contracts": "0.4.0"
+  },
+  "changesets": [
+    "five-insects-burn",
+    "free-bugs-reply",
+    "fruity-glasses-obey",
+    "fruity-jeans-scream",
+    "large-corners-follow",
+    "real-knives-lay",
+    "salty-words-hug",
+    "tall-crabs-hide",
+    "tired-carrots-shop",
+    "wet-results-doubt",
+    "witty-socks-start"
+  ]
+}
