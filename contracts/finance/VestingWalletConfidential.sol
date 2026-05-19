@@ -67,8 +67,9 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     function releasable(address token) public virtual returns (euint64) {
         euint128 vestedAmount_ = vestedAmount(token, uint48(block.timestamp));
         euint128 releasedAmount = released(token);
-        ebool success = FHE.ge(vestedAmount_, releasedAmount);
-        return FHE.select(success, FHE.asEuint64(FHE.sub(vestedAmount_, releasedAmount)), FHE.asEuint64(0));
+
+        euint128 min = FHE.min(vestedAmount_, releasedAmount);
+        return FHE.asEuint64(FHE.sub(vestedAmount_, min));
     }
 
     /**
