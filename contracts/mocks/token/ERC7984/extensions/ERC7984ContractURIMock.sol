@@ -3,8 +3,8 @@
 pragma solidity ^0.8.27;
 
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ERC7984ContractURI} from "../../token/ERC7984/extensions/ERC7984ContractURI.sol";
-import {ERC7984Mock, ERC7984} from "./ERC7984Mock.sol";
+import {ERC7984ContractURI} from "../../../../token/ERC7984/extensions/ERC7984ContractURI.sol";
+import {ERC7984Mock, ERC7984} from "../ERC7984Mock.sol";
 
 contract ERC7984ContractURIMock is ERC7984ContractURI, ERC7984Mock {
     constructor(

@@ -3,7 +3,6 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
 const transferAmount = 42n;
 
 describe('ERC7984IdentityCheck', function () {
@@ -11,12 +10,7 @@ describe('ERC7984IdentityCheck', function () {
     const [holder, recipient, operator, anyone] = await ethers.getSigners();
 
     const identityRegistry = await ethers.deployContract('IdentityRegistryMock');
-    const token = await ethers.deployContract('$ERC7984IdentityCheckMock', [
-      identityRegistry.target,
-      name,
-      symbol,
-      uri,
-    ]);
+    const token = await ethers.deployContract('$ERC7984IdentityCheckMock', [identityRegistry.target, name, symbol]);
 
     await identityRegistry.setVerified(holder.address, true);
     await token['$_mint(address,uint64)'](holder, 1000);
@@ -30,12 +24,7 @@ describe('ERC7984IdentityCheck', function () {
     });
 
     it('emits IdentityRegistryUpdated with zero previous registry', async function () {
-      const token = await ethers.deployContract('$ERC7984IdentityCheckMock', [
-        this.identityRegistry,
-        name,
-        symbol,
-        uri,
-      ]);
+      const token = await ethers.deployContract('$ERC7984IdentityCheckMock', [this.identityRegistry, name, symbol]);
       await expect(token.deploymentTransaction())
         .to.emit(token, 'IdentityRegistryUpdated')
         .withArgs(ethers.ZeroAddress, this.identityRegistry);

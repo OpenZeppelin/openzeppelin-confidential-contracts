@@ -9,7 +9,6 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
 const wrapAmount = BigInt(ethers.parseEther('10'));
 const exchangeRateDecimals = 6n;
 const exchangeRateMantissa = 10n ** exchangeRateDecimals;
@@ -44,13 +43,11 @@ describe('BatcherConfidential', function () {
       fromTokenUnderlying,
       name,
       symbol,
-      uri,
     ])) as any as $ERC7984ERC20Wrapper;
     const toToken = (await ethers.deployContract('$ERC7984ERC20WrapperMock', [
       toTokenUnderlying,
       name,
       symbol,
-      uri,
     ])) as any as $ERC7984ERC20Wrapper;
 
     for (const { to, tokens } of [holder, recipient].flatMap(x =>
@@ -110,7 +107,6 @@ describe('BatcherConfidential', function () {
       this.fromTokenUnderlying,
       name,
       symbol,
-      uri,
     ]);
 
     await expect(
@@ -124,7 +120,7 @@ describe('BatcherConfidential', function () {
   });
 
   it('should reject invalid fromToken', async function () {
-    const confidentialToken = await ethers.deployContract('$ERC7984Mock', ['Mock Token', 'MTK', 'URI']);
+    const confidentialToken = await ethers.deployContract('$ERC7984Mock', ['Mock Token', 'MTK']);
 
     await expect(
       ethers.deployContract('$BatcherConfidentialSwapMock', [
@@ -139,7 +135,7 @@ describe('BatcherConfidential', function () {
   });
 
   it('should reject invalid toToken', async function () {
-    const confidentialToken = await ethers.deployContract('$ERC7984Mock', ['Mock Token', 'MTK', 'URI']);
+    const confidentialToken = await ethers.deployContract('$ERC7984Mock', ['Mock Token', 'MTK']);
 
     await expect(
       ethers.deployContract('$BatcherConfidentialSwapMock', [
