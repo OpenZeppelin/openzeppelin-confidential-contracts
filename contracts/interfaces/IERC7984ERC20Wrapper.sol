@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (interfaces/IERC7984ERC20Wrapper.sol)
 
 pragma solidity ^0.8.24;
 
@@ -7,6 +8,17 @@ import {IERC7984} from "./IERC7984.sol";
 
 /// @dev Interface for ERC7984ERC20Wrapper contract.
 interface IERC7984ERC20Wrapper is IERC7984 {
+    /// @dev Emitted when an unwrap request is made for a given `receiver`, `unwrapRequestId`, and `amount`.
+    event UnwrapRequested(address indexed receiver, bytes32 indexed unwrapRequestId, euint64 amount);
+
+    /// @dev Emitted when an unwrap request is finalized for a given `receiver`, `unwrapRequestId`, `encryptedAmount`, and `cleartextAmount`.
+    event UnwrapFinalized(
+        address indexed receiver,
+        bytes32 indexed unwrapRequestId,
+        euint64 encryptedAmount,
+        uint64 cleartextAmount
+    );
+
     /**
      * @dev Wraps `amount` of the underlying token into a confidential token and sends it to `to`.
      *
@@ -18,17 +30,33 @@ interface IERC7984ERC20Wrapper is IERC7984 {
      * @dev Unwraps tokens from `from` and sends the underlying tokens to `to`. The caller must be `from`
      * or be an approved operator for `from`.
      *
-     * Returns amount unwrapped.
+     * Returns the unwrap request id.
      *
-     * NOTE: The caller *must* already be approved by ACL for the given `amount`.
+     * NOTE: The returned unwrap request id must never be zero.
      */
     function unwrap(
         address from,
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) external returns (euint64);
+    ) external returns (bytes32);
 
     /// @dev Returns the address of the underlying ERC-20 token that is being wrapped.
     function underlying() external view returns (address);
+
+    /// @dev Finalizes an unwrap request identified by `unwrapRequestId` with the given `unwrapAmountCleartext` and `decryptionProof`.
+    function finalizeUnwrap(
+        bytes32 unwrapRequestId,
+        uint64 unwrapAmountCleartext,
+        bytes calldata decryptionProof
+    ) external;
+
+    /**
+     * @dev Returns the rate at which the underlying token is converted to the wrapped token.
+     * For example, if the `rate` is 1000, then 1000 units of the underlying token equal 1 unit of the wrapped token.
+     */
+    function rate() external view returns (uint256);
+
+    /// @dev Returns the amount of wrapper tokens that were unwrapped for a given `unwrapRequestId`.
+    function unwrapAmount(bytes32 unwrapRequestId) external view returns (euint64);
 }

@@ -1,5 +1,5 @@
 import { $VestingWalletConfidentialFactoryMock } from '../../types/contracts-exposed/mocks/finance/VestingWalletConfidentialFactoryMock.sol/$VestingWalletConfidentialFactoryMock';
-import { $ERC7984Mock } from '../../types/contracts-exposed/mocks/token/ERC7984Mock.sol/$ERC7984Mock';
+import { $ERC7984Mock } from '../../types/contracts-exposed/mocks/token/ERC7984/ERC7984Mock.sol/$ERC7984Mock';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { time } from '@nomicfoundation/hardhat-network-helpers';

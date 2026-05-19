@@ -22,7 +22,14 @@ export const SIGNATURES = {
     'symbol()',
   ],
   ERC7984ContractURI: ['contractURI()'],
-  ERC7984ERC20Wrapper: ['underlying()', 'unwrap(address,address,bytes32,bytes)', 'wrap(address,uint256)'],
+  ERC7984ERC20Wrapper: [
+    'underlying()',
+    'unwrap(address,address,bytes32,bytes)',
+    'wrap(address,uint256)',
+    'finalizeUnwrap(bytes32,uint64,bytes)',
+    'rate()',
+    'unwrapAmount(bytes32)',
+  ],
   ERC7984RWA: [
     'blockUser(address)',
     'confidentialAvailable(address)',
@@ -34,12 +41,21 @@ export const SIGNATURES = {
     'forceConfidentialTransferFrom(address,address,bytes32,bytes)',
     'forceConfidentialTransferFrom(address,address,bytes32)',
     'canTransact(address)',
+    'isAdmin(address)',
+    'isAgent(address)',
     'pause()',
     'paused()',
     'setConfidentialFrozen(address,bytes32,bytes)',
     'setConfidentialFrozen(address,bytes32)',
     'unblockUser(address)',
     'unpause()',
+    'recoverAddress(address,address)',
+  ],
+  ERC7984HookModule: [
+    'preTransfer(address,address,bytes32)',
+    'postTransfer(address,address,bytes32)',
+    'onInstall(bytes)',
+    'onUninstall(bytes)',
   ],
 };
 

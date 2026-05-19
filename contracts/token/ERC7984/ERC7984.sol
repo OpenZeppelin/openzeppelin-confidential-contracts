@@ -43,9 +43,6 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /// @dev The given holder `holder` is not authorized to spend on behalf of `spender`.
     error ERC7984UnauthorizedSpender(address holder, address spender);
 
-    /// @dev The holder `holder` is trying to send tokens but has a balance of 0.
-    error ERC7984ZeroBalance(address holder);
-
     /**
      * @dev The caller `user` does not have access to the encrypted amount `amount`.
      *
@@ -125,22 +122,20 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual returns (euint64 transferred) {
+    ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
         FHE.allowTransient(transferred, msg.sender);
+        return transferred;
     }
 
     /// @inheritdoc IERC7984
-    function confidentialTransferFrom(
-        address from,
-        address to,
-        euint64 amount
-    ) public virtual returns (euint64 transferred) {
+    function confidentialTransferFrom(address from, address to, euint64 amount) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        transferred = _transfer(from, to, amount);
+        euint64 transferred = _transfer(from, to, amount);
         FHE.allowTransient(transferred, msg.sender);
+        return transferred;
     }
 
     /// @inheritdoc IERC7984
@@ -149,9 +144,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
-    ) public virtual returns (euint64 transferred) {
-        transferred = _transferAndCall(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), data);
-        FHE.allowTransient(transferred, msg.sender);
+    ) public virtual returns (euint64) {
+        return _transferAndCall(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), data);
     }
 
     /// @inheritdoc IERC7984
@@ -159,10 +153,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         address to,
         euint64 amount,
         bytes calldata data
-    ) public virtual returns (euint64 transferred) {
+    ) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        transferred = _transferAndCall(msg.sender, to, amount, data);
-        FHE.allowTransient(transferred, msg.sender);
+        return _transferAndCall(msg.sender, to, amount, data);
     }
 
     /// @inheritdoc IERC7984
@@ -172,10 +165,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
-    ) public virtual returns (euint64 transferred) {
+    ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        transferred = _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data);
-        FHE.allowTransient(transferred, msg.sender);
+        return _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data);
     }
 
     /// @inheritdoc IERC7984
@@ -184,11 +176,10 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         address to,
         euint64 amount,
         bytes calldata data
-    ) public virtual returns (euint64 transferred) {
+    ) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        transferred = _transferAndCall(from, to, amount, data);
-        FHE.allowTransient(transferred, msg.sender);
+        return _transferAndCall(from, to, amount, data);
     }
 
     /**
@@ -248,6 +239,25 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         return _update(from, to, amount);
     }
 
+    /**
+     * @dev Transfers the given amount of tokens from `from` to `to` and calls the `onConfidentialTransferReceived`
+     * function on the recipient.
+     *
+     * The token contract initiates a second transfer refunding the tokens from the recipient to the sender--the
+     * amount is 0 if the callback succeeds, otherwise the amount is the amount that was transferred.
+     *
+     * The returned `transferred` amount is a fresh ciphertext computed as `sent - refund`
+     * and `msg.sender` only receives a transient FHE allowance for it. This value is generally
+     * intended to be processed only in the same transaction. Event observers see `sent` and `refund` individually.
+     *
+     * WARNING: The refund triggered when {IERC7984Receiver-onConfidentialTransferReceived} returns an encrypted
+     * false is best-effort only. A receiver that transfers, burns, or otherwise reduces its balance during
+     * the hook can still return false, in which case the refund transfers zero tokens. The sender's tokens
+     * end up with the recipient rather than being refunded.
+     *
+     * WARNING: Refunds are subject to the same validation flow as a normal transfer--they may fail for a variety of
+     * reasons (such as failed hook validation in {ERC7984Hooked}). In these cases, the tokens do not return to the sender.
+     */
     function _transferAndCall(
         address from,
         address to,
@@ -263,8 +273,13 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         // Try to refund if callback fails
         euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent));
         transferred = FHE.sub(sent, refund);
+        FHE.allowTransient(transferred, msg.sender);
     }
 
+    /**
+     * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
+     * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
+     */
     function _update(address from, address to, euint64 amount) internal virtual returns (euint64 transferred) {
         ebool success;
         euint64 ptr;
@@ -275,7 +290,6 @@ abstract contract ERC7984 is IERC7984, ERC165 {
             _totalSupply = ptr;
         } else {
             euint64 fromBalance = _balances[from];
-            require(FHE.isInitialized(fromBalance), ERC7984ZeroBalance(from));
             (success, ptr) = FHESafeMath.tryDecrease(fromBalance, amount);
             FHE.allowThis(ptr);
             FHE.allow(ptr, from);

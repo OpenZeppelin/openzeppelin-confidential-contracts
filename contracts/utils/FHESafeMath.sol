@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.3.0) (utils/FHESafeMath.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (utils/FHESafeMath.sol)
 pragma solidity ^0.8.24;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
@@ -71,5 +71,30 @@ library FHESafeMath {
         euint64 difference = FHE.sub(a, b);
         success = FHE.le(difference, a);
         res = FHE.select(success, difference, FHE.asEuint64(0));
+    }
+
+    /**
+     * @dev Add `a` and `b` saturating at `type(uint64).max` on overflow. The returned value is the sum
+     * of `a` and `b` if it does not overflow, otherwise `type(uint64).max`.
+     */
+    function saturatingAdd(euint64 a, euint64 b) internal returns (euint64) {
+        if (!FHE.isInitialized(a)) {
+            return b;
+        }
+        if (!FHE.isInitialized(b)) {
+            return a;
+        }
+
+        euint64 sum = FHE.add(a, b);
+        return FHE.select(FHE.ge(sum, a), sum, FHE.asEuint64(type(uint64).max));
+    }
+
+    /**
+     * @dev Subtract `b` from `a` saturating at zero on underflow. The returned value is `a - b` if
+     * `a >= b`, otherwise 0.
+     */
+    function saturatingSub(euint64 a, euint64 b) internal returns (euint64) {
+        euint64 minB = FHE.min(a, b);
+        return FHE.sub(a, minB);
     }
 }

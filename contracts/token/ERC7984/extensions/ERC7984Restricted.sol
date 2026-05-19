@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/extensions/ERC7984Restricted.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984Restricted.sol)
 
 pragma solidity ^0.8.27;
 
@@ -35,7 +35,7 @@ abstract contract ERC7984Restricted is ERC7984 {
     }
 
     /**
-     * @dev Returns whether a user account is allowed to interact with the token.
+     * @dev Returns whether a user account is allowed to receive or send tokens.
      *
      * Default implementation only disallows explicitly BLOCKED accounts (i.e. a blocklist).
      */
@@ -44,7 +44,7 @@ abstract contract ERC7984Restricted is ERC7984 {
     }
 
     /**
-     * @dev See {ERC7984-_update}. Enforces transfer restrictions (excluding minting and burning).
+     * @dev See {ERC7984-_update}. Enforces transfer restrictions.
      *
      * Requirements:
      *

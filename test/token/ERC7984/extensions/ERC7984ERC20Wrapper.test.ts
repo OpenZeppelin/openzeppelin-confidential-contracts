@@ -289,9 +289,9 @@ describe('ERC7984ERC20Wrapper', function () {
     it('with a value not allowed to sender', async function () {
       const totalSupplyHandle = await this.wrapper.confidentialTotalSupply();
 
-      await expect(this.wrapper.connect(this.holder).unwrap(this.holder, this.holder, totalSupplyHandle))
+      await expect(this.wrapper.connect(this.recipient).unwrap(this.recipient, this.recipient, totalSupplyHandle))
         .to.be.revertedWithCustomError(this.wrapper, 'ERC7984UnauthorizedUseOfEncryptedAmount')
-        .withArgs(totalSupplyHandle, this.holder);
+        .withArgs(totalSupplyHandle, this.recipient);
     });
 
     it('finalized with invalid signature', async function () {
@@ -389,5 +389,5 @@ async function publicDecryptAndFinalizeUnwrap(wrapper: ERC7984ERC20WrapperMock, 
   const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
   await expect(wrapper.connect(caller).finalizeUnwrap(amount, abiEncodedClearValues, decryptionProof))
     .to.emit(wrapper, 'UnwrapFinalized')
-    .withArgs(to, amount, abiEncodedClearValues);
+    .withArgs(to, amount, amount, abiEncodedClearValues);
 }

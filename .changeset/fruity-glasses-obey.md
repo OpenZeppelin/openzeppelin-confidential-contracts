@@ -2,4 +2,4 @@
 'openzeppelin-confidential-contracts': minor
 ---
 
-Migrate `@fhevm/solidity` dependency to `0.10.0`
+`IERC7984Rwa`: Add token recovery function and event
