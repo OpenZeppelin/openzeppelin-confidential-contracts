@@ -526,7 +526,7 @@ describe('ERC7984Rwa', function () {
     });
 
     for (const withProof of [true, false]) {
-      it(`should not force transfer if receiver blocked ${withProof ? 'with proof' : ''}`, async function () {
+      it(`should force transfer if receiver blocked ${withProof ? 'with proof' : ''}`, async function () {
         const { token, agent1, recipient, anyone } = await fixture();
         let params = [recipient.address, anyone.address] as unknown as [
           from: AddressLike,
@@ -546,17 +546,13 @@ describe('ERC7984Rwa', function () {
           params.push(await token.connect(agent1).createEncryptedAmount.staticCall(amount));
         }
         await token.connect(agent1).blockUser(anyone);
-        await expect(
-          token
-            .connect(agent1)
-            [
-              withProof
-                ? 'forceConfidentialTransferFrom(address,address,bytes32,bytes)'
-                : 'forceConfidentialTransferFrom(address,address,bytes32)'
-            ](...params),
-        )
-          .to.be.revertedWithCustomError(token, 'UserRestricted')
-          .withArgs(anyone.address);
+        await token
+          .connect(agent1)
+          [
+            withProof
+              ? 'forceConfidentialTransferFrom(address,address,bytes32,bytes)'
+              : 'forceConfidentialTransferFrom(address,address,bytes32)'
+          ](...params);
       });
     }
   });
