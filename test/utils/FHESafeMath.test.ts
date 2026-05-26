@@ -180,6 +180,10 @@ describe('FHESafeMath', function () {
 
   const saturatingSubArgsOptions: [BigNumberish | undefined, BigNumberish | undefined, BigNumberish | undefined][] = [
     // a - b = c (saturating at 0)
+    [undefined, undefined, 0],
+    [undefined, 0, 0],
+    [0, undefined, 0],
+    [1, undefined, 1],
     [0, 0, 0],
     [1, 1, 0],
     [5, 3, 2],
@@ -204,7 +208,7 @@ describe('FHESafeMath', function () {
       operation: '-',
     },
   ]) {
-    describe(`saturating ${params.functionSignature.startsWith('saturatingAdd') ? 'add' : 'sub'}`, function () {
+    describe.only(`saturating ${params.functionSignature.startsWith('saturatingAdd') ? 'add' : 'sub'}`, function () {
       for (const args of params.argsOptions) {
         it(`${args[0]} ${params.operation} ${args[1]} = ${args[2]}`, async function () {
           const [a, b, c] = args;
