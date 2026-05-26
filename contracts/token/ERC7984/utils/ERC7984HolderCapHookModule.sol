@@ -63,31 +63,32 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal override returns (ebool) {
-        if (to == address(0) || to == from) {
-            return FHE.asEbool(true);
+    ) internal override returns (ebool result) {
+        result = super._preTransfer(token, from, to, encryptedAmount);
+
+        // in non trivial cases, check compliance.
+        if (to != address(0) && to != from) {
+            euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
+            euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
+
+            _accessHandle(token, fromBalance);
+            _accessHandle(token, toBalance);
+
+            euint64 encryptedZero = FHE.asEuint64(0);
+
+            // note, if from is address(0):
+            // - fromBalance is an encrypted zero
+            // - from will be (erroneously) removed from the holder count only encryptedAmount is a zero
+            // that is fine because if encryptedAmount is a zero, then this value is dropped anyway.
+            euint64 adjustedHolderCount = FHE.add(
+                FHE.sub(holderCount(token), FHE.asEuint64(FHE.eq(fromBalance, encryptedAmount))),
+                FHE.asEuint64(FHE.and(FHE.eq(toBalance, encryptedZero), FHE.ne(encryptedAmount, encryptedZero)))
+            );
+            ebool compliant = FHE.le(adjustedHolderCount, maxHolderCount(token));
+
+            // integrate this module compliance result into the super result.
+            result = FHE.and(result, compliant);
         }
-
-        euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
-        euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
-
-        _accessHandle(token, fromBalance);
-        _accessHandle(token, toBalance);
-
-        euint64 encryptedZero = FHE.asEuint64(0);
-
-        // note, if from is address(0):
-        // - fromBalance is an encrypted zero
-        // - from will be (erroneously) removed from the holder count only encryptedAmount is a zero
-        // that is fine because if encryptedAmount is a zero, then this value is dropped anyway.
-        euint64 adjustedHolderCount = FHE.add(
-            FHE.sub(holderCount(token), FHE.asEuint64(FHE.eq(fromBalance, encryptedAmount))),
-            FHE.asEuint64(FHE.and(FHE.eq(toBalance, encryptedZero), FHE.ne(encryptedAmount, encryptedZero)))
-        );
-
-        ebool compliant = FHE.le(adjustedHolderCount, maxHolderCount(token));
-
-        return FHE.and(compliant, super._preTransfer(token, from, to, encryptedAmount));
     }
 
     /// @inheritdoc ERC7984HookModule
