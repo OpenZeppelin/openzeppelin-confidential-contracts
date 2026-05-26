@@ -2964,7 +2964,7 @@ Sets the encrypted max balance for a given token, grants the module persistent A
 
 [.contract-item]
 [[ERC7984BalanceCapHookModule-_preTransfer-address-address-address-euint64-]]
-==== `[.contract-item-name]#++_preTransfer++#++(address token, address from, address to, euint64 encryptedAmount) → ebool++` [.item-kind]#internal#
+==== `[.contract-item-name]#++_preTransfer++#++(address token, address from, address to, euint64 encryptedAmount) → ebool result++` [.item-kind]#internal#
 
 Internal function which runs before a transfer. Transient access is already granted to the module
 for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
@@ -3136,7 +3136,7 @@ Sets the max holder count for a given token to `maxHolderCount_` and emits an ev
 
 [.contract-item]
 [[ERC7984HolderCapHookModule-_preTransfer-address-address-address-euint64-]]
-==== `[.contract-item-name]#++_preTransfer++#++(address token, address from, address to, euint64 encryptedAmount) → ebool++` [.item-kind]#internal#
+==== `[.contract-item-name]#++_preTransfer++#++(address token, address from, address to, euint64 encryptedAmount) → ebool result++` [.item-kind]#internal#
 
 Internal function which runs before a transfer. Transient access is already granted to the module
 for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.

@@ -56,22 +56,23 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
         address from,
         address to,
         euint64 encryptedAmount
-    ) internal override returns (ebool) {
-        ebool compliant;
-        if (to == address(0) || from == to || !FHE.isInitialized(maxBalance(token))) {
-            compliant = FHE.asEbool(true);
-        } else {
+    ) internal override returns (ebool result) {
+        // super call
+        result = super._preTransfer(token, from, to, encryptedAmount);
+
+        // in non trivial cases, check (and document) compliance.
+        if (to != address(0) && to != from && FHE.isInitialized(maxBalance(token))) {
             euint64 balance = IERC7984Rwa(token).confidentialBalanceOf(to);
             _accessHandle(token, balance);
 
             // Note, if the balance would result in an overflow, transfer will fail due to total supply overflow.
             (, euint64 futureBalance) = FHESafeMath.tryIncrease(balance, encryptedAmount);
-            compliant = FHE.le(futureBalance, maxBalance(token));
+            ebool compliant = FHE.le(futureBalance, maxBalance(token));
+            _emitPreTransferResults(token, from, to, encryptedAmount, compliant, bytes32(0));
+
+            // integrate this module compliance result into the super result.
+            result = FHE.and(result, compliant);
         }
-
-        _emitPreTransferResults(token, from, to, encryptedAmount, compliant, bytes32(0));
-
-        return FHE.and(compliant, super._preTransfer(token, from, to, encryptedAmount));
     }
 
     /**
