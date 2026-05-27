@@ -208,7 +208,7 @@ describe('FHESafeMath', function () {
       operation: '-',
     },
   ]) {
-    describe.only(`saturating ${params.functionSignature.startsWith('saturatingAdd') ? 'add' : 'sub'}`, function () {
+    describe(`saturating ${params.functionSignature.startsWith('saturatingAdd') ? 'add' : 'sub'}`, function () {
       for (const args of params.argsOptions) {
         it(`${args[0]} ${params.operation} ${args[1]} = ${args[2]}`, async function () {
           const [a, b, c] = args;
