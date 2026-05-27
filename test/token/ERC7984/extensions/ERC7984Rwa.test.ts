@@ -802,4 +802,46 @@ describe('ERC7984Rwa', function () {
       ).to.eventually.eq(100);
     });
   });
+
+  describe('Multicall', async function () {
+    it('should atomically unfreeze and force transfer', async function () {
+      const { token, agent1, holder, recipient } = await fixture();
+      const balance = 100;
+      const transferAmount = 75;
+
+      await token['$_mint(address,uint64)'](holder, balance);
+      // Freeze all tokens on the from account so even a force transfer would otherwise move 0 tokens
+      await token.$_setConfidentialFrozen(holder, balance);
+      // Pause the contract; force transfer bypasses the pause check, but a regular transfer would not
+      await token.connect(agent1).pause();
+      expect(await token.paused()).to.be.true;
+
+      // Encrypted inputs are bound to msg.sender (agent1). Multicall uses delegatecall so msg.sender
+      // is preserved inside each sub-call, and the proofs remain valid.
+      const unfreezeInput = await fhevm
+        .createEncryptedInput(await token.getAddress(), agent1.address)
+        .add64(25)
+        .encrypt();
+      const transferInput = await fhevm
+        .createEncryptedInput(await token.getAddress(), agent1.address)
+        .add64(transferAmount)
+        .encrypt();
+
+      const unfreezeData = token.interface.encodeFunctionData('setConfidentialFrozen(address,bytes32,bytes)', [
+        holder.address,
+        unfreezeInput.handles[0],
+        unfreezeInput.inputProof,
+      ]);
+      const forceTransferData = token.interface.encodeFunctionData(
+        'forceConfidentialTransferFrom(address,address,bytes32,bytes)',
+        [holder.address, recipient.address, transferInput.handles[0], transferInput.inputProof],
+      );
+
+      const tx = token.connect(agent1).multicall([unfreezeData, forceTransferData]);
+      const [, , transferredHandle] = await callAndGetResult(tx, transferEventSignature);
+      await expect(fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, token, recipient)).to.eventually.equal(
+        transferAmount,
+      );
+    });
+  });
 });
