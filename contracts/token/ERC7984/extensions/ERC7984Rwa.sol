@@ -257,7 +257,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return super._update(from, to, encryptedAmount);
     }
 
-    /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a forced transfer.
+    /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a forced transfer or token recovery.
     function _checkSenderRestriction(address account) internal view override {
         if (_isForceTransfer(msg.sig)) {
             return;
