@@ -24,7 +24,7 @@ jobs:
         uses: ./.github/actions/setup
       - run: npm run lint
       - name: Ensure no unused imports
-        run: forge lint --only-lint unused-import --deny notes
+        run: forge lint --deny notes --only-lint unused-import
 
   tests:
     runs-on: "ubuntu-latest"
