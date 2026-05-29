@@ -136,10 +136,4 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
         uint64 maxHolderCount_ = abi.decode(initData, (uint64));
         _setMaxHolderCount(token, maxHolderCount_);
     }
-
-    function _onUninstall(address token, bytes calldata deinitData) internal virtual override {
-        super._onUninstall(token, deinitData);
-        delete _maxHolderCounts[token];
-        _holderCounts[token] = euint64.wrap(0);
-    }
 }
