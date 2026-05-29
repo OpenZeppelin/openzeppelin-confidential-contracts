@@ -43,6 +43,7 @@
 :ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :ERC7984Restricted: pass:normal[xref:token.adoc#ERC7984Restricted[`ERC7984Restricted`]]
 :ERC7984Restricted: pass:normal[xref:token.adoc#ERC7984Restricted[`ERC7984Restricted`]]
+:ERC7984Restricted: pass:normal[xref:token.adoc#ERC7984Restricted[`ERC7984Restricted`]]
 :ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :ERC7984-_update: pass:normal[xref:token.adoc#ERC7984-_update-address-address-euint64-[`ERC7984._update`]]
@@ -1586,6 +1587,7 @@ NOTE: Try using the equivalent transfer function with an input proof.
 :canTransact: pass:normal[xref:#ERC7984Rwa-canTransact-address-[`++canTransact++`]]
 :_update: pass:normal[xref:#ERC7984Rwa-_update-address-address-euint64-[`++_update++`]]
 :_checkSenderRestriction: pass:normal[xref:#ERC7984Rwa-_checkSenderRestriction-address-[`++_checkSenderRestriction++`]]
+:_checkRecipientRestriction: pass:normal[xref:#ERC7984Rwa-_checkRecipientRestriction-address-[`++_checkRecipientRestriction++`]]
 :_requireNotPaused: pass:normal[xref:#ERC7984Rwa-_requireNotPaused--[`++_requireNotPaused++`]]
 :_isForceTransfer: pass:normal[xref:#ERC7984Rwa-_isForceTransfer-bytes4-[`++_isForceTransfer++`]]
 
@@ -1614,6 +1616,7 @@ NOTE: Try using the equivalent transfer function with an input proof.
 :canTransact-address: pass:normal[xref:#ERC7984Rwa-canTransact-address-[`++canTransact++`]]
 :_update-address-address-euint64: pass:normal[xref:#ERC7984Rwa-_update-address-address-euint64-[`++_update++`]]
 :_checkSenderRestriction-address: pass:normal[xref:#ERC7984Rwa-_checkSenderRestriction-address-[`++_checkSenderRestriction++`]]
+:_checkRecipientRestriction-address: pass:normal[xref:#ERC7984Rwa-_checkRecipientRestriction-address-[`++_checkRecipientRestriction++`]]
 :_requireNotPaused-: pass:normal[xref:#ERC7984Rwa-_requireNotPaused--[`++_requireNotPaused++`]]
 :_isForceTransfer-bytes4: pass:normal[xref:#ERC7984Rwa-_isForceTransfer-bytes4-[`++_isForceTransfer++`]]
 :AGENT_ROLE-bytes32: pass:normal[xref:#ERC7984Rwa-AGENT_ROLE-bytes32[`++AGENT_ROLE++`]]
@@ -1665,6 +1668,7 @@ This interface provides compliance checks, transfer controls and enforcement act
 * `++canTransact(account)++`
 * `++_update(from, to, encryptedAmount)++`
 * `++_checkSenderRestriction(account)++`
+* `++_checkRecipientRestriction(account)++`
 * `++_requireNotPaused()++`
 * `++_isForceTransfer(selector)++`
 * `++AGENT_ROLE()++`
@@ -1701,7 +1705,6 @@ This interface provides compliance checks, transfer controls and enforcement act
 * `++_allowUser(account)++`
 * `++_resetUser(account)++`
 * `++_checkRestriction(account)++`
-* `++_checkRecipientRestriction(account)++`
 
 [.contract-subindex-inherited]
 .ERC7984Freezable
@@ -2012,7 +2015,13 @@ Internal function which updates confidential balances while performing frozen an
 [[ERC7984Rwa-_checkSenderRestriction-address-]]
 ==== `[.contract-item-name]#++_checkSenderRestriction++#++(address account)++` [.item-kind]#internal#
 
-Bypasses {ERC7984Restricted} `from` restriction check when performing a {forceConfidentialTransferFrom}.
+Bypasses {ERC7984Restricted} `from` restriction check when performing a forced transfer or token recovery.
+
+[.contract-item]
+[[ERC7984Rwa-_checkRecipientRestriction-address-]]
+==== `[.contract-item-name]#++_checkRecipientRestriction++#++(address account)++` [.item-kind]#internal#
+
+Bypasses {ERC7984Restricted} `to` restriction check when performing a forced transfer or token recovery.
 
 [.contract-item]
 [[ERC7984Rwa-_requireNotPaused--]]

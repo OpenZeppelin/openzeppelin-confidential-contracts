@@ -180,6 +180,10 @@ describe('FHESafeMath', function () {
 
   const saturatingSubArgsOptions: [BigNumberish | undefined, BigNumberish | undefined, BigNumberish | undefined][] = [
     // a - b = c (saturating at 0)
+    [undefined, undefined, 0],
+    [undefined, 0, 0],
+    [0, undefined, 0],
+    [1, undefined, 1],
     [0, 0, 0],
     [1, 1, 0],
     [5, 3, 2],
