@@ -110,8 +110,8 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
     /// @dev Sets confidential frozen for an account.
     function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual onlyAgent {
         require(
-            FHE.isAllowed(encryptedAmount, msg.sender),
-            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+            FHE.isAllowed(encryptedAmount, _msgSender()),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, _msgSender())
         );
         _setConfidentialFrozen(account, encryptedAmount);
     }
@@ -123,18 +123,18 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
         euint64 mintedAmount = _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
-        FHE.allow(mintedAmount, msg.sender);
+        FHE.allow(mintedAmount, _msgSender());
         return mintedAmount;
     }
 
     /// @dev Mints confidential amount of tokens to account.
     function confidentialMint(address to, euint64 encryptedAmount) public virtual onlyAgent returns (euint64) {
         require(
-            FHE.isAllowed(encryptedAmount, msg.sender),
-            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+            FHE.isAllowed(encryptedAmount, _msgSender()),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, _msgSender())
         );
         euint64 mintedAmount = _mint(to, encryptedAmount);
-        FHE.allow(mintedAmount, msg.sender);
+        FHE.allow(mintedAmount, _msgSender());
         return mintedAmount;
     }
 
@@ -145,18 +145,18 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
         euint64 burntAmount = _burn(account, FHE.fromExternal(encryptedAmount, inputProof));
-        FHE.allow(burntAmount, msg.sender);
+        FHE.allow(burntAmount, _msgSender());
         return burntAmount;
     }
 
     /// @dev Burns confidential amount of tokens from account.
     function confidentialBurn(address account, euint64 encryptedAmount) public virtual onlyAgent returns (euint64) {
         require(
-            FHE.isAllowed(encryptedAmount, msg.sender),
-            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+            FHE.isAllowed(encryptedAmount, _msgSender()),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, _msgSender())
         );
         euint64 burntAmount = _burn(account, encryptedAmount);
-        FHE.allow(burntAmount, msg.sender);
+        FHE.allow(burntAmount, _msgSender());
         return burntAmount;
     }
 
@@ -172,7 +172,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         }
 
         euint64 tokensRecovered = _transfer(lostAccount, newAccount, balance);
-        FHE.allow(tokensRecovered, msg.sender);
+        FHE.allow(tokensRecovered, _msgSender());
 
         if (FHE.isInitialized(lostFrozenBalance)) {
             _setConfidentialFrozen(
@@ -200,7 +200,7 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
         euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
-        FHE.allow(transferred, msg.sender);
+        FHE.allow(transferred, _msgSender());
         return transferred;
     }
 
@@ -215,11 +215,11 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         euint64 encryptedAmount
     ) public virtual onlyAgent returns (euint64) {
         require(
-            FHE.isAllowed(encryptedAmount, msg.sender),
-            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
+            FHE.isAllowed(encryptedAmount, _msgSender()),
+            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, _msgSender())
         );
         euint64 transferred = _transfer(from, to, encryptedAmount);
-        FHE.allow(transferred, msg.sender);
+        FHE.allow(transferred, _msgSender());
         return transferred;
     }
 
