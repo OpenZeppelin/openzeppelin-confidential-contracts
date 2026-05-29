@@ -288,4 +288,14 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             selector == 0x44fd6e40 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
             selector == this.recoverAddress.selector;
     }
+
+    /// @dev Restrict overrides of {Context._msgSender}. Please use other account abstraction methods instead.
+    function _msgSender() internal view override returns (address) {
+        return super._msgSender();
+    }
+
+    /// @dev Restrict overrides of {Context._msgData}. Please use other account abstraction methods instead.
+    function _msgData() internal view override returns (bytes calldata) {
+        return super._msgData();
+    }
 }
