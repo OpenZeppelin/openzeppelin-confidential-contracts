@@ -23,7 +23,7 @@ jobs:
       - name: Set up environment
         uses: ./.github/actions/setup
       - run: npm run lint
-      - name: Ensure no unused imports
+      - name: Check for unused imports
         run: forge build && forge lint --deny notes --only-lint unused-import
 
   tests:
