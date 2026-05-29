@@ -1590,6 +1590,8 @@ NOTE: Try using the equivalent transfer function with an input proof.
 :_checkRecipientRestriction: pass:normal[xref:#ERC7984Rwa-_checkRecipientRestriction-address-[`++_checkRecipientRestriction++`]]
 :_requireNotPaused: pass:normal[xref:#ERC7984Rwa-_requireNotPaused--[`++_requireNotPaused++`]]
 :_isForceTransfer: pass:normal[xref:#ERC7984Rwa-_isForceTransfer-bytes4-[`++_isForceTransfer++`]]
+:_msgSender: pass:normal[xref:#ERC7984Rwa-_msgSender--[`++_msgSender++`]]
+:_msgData: pass:normal[xref:#ERC7984Rwa-_msgData--[`++_msgData++`]]
 
 :constructor-address: pass:normal[xref:#ERC7984Rwa-constructor-address-[`++constructor++`]]
 :supportsInterface-bytes4: pass:normal[xref:#ERC7984Rwa-supportsInterface-bytes4-[`++supportsInterface++`]]
@@ -1619,6 +1621,8 @@ NOTE: Try using the equivalent transfer function with an input proof.
 :_checkRecipientRestriction-address: pass:normal[xref:#ERC7984Rwa-_checkRecipientRestriction-address-[`++_checkRecipientRestriction++`]]
 :_requireNotPaused-: pass:normal[xref:#ERC7984Rwa-_requireNotPaused--[`++_requireNotPaused++`]]
 :_isForceTransfer-bytes4: pass:normal[xref:#ERC7984Rwa-_isForceTransfer-bytes4-[`++_isForceTransfer++`]]
+:_msgSender-: pass:normal[xref:#ERC7984Rwa-_msgSender--[`++_msgSender++`]]
+:_msgData-: pass:normal[xref:#ERC7984Rwa-_msgData--[`++_msgData++`]]
 :AGENT_ROLE-bytes32: pass:normal[xref:#ERC7984Rwa-AGENT_ROLE-bytes32[`++AGENT_ROLE++`]]
 
 [.contract]
@@ -1671,6 +1675,8 @@ This interface provides compliance checks, transfer controls and enforcement act
 * `++_checkRecipientRestriction(account)++`
 * `++_requireNotPaused()++`
 * `++_isForceTransfer(selector)++`
+* `++_msgSender()++`
+* `++_msgData()++`
 * `++AGENT_ROLE()++`
 
 [.contract-subindex-inherited]
@@ -2034,6 +2040,18 @@ Bypasses {Pausable} check when performing a {forceConfidentialTransferFrom}.
 ==== `[.contract-item-name]#++_isForceTransfer++#++(bytes4 selector) → bool++` [.item-kind]#internal#
 
 Internal function which checks if the current function call should be treated as a force transfer.
+
+[.contract-item]
+[[ERC7984Rwa-_msgSender--]]
+==== `[.contract-item-name]#++_msgSender++#++() → address++` [.item-kind]#internal#
+
+Restrict overrides of {Context._msgSender}. Please use other account abstraction methods instead.
+
+[.contract-item]
+[[ERC7984Rwa-_msgData--]]
+==== `[.contract-item-name]#++_msgData++#++() → bytes++` [.item-kind]#internal#
+
+Restrict overrides of {Context._msgData}. Please use other account abstraction methods instead.
 
 [.contract-item]
 [[ERC7984Rwa-AGENT_ROLE-bytes32]]
