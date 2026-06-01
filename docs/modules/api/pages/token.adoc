@@ -52,7 +52,6 @@
 :ERC7984: pass:normal[xref:token.adoc#ERC7984[`ERC7984`]]
 :IERC7984Receiver-onConfidentialTransferReceived: pass:normal[xref:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`IERC7984Receiver.onConfidentialTransferReceived`]]
 :ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
-:ERC7984Hooked-isModuleInstalled: pass:normal[xref:token.adoc#ERC7984Hooked-isModuleInstalled-address-[`ERC7984Hooked.isModuleInstalled`]]
 :HandleAccessManager: pass:normal[xref:utils.adoc#HandleAccessManager[`HandleAccessManager`]]
 :ERC7984HookModule-_emitPreTransferResults: pass:normal[xref:token.adoc#ERC7984HookModule-_emitPreTransferResults-address-address-address-euint64-ebool-bytes32-[`ERC7984HookModule._emitPreTransferResults`]]
 :ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
@@ -2294,12 +2293,12 @@ Emits a {ConfidentialTransfer} event with the successfully transferred amount.
 :onlyAuthorizedModuleChange: pass:normal[xref:#ERC7984Hooked-onlyAuthorizedModuleChange--[`++onlyAuthorizedModuleChange++`]]
 :isModuleInstalled: pass:normal[xref:#ERC7984Hooked-isModuleInstalled-address-[`++isModuleInstalled++`]]
 :installModule: pass:normal[xref:#ERC7984Hooked-installModule-address-bytes-[`++installModule++`]]
-:uninstallModule: pass:normal[xref:#ERC7984Hooked-uninstallModule-address-bytes-[`++uninstallModule++`]]
+:uninstallModule: pass:normal[xref:#ERC7984Hooked-uninstallModule-address-[`++uninstallModule++`]]
 :modules: pass:normal[xref:#ERC7984Hooked-modules-uint256-uint256-[`++modules++`]]
 :maxModules: pass:normal[xref:#ERC7984Hooked-maxModules--[`++maxModules++`]]
 :_authorizeModuleChange: pass:normal[xref:#ERC7984Hooked-_authorizeModuleChange--[`++_authorizeModuleChange++`]]
 :_installModule: pass:normal[xref:#ERC7984Hooked-_installModule-address-bytes-[`++_installModule++`]]
-:_uninstallModule: pass:normal[xref:#ERC7984Hooked-_uninstallModule-address-bytes-[`++_uninstallModule++`]]
+:_uninstallModule: pass:normal[xref:#ERC7984Hooked-_uninstallModule-address-[`++_uninstallModule++`]]
 :_update: pass:normal[xref:#ERC7984Hooked-_update-address-address-euint64-[`++_update++`]]
 :_runPreTransferHooks: pass:normal[xref:#ERC7984Hooked-_runPreTransferHooks-address-address-euint64-[`++_runPreTransferHooks++`]]
 :_runPostTransferHooks: pass:normal[xref:#ERC7984Hooked-_runPostTransferHooks-address-address-euint64-[`++_runPostTransferHooks++`]]
@@ -2307,12 +2306,12 @@ Emits a {ConfidentialTransfer} event with the successfully transferred amount.
 
 :isModuleInstalled-address: pass:normal[xref:#ERC7984Hooked-isModuleInstalled-address-[`++isModuleInstalled++`]]
 :installModule-address-bytes: pass:normal[xref:#ERC7984Hooked-installModule-address-bytes-[`++installModule++`]]
-:uninstallModule-address-bytes: pass:normal[xref:#ERC7984Hooked-uninstallModule-address-bytes-[`++uninstallModule++`]]
+:uninstallModule-address: pass:normal[xref:#ERC7984Hooked-uninstallModule-address-[`++uninstallModule++`]]
 :modules-uint256-uint256: pass:normal[xref:#ERC7984Hooked-modules-uint256-uint256-[`++modules++`]]
 :maxModules-: pass:normal[xref:#ERC7984Hooked-maxModules--[`++maxModules++`]]
 :_authorizeModuleChange-: pass:normal[xref:#ERC7984Hooked-_authorizeModuleChange--[`++_authorizeModuleChange++`]]
 :_installModule-address-bytes: pass:normal[xref:#ERC7984Hooked-_installModule-address-bytes-[`++_installModule++`]]
-:_uninstallModule-address-bytes: pass:normal[xref:#ERC7984Hooked-_uninstallModule-address-bytes-[`++_uninstallModule++`]]
+:_uninstallModule-address: pass:normal[xref:#ERC7984Hooked-_uninstallModule-address-[`++_uninstallModule++`]]
 :_update-address-address-euint64: pass:normal[xref:#ERC7984Hooked-_update-address-address-euint64-[`++_update++`]]
 :_runPreTransferHooks-address-address-euint64: pass:normal[xref:#ERC7984Hooked-_runPreTransferHooks-address-address-euint64-[`++_runPreTransferHooks++`]]
 :_runPostTransferHooks-address-address-euint64: pass:normal[xref:#ERC7984Hooked-_runPostTransferHooks-address-address-euint64-[`++_runPostTransferHooks++`]]
@@ -2348,12 +2347,12 @@ NOTE: Hook modules are trusted contracts--they have access to any private state 
 --
 * `++isModuleInstalled(module)++`
 * `++installModule(module, initData)++`
-* `++uninstallModule(module, deinitData)++`
+* `++uninstallModule(module)++`
 * `++modules(start, end)++`
 * `++maxModules()++`
 * `++_authorizeModuleChange()++`
 * `++_installModule(module, initData)++`
-* `++_uninstallModule(module, deinitData)++`
+* `++_uninstallModule(module)++`
 * `++_update(from, to, encryptedAmount)++`
 * `++_runPreTransferHooks(from, to, encryptedAmount)++`
 * `++_runPostTransferHooks(from, to, encryptedAmount)++`
@@ -2479,8 +2478,8 @@ Consider gas footprint of the module before adding it since all modules will per
 both steps (pre-hook, post-hook) on all transfers.
 
 [.contract-item]
-[[ERC7984Hooked-uninstallModule-address-bytes-]]
-==== `[.contract-item-name]#++uninstallModule++#++(address module, bytes deinitData)++` [.item-kind]#public#
+[[ERC7984Hooked-uninstallModule-address-]]
+==== `[.contract-item-name]#++uninstallModule++#++(address module)++` [.item-kind]#public#
 
 Uninstalls a hook module.
 
@@ -2511,8 +2510,8 @@ Authorization logic for installing and uninstalling modules. Must be implemented
 Internal function which installs a hook module.
 
 [.contract-item]
-[[ERC7984Hooked-_uninstallModule-address-bytes-]]
-==== `[.contract-item-name]#++_uninstallModule++#++(address module, bytes deinitData)++` [.item-kind]#internal#
+[[ERC7984Hooked-_uninstallModule-address-]]
+==== `[.contract-item-name]#++_uninstallModule++#++(address module)++` [.item-kind]#internal#
 
 Internal function which uninstalls a module.
 
@@ -2617,18 +2616,13 @@ should try to refund the `from` address.
 
 :ERC7984HookModuleUnauthorizedAccount: pass:normal[xref:#ERC7984HookModule-ERC7984HookModuleUnauthorizedAccount-address-[`++ERC7984HookModuleUnauthorizedAccount++`]]
 :ERC7984HookModuleUnauthorizedUseOfEncryptedAmount: pass:normal[xref:#ERC7984HookModule-ERC7984HookModuleUnauthorizedUseOfEncryptedAmount-euint64-address-[`++ERC7984HookModuleUnauthorizedUseOfEncryptedAmount++`]]
-:ERC7984HookModuleAlreadyInstalled: pass:normal[xref:#ERC7984HookModule-ERC7984HookModuleAlreadyInstalled-address-[`++ERC7984HookModuleAlreadyInstalled++`]]
-:ERC7984HookModuleNotInstalled: pass:normal[xref:#ERC7984HookModule-ERC7984HookModuleNotInstalled-address-[`++ERC7984HookModuleNotInstalled++`]]
 :preTransfer: pass:normal[xref:#ERC7984HookModule-preTransfer-address-address-euint64-[`++preTransfer++`]]
 :postTransfer: pass:normal[xref:#ERC7984HookModule-postTransfer-address-address-euint64-[`++postTransfer++`]]
 :onInstall: pass:normal[xref:#ERC7984HookModule-onInstall-bytes-[`++onInstall++`]]
-:onUninstall: pass:normal[xref:#ERC7984HookModule-onUninstall-bytes-[`++onUninstall++`]]
 :supportsInterface: pass:normal[xref:#ERC7984HookModule-supportsInterface-bytes4-[`++supportsInterface++`]]
 :_onInstall: pass:normal[xref:#ERC7984HookModule-_onInstall-address-bytes-[`++_onInstall++`]]
-:_onUninstall: pass:normal[xref:#ERC7984HookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
 :_preTransfer: pass:normal[xref:#ERC7984HookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
 :_postTransfer: pass:normal[xref:#ERC7984HookModule-_postTransfer-address-address-address-euint64-[`++_postTransfer++`]]
-:_isModuleInstalled: pass:normal[xref:#ERC7984HookModule-_isModuleInstalled-address-[`++_isModuleInstalled++`]]
 :_getTokenHandleAllowance: pass:normal[xref:#ERC7984HookModule-_getTokenHandleAllowance-address-euint64-[`++_getTokenHandleAllowance++`]]
 :_getTokenHandleAllowance: pass:normal[xref:#ERC7984HookModule-_getTokenHandleAllowance-address-euint64-bool-[`++_getTokenHandleAllowance++`]]
 :_emitPreTransferResults: pass:normal[xref:#ERC7984HookModule-_emitPreTransferResults-address-address-address-euint64-ebool-bytes32-[`++_emitPreTransferResults++`]]
@@ -2637,13 +2631,10 @@ should try to refund the `from` address.
 :preTransfer-address-address-euint64: pass:normal[xref:#ERC7984HookModule-preTransfer-address-address-euint64-[`++preTransfer++`]]
 :postTransfer-address-address-euint64: pass:normal[xref:#ERC7984HookModule-postTransfer-address-address-euint64-[`++postTransfer++`]]
 :onInstall-bytes: pass:normal[xref:#ERC7984HookModule-onInstall-bytes-[`++onInstall++`]]
-:onUninstall-bytes: pass:normal[xref:#ERC7984HookModule-onUninstall-bytes-[`++onUninstall++`]]
 :supportsInterface-bytes4: pass:normal[xref:#ERC7984HookModule-supportsInterface-bytes4-[`++supportsInterface++`]]
 :_onInstall-address-bytes: pass:normal[xref:#ERC7984HookModule-_onInstall-address-bytes-[`++_onInstall++`]]
-:_onUninstall-address-bytes: pass:normal[xref:#ERC7984HookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
 :_preTransfer-address-address-address-euint64: pass:normal[xref:#ERC7984HookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
 :_postTransfer-address-address-address-euint64: pass:normal[xref:#ERC7984HookModule-_postTransfer-address-address-address-euint64-[`++_postTransfer++`]]
-:_isModuleInstalled-address: pass:normal[xref:#ERC7984HookModule-_isModuleInstalled-address-[`++_isModuleInstalled++`]]
 :_getTokenHandleAllowance-address-euint64: pass:normal[xref:#ERC7984HookModule-_getTokenHandleAllowance-address-euint64-[`++_getTokenHandleAllowance++`]]
 :_getTokenHandleAllowance-address-euint64-bool: pass:normal[xref:#ERC7984HookModule-_getTokenHandleAllowance-address-euint64-bool-[`++_getTokenHandleAllowance++`]]
 :_emitPreTransferResults-address-address-address-euint64-ebool-bytes32: pass:normal[xref:#ERC7984HookModule-_emitPreTransferResults-address-address-address-euint64-ebool-bytes32-[`++_emitPreTransferResults++`]]
@@ -2666,13 +2657,10 @@ An abstract base contract for building ERC-7984 hook modules. Compatible with {E
 * `++preTransfer(from, to, encryptedAmount)++`
 * `++postTransfer(from, to, encryptedAmount)++`
 * `++onInstall(initData)++`
-* `++onUninstall(deinitData)++`
 * `++supportsInterface(interfaceId)++`
-* `++_onInstall(token, )++`
-* `++_onUninstall(token, )++`
+* `++_onInstall(, )++`
 * `++_preTransfer(, , , )++`
 * `++_postTransfer(, , , )++`
-* `++_isModuleInstalled(token)++`
 * `++_getTokenHandleAllowance(token, handle)++`
 * `++_getTokenHandleAllowance(token, handle, persistent)++`
 * `++_emitPreTransferResults(token, from, to, encryptedAmount, compliant, context)++`
@@ -2710,8 +2698,6 @@ An abstract base contract for building ERC-7984 hook modules. Compatible with {E
 --
 * `++ERC7984HookModuleUnauthorizedAccount(account)++`
 * `++ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(amount, user)++`
-* `++ERC7984HookModuleAlreadyInstalled(token)++`
-* `++ERC7984HookModuleNotInstalled(token)++`
 
 [.contract-subindex-inherited]
 .ERC165
@@ -2744,14 +2730,6 @@ Performs operation after transfer.
 Performs operations after installation.
 
 [.contract-item]
-[[ERC7984HookModule-onUninstall-bytes-]]
-==== `[.contract-item-name]#++onUninstall++#++(bytes deinitData)++` [.item-kind]#public#
-
-Performs operations after uninstallation.
-
-NOTE: The module uninstallation will succeed even if this function reverts.
-
-[.contract-item]
 [[ERC7984HookModule-supportsInterface-bytes4-]]
 ==== `[.contract-item-name]#++supportsInterface++#++(bytes4 interfaceId) → bool++` [.item-kind]#public#
 
@@ -2764,17 +2742,10 @@ This function call must use less than 30 000 gas.
 
 [.contract-item]
 [[ERC7984HookModule-_onInstall-address-bytes-]]
-==== `[.contract-item-name]#++_onInstall++#++(address token, bytes)++` [.item-kind]#internal#
+==== `[.contract-item-name]#++_onInstall++#++(address, bytes)++` [.item-kind]#internal#
 
 Internal function which may be overridden by the derived contract to perform actions
-when the module is installed.
-
-[.contract-item]
-[[ERC7984HookModule-_onUninstall-address-bytes-]]
-==== `[.contract-item-name]#++_onUninstall++#++(address token, bytes)++` [.item-kind]#internal#
-
-Internal function which may be overridden by the derived contract to perform actions
-when the module is uninstalled.
+when the module is installed. Should clean up dirty state from possible previous installations.
 
 [.contract-item]
 [[ERC7984HookModule-_preTransfer-address-address-address-euint64-]]
@@ -2793,17 +2764,6 @@ Internal function which performs operations after transfers. Transient access is
 for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
 
 NOTE: ACL allowance on `encryptedAmount` is already checked for `msg.sender` in {postTransfer}.
-
-[.contract-item]
-[[ERC7984HookModule-_isModuleInstalled-address-]]
-==== `[.contract-item-name]#++_isModuleInstalled++#++(address token) → bool++` [.item-kind]#internal#
-
-Check if the module is installed for the given token. The default implementation reads from
-an internal storage flag maintained by {onInstall} and {onUninstall}. Derived contracts may override
-to extend the check, but should typically rely on the default behavior.
-
-NOTE: This function should use internal storage to check if the module is installed for the given token.
-Do not use external storage like {ERC7984Hooked-isModuleInstalled}.
 
 [.contract-item]
 [[ERC7984HookModule-_getTokenHandleAllowance-address-euint64-]]
@@ -2845,32 +2805,18 @@ The caller `account` is not authorized to perform the operation.
 
 The caller `user` does not have access to the encrypted amount `amount`.
 
-[.contract-item]
-[[ERC7984HookModule-ERC7984HookModuleAlreadyInstalled-address-]]
-==== `[.contract-item-name]#++ERC7984HookModuleAlreadyInstalled++#++(address token)++` [.item-kind]#error#
-
-The module is already installed for the given token.
-
-[.contract-item]
-[[ERC7984HookModule-ERC7984HookModuleNotInstalled-address-]]
-==== `[.contract-item-name]#++ERC7984HookModuleNotInstalled++#++(address token)++` [.item-kind]#error#
-
-The module is not installed for the given token.
-
 :ERC7984BalanceCapHookModuleMaxBalanceSet: pass:normal[xref:#ERC7984BalanceCapHookModule-ERC7984BalanceCapHookModuleMaxBalanceSet-address-euint64-[`++ERC7984BalanceCapHookModuleMaxBalanceSet++`]]
 :setMaxBalance: pass:normal[xref:#ERC7984BalanceCapHookModule-setMaxBalance-address-externalEuint64-bytes-[`++setMaxBalance++`]]
 :maxBalance: pass:normal[xref:#ERC7984BalanceCapHookModule-maxBalance-address-[`++maxBalance++`]]
 :_setMaxBalance: pass:normal[xref:#ERC7984BalanceCapHookModule-_setMaxBalance-address-euint64-[`++_setMaxBalance++`]]
 :_preTransfer: pass:normal[xref:#ERC7984BalanceCapHookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
 :_onInstall: pass:normal[xref:#ERC7984BalanceCapHookModule-_onInstall-address-bytes-[`++_onInstall++`]]
-:_onUninstall: pass:normal[xref:#ERC7984BalanceCapHookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
 
 :setMaxBalance-address-externalEuint64-bytes: pass:normal[xref:#ERC7984BalanceCapHookModule-setMaxBalance-address-externalEuint64-bytes-[`++setMaxBalance++`]]
 :maxBalance-address: pass:normal[xref:#ERC7984BalanceCapHookModule-maxBalance-address-[`++maxBalance++`]]
 :_setMaxBalance-address-euint64: pass:normal[xref:#ERC7984BalanceCapHookModule-_setMaxBalance-address-euint64-[`++_setMaxBalance++`]]
 :_preTransfer-address-address-address-euint64: pass:normal[xref:#ERC7984BalanceCapHookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
 :_onInstall-address-bytes: pass:normal[xref:#ERC7984BalanceCapHookModule-_onInstall-address-bytes-[`++_onInstall++`]]
-:_onUninstall-address-bytes: pass:normal[xref:#ERC7984BalanceCapHookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
 
 [.contract]
 [[ERC7984BalanceCapHookModule]]
@@ -2900,17 +2846,14 @@ with caution. Production use-cases may want to remove this notification.
 * `++_setMaxBalance(token, newMaxBalance)++`
 * `++_preTransfer(token, from, to, encryptedAmount)++`
 * `++_onInstall(token, initData)++`
-* `++_onUninstall(token, deinitData)++`
 
 [.contract-subindex-inherited]
 .ERC7984HookModule
 * `++preTransfer(from, to, encryptedAmount)++`
 * `++postTransfer(from, to, encryptedAmount)++`
 * `++onInstall(initData)++`
-* `++onUninstall(deinitData)++`
 * `++supportsInterface(interfaceId)++`
 * `++_postTransfer(, , , )++`
-* `++_isModuleInstalled(token)++`
 * `++_getTokenHandleAllowance(token, handle)++`
 * `++_getTokenHandleAllowance(token, handle, persistent)++`
 * `++_emitPreTransferResults(token, from, to, encryptedAmount, compliant, context)++`
@@ -2955,8 +2898,6 @@ with caution. Production use-cases may want to remove this notification.
 .ERC7984HookModule
 * `++ERC7984HookModuleUnauthorizedAccount(account)++`
 * `++ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(amount, user)++`
-* `++ERC7984HookModuleAlreadyInstalled(token)++`
-* `++ERC7984HookModuleNotInstalled(token)++`
 
 [.contract-subindex-inherited]
 .ERC165
@@ -3006,13 +2947,6 @@ See {ERC7984HookModule-_onInstall}. The `initData` must contain the initial max 
 along with the input proof for the max balance. These are encoded using standard ABI encoding.
 
 [.contract-item]
-[[ERC7984BalanceCapHookModule-_onUninstall-address-bytes-]]
-==== `[.contract-item-name]#++_onUninstall++#++(address token, bytes deinitData)++` [.item-kind]#internal#
-
-Internal function which may be overridden by the derived contract to perform actions
-when the module is uninstalled.
-
-[.contract-item]
 [[ERC7984BalanceCapHookModule-ERC7984BalanceCapHookModuleMaxBalanceSet-address-euint64-]]
 ==== `[.contract-item-name]#++ERC7984BalanceCapHookModuleMaxBalanceSet++#++(address indexed token, euint64 newMaxBalance)++` [.item-kind]#event#
 
@@ -3028,7 +2962,6 @@ Emitted when the max balance for a given token is set.
 :_preTransfer: pass:normal[xref:#ERC7984HolderCapHookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
 :_postTransfer: pass:normal[xref:#ERC7984HolderCapHookModule-_postTransfer-address-address-address-euint64-[`++_postTransfer++`]]
 :_onInstall: pass:normal[xref:#ERC7984HolderCapHookModule-_onInstall-address-bytes-[`++_onInstall++`]]
-:_onUninstall: pass:normal[xref:#ERC7984HolderCapHookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
 
 :setMaxHolderCount-address-uint64: pass:normal[xref:#ERC7984HolderCapHookModule-setMaxHolderCount-address-uint64-[`++setMaxHolderCount++`]]
 :maxHolderCount-address: pass:normal[xref:#ERC7984HolderCapHookModule-maxHolderCount-address-[`++maxHolderCount++`]]
@@ -3037,7 +2970,6 @@ Emitted when the max balance for a given token is set.
 :_preTransfer-address-address-address-euint64: pass:normal[xref:#ERC7984HolderCapHookModule-_preTransfer-address-address-address-euint64-[`++_preTransfer++`]]
 :_postTransfer-address-address-address-euint64: pass:normal[xref:#ERC7984HolderCapHookModule-_postTransfer-address-address-address-euint64-[`++_postTransfer++`]]
 :_onInstall-address-bytes: pass:normal[xref:#ERC7984HolderCapHookModule-_onInstall-address-bytes-[`++_onInstall++`]]
-:_onUninstall-address-bytes: pass:normal[xref:#ERC7984HolderCapHookModule-_onUninstall-address-bytes-[`++_onUninstall++`]]
 
 [.contract]
 [[ERC7984HolderCapHookModule]]
@@ -3065,16 +2997,13 @@ WARNING: This module may not function correctly with non-standard tokens such as
 * `++_preTransfer(token, from, to, encryptedAmount)++`
 * `++_postTransfer(token, from, to, encryptedAmount)++`
 * `++_onInstall(token, initData)++`
-* `++_onUninstall(token, deinitData)++`
 
 [.contract-subindex-inherited]
 .ERC7984HookModule
 * `++preTransfer(from, to, encryptedAmount)++`
 * `++postTransfer(from, to, encryptedAmount)++`
 * `++onInstall(initData)++`
-* `++onUninstall(deinitData)++`
 * `++supportsInterface(interfaceId)++`
-* `++_isModuleInstalled(token)++`
 * `++_getTokenHandleAllowance(token, handle)++`
 * `++_getTokenHandleAllowance(token, handle, persistent)++`
 * `++_emitPreTransferResults(token, from, to, encryptedAmount, compliant, context)++`
@@ -3121,8 +3050,6 @@ WARNING: This module may not function correctly with non-standard tokens such as
 .ERC7984HookModule
 * `++ERC7984HookModuleUnauthorizedAccount(account)++`
 * `++ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(amount, user)++`
-* `++ERC7984HookModuleAlreadyInstalled(token)++`
-* `++ERC7984HookModuleNotInstalled(token)++`
 
 [.contract-subindex-inherited]
 .ERC165
@@ -3185,10 +3112,6 @@ NOTE: ACL allowance on `encryptedAmount` is already checked for `msg.sender` in 
 
 See {ERC7984HookModule-_onInstall}. The `initData` must contain the initial max holder count for the token
 as a standard ABI encoded uint64.
-
-[.contract-item]
-[[ERC7984HolderCapHookModule-_onUninstall-address-bytes-]]
-==== `[.contract-item-name]#++_onUninstall++#++(address token, bytes deinitData)++` [.item-kind]#internal#
 
 [.contract-item]
 [[ERC7984HolderCapHookModule-ERC7984HolderCapHookModuleMaxHolderCountSet-address-uint64-]]

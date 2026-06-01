@@ -42,40 +42,13 @@ describe('ERC7984BalanceCapHookModule', function () {
       holder,
       anyone,
       encryptCap,
+      initialCap: ethers.hexlify(encryptedInput.handles[0]),
     });
   });
 
   describe('_onInstall', function () {
-    it('should mark the module as installed and set the initial cap from initData', async function () {
-      await this.token.connect(this.admin).uninstallModule(this.complianceModule, '0x');
-
-      const encryptedInput = await fhevm
-        .createEncryptedInput(this.complianceModule.target, this.token.target)
-        .add64(10_000n)
-        .encrypt();
-
-      await this.token
-        .connect(this.admin)
-        .installModule(
-          this.complianceModule,
-          ethers.AbiCoder.defaultAbiCoder().encode(
-            ['bytes32', 'bytes'],
-            [encryptedInput.handles[0], encryptedInput.inputProof],
-          ),
-        );
-
-      await expect(this.complianceModule.$_isModuleInstalled(this.token)).to.eventually.equal(true);
-      await expect(this.complianceModule.maxBalance(this.token)).to.eventually.eq(
-        ethers.hexlify(encryptedInput.handles[0]),
-      );
-    });
-  });
-
-  describe('_onUninstall', function () {
-    it('should clean up state', async function () {
-      await this.token.connect(this.admin).uninstallModule(this.complianceModule, '0x');
-      await expect(this.complianceModule.maxBalance(this.token)).to.eventually.eq(ethers.ZeroHash);
-      await expect(this.complianceModule.$_isModuleInstalled(this.token)).to.eventually.equal(false);
+    it('should set the initial cap from initData', async function () {
+      await expect(this.complianceModule.maxBalance(this.token)).to.eventually.eq(this.initialCap);
     });
   });
 

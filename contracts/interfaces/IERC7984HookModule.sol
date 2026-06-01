@@ -29,11 +29,4 @@ interface IERC7984HookModule is IERC165 {
 
     /// @dev Performs operations after installation.
     function onInstall(bytes calldata initData) external;
-
-    /**
-     * @dev Performs operations after uninstallation.
-     *
-     * NOTE: The module uninstallation will succeed even if this function reverts.
-     */
-    function onUninstall(bytes calldata deinitData) external;
 }
