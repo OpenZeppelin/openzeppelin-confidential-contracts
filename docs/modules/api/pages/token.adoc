@@ -27,6 +27,7 @@
 :ERC7984HolderCapHookModule: pass:normal[xref:token.adoc#ERC7984HolderCapHookModule[`ERC7984HolderCapHookModule`]]
 :ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
 :IERC7984: pass:normal[xref:interfaces.adoc#IERC7984[`IERC7984`]]
+:IERC7984-setOperator: pass:normal[xref:interfaces.adoc#IERC7984-setOperator-address-uint48-[`IERC7984.setOperator`]]
 :IERC7984Receiver-onConfidentialTransferReceived: pass:normal[xref:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`IERC7984Receiver.onConfidentialTransferReceived`]]
 :IERC7984Receiver-onConfidentialTransferReceived: pass:normal[xref:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`IERC7984Receiver.onConfidentialTransferReceived`]]
 :ERC7984Hooked: pass:normal[xref:token.adoc#ERC7984Hooked[`ERC7984Hooked`]]
@@ -303,9 +304,8 @@ Returns true if `spender` is currently an operator for `holder`.
 [[ERC7984-setOperator-address-uint48-]]
 ==== `[.contract-item-name]#++setOperator++#++(address operator, uint48 until)++` [.item-kind]#public#
 
-Sets `operator` as an operator for `holder` until the timestamp `until`.
-
-NOTE: An operator may transfer any amount of tokens on behalf of a holder while approved.
+See {IERC7984-setOperator}. Operators are given ACL allowance (ability to decrypt) for the transferred amount
+of transfers they initiate.
 
 [.contract-item]
 [[ERC7984-confidentialTransfer-address-externalEuint64-bytes-]]
