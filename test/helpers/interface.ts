@@ -55,7 +55,6 @@ export const SIGNATURES = {
     'preTransfer(address,address,bytes32)',
     'postTransfer(address,address,bytes32)',
     'onInstall(bytes)',
-    'onUninstall(bytes)',
   ],
 };
 

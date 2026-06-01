@@ -5,7 +5,6 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import {LowLevelCall} from "@openzeppelin/contracts/utils/LowLevelCall.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IERC7984HookModule} from "./../../../interfaces/IERC7984HookModule.sol";
 import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
@@ -62,8 +61,8 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     }
 
     /// @dev Uninstalls a hook module.
-    function uninstallModule(address module, bytes memory deinitData) public virtual onlyAuthorizedModuleChange {
-        _uninstallModule(module, deinitData);
+    function uninstallModule(address module) public virtual onlyAuthorizedModuleChange {
+        _uninstallModule(module);
     }
 
     /**
@@ -98,10 +97,8 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     }
 
     /// @dev Internal function which uninstalls a module.
-    function _uninstallModule(address module, bytes memory deinitData) internal virtual {
+    function _uninstallModule(address module) internal virtual {
         require(_modules.remove(module), ERC7984HookedNonexistentModule(module));
-
-        LowLevelCall.callNoReturn(module, abi.encodeCall(IERC7984HookModule.onUninstall, (deinitData)));
 
         emit ERC7984HookedModuleUninstalled(module);
     }
