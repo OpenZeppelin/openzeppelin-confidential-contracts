@@ -83,10 +83,4 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
         (externalEuint64 maxBalance_, bytes memory inputProof) = abi.decode(initData, (externalEuint64, bytes));
         _setMaxBalance(token, FHE.fromExternal(maxBalance_, inputProof));
     }
-
-    /// @inheritdoc ERC7984HookModule
-    function _onUninstall(address token, bytes calldata deinitData) internal virtual override {
-        super._onUninstall(token, deinitData);
-        _maxBalances[token] = euint64.wrap(0);
-    }
 }
