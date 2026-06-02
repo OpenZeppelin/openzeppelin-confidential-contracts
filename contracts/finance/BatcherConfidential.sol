@@ -113,6 +113,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The underlying wrapper tokens are the same.
     error DuplicateUnderlyingTokens();
 
+    /// @dev Intermediate steps must not result in underlying {toToken} being transferred into the batcher.
+    error IntermediateStepInvalidToTokenTransfer(uint256 batchId);
+
     constructor(IERC7984ERC20Wrapper fromToken_, IERC7984ERC20Wrapper toToken_) {
         require(
             ERC165Checker.supportsInterface(address(fromToken_), type(IERC7984ERC20Wrapper).interfaceId),
@@ -220,10 +223,13 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
         }
 
+        uint256 beforeToTokenBalance;
+
         ExecuteOutcome outcome;
         if (unwrapAmountCleartext == 0) {
             outcome = ExecuteOutcome.Cancel;
         } else {
+            beforeToTokenBalance = IERC20(toToken().underlying()).balanceOf(address(this));
             outcome = _executeRoute(batchId, unwrapAmountCleartext);
         }
 
@@ -255,6 +261,11 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             _batches[batchId].canceled = true;
 
             emit BatchCanceled(batchId);
+        } else if (outcome == ExecuteOutcome.Partial) {
+            require(
+                IERC20(toToken().underlying()).balanceOf(address(this)) == beforeToTokenBalance,
+                IntermediateStepInvalidToTokenTransfer(batchId)
+            );
         }
     }
 
