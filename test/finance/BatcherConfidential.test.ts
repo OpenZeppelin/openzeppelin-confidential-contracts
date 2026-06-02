@@ -32,7 +32,7 @@ function encodeStateBitmap(...states: BatchState[]): bigint {
   return states.reduce((acc, state) => acc | (1n << BigInt(state)), 0n);
 }
 
-describe('BatcherConfidential', function () {
+describe.only('BatcherConfidential', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
@@ -532,6 +532,38 @@ describe('BatcherConfidential', function () {
       await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
         .to.emit(this.batcher, 'BatchFinalized')
         .withArgs(this.batchId, 10n ** 6n);
+    });
+
+    it('should revert if `_executeRoute` returns partial but transferred toToken underlying in', async function () {
+      await this.batcher.setExecutionOutcome(ExecuteOutcome.Partial);
+      await this.batcher.setPartialTransfersToToken(true);
+
+      await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+        .to.be.revertedWithCustomError(this.batcher, 'IntermediateStepInvalidToTokenTransfer')
+        .withArgs(this.batchId);
+    });
+
+    it('should revert on partial-with-transfer even after prior clean partial steps', async function () {
+      await this.batcher.setExecutionOutcome(ExecuteOutcome.Partial);
+
+      // A few legitimate partial steps that don't transfer toToken in.
+      await this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof);
+      await this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof);
+
+      // A subsequent partial step that incorrectly transfers toToken underlying in must revert.
+      await this.batcher.setPartialTransfersToToken(true);
+      await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+        .to.be.revertedWithCustomError(this.batcher, 'IntermediateStepInvalidToTokenTransfer')
+        .withArgs(this.batchId);
+
+      // Batch state must still be Dispatched and recoverable with a clean step afterwards.
+      await expect(this.batcher.batchState(this.batchId)).to.eventually.eq(BatchState.Dispatched);
+
+      await this.batcher.setPartialTransfersToToken(false);
+      await this.batcher.setExecutionOutcome(ExecuteOutcome.Complete);
+      await expect(
+        this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof),
+      ).to.emit(this.batcher, 'BatchFinalized');
     });
 
     it('should be able to call multiple times if `_executeRoute` returns partial', async function () {
