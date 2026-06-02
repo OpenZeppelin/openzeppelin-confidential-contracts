@@ -19,7 +19,9 @@ import {ERC7984} from "./../ERC7984.sol";
  * amount and may do accounting as necessary. Modules may revert on either call, which will propagate
  * and revert the entire transaction.
  *
- * NOTE: Hook modules are trusted contracts--they have access to any private state the token has access to.
+ * WARNING: Hook modules are trusted contracts--they have access to any private state the token has access to. This arbitrary
+ * ACL access allows hook modules to grant themselves (or any other address) allowance to view any handle the token has access to.
+ * ACL allowances granted by the hook module persist even after the module is uninstalled.
  */
 abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     using EnumerableSet for *;
