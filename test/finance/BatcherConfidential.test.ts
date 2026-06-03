@@ -32,7 +32,7 @@ function encodeStateBitmap(...states: BatchState[]): bigint {
   return states.reduce((acc, state) => acc | (1n << BigInt(state)), 0n);
 }
 
-describe.only('BatcherConfidential', function () {
+describe('BatcherConfidential', function () {
   beforeEach(async function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
@@ -539,7 +539,7 @@ describe.only('BatcherConfidential', function () {
       await this.batcher.setPartialTransfersToToken(true);
 
       await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
-        .to.be.revertedWithCustomError(this.batcher, 'IntermediateStepInvalidToTokenTransfer')
+        .to.be.revertedWithCustomError(this.batcher, 'IntermediateStepToTokenBalanceChanged')
         .withArgs(this.batchId);
     });
 
@@ -553,7 +553,7 @@ describe.only('BatcherConfidential', function () {
       // A subsequent partial step that incorrectly transfers toToken underlying in must revert.
       await this.batcher.setPartialTransfersToToken(true);
       await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
-        .to.be.revertedWithCustomError(this.batcher, 'IntermediateStepInvalidToTokenTransfer')
+        .to.be.revertedWithCustomError(this.batcher, 'IntermediateStepToTokenBalanceChanged')
         .withArgs(this.batchId);
 
       // Batch state must still be Dispatched and recoverable with a clean step afterwards.

@@ -114,7 +114,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     error DuplicateUnderlyingTokens();
 
     /// @dev Intermediate steps must not result in underlying {toToken} being transferred into the batcher.
-    error IntermediateStepInvalidToTokenTransfer(uint256 batchId);
+    error IntermediateStepToTokenBalanceChanged(uint256 batchId);
 
     constructor(IERC7984ERC20Wrapper fromToken_, IERC7984ERC20Wrapper toToken_) {
         require(
@@ -264,7 +264,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         } else if (outcome == ExecuteOutcome.Partial) {
             require(
                 IERC20(toToken().underlying()).balanceOf(address(this)) == beforeToTokenBalance,
-                IntermediateStepInvalidToTokenTransfer(batchId)
+                IntermediateStepToTokenBalanceChanged(batchId)
             );
         }
     }
@@ -415,7 +415,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      *
      * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the route execution is complete.
      * If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`. Intermediate steps *must* not
-     * result in underlying {toToken} being transferred into the batcher.
+     * result in underlying {toToken} being transferred to or from the batcher.
      *
      * [WARNING]
      * ====
