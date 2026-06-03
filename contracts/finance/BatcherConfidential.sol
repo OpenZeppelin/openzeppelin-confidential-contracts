@@ -223,13 +223,13 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
         }
 
-        uint256 beforeToTokenBalance;
+        uint256 beforeUnderlyingToTokenBalance;
 
         ExecuteOutcome outcome;
         if (unwrapAmountCleartext == 0) {
             outcome = ExecuteOutcome.Cancel;
         } else {
-            beforeToTokenBalance = IERC20(toToken().underlying()).balanceOf(address(this));
+            beforeUnderlyingToTokenBalance = IERC20(toToken().underlying()).balanceOf(address(this));
             outcome = _executeRoute(batchId, unwrapAmountCleartext);
         }
 
@@ -263,7 +263,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             emit BatchCanceled(batchId);
         } else if (outcome == ExecuteOutcome.Partial) {
             require(
-                IERC20(toToken().underlying()).balanceOf(address(this)) == beforeToTokenBalance,
+                IERC20(toToken().underlying()).balanceOf(address(this)) == beforeUnderlyingToTokenBalance,
                 IntermediateStepToTokenBalanceChanged(batchId)
             );
         }
