@@ -113,7 +113,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The underlying wrapper tokens are the same.
     error DuplicateUnderlyingTokens();
 
-    /// @dev Intermediate steps must not result in underlying {toToken} being transferred into the batcher.
+    /// @dev Intermediate steps must not result in underlying {toToken} being transferred to or from the batcher.
     error IntermediateStepToTokenBalanceChanged(uint256 batchId);
 
     constructor(IERC7984ERC20Wrapper fromToken_, IERC7984ERC20Wrapper toToken_) {
