@@ -544,6 +544,7 @@ Emitted when a vesting wallet is deployed.
 :Unauthorized: pass:normal[xref:#BatcherConfidential-Unauthorized--[`++Unauthorized++`]]
 :InvalidWrapperToken: pass:normal[xref:#BatcherConfidential-InvalidWrapperToken-address-[`++InvalidWrapperToken++`]]
 :DuplicateUnderlyingTokens: pass:normal[xref:#BatcherConfidential-DuplicateUnderlyingTokens--[`++DuplicateUnderlyingTokens++`]]
+:IntermediateStepToTokenBalanceChanged: pass:normal[xref:#BatcherConfidential-IntermediateStepToTokenBalanceChanged-uint256-[`++IntermediateStepToTokenBalanceChanged++`]]
 :constructor: pass:normal[xref:#BatcherConfidential-constructor-contract-IERC7984ERC20Wrapper-contract-IERC7984ERC20Wrapper-[`++constructor++`]]
 :claim: pass:normal[xref:#BatcherConfidential-claim-uint256-address-[`++claim++`]]
 :quit: pass:normal[xref:#BatcherConfidential-quit-uint256-[`++quit++`]]
@@ -685,6 +686,7 @@ underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancel
 * `++Unauthorized()++`
 * `++InvalidWrapperToken(token)++`
 * `++DuplicateUnderlyingTokens()++`
+* `++IntermediateStepToTokenBalanceChanged(batchId)++`
 
 [.contract-subindex-inherited]
 .IERC7984Receiver
@@ -835,7 +837,7 @@ the balance of the underlying {toToken} is wrapped and the exchange rate is set.
 
 NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the route execution is complete.
 If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`. Intermediate steps *must* not
-result in underlying {toToken} being transferred into the batcher.
+result in underlying {toToken} being transferred to or from the batcher.
 
 [WARNING]
 ====
@@ -957,4 +959,10 @@ The given `token` does not support `IERC7984ERC20Wrapper` via `ERC165`.
 ==== `[.contract-item-name]#++DuplicateUnderlyingTokens++#++()++` [.item-kind]#error#
 
 The underlying wrapper tokens are the same.
+
+[.contract-item]
+[[BatcherConfidential-IntermediateStepToTokenBalanceChanged-uint256-]]
+==== `[.contract-item-name]#++IntermediateStepToTokenBalanceChanged++#++(uint256 batchId)++` [.item-kind]#error#
+
+Intermediate steps must not result in underlying {toToken} being transferred to or from the batcher.
 
