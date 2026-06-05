@@ -41,16 +41,16 @@ contract ConfidentialAllowances {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64) {
-        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
-
-        // check if amount is within the bounds of allowance
+        // fetch allowance for spender
         euint64 currentAllowance = allowance(token, from, msg.sender);
 
+        // decrypt amount and validate against allowance
+        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
+        amount = FHE.select(FHE.ge(currentAllowance, amount), amount, FHE.asEuint64(0));
+
         // compute amount to try to transfer, and perform transfer
-        euint64 transferred = token.confidentialTransfer(
-            to,
-            FHE.select(FHE.ge(currentAllowance, amount), amount, FHE.asEuint64(0))
-        );
+        euint64 transferred = token.confidentialTransfer(to, amount);
+
         // update (decrease) allowance.
         _setAllowance(token, from, msg.sender, FHE.sub(currentAllowance, transferred));
 
@@ -66,17 +66,16 @@ contract ConfidentialAllowances {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64) {
-        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
-
-        // check if amount is within the bounds of allowance
+        // fetch allowance for spender
         euint64 currentAllowance = allowance(token, from, msg.sender);
 
+        // decrypt amount and validate against allowance
+        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
+        amount = FHE.select(FHE.ge(currentAllowance, amount), amount, FHE.asEuint64(0));
+
         // compute amount to try to transfer, and perform transfer
-        euint64 transferred = token.confidentialTransferAndCall(
-            to,
-            FHE.select(FHE.ge(currentAllowance, amount), amount, FHE.asEuint64(0)),
-            data
-        );
+        euint64 transferred = token.confidentialTransferAndCall(to, amount, data);
+
         // update (decrease) allowance.
         _setAllowance(token, from, msg.sender, FHE.sub(currentAllowance, transferred));
 
