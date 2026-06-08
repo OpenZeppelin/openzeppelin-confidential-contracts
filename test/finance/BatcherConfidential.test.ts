@@ -5,6 +5,7 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
+import { EventLog } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
@@ -211,6 +212,16 @@ describe('BatcherConfidential', function () {
         await expect(join(this.fromToken, this.holder, this.batcher, 1000n))
           .to.emit(this.batcher, 'Joined')
           .withArgs(batchId, this.holder.address, anyValue);
+      });
+
+      it('should be able to decrypt joined amount', async function () {
+        const tx = await join(this.fromToken, this.holder, this.batcher, 1000n);
+        const event = (await tx.wait().then(tx => tx!.logs.filter(log => log.address === this.batcher.target)))[0];
+        const joinedAmount = (event as EventLog).data;
+
+        await expect(
+          fhevm.userDecryptEuint(FhevmType.euint64, joinedAmount, this.batcher, this.holder),
+        ).to.eventually.eq('1000');
       });
 
       it('should not credit failed transaction', async function () {
