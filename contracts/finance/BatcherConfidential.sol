@@ -394,6 +394,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         FHE.allowThis(newTotalDeposits);
         FHE.allowThis(newDeposits);
+        FHE.allowThis(joinedAmount);
         FHE.allow(newDeposits, to);
         FHE.allow(joinedAmount, to);
 
