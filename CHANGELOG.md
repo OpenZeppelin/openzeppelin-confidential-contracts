@@ -1,6 +1,10 @@
 # openzeppelin-confidential-contracts
 
 
+## 0.4.1 (2026-06-08)
+
+- `BatcherConfidential`: bug fix. Enable decryption of the `joinedAmount` in `BatcherConfidential`. ([#387](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/387))
+
 ## 0.4.0 (2026-03-20)
 
 - Migrate `@fhevm/solidity` dependency to `0.11.1` ([#311](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/311))
