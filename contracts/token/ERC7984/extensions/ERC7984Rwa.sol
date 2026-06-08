@@ -9,8 +9,8 @@ import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {IERC7984} from "./../../../interfaces/IERC7984.sol";
 import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
+import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984} from "./../ERC7984.sol";
 import {ERC7984Freezable} from "./ERC7984Freezable.sol";
 import {ERC7984Restricted} from "./ERC7984Restricted.sol";
@@ -20,15 +20,18 @@ import {ERC7984Restricted} from "./ERC7984Restricted.sol";
  * This interface provides compliance checks, transfer controls and enforcement actions.
  */
 abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted, Pausable, Multicall, AccessControl {
+    /// @dev The operation failed because the lost account is the same as the new account.
+    error ERC7984RwaSelfRecoveryNotAllowed();
+
     /**
      * @dev Accounts granted the agent role have the following permissioned abilities:
      *
-     * - Mint/Burn to/from a given address (does not require permission)
-     * - Force transfer from a given address (does not require permission)
-     *   - Bypasses pause and restriction checks (not frozen)
-     * - Pause/Unpause the contract
-     * - Block/Unblock a given account
-     * - Set frozen amount of tokens for a given account.
+     * * Mint/Burn to/from a given address (does not require permission)
+     * * Force transfer from a given address (does not require permission)
+     * ** Bypasses pause and restriction checks (not frozen)
+     * * Pause/Unpause the contract
+     * * Block/Unblock a given account
+     * * Set frozen amount of tokens for a given account.
      */
     bytes32 public constant AGENT_ROLE = keccak256("AGENT_ROLE");
 
@@ -157,6 +160,38 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return burntAmount;
     }
 
+    /// @inheritdoc IERC7984Rwa
+    function recoverAddress(address lostAccount, address newAccount) public virtual onlyAgent returns (euint64) {
+        require(lostAccount != newAccount, ERC7984RwaSelfRecoveryNotAllowed());
+
+        euint64 balance = confidentialBalanceOf(lostAccount);
+        euint64 lostFrozenBalance = confidentialFrozen(lostAccount);
+
+        if (FHE.isInitialized(lostFrozenBalance)) {
+            _setConfidentialFrozen(lostAccount, euint64.wrap(0));
+        }
+
+        euint64 tokensRecovered = _transfer(lostAccount, newAccount, balance);
+        FHE.allow(tokensRecovered, msg.sender);
+
+        if (FHE.isInitialized(lostFrozenBalance)) {
+            _setConfidentialFrozen(
+                newAccount,
+                FHESafeMath.saturatingAdd(confidentialFrozen(newAccount), FHE.min(tokensRecovered, lostFrozenBalance))
+            );
+            _setConfidentialFrozen(lostAccount, FHESafeMath.saturatingSub(lostFrozenBalance, tokensRecovered));
+        }
+
+        Restriction restriction = getRestriction(lostAccount);
+        if (restriction == Restriction.BLOCKED) {
+            _blockUser(newAccount);
+        }
+
+        emit TokensRecovered(lostAccount, newAccount, tokensRecovered);
+
+        return tokensRecovered;
+    }
+
     /// @dev Variant of {forceConfidentialTransferFrom-address-address-euint64} with an input proof.
     function forceConfidentialTransferFrom(
         address from,
@@ -164,7 +199,9 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual onlyAgent returns (euint64) {
-        return _forceUpdate(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /**
@@ -176,12 +213,14 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         address from,
         address to,
         euint64 encryptedAmount
-    ) public virtual onlyAgent returns (euint64 transferred) {
+    ) public virtual onlyAgent returns (euint64) {
         require(
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        return _forceUpdate(from, to, encryptedAmount);
+        euint64 transferred = _transfer(from, to, encryptedAmount);
+        FHE.allow(transferred, msg.sender);
+        return transferred;
     }
 
     /// @inheritdoc ERC7984Freezable
@@ -218,29 +257,45 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return super._update(from, to, encryptedAmount);
     }
 
-    /// @dev Internal function which forces transfer of confidential amount of tokens from account to account by skipping compliance checks.
-    function _forceUpdate(address from, address to, euint64 encryptedAmount) internal virtual returns (euint64) {
-        // bypassing `from` restriction check with {_checkSenderRestriction}. Still performing `to` restriction check.
-        // bypassing paused state by directly calling `super._update`
-        euint64 transferred = super._update(from, to, encryptedAmount);
-        FHE.allow(transferred, msg.sender);
-        return transferred;
-    }
-
-    /**
-     * @dev Bypasses the `from` restriction check when performing a {forceConfidentialTransferFrom}.
-     */
+    /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a forced transfer or token recovery.
     function _checkSenderRestriction(address account) internal view override {
-        if (_isForceTransfer()) {
+        if (_isForceTransfer(msg.sig)) {
             return;
         }
         super._checkSenderRestriction(account);
     }
 
-    /// @dev Private function which checks if the called function is a {forceConfidentialTransferFrom}.
-    function _isForceTransfer() private pure returns (bool) {
+    /// @dev Bypasses {ERC7984Restricted} `to` restriction check when performing a forced transfer or token recovery.
+    function _checkRecipientRestriction(address account) internal view override {
+        if (_isForceTransfer(msg.sig)) {
+            return;
+        }
+        super._checkRecipientRestriction(account);
+    }
+
+    /// @dev Bypasses {Pausable} check when performing a {forceConfidentialTransferFrom}.
+    function _requireNotPaused() internal view override {
+        if (_isForceTransfer(msg.sig)) {
+            return;
+        }
+        super._requireNotPaused();
+    }
+
+    /// @dev Internal function which checks if the current function call should be treated as a force transfer.
+    function _isForceTransfer(bytes4 selector) internal pure returns (bool) {
         return
-            msg.sig == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
-            msg.sig == 0x44fd6e40; // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+            selector == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
+            selector == 0x44fd6e40 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
+            selector == this.recoverAddress.selector;
+    }
+
+    /// @dev Restrict overrides of {Context._msgSender}. Please use other account abstraction methods instead.
+    function _msgSender() internal view override returns (address) {
+        return super._msgSender();
+    }
+
+    /// @dev Restrict overrides of {Context._msgData}. Please use other account abstraction methods instead.
+    function _msgData() internal view override returns (bytes calldata) {
+        return super._msgData();
     }
 }

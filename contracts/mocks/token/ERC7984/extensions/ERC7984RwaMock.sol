@@ -3,13 +3,15 @@
 pragma solidity ^0.8.24;
 
 import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ERC7984} from "./../../token/ERC7984/ERC7984.sol";
-import {ERC7984Rwa} from "./../../token/ERC7984/extensions/ERC7984Rwa.sol";
-import {HandleAccessManager} from "./../../utils/HandleAccessManager.sol";
-import {ERC7984Mock} from "./ERC7984Mock.sol";
+import {ERC7984} from "../../../../token/ERC7984/ERC7984.sol";
+import {ERC7984Rwa} from "../../../../token/ERC7984/extensions/ERC7984Rwa.sol";
+import {HandleAccessManager} from "../../../../utils/HandleAccessManager.sol";
+import {ERC7984Mock} from "../ERC7984Mock.sol";
 
 // solhint-disable func-name-mixedcase
 contract ERC7984RwaMock is ERC7984Rwa, ERC7984Mock, HandleAccessManager {
+    bool public failTransfer;
+
     constructor(
         string memory name,
         string memory symbol,
@@ -21,16 +23,20 @@ contract ERC7984RwaMock is ERC7984Rwa, ERC7984Mock, HandleAccessManager {
         return super.supportsInterface(interfaceId);
     }
 
+    function setFailTransfer(bool shouldFail) external {
+        failTransfer = shouldFail;
+    }
+
     function _update(
         address from,
         address to,
         euint64 amount
     ) internal virtual override(ERC7984Mock, ERC7984Rwa) returns (euint64) {
-        return super._update(from, to, amount);
+        return super._update(from, to, failTransfer ? FHE.asEuint64(0) : amount);
     }
 
-    function _validateHandleAllowance(bytes32) internal view override returns (bool) {
-        return isAgent(msg.sender);
+    function _validateHandleAllowance(bytes32 handle) internal view virtual override returns (bool) {
+        return super._validateHandleAllowance(handle) || isAgent(msg.sender);
     }
 
     // solhint-disable-next-line func-name-mixedcase

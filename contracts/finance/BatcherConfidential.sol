@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.27;
 
-import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, externalEuint64, euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
@@ -16,8 +16,8 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
 /**
  * @dev `BatcherConfidential` is a batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts
- * via a non-confidential route. Users deposit {fromToken} into the batcher and receive {toToken} in exchange. Deposits are
- * made by using `ERC7984` transfer and call functions such as {ERC7984-confidentialTransferAndCall}.
+ * (with distinct underlying tokens) via a non-confidential route. Users deposit {fromToken} into the batcher and receive
+ * {toToken} in exchange. Deposits are made by using `ERC7984` transfer and call functions such as {ERC7984-confidentialTransferAndCall}.
  *
  * Developers must implement the virtual function {_executeRoute} to perform the batch's route. This function is called
  * once the batch deposits are unwrapped into the underlying tokens. The function should swap the underlying {fromToken} for
@@ -110,6 +110,12 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The given `token` does not support `IERC7984ERC20Wrapper` via `ERC165`.
     error InvalidWrapperToken(address token);
 
+    /// @dev The underlying wrapper tokens are the same.
+    error DuplicateUnderlyingTokens();
+
+    /// @dev Intermediate steps must not result in underlying {toToken} being transferred to or from the batcher.
+    error IntermediateStepToTokenBalanceChanged(uint256 batchId);
+
     constructor(IERC7984ERC20Wrapper fromToken_, IERC7984ERC20Wrapper toToken_) {
         require(
             ERC165Checker.supportsInterface(address(fromToken_), type(IERC7984ERC20Wrapper).interfaceId),
@@ -119,6 +125,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             ERC165Checker.supportsInterface(address(toToken_), type(IERC7984ERC20Wrapper).interfaceId),
             InvalidWrapperToken(address(toToken_))
         );
+        require(fromToken_.underlying() != toToken_.underlying(), DuplicateUnderlyingTokens());
 
         _fromToken = fromToken_;
         _toToken = toToken_;
@@ -216,10 +223,13 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
         }
 
+        uint256 beforeUnderlyingToTokenBalance;
+
         ExecuteOutcome outcome;
         if (unwrapAmountCleartext == 0) {
             outcome = ExecuteOutcome.Cancel;
         } else {
+            beforeUnderlyingToTokenBalance = IERC20(toToken().underlying()).balanceOf(address(this));
             outcome = _executeRoute(batchId, unwrapAmountCleartext);
         }
 
@@ -251,6 +261,11 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             _batches[batchId].canceled = true;
 
             emit BatchCanceled(batchId);
+        } else if (outcome == ExecuteOutcome.Partial) {
+            require(
+                IERC20(toToken().underlying()).balanceOf(address(this)) == beforeUnderlyingToTokenBalance,
+                IntermediateStepToTokenBalanceChanged(batchId)
+            );
         }
     }
 
@@ -401,7 +416,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      *
      * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the route execution is complete.
      * If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`. Intermediate steps *must* not
-     * result in underlying {toToken} being transferred into the batcher.
+     * result in underlying {toToken} being transferred to or from the batcher.
      *
      * [WARNING]
      * ====

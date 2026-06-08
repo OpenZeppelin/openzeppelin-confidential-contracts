@@ -2,12 +2,13 @@
 pragma solidity ^0.8.27;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {FHESafeMath} from "./../../utils/FHESafeMath.sol";
 
 contract FHESafeMathMock is ZamaEthereumConfig {
     event HandleCreated(euint64 amount);
     event ResultComputed(ebool success, euint64 updated);
+    event SaturatedResultComputed(euint64 result);
 
     function createHandle(uint64 amount) public returns (euint64 handle) {
         handle = FHE.asEuint64(amount);
@@ -66,5 +67,27 @@ contract FHESafeMathMock is ZamaEthereumConfig {
         }
 
         emit ResultComputed(success, difference);
+    }
+
+    function saturatingAdd(euint64 a, euint64 b) public returns (euint64 result) {
+        result = FHESafeMath.saturatingAdd(a, b);
+
+        if (FHE.isInitialized(result)) {
+            FHE.allowThis(result);
+            FHE.allow(result, msg.sender);
+        }
+
+        emit SaturatedResultComputed(result);
+    }
+
+    function saturatingSub(euint64 a, euint64 b) public returns (euint64 result) {
+        result = FHESafeMath.saturatingSub(a, b);
+
+        if (FHE.isInitialized(result)) {
+            FHE.allowThis(result);
+            FHE.allow(result, msg.sender);
+        }
+
+        emit SaturatedResultComputed(result);
     }
 }

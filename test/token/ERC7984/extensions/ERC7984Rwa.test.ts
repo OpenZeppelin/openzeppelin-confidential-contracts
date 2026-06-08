@@ -1,6 +1,7 @@
 import { callAndGetResult } from '../../../helpers/event';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
 import { AddressLike, BytesLike } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
@@ -10,11 +11,11 @@ const adminRole = ethers.ZeroHash;
 const agentRole = ethers.id('AGENT_ROLE');
 
 const fixture = async () => {
-  const [admin, agent1, agent2, recipient, anyone] = await ethers.getSigners();
+  const [admin, agent1, agent2, recipient, anyone, holder, ...others] = await ethers.getSigners();
   const token = await ethers.deployContract('ERC7984RwaMock', ['name', 'symbol', 'uri', admin.address]);
   await token.connect(admin).addAgent(agent1);
   token.connect(anyone);
-  return { token, admin, agent1, agent2, recipient, anyone };
+  return { token, admin, agent1, agent2, recipient, anyone, holder, others };
 };
 
 describe('ERC7984Rwa', function () {
@@ -525,7 +526,7 @@ describe('ERC7984Rwa', function () {
     });
 
     for (const withProof of [true, false]) {
-      it(`should not force transfer if receiver blocked ${withProof ? 'with proof' : ''}`, async function () {
+      it(`should force transfer if receiver blocked ${withProof ? 'with proof' : ''}`, async function () {
         const { token, agent1, recipient, anyone } = await fixture();
         let params = [recipient.address, anyone.address] as unknown as [
           from: AddressLike,
@@ -545,17 +546,13 @@ describe('ERC7984Rwa', function () {
           params.push(await token.connect(agent1).createEncryptedAmount.staticCall(amount));
         }
         await token.connect(agent1).blockUser(anyone);
-        await expect(
-          token
-            .connect(agent1)
-            [
-              withProof
-                ? 'forceConfidentialTransferFrom(address,address,bytes32,bytes)'
-                : 'forceConfidentialTransferFrom(address,address,bytes32)'
-            ](...params),
-        )
-          .to.be.revertedWithCustomError(token, 'UserRestricted')
-          .withArgs(anyone.address);
+        await token
+          .connect(agent1)
+          [
+            withProof
+              ? 'forceConfidentialTransferFrom(address,address,bytes32,bytes)'
+              : 'forceConfidentialTransferFrom(address,address,bytes32)'
+          ](...params);
       });
     }
   });
@@ -676,5 +673,171 @@ describe('ERC7984Rwa', function () {
           .withArgs(account);
       });
     }
+  });
+
+  describe('Recover', function () {
+    it('should be gated to agents', async function () {
+      const { token, anyone, others, recipient } = await fixture();
+      await expect(token.connect(anyone).recoverAddress(recipient, others[0]))
+        .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
+        .withArgs(anyone.address, agentRole);
+    });
+
+    it('should fail if lost and new accounts are the same', async function () {
+      const { token, recipient, agent1 } = await fixture();
+      await expect(token.connect(agent1).recoverAddress(recipient, recipient)).to.be.revertedWithCustomError(
+        token,
+        'ERC7984RwaSelfRecoveryNotAllowed',
+      );
+    });
+
+    it('should emit recovered event', async function () {
+      const { token, anyone, recipient, agent1 } = await fixture();
+      await token['$_mint(address,uint64)'](recipient, 100);
+      await expect(token.connect(agent1).recoverAddress(recipient, anyone))
+        .to.emit(token, 'TokensRecovered')
+        .withArgs(recipient, anyone, anyValue);
+
+      const [, , amount] = (await token.queryFilter(token.filters.TokensRecovered()))[0].args;
+      await expect(fhevm.userDecryptEuint(FhevmType.euint64, amount, token, agent1)).to.eventually.eq(100);
+    });
+
+    it('should transfer frozen tokens', async function () {
+      const { token, anyone, recipient, agent1 } = await fixture();
+      await token['$_mint(address,uint64)'](recipient, 100);
+
+      await token.$_setConfidentialFrozen(recipient, 50);
+
+      await token.connect(agent1).recoverAddress(recipient, anyone);
+
+      const transferEvent = (await token.queryFilter(token.filters.ConfidentialTransfer()))[1];
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], token.target, anyone),
+      ).to.eventually.eq(100);
+    });
+
+    it('should pass on frozen amounts', async function () {
+      const { token, anyone, recipient, agent1 } = await fixture();
+      await token['$_mint(address,uint64)'](recipient, 100);
+
+      await token.$_setConfidentialFrozen(recipient, 50);
+
+      const logs = (await (await token.connect(agent1).recoverAddress(recipient, anyone)).wait())!.logs;
+
+      const tokensFrozenTopic = ethers.id('TokensFrozen(address,bytes32)');
+      const rescuedAccountFreezeEvents = logs.filter(
+        log =>
+          log.address == token.target &&
+          log.topics[0] == tokensFrozenTopic &&
+          log.topics[1] == ethers.AbiCoder.defaultAbiCoder().encode(['address'], [recipient.address]),
+      );
+
+      expect(rescuedAccountFreezeEvents[0].data).to.eq(ethers.ZeroHash);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, rescuedAccountFreezeEvents[1].data, token.target, recipient),
+      ).to.eventually.eq(0);
+
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, await token.confidentialFrozen(anyone), token.target, anyone),
+      ).to.eventually.eq(50);
+    });
+
+    it('should add to existing frozen value', async function () {
+      const { token, holder, recipient, agent1 } = await fixture();
+
+      await token['$_mint(address,uint64)'](holder, 100);
+      await token['$_mint(address,uint64)'](recipient, 50);
+
+      await token.$_setConfidentialFrozen(holder, 20);
+      await token.$_setConfidentialFrozen(recipient, 50);
+
+      await token.connect(agent1).recoverAddress(holder, recipient);
+
+      const recipientFrozenAmount = await token.confidentialFrozen(recipient);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, recipientFrozenAmount, token.target, recipient),
+      ).to.eventually.eq(70);
+    });
+
+    it('should block new account if lost account is blocked', async function () {
+      const { token, anyone, recipient, agent1 } = await fixture();
+      await token['$_mint(address,uint64)'](recipient, 100);
+      await token.connect(agent1).blockUser(recipient);
+
+      await expect(token.canTransact(anyone)).to.eventually.be.true;
+
+      await token.connect(agent1).recoverAddress(recipient, anyone);
+
+      await expect(token.canTransact(anyone)).to.eventually.be.false;
+    });
+
+    it('should retain frozen value if recovery fails', async function () {
+      const { token, anyone, recipient, agent1 } = await fixture();
+
+      await token['$_mint(address,uint64)'](recipient, 100);
+      await token.$_setConfidentialFrozen(recipient, 50);
+
+      await token.setFailTransfer(true);
+
+      await token.connect(agent1).recoverAddress(recipient, anyone);
+
+      const recipientFrozenAmount = await token.confidentialFrozen(recipient);
+      const anyoneFrozenAmount = await token.confidentialFrozen(anyone);
+
+      const recipientBalance = await token.confidentialBalanceOf(recipient);
+
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, recipientFrozenAmount, token.target, recipient),
+      ).to.eventually.eq(50);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, anyoneFrozenAmount, token.target, anyone),
+      ).to.eventually.eq(0);
+
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, recipientBalance, token.target, recipient),
+      ).to.eventually.eq(100);
+    });
+  });
+
+  describe('Multicall', async function () {
+    it('should atomically unfreeze and force transfer', async function () {
+      const { token, agent1, holder, recipient } = await fixture();
+      const balance = 100;
+      const transferAmount = 75;
+
+      await token['$_mint(address,uint64)'](holder, balance);
+      // Freeze all tokens on the from account so even a force transfer would otherwise move 0 tokens
+      await token.$_setConfidentialFrozen(holder, balance);
+      // Pause the contract; force transfer bypasses the pause check, but a regular transfer would not
+      await token.connect(agent1).pause();
+      expect(await token.paused()).to.be.true;
+
+      // Encrypted inputs are bound to msg.sender (agent1). Multicall uses delegatecall so msg.sender
+      // is preserved inside each sub-call, and the proofs remain valid.
+      const unfreezeInput = await fhevm
+        .createEncryptedInput(await token.getAddress(), agent1.address)
+        .add64(25)
+        .encrypt();
+      const transferInput = await fhevm
+        .createEncryptedInput(await token.getAddress(), agent1.address)
+        .add64(transferAmount)
+        .encrypt();
+
+      const unfreezeData = token.interface.encodeFunctionData('setConfidentialFrozen(address,bytes32,bytes)', [
+        holder.address,
+        unfreezeInput.handles[0],
+        unfreezeInput.inputProof,
+      ]);
+      const forceTransferData = token.interface.encodeFunctionData(
+        'forceConfidentialTransferFrom(address,address,bytes32,bytes)',
+        [holder.address, recipient.address, transferInput.handles[0], transferInput.inputProof],
+      );
+
+      const tx = token.connect(agent1).multicall([unfreezeData, forceTransferData]);
+      const [, , transferredHandle] = await callAndGetResult(tx, transferEventSignature);
+      await expect(fhevm.userDecryptEuint(FhevmType.euint64, transferredHandle, token, recipient)).to.eventually.equal(
+        transferAmount,
+      );
+    });
   });
 });
