@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC7984HookModule} from "../../../interfaces/IERC7984HookModule.sol";
 import {HandleAccessManager} from "../../../utils/HandleAccessManager.sol";
 

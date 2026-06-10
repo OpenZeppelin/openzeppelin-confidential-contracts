@@ -9,34 +9,19 @@ import {ERC7984HookModule} from "../../../../token/ERC7984/utils/ERC7984HookModu
 
 contract ERC7984HookModuleMock is ERC7984HookModule, ZamaEthereumConfig {
     bool public isCompliant = true;
-    bool public revertOnUninstall = false;
 
     event PostTransfer();
     event PreTransfer();
 
     event OnInstall(bytes initData);
-    event OnUninstall(bytes deinitData);
 
     function onInstall(bytes calldata initData) public override {
         emit OnInstall(initData);
         super.onInstall(initData);
     }
 
-    function onUninstall(bytes calldata deinitData) public override {
-        if (revertOnUninstall) {
-            revert("Revert on uninstall");
-        }
-
-        emit OnUninstall(deinitData);
-        super.onUninstall(deinitData);
-    }
-
     function setIsCompliant(bool isCompliant_) public {
         isCompliant = isCompliant_;
-    }
-
-    function setRevertOnUninstall(bool revertOnUninstall_) public {
-        revertOnUninstall = revertOnUninstall_;
     }
 
     function _preTransfer(address token, address from, address, euint64) internal override returns (ebool) {

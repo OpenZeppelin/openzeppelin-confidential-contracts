@@ -17,14 +17,6 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     /// @dev The caller `user` does not have access to the encrypted amount `amount`.
     error ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(euint64 amount, address user);
 
-    /// @dev The module is already installed for the given token.
-    error ERC7984HookModuleAlreadyInstalled(address token);
-
-    /// @dev The module is not installed for the given token.
-    error ERC7984HookModuleNotInstalled(address token);
-
-    mapping(address token => bool) private _installed;
-
     /// @inheritdoc IERC7984HookModule
     function preTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
         require(
@@ -47,16 +39,7 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
 
     /// @inheritdoc IERC7984HookModule
     function onInstall(bytes calldata initData) public virtual {
-        require(!_isModuleInstalled(msg.sender), ERC7984HookModuleAlreadyInstalled(msg.sender));
-
         _onInstall(msg.sender, initData);
-    }
-
-    /// @inheritdoc IERC7984HookModule
-    function onUninstall(bytes calldata deinitData) public virtual {
-        require(_isModuleInstalled(msg.sender), ERC7984HookModuleNotInstalled(msg.sender));
-
-        _onUninstall(msg.sender, deinitData);
     }
 
     /// @inheritdoc ERC165
@@ -66,19 +49,9 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
 
     /**
      * @dev Internal function which may be overridden by the derived contract to perform actions
-     * when the module is installed.
+     * when the module is installed. Should clean up dirty state from possible previous installations.
      */
-    function _onInstall(address token, bytes calldata /* initData */) internal virtual {
-        _installed[token] = true;
-    }
-
-    /**
-     * @dev Internal function which may be overridden by the derived contract to perform actions
-     * when the module is uninstalled.
-     */
-    function _onUninstall(address token, bytes calldata /* deinitData */) internal virtual {
-        delete _installed[token];
-    }
+    function _onInstall(address /* token */, bytes calldata /* initData */) internal virtual {}
 
     /**
      * @dev Internal function which runs before a transfer. Transient access is already granted to the module
@@ -108,18 +81,6 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
         euint64 /*encryptedAmount*/
     ) internal virtual {
         // default to no-op
-    }
-
-    /**
-     * @dev Check if the module is installed for the given token. The default implementation reads from
-     * an internal storage flag maintained by {onInstall} and {onUninstall}. Derived contracts may override
-     * to extend the check, but should typically rely on the default behavior.
-     *
-     * NOTE: This function should use internal storage to check if the module is installed for the given token.
-     * Do not use external storage like {ERC7984Hooked-isModuleInstalled}.
-     */
-    function _isModuleInstalled(address token) internal view virtual returns (bool) {
-        return _installed[token];
     }
 
     /// @dev Allow modules to get access to token handles during transaction.

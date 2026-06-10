@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import {LowLevelCall} from "@openzeppelin/contracts/utils/LowLevelCall.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IERC7984HookModule} from "./../../../interfaces/IERC7984HookModule.sol";
 import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
@@ -19,7 +18,9 @@ import {ERC7984} from "./../ERC7984.sol";
  * amount and may do accounting as necessary. Modules may revert on either call, which will propagate
  * and revert the entire transaction.
  *
- * NOTE: Hook modules are trusted contracts--they have access to any private state the token has access to.
+ * WARNING: Hook modules are trusted contracts--they have access to any private state the token has access to. This arbitrary
+ * ACL access allows hook modules to grant themselves (or any other address) allowance to view any handle the token has access to.
+ * ACL allowances granted by the hook module persist even after the module is uninstalled.
  */
 abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     using EnumerableSet for *;
@@ -61,8 +62,8 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     }
 
     /// @dev Uninstalls a hook module.
-    function uninstallModule(address module, bytes memory deinitData) public virtual onlyAuthorizedModuleChange {
-        _uninstallModule(module, deinitData);
+    function uninstallModule(address module) public virtual onlyAuthorizedModuleChange {
+        _uninstallModule(module);
     }
 
     /**
@@ -97,10 +98,8 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     }
 
     /// @dev Internal function which uninstalls a module.
-    function _uninstallModule(address module, bytes memory deinitData) internal virtual {
+    function _uninstallModule(address module) internal virtual {
         require(_modules.remove(module), ERC7984HookedNonexistentModule(module));
-
-        LowLevelCall.callNoReturn(module, abi.encodeCall(IERC7984HookModule.onUninstall, (deinitData)));
 
         emit ERC7984HookedModuleUninstalled(module);
     }

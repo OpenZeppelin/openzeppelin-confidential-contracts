@@ -5,6 +5,7 @@ import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
+import { EventLog } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
@@ -225,6 +226,16 @@ describe('BatcherConfidential', function () {
         await expect(join(this.fromToken, this.holder, this.batcher, 1000n))
           .to.emit(this.batcher, 'Joined')
           .withArgs(batchId, this.holder.address, anyValue);
+      });
+
+      it('should be able to decrypt joined amount', async function () {
+        const tx = await join(this.fromToken, this.holder, this.batcher, 1000n);
+        const event = (await tx.wait().then(tx => tx!.logs.filter(log => log.address === this.batcher.target)))[0];
+        const joinedAmount = (event as EventLog).data;
+
+        await expect(
+          fhevm.userDecryptEuint(FhevmType.euint64, joinedAmount, this.batcher, this.holder),
+        ).to.eventually.eq('1000');
       });
 
       it('should not credit failed transaction', async function () {
@@ -528,6 +539,38 @@ describe('BatcherConfidential', function () {
       await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
         .to.emit(this.batcher, 'BatchFinalized')
         .withArgs(this.batchId, 10n ** 6n);
+    });
+
+    it('should revert if `_executeRoute` returns partial but transferred toToken underlying in', async function () {
+      await this.batcher.setExecutionOutcome(ExecuteOutcome.Partial);
+      await this.batcher.setPartialTransfersToToken(true);
+
+      await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+        .to.be.revertedWithCustomError(this.batcher, 'IntermediateStepToTokenBalanceChanged')
+        .withArgs(this.batchId);
+    });
+
+    it('should revert on partial-with-transfer even after prior clean partial steps', async function () {
+      await this.batcher.setExecutionOutcome(ExecuteOutcome.Partial);
+
+      // A few legitimate partial steps that don't transfer toToken in.
+      await this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof);
+      await this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof);
+
+      // A subsequent partial step that incorrectly transfers toToken underlying in must revert.
+      await this.batcher.setPartialTransfersToToken(true);
+      await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+        .to.be.revertedWithCustomError(this.batcher, 'IntermediateStepToTokenBalanceChanged')
+        .withArgs(this.batchId);
+
+      // Batch state must still be Dispatched and recoverable with a clean step afterwards.
+      await expect(this.batcher.batchState(this.batchId)).to.eventually.eq(BatchState.Dispatched);
+
+      await this.batcher.setPartialTransfersToToken(false);
+      await this.batcher.setExecutionOutcome(ExecuteOutcome.Complete);
+      await expect(
+        this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof),
+      ).to.emit(this.batcher, 'BatchFinalized');
     });
 
     it('should be able to call multiple times if `_executeRoute` returns partial', async function () {

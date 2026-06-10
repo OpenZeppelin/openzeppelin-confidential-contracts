@@ -12,6 +12,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
     ExchangeMock public exchange;
     address public admin;
     ExecuteOutcome public outcome = ExecuteOutcome.Complete;
+    bool public partialTransfersToToken;
 
     constructor(ExchangeMock exchange_, address admin_) {
         exchange = exchange_;
@@ -24,6 +25,10 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
 
     function setExecutionOutcome(ExecuteOutcome outcome_) public {
         outcome = outcome_;
+    }
+
+    function setPartialTransfersToToken(bool value) public {
+        partialTransfersToToken = value;
     }
 
     /// @dev Join the current batch with `externalAmount` and `inputProof`.
@@ -68,7 +73,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
     }
 
     function _executeRoute(uint256, uint256 unwrapAmount) internal override returns (ExecuteOutcome) {
-        if (outcome == ExecuteOutcome.Complete) {
+        if (outcome == ExecuteOutcome.Complete || (outcome == ExecuteOutcome.Partial && partialTransfersToToken)) {
             // Approve exchange to spend unwrapped tokens
             uint256 rawAmount = unwrapAmount * fromToken().rate();
             IERC20(fromToken().underlying()).approve(address(exchange), rawAmount);

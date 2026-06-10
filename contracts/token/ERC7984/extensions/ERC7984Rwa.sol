@@ -257,12 +257,20 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         return super._update(from, to, encryptedAmount);
     }
 
-    /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a {forceConfidentialTransferFrom}.
+    /// @dev Bypasses {ERC7984Restricted} `from` restriction check when performing a forced transfer or token recovery.
     function _checkSenderRestriction(address account) internal view override {
         if (_isForceTransfer(msg.sig)) {
             return;
         }
         super._checkSenderRestriction(account);
+    }
+
+    /// @dev Bypasses {ERC7984Restricted} `to` restriction check when performing a forced transfer or token recovery.
+    function _checkRecipientRestriction(address account) internal view override {
+        if (_isForceTransfer(msg.sig)) {
+            return;
+        }
+        super._checkRecipientRestriction(account);
     }
 
     /// @dev Bypasses {Pausable} check when performing a {forceConfidentialTransferFrom}.
@@ -279,5 +287,15 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
             selector == 0x6c9c3c85 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32,bytes)"))
             selector == 0x44fd6e40 || // bytes4(keccak256("forceConfidentialTransferFrom(address,address,bytes32)"))
             selector == this.recoverAddress.selector;
+    }
+
+    /// @dev Restrict overrides of {Context._msgSender}. Please use other account abstraction methods instead.
+    function _msgSender() internal view override returns (address) {
+        return super._msgSender();
+    }
+
+    /// @dev Restrict overrides of {Context._msgData}. Please use other account abstraction methods instead.
+    function _msgData() internal view override returns (bytes calldata) {
+        return super._msgData();
     }
 }

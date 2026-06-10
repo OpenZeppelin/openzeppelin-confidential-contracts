@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0) (finance/BatcherConfidential.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.1) (finance/BatcherConfidential.sol)
 
 pragma solidity ^0.8.27;
 
-import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, externalEuint64, euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
@@ -113,6 +113,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The underlying wrapper tokens are the same.
     error DuplicateUnderlyingTokens();
 
+    /// @dev Intermediate steps must not result in underlying {toToken} being transferred to or from the batcher.
+    error IntermediateStepToTokenBalanceChanged(uint256 batchId);
+
     constructor(IERC7984ERC20Wrapper fromToken_, IERC7984ERC20Wrapper toToken_) {
         require(
             ERC165Checker.supportsInterface(address(fromToken_), type(IERC7984ERC20Wrapper).interfaceId),
@@ -220,10 +223,13 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
         }
 
+        uint256 beforeUnderlyingToTokenBalance;
+
         ExecuteOutcome outcome;
         if (unwrapAmountCleartext == 0) {
             outcome = ExecuteOutcome.Cancel;
         } else {
+            beforeUnderlyingToTokenBalance = IERC20(toToken().underlying()).balanceOf(address(this));
             outcome = _executeRoute(batchId, unwrapAmountCleartext);
         }
 
@@ -255,6 +261,11 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             _batches[batchId].canceled = true;
 
             emit BatchCanceled(batchId);
+        } else if (outcome == ExecuteOutcome.Partial) {
+            require(
+                IERC20(toToken().underlying()).balanceOf(address(this)) == beforeUnderlyingToTokenBalance,
+                IntermediateStepToTokenBalanceChanged(batchId)
+            );
         }
     }
 
@@ -383,6 +394,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         FHE.allowThis(newTotalDeposits);
         FHE.allowThis(newDeposits);
+        FHE.allowThis(joinedAmount);
         FHE.allow(newDeposits, to);
         FHE.allow(joinedAmount, to);
 
@@ -404,7 +416,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      *
      * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the route execution is complete.
      * If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`. Intermediate steps *must* not
-     * result in underlying {toToken} being transferred into the batcher.
+     * result in underlying {toToken} being transferred to or from the batcher.
      *
      * [WARNING]
      * ====
