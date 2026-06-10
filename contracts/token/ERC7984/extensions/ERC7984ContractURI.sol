@@ -3,13 +3,13 @@
 pragma solidity ^0.8.27;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IERC7984ContractURI} from "../../../interfaces/IERC7984ContractURI.sol";
+import {IERC7984} from "../../../interfaces/IERC7984.sol";
 import {ERC7984} from "../ERC7984.sol";
 
 /**
  * @dev Extension of {ERC7984} that adds a {contractURI} function.
  */
-abstract contract ERC7984ContractURI is IERC7984ContractURI, ERC7984 {
+abstract contract ERC7984ContractURI is IERC7984, ERC7984 {
     /// @dev Event emitted when the contract URI is changed.
     event ContractURIUpdated();
 
@@ -19,14 +19,14 @@ abstract contract ERC7984ContractURI is IERC7984ContractURI, ERC7984 {
         _setContractURI(contractURI_);
     }
 
-    /// @inheritdoc IERC7984ContractURI
+    /// @dev Returns the contract URI.
     function contractURI() public view virtual returns (string memory) {
         return _contractURI;
     }
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984, IERC165) returns (bool) {
-        return interfaceId == type(IERC7984ContractURI).interfaceId || super.supportsInterface(interfaceId);
+        super.supportsInterface(interfaceId);
     }
 
     /**
