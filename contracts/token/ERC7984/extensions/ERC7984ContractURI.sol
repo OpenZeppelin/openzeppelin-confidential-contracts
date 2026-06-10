@@ -26,7 +26,7 @@ abstract contract ERC7984ContractURI is IERC7984, ERC7984 {
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984, IERC165) returns (bool) {
-        super.supportsInterface(interfaceId);
+        return super.supportsInterface(interfaceId);
     }
 
     /**

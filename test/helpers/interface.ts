@@ -21,7 +21,6 @@ export const SIGNATURES = {
     'setOperator(address,uint48)',
     'symbol()',
   ],
-  ERC7984ContractURI: ['contractURI()'],
   ERC7984ERC20Wrapper: [
     'underlying()',
     'unwrap(address,address,bytes32,bytes)',

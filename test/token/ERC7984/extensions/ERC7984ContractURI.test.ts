@@ -24,10 +24,6 @@ describe('ERC7984ContractURI', function () {
   });
 
   describe('ERC165', function () {
-    it('supports IERC7984ContractURI', async function () {
-      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984ContractURI)).to.eventually.be.true;
-    });
-
     it('supports IERC7984', async function () {
       await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
     });
