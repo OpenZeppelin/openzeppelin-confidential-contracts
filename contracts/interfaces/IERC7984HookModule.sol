@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.24;
+pragma solidity >=0.8.24;
 
 import {euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984} from "../ERC7984.sol";
