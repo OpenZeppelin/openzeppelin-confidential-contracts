@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (last updated v0.4.0) (interfaces/IERC7984ERC20Wrapper.sol)
 
-pragma solidity ^0.8.24;
+pragma solidity >=0.8.24;
 
 import {externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC7984} from "./IERC7984.sol";

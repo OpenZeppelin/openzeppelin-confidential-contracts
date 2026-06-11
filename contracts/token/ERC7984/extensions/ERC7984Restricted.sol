@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984Restricted.sol)
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
 import {ERC7984, euint64} from "../ERC7984.sol";
 
