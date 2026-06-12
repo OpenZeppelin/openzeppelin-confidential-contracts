@@ -7,7 +7,7 @@ import { ethers, fhevm } from 'hardhat';
 describe('ERC7984Hooked', function () {
   beforeEach(async function () {
     const [admin, holder, recipient, anyone] = await ethers.getSigners();
-    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])).connect(
+    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', admin])).connect(
       anyone,
     ) as $ERC7984Hooked;
     const hookModule = await ethers.deployContract('$ERC7984HookModuleMock');

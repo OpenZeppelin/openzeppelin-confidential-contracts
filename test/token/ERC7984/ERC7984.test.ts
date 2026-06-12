@@ -7,7 +7,6 @@ import hre, { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
 
 /* eslint-disable no-unexpected-multiline */
 describe('ERC7984', function () {
@@ -15,7 +14,7 @@ describe('ERC7984', function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol]);
     this.accounts = accounts.slice(3);
     this.holder = holder;
     this.recipient = recipient;
@@ -39,10 +38,6 @@ describe('ERC7984', function () {
 
     it('sets the symbol', async function () {
       await expect(this.token.symbol()).to.eventually.equal(symbol);
-    });
-
-    it('sets the uri', async function () {
-      await expect(this.token.contractURI()).to.eventually.equal(uri);
     });
 
     it('decimals is 6', async function () {

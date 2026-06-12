@@ -46,7 +46,7 @@ function shouldBehaveLikeVestingConfidential() {
     });
 
     it('should not release if reentrancy', async function () {
-      const reentrantToken = await ethers.deployContract('$ERC7984ReentrantMock', ['name', 'symbol', 'uri']);
+      const reentrantToken = await ethers.deployContract('$ERC7984ReentrantMock', ['name', 'symbol']);
       const encryptedInput = await fhevm
         .createEncryptedInput(await reentrantToken.getAddress(), this.holder.address)
         .add64(1000)

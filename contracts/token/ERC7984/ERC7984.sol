@@ -30,7 +30,6 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     euint64 private _totalSupply;
     string private _name;
     string private _symbol;
-    string private _contractURI;
 
     /// @dev Emitted when an encrypted amount `encryptedAmount` is requested for disclosure by `requester`.
     event AmountDiscloseRequested(euint64 indexed encryptedAmount, address indexed requester);
@@ -54,10 +53,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /// @dev The given caller `caller` is not authorized for the current operation.
     error ERC7984UnauthorizedCaller(address caller);
 
-    constructor(string memory name_, string memory symbol_, string memory contractURI_) {
+    constructor(string memory name_, string memory symbol_) {
         _name = name_;
         _symbol = symbol_;
-        _contractURI = contractURI_;
     }
 
     /// @inheritdoc ERC165
@@ -78,11 +76,6 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /// @inheritdoc IERC7984
     function decimals() public view virtual returns (uint8) {
         return 6;
-    }
-
-    /// @inheritdoc IERC7984
-    function contractURI() public view virtual returns (string memory) {
-        return _contractURI;
     }
 
     /// @inheritdoc IERC7984

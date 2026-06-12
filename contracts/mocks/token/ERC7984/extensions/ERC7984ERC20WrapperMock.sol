@@ -11,9 +11,8 @@ contract ERC7984ERC20WrapperMock is ERC7984ERC20Wrapper, ZamaEthereumConfig, ERC
     constructor(
         IERC20 token,
         string memory name,
-        string memory symbol,
-        string memory uri
-    ) ERC7984ERC20Wrapper(token) ERC7984Mock(name, symbol, uri) {}
+        string memory symbol
+    ) ERC7984ERC20Wrapper(token) ERC7984Mock(name, symbol) {}
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC7984ERC20Wrapper, ERC7984) returns (bool) {
         return super.supportsInterface(interfaceId);

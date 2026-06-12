@@ -4,14 +4,13 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
 
 describe('VestingWalletConfidential', function () {
   beforeEach(async function () {
     const accounts = (await ethers.getSigners()).slice(3);
     const [holder, recipient] = accounts;
 
-    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol]);
 
     const encryptedInput = await fhevm
       .createEncryptedInput(await token.getAddress(), holder.address)

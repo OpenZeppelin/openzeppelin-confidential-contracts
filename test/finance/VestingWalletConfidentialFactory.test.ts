@@ -9,7 +9,6 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
 const startTimestamp = 9876543210;
 const duration = 1234;
 const cliff = 10;
@@ -20,7 +19,7 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
   beforeEach(async function () {
     const [holder, recipient, recipient2, operator, executor, ...accounts] = await ethers.getSigners();
 
-    const token = (await ethers.deployContract('$ERC7984Mock', [name, symbol, uri])) as any as $ERC7984Mock;
+    const token = (await ethers.deployContract('$ERC7984Mock', [name, symbol])) as any as $ERC7984Mock;
 
     const encryptedInput = await fhevm
       .createEncryptedInput(await token.getAddress(), holder.address)

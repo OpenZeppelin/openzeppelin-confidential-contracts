@@ -8,7 +8,6 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
 
 describe('ERC7984Freezable', function () {
   async function deployFixture() {
@@ -16,7 +15,6 @@ describe('ERC7984Freezable', function () {
     const token = (await ethers.deployContract('$ERC7984FreezableMock', [
       name,
       symbol,
-      uri,
     ])) as any as $ERC7984FreezableMock;
     const acl = IACL__factory.connect(await getAclAddress(), ethers.provider);
     return { token, acl, holder, recipient, freezer, operator, anyone };

@@ -12,12 +12,7 @@ import {ERC7984Mock} from "../ERC7984Mock.sol";
 contract ERC7984RwaMock is ERC7984Rwa, ERC7984Mock, HandleAccessManager {
     bool public failTransfer;
 
-    constructor(
-        string memory name,
-        string memory symbol,
-        string memory tokenUri,
-        address admin
-    ) ERC7984Rwa(admin) ERC7984Mock(name, symbol, tokenUri) {}
+    constructor(string memory name, string memory symbol, address admin) ERC7984Rwa(admin) ERC7984Mock(name, symbol) {}
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984Rwa, ERC7984) returns (bool) {
         return super.supportsInterface(interfaceId);

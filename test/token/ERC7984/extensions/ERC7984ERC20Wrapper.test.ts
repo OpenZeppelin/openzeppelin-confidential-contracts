@@ -8,7 +8,6 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
 
 /* eslint-disable no-unexpected-multiline */
 describe('ERC7984ERC20Wrapper', function () {
@@ -17,7 +16,7 @@ describe('ERC7984ERC20Wrapper', function () {
     const [holder, recipient, operator] = accounts;
 
     const token = await ethers.deployContract('$ERC20Mock', ['Public Token', 'PT', 18]);
-    const wrapper = await ethers.deployContract('$ERC7984ERC20WrapperMock', [token, name, symbol, uri]);
+    const wrapper = await ethers.deployContract('$ERC7984ERC20WrapperMock', [token, name, symbol]);
 
     this.accounts = accounts.slice(3);
     this.holder = holder;
@@ -346,7 +345,7 @@ describe('ERC7984ERC20Wrapper', function () {
     describe('decimals', function () {
       it('when underlying has 6 decimals', async function () {
         const token = await ethers.deployContract('ERC20Mock', ['Public Token', 'PT', 6]);
-        const wrapper = await ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol, uri]);
+        const wrapper = await ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol]);
 
         await expect(wrapper.decimals()).to.eventually.equal(6);
         await expect(wrapper.rate()).to.eventually.equal(1);
@@ -354,7 +353,7 @@ describe('ERC7984ERC20Wrapper', function () {
 
       it('when underlying has more than 9 decimals', async function () {
         const token = await ethers.deployContract('ERC20Mock', ['Public Token', 'PT', 18]);
-        const wrapper = await ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol, uri]);
+        const wrapper = await ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol]);
 
         await expect(wrapper.decimals()).to.eventually.equal(6);
         await expect(wrapper.rate()).to.eventually.equal(10n ** 12n);
@@ -362,7 +361,7 @@ describe('ERC7984ERC20Wrapper', function () {
 
       it('when underlying has less than 6 decimals', async function () {
         const token = await ethers.deployContract('ERC20Mock', ['Public Token', 'PT', 4]);
-        const wrapper = await ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol, uri]);
+        const wrapper = await ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol]);
 
         await expect(wrapper.decimals()).to.eventually.equal(4);
         await expect(wrapper.rate()).to.eventually.equal(1);
@@ -370,7 +369,7 @@ describe('ERC7984ERC20Wrapper', function () {
 
       it('when underlying decimals are not available', async function () {
         const token = await ethers.deployContract('ERC20RevertDecimalsMock');
-        const wrapper = await ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol, uri]);
+        const wrapper = await ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol]);
 
         await expect(wrapper.decimals()).to.eventually.equal(6);
         await expect(wrapper.rate()).to.eventually.equal(10n ** 12n);
@@ -378,7 +377,7 @@ describe('ERC7984ERC20Wrapper', function () {
 
       it('when decimals are over `type(uint8).max`', async function () {
         const token = await ethers.deployContract('ERC20ExcessDecimalsMock');
-        await expect(ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol, uri])).to.be.reverted;
+        await expect(ethers.deployContract('ERC7984ERC20WrapperMock', [token, name, symbol])).to.be.reverted;
       });
     });
   });

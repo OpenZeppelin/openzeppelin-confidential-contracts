@@ -10,9 +10,8 @@ contract ERC7984IdentityCheckMock is ERC7984Mock, ERC7984IdentityCheck {
     constructor(
         address identityRegistry,
         string memory name,
-        string memory symbol,
-        string memory tokenUri
-    ) ERC7984Mock(name, symbol, tokenUri) ERC7984IdentityCheck(identityRegistry) {}
+        string memory symbol
+    ) ERC7984Mock(name, symbol) ERC7984IdentityCheck(identityRegistry) {}
 
     function _update(
         address from,

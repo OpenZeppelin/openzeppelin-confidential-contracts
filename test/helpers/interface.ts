@@ -15,7 +15,6 @@ export const SIGNATURES = {
     'confidentialTransferFrom(address,address,bytes32)',
     'confidentialTransferFromAndCall(address,address,bytes32,bytes,bytes)',
     'confidentialTransferFromAndCall(address,address,bytes32,bytes)',
-    'contractURI()',
     'decimals()',
     'isOperator(address,address)',
     'name()',

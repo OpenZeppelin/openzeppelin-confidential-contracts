@@ -5,7 +5,7 @@ import { ethers, fhevm } from 'hardhat';
 describe('ERC7984HolderCapHookModules', function () {
   beforeEach(async function () {
     const [anyone, admin, agent1, holder, recipient, ...others] = await ethers.getSigners();
-    const token = (await ethers.deployContract('$ERC7984RwaHookedMock', ['name', 'symbol', 'uri', admin])) as any;
+    const token = (await ethers.deployContract('$ERC7984RwaHookedMock', ['name', 'symbol', admin])) as any;
     const complianceModule = await ethers.deployContract('$ERC7984HolderCapHookModuleMock', [admin]);
 
     await token
