@@ -29,8 +29,7 @@ pragma solidity ^0.8.27;
 import {ERC7984} from "@openzeppelin/confidential-contracts/token/ERC7984/ERC7984.sol";
 
 abstract contract MyToken is ERC7984 {
-    constructor() ERC7984("MyToken", "MTN", "<CONTRACT-URI>") {
-    }
+    constructor() ERC7984("MyToken", "MTN") {}
 }
 ```
 
