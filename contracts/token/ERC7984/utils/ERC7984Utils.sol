@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/utils/ERC7984Utils.sol)
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 

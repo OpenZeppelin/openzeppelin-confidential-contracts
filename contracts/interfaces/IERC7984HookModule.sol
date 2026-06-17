@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (last updated v0.5.0) (interfaces/IERC7984HookModule.sol)
 
-pragma solidity ^0.8.24;
+pragma solidity >=0.8.24;
 
 import {euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";

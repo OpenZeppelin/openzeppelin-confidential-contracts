@@ -20,6 +20,7 @@
     "lint:sol": "prettier --loglevel warn '{contracts,test}/**/*.sol' --check && solhint --config solhint.config.js '{contracts,test}/**/*.sol'",
     "lint:sol:fix": "solhint --config solhint.config.js '{contracts,test}/**/*.sol' --fix; prettier --loglevel warn '{contracts,test}/**/*.sol' --write",
     "postinstall": "rimraf fhevmTemp",
+    "pragma": "npm run compile && scripts/minimize-pragma.js artifacts/build-info/*",
     "prepack": "scripts/prepack.sh",
     "prepare": "husky",
     "prepare-docs": "scripts/prepare-docs.sh",
