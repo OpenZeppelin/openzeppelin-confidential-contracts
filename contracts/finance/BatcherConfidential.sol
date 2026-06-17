@@ -188,10 +188,6 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     function dispatchBatch() public virtual {
         uint256 batchId = _getAndIncreaseBatchId();
 
-        // For an empty batch `totalDeposits` is uninitialized; `allowTransient` materializes it
-        // into a real, transiently-allowed handle and returns it. Unwrapping that handle (never the
-        // raw zero handle) keeps dispatch working against a `fromToken` whose `fromExternal` does not
-        // treat the zero handle as an encrypted zero and would otherwise revert `SenderNotAllowedToUseHandle`.
         euint64 amountToUnwrap = FHE.allowTransient(totalDeposits(batchId), address(fromToken()));
         _batches[batchId].unwrapRequestId = fromToken().unwrap(
             address(this),
