@@ -1,9 +1,34 @@
 # openzeppelin-confidential-contracts
 
 
+## 0.5.0 (2026-06-12)
+
+### Token
+
+- `ERC7984`: Remove revert on transfer where the sender has an uninitialized balance. ([#357](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/357))
+- `ERC7984Hooked`: Add an `ERC7984` extension that calls external hooks before and after transfer of confidential tokens. ([#332](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/332))
+- `ERC7984HookModule`: Add a base hook module for building modules compatible with `ERC7984Hooked`. ([#351](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/351))
+- `ERC7984BalanceCapHookModule`: Add an example hook module that enforces a confidential balance cap for the token. ([#351](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/351))
+- `ERC7984HolderCapHookModule`: Add an example hook module that enforces a maximum number of holders for the token. ([#351](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/351))
+- `ERC7984Rwa`: Always call `_update` on transfers (even force). Bypass restriction via restriction override. ([#339](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/339))
+- `ERC7984Rwa`: Add token recovery functionality. ([#341](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/341))
+- `ERC7984Rwa`: Bypass recipient on RWA force transfer in addition to sender. ([#372](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/372))
+- `ERC7984Rwa`: Block overrides of `Context` functions (`_msgSender()`, `_msgData()`). ([#382](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/382))
+- `IERC7984Rwa`: Add token recovery function and event. ([#341](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/341))
+
+### Finance
+
+- `BatcherConfidential`: Revert if underlying `toToken` balance changes during a partial route execution. ([#385](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/385))
+
+### Utils
+
+- `FHESafeMath`: Add `saturatingAdd` and `saturatingSub` functions. ([#341](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/341))
+- `HandleAccessManager`: Return false by default in `_validateHandleAllowance`. ([#338](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/338))
+
 ## 0.4.1 (2026-06-08)
 
 ### Bug Fixes
+
 - `BatcherConfidential`: Enable decryption of the `joinedAmount` in `BatcherConfidential`. ([#387](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/387))
 
 ## 0.4.0 (2026-03-20)
