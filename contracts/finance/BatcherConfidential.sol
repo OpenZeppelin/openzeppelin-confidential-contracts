@@ -184,7 +184,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /**
      * @dev Permissionless function to dispatch the current batch. Increments the {currentBatchId}.
-     * Execution will fail if the batch {totalDeposits} is not initialized.
+     * Execution will revert if the batch {totalDeposits} is not initialized.
      *
      * NOTE: Developers should consider adding additional restrictions to this function
      * if maintaining confidentiality of deposits is critical to the application.
