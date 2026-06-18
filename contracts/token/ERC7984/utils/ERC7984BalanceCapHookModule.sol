@@ -4,7 +4,7 @@
 pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
+import {IERC7984} from "./../../../interfaces/IERC7984.sol";
 import {FHESafeMath} from "./../../../utils/FHESafeMath.sol";
 import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
@@ -29,10 +29,13 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
     /**
      * @dev Sets the max balance for a given token `token` to the encrypted value `newMaxBalance`.
      *
-     * `msg.sender` must have the agent role on `token`.
+     * `msg.sender` must be authorized to configure this module for `token`.
      */
-    function setMaxBalance(address token, externalEuint64 newMaxBalance, bytes calldata inputProof) public virtual {
-        require(IERC7984Rwa(token).isAgent(msg.sender), ERC7984HookModuleUnauthorizedAccount(msg.sender));
+    function setMaxBalance(
+        address token,
+        externalEuint64 newMaxBalance,
+        bytes calldata inputProof
+    ) public virtual onlyAuthorizedConfigurator(token) {
         _setMaxBalance(token, FHE.fromExternal(newMaxBalance, inputProof));
     }
 
@@ -62,7 +65,7 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
 
         // in non trivial cases, check (and document) compliance.
         if (to != address(0) && to != from && FHE.isInitialized(maxBalance(token))) {
-            euint64 balance = IERC7984Rwa(token).confidentialBalanceOf(to);
+            euint64 balance = IERC7984(token).confidentialBalanceOf(to);
             _accessHandle(token, balance);
 
             // Note, if the balance would result in an overflow, transfer will fail due to total supply overflow.

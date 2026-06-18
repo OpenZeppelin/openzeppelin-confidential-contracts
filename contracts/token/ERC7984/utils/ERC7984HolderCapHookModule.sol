@@ -4,7 +4,7 @@
 pragma solidity ^0.8.27;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IERC7984Rwa} from "./../../../interfaces/IERC7984Rwa.sol";
+import {IERC7984} from "./../../../interfaces/IERC7984.sol";
 import {ERC7984HookModule} from "./ERC7984HookModule.sol";
 
 /**
@@ -34,10 +34,9 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
     /**
      * @dev Sets the max number of holders for the given token `token` to `maxHolderCount_`.
      *
-     * `msg.sender` must have the agent role on `token`
+     * `msg.sender` must be authorized to configure this module for `token`.
      **/
-    function setMaxHolderCount(address token, uint64 maxHolderCount_) public virtual {
-        require(IERC7984Rwa(token).isAgent(msg.sender), ERC7984HookModuleUnauthorizedAccount(msg.sender));
+    function setMaxHolderCount(address token, uint64 maxHolderCount_) public virtual onlyAuthorizedConfigurator(token) {
         _setMaxHolderCount(token, maxHolderCount_);
     }
 
@@ -69,8 +68,8 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
 
         // in non trivial cases, check compliance.
         if (to != address(0) && to != from) {
-            euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
-            euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
+            euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
+            euint64 toBalance = IERC7984(token).confidentialBalanceOf(to);
 
             _accessHandle(token, fromBalance);
             _accessHandle(token, toBalance);
@@ -98,8 +97,8 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
 
         if (from == to) return;
 
-        euint64 fromBalance = IERC7984Rwa(token).confidentialBalanceOf(from);
-        euint64 toBalance = IERC7984Rwa(token).confidentialBalanceOf(to);
+        euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
+        euint64 toBalance = IERC7984(token).confidentialBalanceOf(to);
 
         _accessHandle(token, fromBalance);
         _accessHandle(token, toBalance);
@@ -128,7 +127,7 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
      **/
     function _onInstall(address token, bytes calldata initData) internal virtual override {
         require(
-            !FHE.isInitialized(IERC7984Rwa(token).confidentialTotalSupply()),
+            !FHE.isInitialized(IERC7984(token).confidentialTotalSupply()),
             ERC7984HolderCapHookModuleTotalSupplyInitialized()
         );
         _holderCounts[token] = euint64.wrap(0);
