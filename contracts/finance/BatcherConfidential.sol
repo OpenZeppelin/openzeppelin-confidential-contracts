@@ -90,6 +90,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The `account` has a zero deposits in batch `batchId`.
     error ZeroDeposits(uint256 batchId, address account);
 
+    /// @dev Batch `batchId` has no deposits and cannot be dispatched.
+    error ZeroTotalDeposits(uint256 batchId);
+
     /**
      * @dev The batch `batchId` is in the state `current`, which is invalid for the operation.
      * The `expectedStates` is a bitmap encoding the expected/allowed states for the operation.
@@ -181,14 +184,16 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /**
      * @dev Permissionless function to dispatch the current batch. Increments the {currentBatchId}.
+     * Execution will fail if the batch {totalDeposits} is not initialized.
      *
      * NOTE: Developers should consider adding additional restrictions to this function
      * if maintaining confidentiality of deposits is critical to the application.
      */
     function dispatchBatch() public virtual {
         uint256 batchId = _getAndIncreaseBatchId();
-
         euint64 amountToUnwrap = totalDeposits(batchId);
+        require(FHE.isInitialized(amountToUnwrap), ZeroTotalDeposits(batchId));
+
         FHE.allowTransient(amountToUnwrap, address(fromToken()));
         _batches[batchId].unwrapRequestId = fromToken().unwrap(
             address(this),

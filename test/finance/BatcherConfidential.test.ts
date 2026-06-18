@@ -635,6 +635,17 @@ describe('BatcherConfidential', function () {
     it('should emit event', async function () {
       await expect(this.batcher.dispatchBatch()).to.emit(this.batcher, 'BatchDispatched').withArgs(this.batchId);
     });
+
+    it('should revert if total deposits is uninitialized', async function () {
+      await this.batcher.dispatchBatch();
+
+      const newBatchId = await this.batcher.currentBatchId();
+
+      await expect(this.batcher.dispatchBatch())
+        .to.be.revertedWithCustomError(this.batcher, 'ZeroTotalDeposits')
+        .withArgs(newBatchId);
+      await expect(this.batcher.currentBatchId()).to.eventually.eq(newBatchId);
+    });
   });
 
   describe('batch state', async function () {
