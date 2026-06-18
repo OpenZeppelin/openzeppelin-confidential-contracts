@@ -12,19 +12,19 @@ contract FHESafeMathMock is ZamaEthereumConfig {
 
     function createHandle(uint64 amount) public returns (euint64 handle) {
         handle = FHE.asEuint64(amount);
-        FHE.allowThis(handle);
-        FHE.allow(handle, msg.sender);
+        handle = FHE.allowThis(handle);
+        handle = FHE.allow(handle, msg.sender);
         emit HandleCreated(handle);
     }
 
     function tryIncrease(euint64 a, euint64 b) public returns (ebool success, euint64 updated) {
         (success, updated) = FHESafeMath.tryIncrease(a, b);
-        FHE.allowThis(success);
-        FHE.allow(success, msg.sender);
+        success = FHE.allowThis(success);
+        success = FHE.allow(success, msg.sender);
 
         if (FHE.isInitialized(updated)) {
-            FHE.allowThis(updated);
-            FHE.allow(updated, msg.sender);
+            updated = FHE.allowThis(updated);
+            updated = FHE.allow(updated, msg.sender);
         }
 
         emit ResultComputed(success, updated);
@@ -32,12 +32,12 @@ contract FHESafeMathMock is ZamaEthereumConfig {
 
     function tryDecrease(euint64 a, euint64 b) public returns (ebool success, euint64 updated) {
         (success, updated) = FHESafeMath.tryDecrease(a, b);
-        FHE.allowThis(success);
-        FHE.allow(success, msg.sender);
+        success = FHE.allowThis(success);
+        success = FHE.allow(success, msg.sender);
 
         if (FHE.isInitialized(updated)) {
-            FHE.allowThis(updated);
-            FHE.allow(updated, msg.sender);
+            updated = FHE.allowThis(updated);
+            updated = FHE.allow(updated, msg.sender);
         }
 
         emit ResultComputed(success, updated);
@@ -45,12 +45,12 @@ contract FHESafeMathMock is ZamaEthereumConfig {
 
     function tryAdd(euint64 a, euint64 b) public returns (ebool success, euint64 sum) {
         (success, sum) = FHESafeMath.tryAdd(a, b);
-        FHE.allowThis(success);
-        FHE.allow(success, msg.sender);
+        success = FHE.allowThis(success);
+        success = FHE.allow(success, msg.sender);
 
         if (FHE.isInitialized(sum)) {
-            FHE.allowThis(sum);
-            FHE.allow(sum, msg.sender);
+            sum = FHE.allowThis(sum);
+            sum = FHE.allow(sum, msg.sender);
         }
 
         emit ResultComputed(success, sum);
@@ -58,12 +58,12 @@ contract FHESafeMathMock is ZamaEthereumConfig {
 
     function trySub(euint64 a, euint64 b) public returns (ebool success, euint64 difference) {
         (success, difference) = FHESafeMath.trySub(a, b);
-        FHE.allowThis(success);
-        FHE.allow(success, msg.sender);
+        success = FHE.allowThis(success);
+        success = FHE.allow(success, msg.sender);
 
         if (FHE.isInitialized(difference)) {
-            FHE.allowThis(difference);
-            FHE.allow(difference, msg.sender);
+            difference = FHE.allowThis(difference);
+            difference = FHE.allow(difference, msg.sender);
         }
 
         emit ResultComputed(success, difference);
@@ -73,8 +73,8 @@ contract FHESafeMathMock is ZamaEthereumConfig {
         result = FHESafeMath.saturatingAdd(a, b);
 
         if (FHE.isInitialized(result)) {
-            FHE.allowThis(result);
-            FHE.allow(result, msg.sender);
+            result = FHE.allowThis(result);
+            result = FHE.allow(result, msg.sender);
         }
 
         emit SaturatedResultComputed(result);
@@ -84,8 +84,8 @@ contract FHESafeMathMock is ZamaEthereumConfig {
         result = FHESafeMath.saturatingSub(a, b);
 
         if (FHE.isInitialized(result)) {
-            FHE.allowThis(result);
-            FHE.allow(result, msg.sender);
+            result = FHE.allowThis(result);
+            result = FHE.allow(result, msg.sender);
         }
 
         emit SaturatedResultComputed(result);

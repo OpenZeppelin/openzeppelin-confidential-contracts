@@ -293,13 +293,13 @@ abstract contract ERC7984 is IERC7984, ERC165 {
 
         if (from == address(0)) {
             (success, ptr) = FHESafeMath.tryIncrease(_totalSupply, amount);
-            FHE.allowThis(ptr);
+            ptr = FHE.allowThis(ptr);
             _totalSupply = ptr;
         } else {
             euint64 fromBalance = _balances[from];
             (success, ptr) = FHESafeMath.tryDecrease(fromBalance, amount);
-            FHE.allowThis(ptr);
-            FHE.allow(ptr, from);
+            ptr = FHE.allowThis(ptr);
+            ptr = FHE.allow(ptr, from);
             _balances[from] = ptr;
         }
 
@@ -307,18 +307,18 @@ abstract contract ERC7984 is IERC7984, ERC165 {
 
         if (to == address(0)) {
             ptr = FHE.sub(_totalSupply, transferred);
-            FHE.allowThis(ptr);
+            ptr = FHE.allowThis(ptr);
             _totalSupply = ptr;
         } else {
             ptr = FHE.add(_balances[to], transferred);
-            FHE.allowThis(ptr);
-            FHE.allow(ptr, to);
+            ptr = FHE.allowThis(ptr);
+            ptr = FHE.allow(ptr, to);
             _balances[to] = ptr;
         }
 
-        if (from != address(0)) FHE.allow(transferred, from);
-        if (to != address(0)) FHE.allow(transferred, to);
-        FHE.allowThis(transferred);
+        if (from != address(0)) transferred = FHE.allow(transferred, from);
+        if (to != address(0)) transferred = FHE.allow(transferred, to);
+        transferred = FHE.allowThis(transferred);
         emit ConfidentialTransfer(from, to, transferred);
     }
 }

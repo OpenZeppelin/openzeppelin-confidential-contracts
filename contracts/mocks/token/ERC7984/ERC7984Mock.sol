@@ -22,16 +22,17 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
     }
 
     function createEncryptedAmount(uint64 amount) public returns (euint64 encryptedAmount) {
-        FHE.allowThis(encryptedAmount = FHE.asEuint64(amount));
-        FHE.allow(encryptedAmount, msg.sender);
+        encryptedAmount = FHE.asEuint64(amount);
+        encryptedAmount = FHE.allowThis(encryptedAmount);
+        encryptedAmount = FHE.allow(encryptedAmount, msg.sender);
 
         emit EncryptedAmountCreated(encryptedAmount);
     }
 
     function createEncryptedAddress(address addr) public returns (eaddress) {
         eaddress encryptedAddr = FHE.asEaddress(addr);
-        FHE.allowThis(encryptedAddr);
-        FHE.allow(encryptedAddr, msg.sender);
+        encryptedAddr = FHE.allowThis(encryptedAddr);
+        encryptedAddr = FHE.allow(encryptedAddr, msg.sender);
 
         emit EncryptedAddressCreated(encryptedAddr);
         return encryptedAddr;

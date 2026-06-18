@@ -51,12 +51,12 @@ abstract contract ERC7984ObserverAccess is ERC7984 {
 
         if (fromObserver != address(0)) {
             FHE.allow(confidentialBalanceOf(from), fromObserver);
-            FHE.allow(transferred, fromObserver);
+            transferred = FHE.allow(transferred, fromObserver);
         }
         if (toObserver != address(0)) {
             FHE.allow(confidentialBalanceOf(to), toObserver);
             if (toObserver != fromObserver) {
-                FHE.allow(transferred, toObserver);
+                transferred = FHE.allow(transferred, toObserver);
             }
         }
     }

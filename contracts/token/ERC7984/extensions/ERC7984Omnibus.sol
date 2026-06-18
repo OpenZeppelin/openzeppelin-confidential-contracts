@@ -167,13 +167,13 @@ abstract contract ERC7984Omnibus is ERC7984 {
         eaddress recipient,
         euint64 amount
     ) internal virtual returns (euint64) {
-        FHE.allowThis(sender);
-        FHE.allow(sender, omnibusFrom);
-        FHE.allow(sender, omnibusTo);
+        sender = FHE.allowThis(sender);
+        sender = FHE.allow(sender, omnibusFrom);
+        sender = FHE.allow(sender, omnibusTo);
 
-        FHE.allowThis(recipient);
-        FHE.allow(recipient, omnibusFrom);
-        FHE.allow(recipient, omnibusTo);
+        recipient = FHE.allowThis(recipient);
+        recipient = FHE.allow(recipient, omnibusFrom);
+        recipient = FHE.allow(recipient, omnibusTo);
 
         euint64 transferred = confidentialTransferFrom(omnibusFrom, omnibusTo, amount);
         emit OmnibusConfidentialTransfer(omnibusFrom, omnibusTo, sender, recipient, transferred);
@@ -189,19 +189,19 @@ abstract contract ERC7984Omnibus is ERC7984 {
         euint64 amount,
         bytes calldata data
     ) internal virtual returns (euint64) {
-        FHE.allowThis(sender);
-        FHE.allow(sender, omnibusFrom);
-        FHE.allow(sender, omnibusTo);
+        sender = FHE.allowThis(sender);
+        sender = FHE.allow(sender, omnibusFrom);
+        sender = FHE.allow(sender, omnibusTo);
 
-        FHE.allowThis(recipient);
-        FHE.allow(recipient, omnibusFrom);
-        FHE.allow(recipient, omnibusTo);
+        recipient = FHE.allowThis(recipient);
+        recipient = FHE.allow(recipient, omnibusFrom);
+        recipient = FHE.allow(recipient, omnibusTo);
 
         euint64 transferred = confidentialTransferFromAndCall(omnibusFrom, omnibusTo, amount, data);
 
-        FHE.allowThis(transferred);
-        FHE.allow(transferred, omnibusFrom);
-        FHE.allow(transferred, omnibusTo);
+        transferred = FHE.allowThis(transferred);
+        transferred = FHE.allow(transferred, omnibusFrom);
+        transferred = FHE.allow(transferred, omnibusTo);
 
         emit OmnibusConfidentialTransfer(omnibusFrom, omnibusTo, sender, recipient, transferred);
         return transferred;
