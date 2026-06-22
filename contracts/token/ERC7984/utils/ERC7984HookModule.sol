@@ -60,7 +60,11 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
         return keccak256("HOOK_CONFIGURATOR_ROLE");
     }
 
-    /// @dev Verifies that `account` is authorized to configure this module for `token`.
+    /**
+     * @dev Verifies that `account` is authorized to configure this module for `token`. The default
+     * implementation checks if `account` has the {_hookConfiguratorRole} role on the `token` contract.
+     * This function may be overriden to use a different authorization mechanism.
+     */
     function _checkAuthorizedConfigurator(address token, address account) internal view virtual {
         require(
             IAccessControl(token).hasRole(_hookConfiguratorRole(), account),
