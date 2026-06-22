@@ -159,6 +159,15 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     }
 
     /**
+     * @dev Quit the batch with id `batchId`. Entire deposit is returned to `recipient`.
+     *
+     * This enables users to redirect their refund if receiving {fromToken} at their own address fails.
+     */
+    function quit(uint256 batchId, address recipient) public virtual nonReentrant returns (euint64) {
+        return _quit(batchId, msg.sender, recipient);
+    }
+
+    /**
      * @dev Permissionless function to dispatch the current batch. Increments the {currentBatchId}.
      *
      * NOTE: Developers should consider adding additional restrictions to this function
@@ -376,6 +385,13 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * must be marked `nonReentrant`, as {quit} is.
      */
     function _quit(uint256 batchId, address account) internal virtual returns (euint64) {
+        return _quit(batchId, account, account);
+    }
+
+    /**
+     * @dev Quits the batch with id `batchId` for `account`, returning the deposit to `recipient`.
+     */
+    function _quit(uint256 batchId, address account, address recipient) internal virtual returns (euint64) {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
 
         euint64 deposit = deposits(batchId, account);
@@ -384,7 +400,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         euint64 totalDeposits_ = totalDeposits(batchId);
 
         FHE.allowTransient(deposit, address(fromToken()));
-        euint64 sent = fromToken().confidentialTransfer(account, deposit);
+        euint64 sent = fromToken().confidentialTransfer(recipient, deposit);
         euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
         euint64 newDeposit = FHE.sub(deposit, sent);
 
