@@ -159,9 +159,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     }
 
     /**
-     * @dev Quit the batch with id `batchId`. Entire deposit is returned to `recipient`.
+     * @dev Quit the batch with id `batchId`, attempting to return the caller's deposit to `recipient`.
      *
-     * This enables users to redirect their refund if receiving {fromToken} at their own address fails.
+     * If the {fromToken} transfer returns 0, no amount is deducted and the caller can retry with another recipient.
      */
     function quit(uint256 batchId, address recipient) public virtual nonReentrant returns (euint64) {
         return _quit(batchId, msg.sender, recipient);
