@@ -1,7 +1,11 @@
 # openzeppelin-confidential-contracts
 
 
-## 0.5.0 (2026-06-12)
+## 0.5.1 (2026-06-22)
+
+- `BatcherConfidential`: Initialize the zero value before unwrapping when dispatching a batch with no contributions.
+
+## 0.5.0 (2026-06-17)
 
 ### Token
 
