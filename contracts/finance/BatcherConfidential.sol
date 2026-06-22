@@ -155,26 +155,43 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * This function must be unrestricted in cases where batch dispatching fails.
      */
     function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
+        return _quit(batchId, msg.sender, msg.sender);
+    }
+
+    /**
+     * @dev Quit the batch with id `batchId`. Entire deposit is returned to `recipient`.
+     *
+     * This enables users to redirect their refund if receiving {fromToken} at their own address fails.
+     */
+    function quit(uint256 batchId, address recipient) public virtual nonReentrant returns (euint64) {
+        return _quit(batchId, msg.sender, recipient);
+    }
+
+    /**
+     * @dev Internal implementation of {quit}. `account` is the depositor whose balance is reduced, and `recipient`
+     * receives the returned {fromToken}.
+     */
+    function _quit(uint256 batchId, address account, address recipient) internal virtual returns (euint64) {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
 
-        euint64 deposit = deposits(batchId, msg.sender);
-        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, msg.sender));
+        euint64 deposit = deposits(batchId, account);
+        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, account));
 
         euint64 totalDeposits_ = totalDeposits(batchId);
 
         FHE.allowTransient(deposit, address(fromToken()));
-        euint64 sent = fromToken().confidentialTransfer(msg.sender, deposit);
+        euint64 sent = fromToken().confidentialTransfer(recipient, deposit);
         euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
         euint64 newDeposit = FHE.sub(deposit, sent);
 
         FHE.allowThis(newTotalDeposits);
         FHE.allowThis(newDeposit);
-        FHE.allow(newDeposit, msg.sender);
+        FHE.allow(newDeposit, account);
 
         _batches[batchId].totalDeposits = newTotalDeposits;
-        _batches[batchId].deposits[msg.sender] = newDeposit;
+        _batches[batchId].deposits[account] = newDeposit;
 
-        emit Quit(batchId, msg.sender, sent);
+        emit Quit(batchId, account, sent);
 
         return sent;
     }
