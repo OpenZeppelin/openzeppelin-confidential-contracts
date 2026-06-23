@@ -4,9 +4,9 @@
 pragma solidity ^0.8.26;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {IERC7984HookModule} from "./../../../interfaces/IERC7984HookModule.sol";
+import {IERC7984Hooked} from "./../../../interfaces/IERC7984Hooked.sol";
 import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
 
 /**
@@ -55,21 +55,14 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
         return interfaceId == type(IERC7984HookModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    /// @dev Role required to configure hook modules for a token. This is checked on the token contract.
-    function _hookConfiguratorRole() internal pure virtual returns (bytes32) {
-        return keccak256("HOOK_CONFIGURATOR_ROLE");
-    }
-
     /**
      * @dev Verifies that `account` is authorized to configure this module for `token`. The default
-     * implementation checks if `account` has the {_hookConfiguratorRole} role on the `token` contract.
-     * This function may be overriden to use a different authorization mechanism.
+     * implementation defers to the token, which is the source of truth for who may configure its
+     * modules, via {IERC7984Hooked-isAuthorizedConfigurator}. This function may be overriden to use a
+     * different authorization mechanism.
      */
     function _checkAuthorizedConfigurator(address token, address account) internal view virtual {
-        require(
-            IAccessControl(token).hasRole(_hookConfiguratorRole(), account),
-            ERC7984HookModuleUnauthorizedAccount(account)
-        );
+        require(IERC7984Hooked(token).isAuthorizedConfigurator(account), ERC7984HookModuleUnauthorizedAccount(account));
     }
 
     /**

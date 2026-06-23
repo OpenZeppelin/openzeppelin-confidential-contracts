@@ -1,5 +1,4 @@
-import { $ERC7984Hooked } from '../../../../types/contracts-exposed/token/ERC7984/extensions/rwa/ERC7984Hooked.sol/$ERC7984Hooked';
-import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
+import { $ERC7984Hooked } from '../../../../types/contracts-exposed/token/ERC7984/extensions/ERC7984Hooked.sol/$ERC7984Hooked';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
@@ -142,5 +141,16 @@ describe('ERC7984Hooked', function () {
         ).to.eventually.equal(approve ? 100 : 0);
       });
     }
+  });
+
+  describe('isAuthorizedConfigurator', async function () {
+    it('should authorize the configurator (mock gates by ownable)', async function () {
+      await expect(this.token.isAuthorizedConfigurator(this.admin)).to.eventually.be.true;
+    });
+
+    it('should not authorize a non-configurator', async function () {
+      await expect(this.token.isAuthorizedConfigurator(this.anyone)).to.eventually.be.false;
+      await expect(this.token.isAuthorizedConfigurator(this.holder)).to.eventually.be.false;
+    });
   });
 });
