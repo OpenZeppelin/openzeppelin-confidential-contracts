@@ -5,8 +5,8 @@ pragma solidity ^0.8.26;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import {IERC7984HookModule} from "./../../../interfaces/IERC7984HookModule.sol";
 import {IERC7984Hooked} from "./../../../interfaces/IERC7984Hooked.sol";
+import {IERC7984HookModule} from "./../../../interfaces/IERC7984HookModule.sol";
 import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
 
 /**

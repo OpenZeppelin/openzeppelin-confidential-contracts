@@ -4,8 +4,9 @@ pragma solidity ^0.8.24;
 
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC7984Hooked} from "../../../../token/ERC7984/extensions/ERC7984Hooked.sol";
-import {ERC7984Mock} from "../ERC7984Mock.sol";
+import {ERC7984} from "./../../../../token/ERC7984/ERC7984.sol";
+import {ERC7984Hooked} from "./../../../../token/ERC7984/extensions/ERC7984Hooked.sol";
+import {ERC7984Mock} from "./../ERC7984Mock.sol";
 
 contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock, Ownable {
     constructor(
@@ -14,6 +15,10 @@ contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock, Ownable {
         string memory tokenUri,
         address admin
     ) ERC7984Mock(name, symbol, tokenUri) Ownable(admin) {}
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984Hooked, ERC7984) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
 
     function _update(
         address from,
