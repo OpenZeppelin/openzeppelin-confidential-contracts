@@ -4,8 +4,9 @@ pragma solidity ^0.8.24;
 import {FHE, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC7984} from "../../token/ERC7984/ERC7984.sol";
+import {ZamaHandleOps} from "../../utils/handleops/ZamaHandleOps.sol";
 
-contract ERC7984MintableBurnable is ERC7984, Ownable {
+contract ERC7984MintableBurnable is ERC7984, ZamaHandleOps, Ownable {
     constructor(
         address owner,
         string memory name,

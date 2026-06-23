@@ -5,8 +5,9 @@ pragma solidity ^0.8.27;
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984Restricted} from "../../../../token/ERC7984/extensions/ERC7984Restricted.sol";
+import {ZamaHandleOps} from "../../../../utils/handleops/ZamaHandleOps.sol";
 
-abstract contract ERC7984RestrictedMock is ERC7984Restricted, ZamaEthereumConfig {
+abstract contract ERC7984RestrictedMock is ERC7984Restricted, ZamaHandleOps, ZamaEthereumConfig {
     function _mint(address to, uint64 amount) internal {
         _mint(to, FHE.asEuint64(amount));
     }

@@ -2,11 +2,11 @@
 // OpenZeppelin Confidential Contracts (last updated v0.5.0) (token/ERC7984/ERC7984.sol)
 pragma solidity ^0.8.26;
 
-import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {externalEuint64, ebool, euint64} from "encrypted-types/EncryptedTypes.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC7984} from "./../../interfaces/IERC7984.sol";
-import {FHESafeMath} from "./../../utils/FHESafeMath.sol";
+import {HandleOps} from "./../../utils/handleops/HandleOps.sol";
 import {ERC7984Utils} from "./utils/ERC7984Utils.sol";
 
 /**
@@ -24,7 +24,7 @@ import {ERC7984Utils} from "./utils/ERC7984Utils.sol";
  * - Transfer and call pattern
  * - Safe overflow/underflow handling for FHE operations
  */
-abstract contract ERC7984 is IERC7984, ERC165 {
+abstract contract ERC7984 is IERC7984, ERC165, HandleOps {
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => uint48)) private _operators;
     euint64 private _totalSupply;
@@ -114,12 +114,12 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64) {
-        return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _transfer(msg.sender, to, _fromExternal(encryptedAmount, inputProof));
     }
 
     /// @inheritdoc IERC7984
     function confidentialTransfer(address to, euint64 amount) public virtual returns (euint64) {
-        require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
+        require(_isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         return _transfer(msg.sender, to, amount);
     }
 
@@ -131,17 +131,17 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof
     ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
-        FHE.allowTransient(transferred, msg.sender);
+        euint64 transferred = _transfer(from, to, _fromExternal(encryptedAmount, inputProof));
+        _allowTransient(transferred, msg.sender);
         return transferred;
     }
 
     /// @inheritdoc IERC7984
     function confidentialTransferFrom(address from, address to, euint64 amount) public virtual returns (euint64) {
-        require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
+        require(_isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
         euint64 transferred = _transfer(from, to, amount);
-        FHE.allowTransient(transferred, msg.sender);
+        _allowTransient(transferred, msg.sender);
         return transferred;
     }
 
@@ -152,7 +152,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64) {
-        return _transferAndCall(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), data);
+        return _transferAndCall(msg.sender, to, _fromExternal(encryptedAmount, inputProof), data);
     }
 
     /// @inheritdoc IERC7984
@@ -161,7 +161,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64) {
-        require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
+        require(_isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         return _transferAndCall(msg.sender, to, amount, data);
     }
 
@@ -174,7 +174,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata data
     ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        return _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data);
+        return _transferAndCall(from, to, _fromExternal(encryptedAmount, inputProof), data);
     }
 
     /// @inheritdoc IERC7984
@@ -184,7 +184,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         euint64 amount,
         bytes calldata data
     ) public virtual returns (euint64) {
-        require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
+        require(_isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
         return _transferAndCall(from, to, amount, data);
     }
@@ -198,11 +198,11 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      */
     function requestDiscloseEncryptedAmount(euint64 encryptedAmount) public virtual {
         require(
-            FHE.isAllowed(encryptedAmount, msg.sender),
+            _isAllowed(encryptedAmount, msg.sender),
             ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
 
-        FHE.makePubliclyDecryptable(encryptedAmount);
+        _makePubliclyDecryptable(encryptedAmount);
         emit AmountDiscloseRequested(encryptedAmount, msg.sender);
     }
 
@@ -221,7 +221,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
 
         bytes memory cleartextMemory = abi.encode(cleartextAmount);
 
-        FHE.checkSignatures(handles, cleartextMemory, decryptionProof);
+        _checkSignatures(handles, cleartextMemory, decryptionProof);
         emit AmountDisclosed(encryptedAmount, cleartextAmount);
     }
 
@@ -274,13 +274,15 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         // Try to transfer amount + replace input with actually transferred amount.
         euint64 sent = _transfer(from, to, amount);
 
-        // Perform callback
-        ebool success = ERC7984Utils.checkOnTransferReceived(msg.sender, from, to, sent, data);
+        // Perform callback (EOAs accept implicitly; contracts must implement the receiver interface)
+        ebool success = to.code.length > 0
+            ? ERC7984Utils.checkOnTransferReceived(msg.sender, from, to, sent, data)
+            : _asEbool(true);
 
         // Try to refund if callback fails
-        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent));
-        transferred = FHE.sub(sent, refund);
-        FHE.allowTransient(transferred, msg.sender);
+        euint64 refund = _update(to, from, _select(success, _asEuint64(0), sent));
+        transferred = _sub(sent, refund);
+        _allowTransient(transferred, msg.sender);
     }
 
     /**
@@ -292,33 +294,33 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         euint64 ptr;
 
         if (from == address(0)) {
-            (success, ptr) = FHESafeMath.tryIncrease(_totalSupply, amount);
-            FHE.allowThis(ptr);
+            (success, ptr) = _tryIncrease(_totalSupply, amount);
+            _allowThis(ptr);
             _totalSupply = ptr;
         } else {
             euint64 fromBalance = _balances[from];
-            (success, ptr) = FHESafeMath.tryDecrease(fromBalance, amount);
-            FHE.allowThis(ptr);
-            FHE.allow(ptr, from);
+            (success, ptr) = _tryDecrease(fromBalance, amount);
+            _allowThis(ptr);
+            _allow(ptr, from);
             _balances[from] = ptr;
         }
 
-        transferred = FHE.select(success, amount, FHE.asEuint64(0));
+        transferred = _select(success, amount, _asEuint64(0));
 
         if (to == address(0)) {
-            ptr = FHE.sub(_totalSupply, transferred);
-            FHE.allowThis(ptr);
+            ptr = _sub(_totalSupply, transferred);
+            _allowThis(ptr);
             _totalSupply = ptr;
         } else {
-            ptr = FHE.add(_balances[to], transferred);
-            FHE.allowThis(ptr);
-            FHE.allow(ptr, to);
+            ptr = _add(_balances[to], transferred);
+            _allowThis(ptr);
+            _allow(ptr, to);
             _balances[to] = ptr;
         }
 
-        if (from != address(0)) FHE.allow(transferred, from);
-        if (to != address(0)) FHE.allow(transferred, to);
-        FHE.allowThis(transferred);
+        if (from != address(0)) _allow(transferred, from);
+        if (to != address(0)) _allow(transferred, to);
+        _allowThis(transferred);
         emit ConfidentialTransfer(from, to, transferred);
     }
 }
