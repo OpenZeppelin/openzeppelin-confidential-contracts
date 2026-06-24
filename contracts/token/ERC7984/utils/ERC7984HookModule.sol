@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IERC7984Hooked} from "./../../../interfaces/IERC7984Hooked.sol";
 import {IERC7984HookModule} from "./../../../interfaces/IERC7984HookModule.sol";
 import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
 
@@ -17,6 +18,12 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
 
     /// @dev The caller `user` does not have access to the encrypted amount `amount`.
     error ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(euint64 amount, address user);
+
+    /// @dev Restricts access to token accounts authorized to configure the module.
+    modifier onlyAuthorizedConfigurator(address token) {
+        _checkAuthorizedConfigurator(token, msg.sender);
+        _;
+    }
 
     /// @inheritdoc IERC7984HookModule
     function preTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
@@ -46,6 +53,16 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     /// @inheritdoc ERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId == type(IERC7984HookModule).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Verifies that `account` is authorized to configure this module for `token`. The default
+     * implementation defers to the token, which is the source of truth for who may configure its
+     * modules, via {IERC7984Hooked-isAuthorizedConfigurator}. This function may be overridden to use a
+     * different authorization mechanism.
+     */
+    function _checkAuthorizedConfigurator(address token, address account) internal view virtual {
+        require(IERC7984Hooked(token).isAuthorizedConfigurator(account), ERC7984HookModuleUnauthorizedAccount(account));
     }
 
     /**

@@ -4,14 +4,14 @@ import { ethers, fhevm } from 'hardhat';
 
 describe('ERC7984HolderCapHookModules', function () {
   beforeEach(async function () {
-    const [anyone, admin, agent1, holder, recipient, ...others] = await ethers.getSigners();
-    const token = (await ethers.deployContract('$ERC7984RwaHookedMock', ['name', 'symbol', 'uri', admin])) as any;
+    const [anyone, admin, holder, recipient, ...others] = await ethers.getSigners();
+    // The token's `isAuthorizedConfigurator` (mock) gates module configuration to the owner (`admin`).
+    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])) as any;
     const complianceModule = await ethers.deployContract('$ERC7984HolderCapHookModuleMock', [admin]);
 
     await token
       .connect(admin)
       .installModule(complianceModule, ethers.AbiCoder.defaultAbiCoder().encode(['uint64'], [10]));
-    await token.connect(admin).addAgent(agent1);
 
     await token['$_mint(address,uint64)'](holder, 20000);
 
@@ -21,7 +21,6 @@ describe('ERC7984HolderCapHookModules', function () {
       token,
       complianceModule,
       admin,
-      agent1,
       recipient,
       holder,
       anyone,
@@ -31,21 +30,20 @@ describe('ERC7984HolderCapHookModules', function () {
 
   describe('setMaxHolderCount', function () {
     it('should set the max holder count', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 20);
+      await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 20);
       await expect(this.complianceModule.maxHolderCount(this.token)).to.eventually.eq(20);
     });
 
     it('should emit event', async function () {
-      await expect(this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 20))
+      await expect(this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 20))
         .to.emit(this.complianceModule, 'ERC7984HolderCapHookModuleMaxHolderCountSet')
         .withArgs(this.token, 20);
     });
 
-    it('should be gated to agent', async function () {
-      await expect(this.complianceModule.setMaxHolderCount(this.token, 20)).to.be.revertedWithCustomError(
-        this.complianceModule,
-        'ERC7984HookModuleUnauthorizedAccount',
-      );
+    it('should be gated to the authorized configurator', async function () {
+      await expect(this.complianceModule.connect(this.anyone).setMaxHolderCount(this.token, 20))
+        .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedAccount')
+        .withArgs(this.anyone);
     });
   });
 
@@ -62,7 +60,7 @@ describe('ERC7984HolderCapHookModules', function () {
     });
 
     it('should not allow transfer if new holder count is greater than max holder count', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 3);
+      await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 3);
 
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.others[0], 1000);
@@ -103,7 +101,7 @@ describe('ERC7984HolderCapHookModules', function () {
     });
 
     it('should allow burning always', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 1);
+      await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 1);
 
       const tx = await this.token['$_burn(address,uint64)'](this.holder, 1000);
       const transferEvent = await tx.wait().then((res: any) => {
@@ -116,7 +114,7 @@ describe('ERC7984HolderCapHookModules', function () {
     });
 
     it('should allow self transfers always', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 1);
+      await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 1);
 
       const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.holder, 1000);
       const transferEvent = await tx.wait().then((res: any) => {
@@ -129,7 +127,7 @@ describe('ERC7984HolderCapHookModules', function () {
     });
 
     it('should allow zero transfers always', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 1);
+      await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 1);
 
       const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 0);
       const transferEvent = await tx.wait().then((res: any) => {
@@ -173,7 +171,7 @@ describe('ERC7984HolderCapHookModules', function () {
     });
 
     it('should be allowed to transfer to an existing holder at cap', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 3);
+      await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 3);
 
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.others[0], 1000);
@@ -249,7 +247,7 @@ describe('ERC7984HolderCapHookModules', function () {
     });
 
     it('allows full transfer to new holder when at max holders', async function () {
-      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 1);
+      await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 1);
 
       const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 20000);
       const transferEvent = await tx.wait().then((res: any) => {
@@ -269,7 +267,7 @@ describe('ERC7984HolderCapHookModules', function () {
         fhevm.userDecryptEuint(FhevmType.euint64, beforeHolderCount, this.complianceModule.target, this.admin),
       ).to.eventually.equal(3);
 
-      await this.complianceModule.connect(this.agent1).setMaxHolderCount(this.token, 2);
+      await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 2);
 
       const tx = await this.token.connect(this.recipient)['confidentialTransfer(address,uint64)'](this.anyone, 1000);
       const transferEvent = await tx.wait().then((res: any) => {
