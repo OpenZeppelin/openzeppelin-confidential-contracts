@@ -56,10 +56,9 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     }
 
     /**
-     * @dev Verifies that `account` is authorized to configure this module for `token`. The default
-     * implementation defers to the token, which is the source of truth for who may configure its
-     * modules, via {IERC7984Hooked-isAuthorizedConfigurator}. This function may be overridden to use a
-     * different authorization mechanism.
+     * @dev Verifies that `account` is authorized to configure this module for `token`. Defers to the
+     * token, which is the source of truth for who may configure its modules, via
+     * {IERC7984Hooked-isAuthorizedConfigurator}.
      */
     function _checkAuthorizedConfigurator(address token, address account) internal view virtual {
         require(IERC7984Hooked(token).isAuthorizedConfigurator(account), ERC7984HookModuleUnauthorizedAccount(account));
