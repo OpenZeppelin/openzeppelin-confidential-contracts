@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.5.0) (finance/BatcherConfidential.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.5.1) (finance/BatcherConfidential.sol)
 
 pragma solidity ^0.8.26;
 
@@ -189,6 +189,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         uint256 batchId = _getAndIncreaseBatchId();
 
         euint64 amountToUnwrap = totalDeposits(batchId);
+        if (!FHE.isInitialized(amountToUnwrap)) amountToUnwrap = FHE.asEuint64(0);
+
         FHE.allowTransient(amountToUnwrap, address(fromToken()));
         _batches[batchId].unwrapRequestId = fromToken().unwrap(
             address(this),

@@ -612,28 +612,36 @@ describe('BatcherConfidential', function () {
     });
 
     it('should cancel if unwrap amount is 0', async function () {
-      await this.batcher.connect(this.holder).join(0n);
-
+      const batchId = await this.batcher.currentBatchId();
       await this.batcher.connect(this.holder).dispatchBatch();
 
       const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[1].args;
       const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
 
-      await expect(this.batcher.dispatchBatchCallback(this.batchId + 1n, abiEncodedClearValues, decryptionProof))
+      await expect(this.batcher.dispatchBatchCallback(batchId, abiEncodedClearValues, decryptionProof))
         .to.emit(this.batcher, 'BatchCanceled')
-        .withArgs(this.batchId + 1n);
+        .withArgs(batchId);
     });
   });
 
   describe('dispatchBatch', function () {
-    beforeEach(async function () {
-      this.batchId = await this.batcher.currentBatchId();
-
+    it('should emit event', async function () {
+      const batchId = await this.batcher.currentBatchId();
       await this.batcher.join(1000);
+
+      await expect(this.batcher.dispatchBatch()).to.emit(this.batcher, 'BatchDispatched').withArgs(batchId);
     });
 
-    it('should emit event', async function () {
-      await expect(this.batcher.dispatchBatch()).to.emit(this.batcher, 'BatchDispatched').withArgs(this.batchId);
+    it('should dispatch with an unwrap amount of zero', async function () {
+      const batchId = await this.batcher.currentBatchId();
+
+      await expect(this.batcher.connect(this.holder).dispatchBatch())
+        .to.emit(this.batcher, 'BatchDispatched')
+        .withArgs(batchId);
+
+      const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[0].args;
+      const { abiEncodedClearValues } = await fhevm.publicDecrypt([amount]);
+      expect(BigInt(abiEncodedClearValues)).to.eq(0n);
     });
   });
 
