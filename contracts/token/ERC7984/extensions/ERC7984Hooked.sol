@@ -81,7 +81,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
     function _authorizeModuleChange() internal virtual;
 
     /// @dev Internal function which installs a hook module.
-    function _installModule(address module, bytes calldata initData) internal virtual {
+    function _installModule(address module, bytes memory initData) internal virtual {
         require(_modules.length() < maxModules(), ERC7984HookedExceededMaxModules());
         require(
             ERC165Checker.supportsInterface(module, type(IERC7984HookModule).interfaceId),
