@@ -38,15 +38,12 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
     error ERC7984HookedNonexistentModule(address module);
     /// @dev The maximum number of modules has been exceeded.
     error ERC7984HookedExceededMaxModules();
+    /// @dev The caller is not authorized to change modules.
+    error ERC7984HookedUnauthorizedModuleChange(address caller);
 
     modifier onlyAuthorizedModuleChange() {
-        _authorizeModuleChange();
+        _checkAuthorizedModuleChange(msg.sender);
         _;
-    }
-
-    /// @inheritdoc IERC7984Hooked
-    function isModuleInstalled(address module) public view virtual returns (bool) {
-        return _modules.contains(module);
     }
 
     /// @inheritdoc IERC7984Hooked
@@ -60,25 +57,31 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
     }
 
     /// @inheritdoc IERC7984Hooked
+    function isAuthorizedConfigurator(address account) public view virtual returns (bool);
+
+    /// @inheritdoc IERC7984Hooked
+    function isModuleInstalled(address module) public view virtual returns (bool) {
+        return _modules.contains(module);
+    }
+
+    /**
+     * @dev Returns a slice of the list of modules installed on the token with inclusive start and exclusive end.
+     *
+     * TIP: Use an end value of type(uint256).max to get the entire list of modules.
+     */
     function modules(uint256 start, uint256 end) public view virtual returns (address[] memory) {
         return _modules.values(start, end);
     }
 
-    /// @inheritdoc IERC7984Hooked
+    /// @dev Returns the maximum number of modules that can be installed.
     function maxModules() public view virtual returns (uint256) {
         return 15;
     }
-
-    /// @inheritdoc IERC7984Hooked
-    function isAuthorizedConfigurator(address account) public view virtual returns (bool);
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984, IERC165) returns (bool) {
         return interfaceId == type(IERC7984Hooked).interfaceId || super.supportsInterface(interfaceId);
     }
-
-    /// @dev Authorization logic for installing and uninstalling modules. Must be implemented by the implementing contract.
-    function _authorizeModuleChange() internal virtual;
 
     /// @dev Internal function which installs a hook module.
     function _installModule(address module, bytes memory initData) internal virtual {
@@ -99,6 +102,10 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
         require(_modules.remove(module), ERC7984HookedNonexistentModule(module));
 
         emit ERC7984HookedModuleUninstalled(module);
+    }
+
+    function _checkAuthorizedModuleChange(address account) internal virtual {
+        require(isAuthorizedConfigurator(account), ERC7984HookedUnauthorizedModuleChange(account));
     }
 
     /**

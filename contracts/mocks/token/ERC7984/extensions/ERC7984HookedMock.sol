@@ -31,6 +31,4 @@ contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock, Ownable {
     ) internal virtual override(ERC7984Mock, ERC7984Hooked) returns (euint64) {
         return super._update(from, to, amount);
     }
-
-    function _authorizeModuleChange() internal virtual override onlyOwner {}
 }

@@ -56,7 +56,7 @@ describe('ERC7984Hooked', function () {
 
     it('should gate via `_authorizeModuleChange`', async function () {
       await expect(this.token.connect(this.anyone).installModule(this.hookModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedModuleChange')
         .withArgs(this.anyone);
 
       await this.token.connect(this.admin).installModule(this.hookModule, '0x');
@@ -118,7 +118,7 @@ describe('ERC7984Hooked', function () {
 
     it('should gate via `_authorizeModuleChange`', async function () {
       await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule))
-        .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedModuleChange')
         .withArgs(this.anyone);
 
       await this.token.connect(this.admin).uninstallModule(this.hookModule);
