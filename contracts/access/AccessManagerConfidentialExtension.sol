@@ -60,6 +60,7 @@ contract AccessManagerConfidentialExtension is AccessManager {
     }
 
     function _roleToSalt(uint64 roleId) internal view virtual returns (bytes32) {
+        require(roleId != PUBLIC_ROLE, AccessManagerLockedRole(roleId));
         return bytes32(uint256(roleId));
     }
 }
