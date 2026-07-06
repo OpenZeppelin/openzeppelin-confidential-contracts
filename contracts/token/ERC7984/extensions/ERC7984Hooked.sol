@@ -47,7 +47,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
     }
 
     /// @inheritdoc IERC7984Hooked
-    function installModule(address module, bytes calldata initData) public virtual onlyAuthorizedModuleChange {
+    function installModule(address module, bytes memory initData) public virtual onlyAuthorizedModuleChange {
         _installModule(module, initData);
     }
 

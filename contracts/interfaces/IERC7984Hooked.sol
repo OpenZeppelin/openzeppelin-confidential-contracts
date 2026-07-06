@@ -21,7 +21,7 @@ interface IERC7984Hooked is IERC7984 {
      * Consider gas footprint of the module before adding it since all modules will perform
      * both steps (pre-hook, post-hook) on all transfers.
      */
-    function installModule(address module, bytes calldata initData) external;
+    function installModule(address module, bytes memory initData) external;
 
     /// @dev Uninstalls a hook module.
     function uninstallModule(address module) external;
