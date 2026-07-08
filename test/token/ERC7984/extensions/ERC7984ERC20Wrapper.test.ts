@@ -1,6 +1,7 @@
 import { ERC7984ERC20WrapperMock } from '../../../../types';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
@@ -47,6 +48,23 @@ describe('ERC7984ERC20Wrapper', function () {
   describe('Wrap', async function () {
     for (const viaCallback of [false, true]) {
       describe(`via ${viaCallback ? 'callback' : 'transfer from'}`, function () {
+        it('emits Wrap event', async function () {
+          const amountToWrap = ethers.parseUnits('100', 18);
+          let call;
+
+          if (viaCallback) {
+            call = this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
+          } else {
+            call = this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
+          }
+
+          await expect(call).to.emit(this.wrapper, 'Wrap').withArgs(this.holder.address, amountToWrap, anyValue);
+          const [, , encryptedWrappedAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.Wrap()))[0].args;
+          await expect(
+            fhevm.userDecryptEuint(FhevmType.euint64, encryptedWrappedAmount, this.wrapper.target, this.holder),
+          ).to.eventually.equal(ethers.parseUnits('100', 6));
+        });
+
         it('with multiple of rate', async function () {
           const amountToWrap = ethers.parseUnits('100', 18);
 
