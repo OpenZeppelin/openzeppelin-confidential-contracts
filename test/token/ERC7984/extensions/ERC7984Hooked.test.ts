@@ -85,7 +85,7 @@ describe('ERC7984Hooked', function () {
     });
 
     it('should emit event', async function () {
-      await expect(this.token.$_uninstallModule(this.hookModule, '0x'))
+      await expect(this.token.$_uninstallModule(this.hookModule))
         .to.emit(this.token, 'ERC7984HookedModuleUninstalled')
         .withArgs(this.hookModule);
     });
@@ -93,33 +93,22 @@ describe('ERC7984Hooked', function () {
     it('should fail if module not installed', async function () {
       const newModule = await ethers.deployContract('$ERC7984HookModuleMock');
 
-      await expect(this.token.$_uninstallModule(newModule, '0x'))
+      await expect(this.token.$_uninstallModule(newModule))
         .to.be.revertedWithCustomError(this.token, 'ERC7984HookedNonexistentModule')
         .withArgs(newModule);
     });
 
-    it('should call `onUninstall` on the module', async function () {
-      await expect(this.token.$_uninstallModule(this.hookModule, '0xffff'))
-        .to.emit(this.hookModule, 'OnUninstall')
-        .withArgs('0xffff');
-    });
-
     it('should remove module from modules list', async function () {
-      await this.token.$_uninstallModule(this.hookModule, '0x');
+      await this.token.$_uninstallModule(this.hookModule);
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.false;
     });
 
-    it("should not revert if module's `onUninstall` reverts", async function () {
-      await this.hookModule.setRevertOnUninstall(true);
-      await this.token.$_uninstallModule(this.hookModule, '0x');
-    });
-
     it('should gate via `_authorizeModuleChange`', async function () {
-      await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule, '0x'))
+      await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule))
         .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
         .withArgs(this.anyone);
 
-      await this.token.connect(this.admin).uninstallModule(this.hookModule, '0x');
+      await this.token.connect(this.admin).uninstallModule(this.hookModule);
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.false;
     });
   });

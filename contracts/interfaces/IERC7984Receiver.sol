@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0) (interfaces/IERC7984Receiver.sol)
-pragma solidity ^0.8.24;
+// OpenZeppelin Confidential Contracts (last updated v0.5.0) (interfaces/IERC7984Receiver.sol)
+pragma solidity >=0.8.24;
 
 import {ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 

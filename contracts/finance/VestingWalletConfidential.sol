@@ -2,7 +2,7 @@
 // OpenZeppelin Confidential Contracts (last updated v0.4.0) (finance/VestingWalletConfidential.sol)
 pragma solidity ^0.8.24;
 
-import {FHE, ebool, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984} from "./../interfaces/IERC7984.sol";
@@ -66,9 +66,8 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      */
     function releasable(address token) public virtual returns (euint64) {
         euint128 vestedAmount_ = vestedAmount(token, uint48(block.timestamp));
-        euint128 releasedAmount = released(token);
-        ebool success = FHE.ge(vestedAmount_, releasedAmount);
-        return FHE.select(success, FHE.asEuint64(FHE.sub(vestedAmount_, releasedAmount)), FHE.asEuint64(0));
+        euint128 min = FHE.min(vestedAmount_, released(token));
+        return FHE.asEuint64(FHE.sub(vestedAmount_, min));
     }
 
     /**

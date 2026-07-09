@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984Rwa.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.5.0) (token/ERC7984/extensions/ERC7984Rwa.sol)
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
 import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
@@ -259,5 +259,15 @@ abstract contract ERC7984Rwa is IERC7984Rwa, ERC7984Freezable, ERC7984Restricted
         }
         // frozen and restriction checks performed through inheritance
         return super._update(from, to, encryptedAmount, isForced);
+    }
+
+    /// @dev Restrict overrides of {Context._msgSender}. Please use other account abstraction methods instead.
+    function _msgSender() internal view override returns (address) {
+        return super._msgSender();
+    }
+
+    /// @dev Restrict overrides of {Context._msgData}. Please use other account abstraction methods instead.
+    function _msgData() internal view override returns (bytes calldata) {
+        return super._msgData();
     }
 }

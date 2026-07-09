@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984Freezable.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.5.0) (token/ERC7984/extensions/ERC7984Freezable.sol)
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
-import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {FHESafeMath} from "../../../utils/FHESafeMath.sol";
 import {ERC7984} from "../ERC7984.sol";
 
@@ -40,11 +40,7 @@ abstract contract ERC7984Freezable is ERC7984 {
 
     /// @dev Internal function to calculate the available balance of an account. Does not give any allowances.
     function _confidentialAvailable(address account) internal virtual returns (euint64) {
-        (ebool success, euint64 unfrozen) = FHESafeMath.tryDecrease(
-            confidentialBalanceOf(account),
-            confidentialFrozen(account)
-        );
-        return FHE.select(success, unfrozen, FHE.asEuint64(0));
+        return FHESafeMath.saturatingSub(confidentialBalanceOf(account), confidentialFrozen(account));
     }
 
     /// @dev Internal function to freeze a confidential amount of tokens for an account.

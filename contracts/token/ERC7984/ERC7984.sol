@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/ERC7984.sol)
-pragma solidity ^0.8.27;
+// OpenZeppelin Confidential Contracts (last updated v0.5.0) (token/ERC7984/ERC7984.sol)
+pragma solidity ^0.8.26;
 
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
@@ -100,7 +100,10 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         return holder == spender || block.timestamp <= _operators[holder][spender];
     }
 
-    /// @inheritdoc IERC7984
+    /**
+     * @dev See {IERC7984-setOperator}. Operators are given ACL allowance (ability to decrypt) for the transferred amount
+     * of transfers they initiate.
+     */
     function setOperator(address operator, uint48 until) public virtual {
         _setOperator(msg.sender, operator, until);
     }
