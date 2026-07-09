@@ -49,20 +49,21 @@ describe('ERC7984ERC20Wrapper', function () {
     for (const viaCallback of [false, true]) {
       describe(`via ${viaCallback ? 'callback' : 'transfer from'}`, function () {
         it('emits Wrap event', async function () {
-          const amountToWrap = ethers.parseUnits('100', 18);
-          let call;
+          const amountToWrap = ethers.parseUnits('101', 11);
+          const roundedAmount = ethers.parseUnits('10', 12);
 
+          let call;
           if (viaCallback) {
             call = this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
           } else {
             call = this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
           }
 
-          await expect(call).to.emit(this.wrapper, 'Wrap').withArgs(this.holder.address, amountToWrap, anyValue);
+          await expect(call).to.emit(this.wrapper, 'Wrap').withArgs(this.holder.address, roundedAmount, anyValue);
           const [, , encryptedWrappedAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.Wrap()))[0].args;
           await expect(
             fhevm.userDecryptEuint(FhevmType.euint64, encryptedWrappedAmount, this.wrapper.target, this.holder),
-          ).to.eventually.equal(ethers.parseUnits('100', 6));
+          ).to.eventually.equal(10);
         });
 
         it('with multiple of rate', async function () {

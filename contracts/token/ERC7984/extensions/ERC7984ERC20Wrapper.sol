@@ -209,11 +209,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * The `amount` parameter is the amount of underlying tokens to wrap.
      */
     function _wrap(address to, uint256 amount) internal virtual returns (euint64) {
-        // mint confidential token
         euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
         FHE.allowTransient(wrappedAmountSent, msg.sender);
 
-        emit Wrap(to, amount, wrappedAmountSent);
+        emit Wrap(to, amount - (amount % rate()), wrappedAmountSent);
 
         return wrappedAmountSent;
     }
