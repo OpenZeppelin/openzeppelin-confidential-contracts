@@ -20,7 +20,7 @@ contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock, Ownable {
         return super.supportsInterface(interfaceId);
     }
 
-    function isHookManager(address account) public view virtual override returns (bool) {
+    function isModuleManager(address account) public view virtual override returns (bool) {
         return account == owner();
     }
 

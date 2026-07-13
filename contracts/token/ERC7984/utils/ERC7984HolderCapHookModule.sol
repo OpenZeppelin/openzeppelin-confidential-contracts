@@ -34,9 +34,9 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
     /**
      * @dev Sets the max number of holders for the given token `token` to `maxHolderCount_`.
      *
-     * `msg.sender` must be a hook manager for `token`.
+     * `msg.sender` must be a module manager for `token`.
      **/
-    function setMaxHolderCount(address token, uint64 maxHolderCount_) public virtual onlyHookManager(token) {
+    function setMaxHolderCount(address token, uint64 maxHolderCount_) public virtual onlyModuleManager(token) {
         _setMaxHolderCount(token, maxHolderCount_);
     }
 

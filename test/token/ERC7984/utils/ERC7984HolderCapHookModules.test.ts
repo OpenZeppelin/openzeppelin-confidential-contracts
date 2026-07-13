@@ -5,7 +5,7 @@ import { ethers, fhevm } from 'hardhat';
 describe('ERC7984HolderCapHookModules', function () {
   beforeEach(async function () {
     const [anyone, admin, holder, recipient, ...others] = await ethers.getSigners();
-    // The token's `isHookManager` (mock) gates module configuration to the owner (`admin`).
+    // The token's `isModuleManager` (mock) gates module configuration to the owner (`admin`).
     const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])) as any;
     const complianceModule = await ethers.deployContract('$ERC7984HolderCapHookModuleMock', [admin]);
 
@@ -40,9 +40,9 @@ describe('ERC7984HolderCapHookModules', function () {
         .withArgs(this.token, 20);
     });
 
-    it('should be gated to the hook manager', async function () {
+    it('should be gated to the module manager', async function () {
       await expect(this.complianceModule.connect(this.anyone).setMaxHolderCount(this.token, 20))
-        .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedHookManager')
+        .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedModuleManager')
         .withArgs(this.anyone);
     });
   });

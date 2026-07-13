@@ -27,11 +27,11 @@ interface IERC7984Hooked is IERC7984 {
     function uninstallModule(address module) external;
 
     /**
-     * @dev Returns whether `account` is a hook manager, authorized to install, uninstall, and configure
-     * hook modules on this token.
+     * @dev Returns whether `account` is a module manager, authorized to install, uninstall, and configure
+     * modules on this token.
      *
-     * Hook modules query this function to gate their configuration entry points. The token is the
-     * source of truth for who may manage its hooks.
+     * Modules query this function to gate their configuration entry points. The token is the
+     * source of truth for who may manage its modules.
      */
-    function isHookManager(address account) external view returns (bool);
+    function isModuleManager(address account) external view returns (bool);
 }

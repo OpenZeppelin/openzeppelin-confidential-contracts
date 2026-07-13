@@ -29,13 +29,13 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
     /**
      * @dev Sets the max balance for a given token `token` to the encrypted value `newMaxBalance`.
      *
-     * `msg.sender` must be a hook manager for `token`.
+     * `msg.sender` must be a module manager for `token`.
      */
     function setMaxBalance(
         address token,
         externalEuint64 newMaxBalance,
         bytes calldata inputProof
-    ) public virtual onlyHookManager(token) {
+    ) public virtual onlyModuleManager(token) {
         _setMaxBalance(token, FHE.fromExternal(newMaxBalance, inputProof));
     }
 

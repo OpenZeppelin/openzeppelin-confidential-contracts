@@ -38,26 +38,26 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
     error ERC7984HookedNonexistentModule(address module);
     /// @dev The maximum number of modules has been exceeded.
     error ERC7984HookedExceededMaxModules();
-    /// @dev The caller is not a hook manager.
-    error ERC7984HookedUnauthorizedHookManager(address caller);
+    /// @dev The caller is not a module manager.
+    error ERC7984HookedUnauthorizedModuleManager(address caller);
 
-    modifier onlyHookManager() {
-        _checkHookManager(msg.sender);
+    modifier onlyModuleManager() {
+        _checkModuleManager(msg.sender);
         _;
     }
 
     /// @inheritdoc IERC7984Hooked
-    function installModule(address module, bytes memory initData) public virtual onlyHookManager {
+    function installModule(address module, bytes memory initData) public virtual onlyModuleManager {
         _installModule(module, initData);
     }
 
     /// @inheritdoc IERC7984Hooked
-    function uninstallModule(address module) public virtual onlyHookManager {
+    function uninstallModule(address module) public virtual onlyModuleManager {
         _uninstallModule(module);
     }
 
     /// @inheritdoc IERC7984Hooked
-    function isHookManager(address account) public view virtual returns (bool);
+    function isModuleManager(address account) public view virtual returns (bool);
 
     /// @inheritdoc IERC7984Hooked
     function isModuleInstalled(address module) public view virtual returns (bool) {
@@ -105,8 +105,8 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
     }
 
     /// @dev Checks if the account is authorized to install and uninstall modules.
-    function _checkHookManager(address account) internal virtual {
-        require(isHookManager(account), ERC7984HookedUnauthorizedHookManager(account));
+    function _checkModuleManager(address account) internal virtual {
+        require(isModuleManager(account), ERC7984HookedUnauthorizedModuleManager(account));
     }
 
     /**
