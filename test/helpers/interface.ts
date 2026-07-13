@@ -60,9 +60,7 @@ export const SIGNATURES = {
     'isModuleInstalled(address)',
     'installModule(address,bytes)',
     'uninstallModule(address)',
-    'modules(uint256,uint256)',
-    'maxModules()',
-    'isAuthorizedConfigurator(address)',
+    'isModuleManager(address)',
   ],
 };
 

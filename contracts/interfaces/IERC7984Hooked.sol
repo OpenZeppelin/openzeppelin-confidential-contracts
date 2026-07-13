@@ -21,26 +21,17 @@ interface IERC7984Hooked is IERC7984 {
      * Consider gas footprint of the module before adding it since all modules will perform
      * both steps (pre-hook, post-hook) on all transfers.
      */
-    function installModule(address module, bytes calldata initData) external;
+    function installModule(address module, bytes memory initData) external;
 
     /// @dev Uninstalls a hook module.
     function uninstallModule(address module) external;
 
     /**
-     * @dev Returns a slice of the list of modules installed on the token with inclusive start and exclusive end.
+     * @dev Returns whether `account` is a module manager, authorized to install, uninstall, and configure
+     * modules on this token.
      *
-     * TIP: Use an end value of type(uint256).max to get the entire list of modules.
+     * Modules query this function to gate their configuration entry points. The token is the
+     * source of truth for who may manage its modules.
      */
-    function modules(uint256 start, uint256 end) external view returns (address[] memory);
-
-    /// @dev Returns the maximum number of modules that can be installed.
-    function maxModules() external view returns (uint256);
-
-    /**
-     * @dev Returns whether `account` is authorized to configure hook modules installed on this token.
-     *
-     * Hook modules query this function to gate their configuration entry points. The token is the
-     * source of truth for who may configure its modules.
-     */
-    function isAuthorizedConfigurator(address account) external view returns (bool);
+    function isModuleManager(address account) external view returns (bool);
 }

@@ -14,14 +14,14 @@ import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
  */
 abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     /// @dev The caller `account` is not authorized to perform the operation.
-    error ERC7984HookModuleUnauthorizedAccount(address account);
+    error ERC7984HookModuleUnauthorizedModuleManager(address account);
 
     /// @dev The caller `user` does not have access to the encrypted amount `amount`.
     error ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(euint64 amount, address user);
 
-    /// @dev Restricts access to token accounts authorized to configure the module.
-    modifier onlyAuthorizedConfigurator(address token) {
-        _checkAuthorizedConfigurator(token, msg.sender);
+    /// @dev Restricts access to the token's module manager(s).
+    modifier onlyModuleManager(address token) {
+        _checkModuleManager(token, msg.sender);
         _;
     }
 
@@ -56,12 +56,12 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     }
 
     /**
-     * @dev Verifies that `account` is authorized to configure this module for `token`. Defers to the
-     * token, which is the source of truth for who may configure its modules, via
-     * {IERC7984Hooked-isAuthorizedConfigurator}.
+     * @dev Verifies that `account` is a module manager for `token`. Defers to the
+     * token, which is the source of truth for who may manage its modules, via
+     * {IERC7984Hooked-isModuleManager}.
      */
-    function _checkAuthorizedConfigurator(address token, address account) internal view virtual {
-        require(IERC7984Hooked(token).isAuthorizedConfigurator(account), ERC7984HookModuleUnauthorizedAccount(account));
+    function _checkModuleManager(address token, address account) internal view virtual {
+        require(IERC7984Hooked(token).isModuleManager(account), ERC7984HookModuleUnauthorizedModuleManager(account));
     }
 
     /**
