@@ -54,9 +54,9 @@ describe('ERC7984Hooked', function () {
       await expect(this.token.modules(0, ethers.MaxInt256)).to.eventually.deep.equal([this.hookModule.target]);
     });
 
-    it('should gate via `_authorizeModuleChange`', async function () {
+    it('should gate via `_checkHookManager`', async function () {
       await expect(this.token.connect(this.anyone).installModule(this.hookModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedModuleChange')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedHookManager')
         .withArgs(this.anyone);
 
       await this.token.connect(this.admin).installModule(this.hookModule, '0x');
@@ -116,9 +116,9 @@ describe('ERC7984Hooked', function () {
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.false;
     });
 
-    it('should gate via `_authorizeModuleChange`', async function () {
+    it('should gate via `_checkHookManager`', async function () {
       await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule))
-        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedModuleChange')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedHookManager')
         .withArgs(this.anyone);
 
       await this.token.connect(this.admin).uninstallModule(this.hookModule);
@@ -157,14 +157,14 @@ describe('ERC7984Hooked', function () {
     }
   });
 
-  describe('isAuthorizedConfigurator', async function () {
-    it('should authorize the configurator (mock gates by ownable)', async function () {
-      await expect(this.token.isAuthorizedConfigurator(this.admin)).to.eventually.be.true;
+  describe('isHookManager', async function () {
+    it('should authorize the hook manager (mock gates by ownable)', async function () {
+      await expect(this.token.isHookManager(this.admin)).to.eventually.be.true;
     });
 
-    it('should not authorize a non-configurator', async function () {
-      await expect(this.token.isAuthorizedConfigurator(this.anyone)).to.eventually.be.false;
-      await expect(this.token.isAuthorizedConfigurator(this.holder)).to.eventually.be.false;
+    it('should not authorize a non-hook-manager', async function () {
+      await expect(this.token.isHookManager(this.anyone)).to.eventually.be.false;
+      await expect(this.token.isHookManager(this.holder)).to.eventually.be.false;
     });
   });
 });
