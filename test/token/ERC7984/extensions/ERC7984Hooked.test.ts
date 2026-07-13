@@ -54,7 +54,7 @@ describe('ERC7984Hooked', function () {
       await expect(this.token.modules(0, ethers.MaxInt256)).to.eventually.deep.equal([this.hookModule.target]);
     });
 
-    it('should gate via `_authorizeModuleChange`', async function () {
+    it('should gate via `_checkHookManager`', async function () {
       await expect(this.token.connect(this.anyone).installModule(this.hookModule, '0x'))
         .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedHookManager')
         .withArgs(this.anyone);
@@ -116,7 +116,7 @@ describe('ERC7984Hooked', function () {
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.false;
     });
 
-    it('should gate via `_authorizeModuleChange`', async function () {
+    it('should gate via `_checkHookManager`', async function () {
       await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule))
         .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedHookManager')
         .withArgs(this.anyone);
