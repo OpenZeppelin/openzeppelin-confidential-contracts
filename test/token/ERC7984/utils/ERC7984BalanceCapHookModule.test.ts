@@ -6,7 +6,7 @@ import { ethers, fhevm } from 'hardhat';
 describe('ERC7984BalanceCapHookModule', function () {
   beforeEach(async function () {
     const [anyone, admin, holder, recipient] = await ethers.getSigners();
-    // The token's `isAuthorizedConfigurator` (mock) gates module configuration to the owner (`admin`).
+    // The token's `isHookManager` (mock) gates module configuration to the owner (`admin`).
     const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])) as any;
     const complianceModule = (await ethers.deployContract('$ERC7984BalanceCapHookModuleMock')) as any;
 
@@ -168,10 +168,10 @@ describe('ERC7984BalanceCapHookModule', function () {
   });
 
   describe('setMaxBalance', function () {
-    it('should be gated to the authorized configurator', async function () {
+    it('should be gated to the hook manager', async function () {
       const enc = await this.encryptCap(this.anyone, 100);
       await expect(this.complianceModule.connect(this.anyone).setMaxBalance(this.token, enc.handles[0], enc.inputProof))
-        .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedAccount')
+        .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedHookManager')
         .withArgs(this.anyone);
     });
 

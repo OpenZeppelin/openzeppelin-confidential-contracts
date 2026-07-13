@@ -60,7 +60,7 @@ export const SIGNATURES = {
     'isModuleInstalled(address)',
     'installModule(address,bytes)',
     'uninstallModule(address)',
-    'isAuthorizedConfigurator(address)',
+    'isHookManager(address)',
   ],
 };
 
