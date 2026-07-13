@@ -104,7 +104,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
         emit ERC7984HookedModuleUninstalled(module);
     }
 
-    /// @dev Checks if the account is to install and uninstall modules.
+    /// @dev Checks if the account is authorized to install and uninstall modules.
     function _checkAuthorizedModuleChange(address account) internal virtual {
         require(isAuthorizedConfigurator(account), ERC7984HookedUnauthorizedModuleChange(account));
     }
