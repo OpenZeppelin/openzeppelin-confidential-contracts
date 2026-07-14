@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import {ERC7984, ERC7984Votes, VotesConfidential} from "../../token/ERC7984/extensions/ERC7984Votes.sol";
-import {ERC7984Mock} from "./ERC7984Mock.sol";
+import {ERC7984, ERC7984Votes} from "../../../../token/ERC7984/extensions/ERC7984Votes.sol";
+import {ERC7984Mock} from "../ERC7984Mock.sol";
 
 abstract contract ERC7984VotesMock is ERC7984Mock, ERC7984Votes {
     address private immutable _OWNER;
@@ -30,16 +30,11 @@ abstract contract ERC7984VotesMock is ERC7984Mock, ERC7984Votes {
         return super.confidentialTotalSupply();
     }
 
-    function getPastTotalSupplyAccess(uint256 timepoint) public {
-        require(msg.sender == _OWNER);
-        FHE.allow(getPastTotalSupply(timepoint), msg.sender);
-    }
-
     function _update(
         address from,
         address to,
         euint64 amount
-    ) internal virtual override(ERC7984, ERC7984Votes) returns (euint64) {
+    ) internal virtual override(ERC7984Mock, ERC7984Votes) returns (euint64) {
         return super._update(from, to, amount);
     }
 
@@ -47,5 +42,7 @@ abstract contract ERC7984VotesMock is ERC7984Mock, ERC7984Votes {
         _clockOverrideVal = val;
     }
 
-    function _validateHandleAllowance(bytes32 handle) internal view override {}
+    function _validateHandleAllowance(bytes32) internal pure override returns (bool) {
+        return true;
+    }
 }

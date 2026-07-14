@@ -1,5 +1,5 @@
 import { ERC7984ReceiverMock } from '../../../types';
-import { $ERC7984Mock } from '../../../types/contracts-exposed/mocks/token/ERC7984Mock.sol/$ERC7984Mock';
+import { $ERC7984Mock } from '../../../types/contracts-exposed/mocks/token/ERC7984/ERC7984Mock.sol/$ERC7984Mock';
 import { allowHandle } from '../../helpers/accounts';
 import { deployERC7984Fixture } from './ERC7984.test';
 import { FhevmType } from '@fhevm/hardhat-plugin';
@@ -28,7 +28,7 @@ function shouldBehaveLikeERC7984(contract?: string, ...extraDeploymentArgs: any[
 
       it('sets the uri', async function () {
         const { token } = await deployFixture();
-        await expect(token.tokenURI()).to.eventually.equal(uri);
+        await expect(token.contractURI()).to.eventually.equal(uri);
       });
 
       it('decimals is 6', async function () {
@@ -117,25 +117,6 @@ function shouldBehaveLikeERC7984(contract?: string, ...extraDeploymentArgs: any[
 
           // Edge cases to run with sender as caller
           if (asSender) {
-            it('with no balance should revert', async function () {
-              const encryptedInput = await fhevm
-                .createEncryptedInput(await token.getAddress(), recipient.address)
-                .add64(100)
-                .encrypt();
-
-              await expect(
-                token
-                  .connect(recipient)
-                  ['confidentialTransfer(address,bytes32,bytes)'](
-                    holder.address,
-                    encryptedInput.handles[0],
-                    encryptedInput.inputProof,
-                  ),
-              )
-                .to.be.revertedWithCustomError(token, 'ERC7984ZeroBalance')
-                .withArgs(recipient.address);
-            });
-
             it('to zero address', async function () {
               const encryptedInput = await fhevm
                 .createEncryptedInput(await token.getAddress(), holder.address)
@@ -238,7 +219,7 @@ function shouldBehaveLikeERC7984(contract?: string, ...extraDeploymentArgs: any[
                   functionParams.unshift(from);
                   await contract.connect(sender).confidentialTransferFrom(...functionParams);
                 } else {
-                  await contract.connect(sender).confidentialTransfer(...functionParams);
+                  await contract.connect(sender)['confidentialTransfer(address,bytes32)'](...functionParams);
                 }
               }
             }

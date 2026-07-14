@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (finance/VestingWalletConfidential.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (finance/VestingWalletConfidential.sol)
 pragma solidity ^0.8.24;
 
-import {FHE, ebool, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984} from "./../interfaces/IERC7984.sol";
@@ -21,7 +21,7 @@ import {IERC7984} from "./../interfaces/IERC7984.sol";
  * NOTE: Since the wallet is `Ownable`, and ownership can be transferred, it is possible to sell unvested tokens.
  *
  * NOTE: When using this contract with any token whose balance is adjusted automatically (i.e. a rebase token), make
- * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
+ * sure to account for the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
  *
  * Confidential vesting wallet contracts can be deployed (as clones) using the {VestingWalletConfidentialFactory}.
  */
@@ -34,8 +34,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWalletConfidential")) - 1)) & ~bytes32(uint256(0xff))
-    // solhint-disable-next-line const-name-snakecase
-    bytes32 private constant VestingWalletStorageLocation =
+    bytes32 private constant VESTING_WALLET_STORAGE_LOCATION =
         0x78ce9ee9eb65fa0cf5bf10e861c3a95cb7c3c713c96ab1e5323a21e846796800;
 
     /// @dev Emitted when releasable vested tokens are released.
@@ -67,9 +66,8 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      */
     function releasable(address token) public virtual returns (euint64) {
         euint128 vestedAmount_ = vestedAmount(token, uint48(block.timestamp));
-        euint128 releasedAmount = released(token);
-        ebool success = FHE.ge(vestedAmount_, releasedAmount);
-        return FHE.select(success, FHE.asEuint64(FHE.sub(vestedAmount_, releasedAmount)), FHE.asEuint64(0));
+        euint128 min = FHE.min(vestedAmount_, released(token));
+        return FHE.asEuint64(FHE.sub(vestedAmount_, min));
     }
 
     /**
@@ -82,7 +80,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         FHE.allowTransient(amount, token);
         euint64 amountSent = IERC7984(token).confidentialTransfer(owner(), amount);
 
-        // This could overflow if the total supply is resent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
+        // This could overflow if the total supply is re-sent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
         euint128 newReleasedAmount = FHE.add(released(token), amountSent);
         FHE.allow(newReleasedAmount, owner());
         FHE.allowThis(newReleasedAmount);
@@ -136,7 +134,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
 
     function _getVestingWalletStorage() private pure returns (VestingWalletStorage storage $) {
         assembly ("memory-safe") {
-            $.slot := VestingWalletStorageLocation
+            $.slot := VESTING_WALLET_STORAGE_LOCATION
         }
     }
 }

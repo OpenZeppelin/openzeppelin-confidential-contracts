@@ -12,7 +12,7 @@ describe('HandleAccessManager', function () {
   });
 
   it('should not be allowed to reencrypt unallowed handle', async function () {
-    const handle = await createHandle(this.mock, 100);
+    const handle = await createHandle(this.mock, 101);
 
     await expect(fhevm.userDecryptEuint(FhevmType.euint64, handle, this.mock.target, this.holder)).to.be.rejectedWith(
       `User ${this.holder.address} is not authorized to user decrypt handle ${handle}`,

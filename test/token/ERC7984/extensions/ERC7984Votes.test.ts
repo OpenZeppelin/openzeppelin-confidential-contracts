@@ -184,7 +184,7 @@ describe('ERC7984Votes', function () {
 
       // Burn total balance
       const amountToBurn = await this.token.confidentialBalanceOf(this.holder);
-      await this.token.$_burn(this.holder, amountToBurn);
+      await this.token['$_burn(address,bytes32)'](this.holder, amountToBurn);
       const afterBurnBlock = await ethers.provider.getBlockNumber();
       await mine();
 
@@ -261,7 +261,6 @@ describe('ERC7984Votes', function () {
 
       // Check total supply for each block
       const afterFirstMintSupplyHandle = await this.token.getPastTotalSupply(afterFirstMintBlock);
-      await this.token.getPastTotalSupplyAccess(afterFirstMintBlock);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, afterFirstMintSupplyHandle, this.token.target, this.holder),
       ).to.eventually.equal(1000);
@@ -269,7 +268,6 @@ describe('ERC7984Votes', function () {
       await expect(this.token.getPastTotalSupply(afterTransferBlock)).to.eventually.eq(afterFirstMintSupplyHandle);
 
       const afterSecondMintSupplyHandle = await this.token.getPastTotalSupply(afterSecondMintBlock);
-      await this.token.getPastTotalSupplyAccess(afterSecondMintBlock);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, afterSecondMintSupplyHandle, this.token.target, this.holder),
       ).to.eventually.equal(2000);

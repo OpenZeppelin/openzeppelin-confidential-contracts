@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
+// OpenZeppelin Confidential Contracts (last updated v0.5.0) (token/ERC7984/extensions/ERC7984Freezable.sol)
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
-import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {FHESafeMath} from "../../../utils/FHESafeMath.sol";
 import {ERC7984} from "../ERC7984.sol";
 
 /**
- * @dev Extension of {ERC7984} that allows to implement a confidential
- * freezing mechanism that can be managed by an authorized account with
- * {setConfidentialFrozen} functions.
+ * @dev Extension of {ERC7984} that implements a confidential
+ * freezing mechanism that can be managed by calling the internal function
+ * {_setConfidentialFrozen} by an inheriting contract.
  *
- * The freezing mechanism provides the guarantee to the contract owner
- * (e.g. a DAO or a well-configured multisig) that a specific confidential
+ * The freezing mechanism provides the guarantee that a specific confidential
  * amount of tokens held by an account won't be transferable until those
  * tokens are unfrozen.
  *
@@ -30,48 +30,39 @@ abstract contract ERC7984Freezable is ERC7984 {
         return _frozenBalances[account];
     }
 
-    /// @dev Returns the confidential available (unfrozen) balance of an account. Up to {confidentialBalanceOf}.
-    function confidentialAvailable(address account) public virtual returns (euint64 unfrozen) {
-        (, unfrozen) = FHESafeMath.tryDecrease(confidentialBalanceOf(account), confidentialFrozen(account));
+    /// @dev Returns the confidential available (unfrozen) balance of an account. Gives ACL allowance to `account`.
+    function confidentialAvailable(address account) public virtual returns (euint64) {
+        euint64 amount = _confidentialAvailable(account);
+        FHE.allowThis(amount);
+        FHE.allow(amount, account);
+        return amount;
     }
 
-    /// @dev Freezes a confidential amount of tokens for an account with a proof.
-    function setConfidentialFrozen(
-        address account,
-        externalEuint64 encryptedAmount,
-        bytes calldata inputProof
-    ) public virtual {
-        _setConfidentialFrozen(account, FHE.fromExternal(encryptedAmount, inputProof));
-    }
-
-    /// @dev Freezes a confidential amount of tokens for an account.
-    function setConfidentialFrozen(address account, euint64 encryptedAmount) public virtual {
-        require(
-            FHE.isAllowed(encryptedAmount, msg.sender),
-            ERC7984UnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
-        );
-        _setConfidentialFrozen(account, encryptedAmount);
+    /// @dev Internal function to calculate the available balance of an account. Does not give any allowances.
+    function _confidentialAvailable(address account) internal virtual returns (euint64) {
+        return FHESafeMath.saturatingSub(confidentialBalanceOf(account), confidentialFrozen(account));
     }
 
     /// @dev Internal function to freeze a confidential amount of tokens for an account.
     function _setConfidentialFrozen(address account, euint64 encryptedAmount) internal virtual {
-        _checkFreezer();
         FHE.allowThis(encryptedAmount);
         FHE.allow(encryptedAmount, account);
         _frozenBalances[account] = encryptedAmount;
         emit TokensFrozen(account, encryptedAmount);
     }
 
-    /// @dev Unimplemented function that must revert if `msg.sender` is not authorized as a freezer.
-    function _checkFreezer() internal virtual;
-
     /**
-     * @dev See {ERC7984-_update}. The `from` account must have sufficient unfrozen balance,
+     * @dev See {ERC7984-_update}.
+     *
+     * The `from` account must have sufficient unfrozen balance,
      * otherwise 0 tokens are transferred.
+     * The default freezing behavior can be changed (for a pass-through for instance) by overriding
+     * {_confidentialAvailable}. The internal function is used for actual gating (not the public function)
+     * to avoid unnecessarily granting ACL allowances.
      */
     function _update(address from, address to, euint64 encryptedAmount) internal virtual override returns (euint64) {
         if (from != address(0)) {
-            euint64 unfrozen = confidentialAvailable(from);
+            euint64 unfrozen = _confidentialAvailable(from);
             encryptedAmount = FHE.select(FHE.le(encryptedAmount, unfrozen), encryptedAmount, FHE.asEuint64(0));
         }
         return super._update(from, to, encryptedAmount);

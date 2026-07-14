@@ -1,6 +1,6 @@
 import { IACL__factory } from '../../../../types';
-import { $ERC7984FreezableMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984FreezableMock.sol/$ERC7984FreezableMock';
-import { ACL_ADDRESS } from '../../../helpers/accounts';
+import { $ERC7984FreezableMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984/extensions/ERC7984FreezableMock.sol/$ERC7984FreezableMock';
+import { getAclAddress } from '../../../helpers/accounts';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behaviour';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
@@ -15,82 +15,13 @@ const uri = 'https://example.com/metadata';
 describe('ERC7984Freezable', function () {
   async function deployFixture() {
     const [holder, recipient, freezer, operator, anyone] = await ethers.getSigners();
-    const token = (await ethers.deployContract(contract, [
-      name,
-      symbol,
-      uri,
-      freezer.address,
-    ])) as any as $ERC7984FreezableMock;
-    const encryptedInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), holder.address)
-      .add64(1000)
-      .encrypt();
-    await token
-      .connect(holder)
-      ['$_mint(address,bytes32,bytes)'](holder, encryptedInput.handles[0], encryptedInput.inputProof);
-    const acl = IACL__factory.connect(ACL_ADDRESS, ethers.provider);
+    const token = (await ethers.deployContract(contract, [name, symbol, uri])) as any as $ERC7984FreezableMock;
+    const acl = IACL__factory.connect(await getAclAddress(), ethers.provider);
     return { token, acl, holder, recipient, freezer, operator, anyone };
   }
-  for (const withProof of [true, false]) {
-    it(`should set and get confidential frozen ${withProof ? 'with proof' : ''}`, async function () {
-      const { token, acl, holder, recipient, freezer } = await deployFixture();
-      const encryptedRecipientMintInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), holder.address)
-        .add64(1000)
-        .encrypt();
-      await token
-        .connect(holder)
-        ['$_mint(address,bytes32,bytes)'](
-          recipient.address,
-          encryptedRecipientMintInput.handles[0],
-          encryptedRecipientMintInput.inputProof,
-        );
-      const amount = 100;
-      let params = [recipient.address] as unknown as [
-        account: AddressLike,
-        encryptedAmount: BytesLike,
-        inputProof: BytesLike,
-      ];
-      if (withProof) {
-        const { handles, inputProof } = await fhevm
-          .createEncryptedInput(await token.getAddress(), freezer.address)
-          .add64(amount)
-          .encrypt();
-        params.push(handles[0], inputProof);
-      } else {
-        await token.connect(freezer).createEncryptedAmount(amount);
-        params.push(await token.connect(freezer).createEncryptedAmount.staticCall(amount));
-      }
-      await expect(
-        token
-          .connect(freezer)
-          [withProof ? 'setConfidentialFrozen(address,bytes32,bytes)' : 'setConfidentialFrozen(address,bytes32)'](
-            ...params,
-          ),
-      )
-        .to.emit(token, 'TokensFrozen')
-        .withArgs(recipient.address, params[1]);
-      const frozenHandle = await token.confidentialFrozen(recipient.address);
-      expect(frozenHandle).to.equal(ethers.hexlify(params[1]));
-      await expect(acl.isAllowed(frozenHandle, recipient.address)).to.eventually.be.true;
-      await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, frozenHandle, await token.getAddress(), recipient),
-      ).to.eventually.equal(100);
-      const balanceHandle = await token.confidentialBalanceOf(recipient.address);
-      await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, balanceHandle, await token.getAddress(), recipient),
-      ).to.eventually.equal(1000);
-      const confidentialAvailableArgs = recipient.address;
-      const availableHandle = await token.confidentialAvailable.staticCall(confidentialAvailableArgs);
-      await (token as any).connect(recipient).confidentialAvailableAccess(confidentialAvailableArgs);
-      await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, availableHandle, await token.getAddress(), recipient),
-      ).to.eventually.equal(900);
-    });
-  }
 
-  it('should not set confidential frozen if not called by freezer', async function () {
-    const { token, holder, recipient, anyone } = await deployFixture();
+  it(`should set and get confidential frozen`, async function () {
+    const { token, acl, holder, recipient, freezer } = await deployFixture();
     const encryptedRecipientMintInput = await fhevm
       .createEncryptedInput(await token.getAddress(), holder.address)
       .add64(1000)
@@ -102,22 +33,39 @@ describe('ERC7984Freezable', function () {
         encryptedRecipientMintInput.handles[0],
         encryptedRecipientMintInput.inputProof,
       );
-    const encryptedInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), anyone.address)
-      .add64(100)
+
+    const amount = 100;
+    const { handles, inputProof } = await fhevm
+      .createEncryptedInput(await token.getAddress(), freezer.address)
+      .add64(amount)
       .encrypt();
 
+    let params = [recipient.address, handles[0], inputProof] as unknown as [
+      account: AddressLike,
+      encryptedAmount: BytesLike,
+      inputProof: BytesLike,
+    ];
+
+    await expect(token.connect(freezer)['$_setConfidentialFrozen(address,bytes32,bytes)'](...params))
+      .to.emit(token, 'TokensFrozen')
+      .withArgs(recipient.address, params[1]);
+
+    const frozenHandle = await token.confidentialFrozen(recipient.address);
+    expect(frozenHandle).to.equal(ethers.hexlify(params[1]));
+    await expect(acl.isAllowed(frozenHandle, recipient.address)).to.eventually.be.true;
     await expect(
-      token
-        .connect(anyone)
-        ['setConfidentialFrozen(address,bytes32,bytes)'](
-          recipient.address,
-          encryptedInput.handles[0],
-          encryptedInput.inputProof,
-        ),
-    )
-      .to.be.revertedWithCustomError(token, 'AccessControlUnauthorizedAccount')
-      .withArgs(anyone.address, ethers.id('FREEZER_ROLE'));
+      fhevm.userDecryptEuint(FhevmType.euint64, frozenHandle, await token.getAddress(), recipient),
+    ).to.eventually.equal(100);
+    const balanceHandle = await token.confidentialBalanceOf(recipient.address);
+    await expect(
+      fhevm.userDecryptEuint(FhevmType.euint64, balanceHandle, await token.getAddress(), recipient),
+    ).to.eventually.equal(1000);
+    const confidentialAvailableArgs = recipient.address;
+    const availableHandle = await token.confidentialAvailable.staticCall(confidentialAvailableArgs);
+    await (token as any).connect(recipient).confidentialAvailableAccess(confidentialAvailableArgs);
+    await expect(
+      fhevm.userDecryptEuint(FhevmType.euint64, availableHandle, await token.getAddress(), recipient),
+    ).to.eventually.equal(900);
   });
 
   it('should transfer max available', async function () {
@@ -139,7 +87,7 @@ describe('ERC7984Freezable', function () {
       .encrypt();
     await token
       .connect(freezer)
-      ['setConfidentialFrozen(address,bytes32,bytes)'](
+      ['$_setConfidentialFrozen(address,bytes32,bytes)'](
         recipient.address,
         encryptedInput.handles[0],
         encryptedInput.inputProof,
@@ -190,7 +138,7 @@ describe('ERC7984Freezable', function () {
       .encrypt();
     await token
       .connect(freezer)
-      ['setConfidentialFrozen(address,bytes32,bytes)'](
+      ['$_setConfidentialFrozen(address,bytes32,bytes)'](
         recipient.address,
         encryptedInput.handles[0],
         encryptedInput.inputProof,
@@ -226,21 +174,5 @@ describe('ERC7984Freezable', function () {
     ).to.eventually.equal(1000);
   });
 
-  it('should not set confidential frozen if unauthorized', async function () {
-    const { token, recipient, freezer, anyone } = await deployFixture();
-    const encryptedInput = await fhevm
-      .createEncryptedInput(await token.getAddress(), freezer.address)
-      .add64(100)
-      .encrypt();
-    await expect(
-      token.connect(anyone)['setConfidentialFrozen(address,bytes32)'](recipient.address, encryptedInput.handles[0]),
-    )
-      .to.be.revertedWithCustomError(token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
-      .withArgs(encryptedInput.handles[0], anyone);
-  });
-
-  shouldBehaveLikeERC7984(
-    contract,
-    '0x0000000000000000000000000000000000000001', // freezer
-  );
+  shouldBehaveLikeERC7984(contract);
 });

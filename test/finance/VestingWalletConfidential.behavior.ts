@@ -1,4 +1,4 @@
-import { $ERC7984Mock } from '../../types/contracts-exposed/mocks/token/ERC7984Mock.sol/$ERC7984Mock';
+import { $ERC7984Mock } from '../../types/contracts-exposed/mocks/token/ERC7984/ERC7984Mock.sol/$ERC7984Mock';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';

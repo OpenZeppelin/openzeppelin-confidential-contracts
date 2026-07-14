@@ -8,6 +8,7 @@ This directory includes primitives for on-chain confidential financial systems:
 
 - {VestingWalletConfidential}: Handles the vesting of confidential tokens for a given beneficiary. Custody of multiple tokens can be given to this contract, which will release the token to the beneficiary following a given, customizable, vesting schedule.
 - {VestingWalletCliffConfidential}: Variant of {VestingWalletConfidential} which adds a cliff period to the vesting schedule.
+- {BatcherConfidential}: A batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts via a non-confidential route.
 
 For convenience, this directory also includes:
 
@@ -18,3 +19,4 @@ For convenience, this directory also includes:
 {{VestingWalletConfidential}}
 {{VestingWalletCliffConfidential}}
 {{VestingWalletConfidentialFactory}}
+{{BatcherConfidential}}

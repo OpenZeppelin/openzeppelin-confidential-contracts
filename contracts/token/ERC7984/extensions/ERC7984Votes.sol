@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (token/extensions/ConfidentialFungibleTokenVotes.sol)
-pragma solidity ^0.8.27;
+// OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984Votes.sol)
+pragma solidity ^0.8.26;
 
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {VotesConfidential} from "../../../governance/utils/VotesConfidential.sol";
@@ -10,7 +10,7 @@ import {ERC7984} from "./../ERC7984.sol";
  * @dev Extension of {ERC7984} supporting confidential votes tracking and delegation.
  *
  * The amount of confidential voting units an account has is equal to the balance of
- * that account. Voing power is taken into account when an account delegates votes to itself or to another
+ * that account. Voting power is taken into account when an account delegates votes to itself or to another
  * account.
  */
 abstract contract ERC7984Votes is ERC7984, VotesConfidential {

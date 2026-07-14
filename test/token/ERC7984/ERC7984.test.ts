@@ -1,4 +1,5 @@
-import { $ERC7984Mock } from '../../../types/contracts-exposed/mocks/token/ERC7984Mock.sol/$ERC7984Mock';
+import { $ERC7984Mock } from '../../../types/contracts-exposed/mocks/token/ERC7984/ERC7984Mock.sol/$ERC7984Mock';
+import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
 import { shouldBehaveLikeERC7984 } from './ERC7984.behaviour';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
@@ -29,6 +30,20 @@ async function deployFixture(_contract?: string, extraDeploymentArgs: any[] = []
 }
 
 describe('ERC7984', function () {
+  describe('ERC165', function () {
+    it('should support interface', async function () {
+      const { token } = await deployFixture();
+      await expect(token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
+      await expect(token.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.false;
+      await expect(token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.false;
+    });
+
+    it('should not support interface', async function () {
+      const { token } = await deployFixture();
+      await expect(token.supportsInterface(INVALID_ID)).to.eventually.be.false;
+    });
+  });
+
   describe('mint', function () {
     for (const existingUser of [false, true]) {
       it(`to ${existingUser ? 'existing' : 'new'} user`, async function () {
@@ -51,7 +66,6 @@ describe('ERC7984', function () {
 
         // Check total supply
         const totalSupplyHandle = await token.confidentialTotalSupply();
-        await token.connect(holder).confidentialTotalSupplyAccess();
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, totalSupplyHandle, await token.getAddress(), holder),
         ).to.eventually.equal(existingUser ? 2000 : 1000);
@@ -97,7 +111,6 @@ describe('ERC7984', function () {
 
         // Check total supply
         const totalSupplyHandle = await token.confidentialTotalSupply();
-        await token.connect(holder).confidentialTotalSupplyAccess();
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, totalSupplyHandle, await token.getAddress(), holder),
         ).to.eventually.equal(sufficientBalance ? 600 : 1000);
@@ -126,17 +139,21 @@ describe('ERC7984', function () {
     let token: $ERC7984Mock;
     let expectedAmount: any;
     let expectedHandle: any;
+    let requester: HardhatEthersSigner | undefined;
+
     beforeEach(async function () {
       ({ token, holder, recipient } = await deployFixture());
       expectedAmount = undefined;
       expectedHandle = undefined;
+      requester = undefined;
     });
 
     it('user balance', async function () {
       const holderBalanceHandle = await token.confidentialBalanceOf(holder);
 
-      await token.connect(holder).discloseEncryptedAmount(holderBalanceHandle);
+      await token.connect(holder).requestDiscloseEncryptedAmount(holderBalanceHandle);
 
+      requester = holder.address;
       expectedAmount = 1000n;
       expectedHandle = holderBalanceHandle;
     });
@@ -156,8 +173,9 @@ describe('ERC7984', function () {
       const transferEvent = (await tx.wait()).logs.filter((log: any) => log.address === token.target)[0];
       const transferAmount = transferEvent.args[2];
 
-      await token.connect(recipient).discloseEncryptedAmount(transferAmount);
+      await token.connect(recipient).requestDiscloseEncryptedAmount(transferAmount);
 
+      requester = recipient.address;
       expectedAmount = 400n;
       expectedHandle = transferAmount;
     });
@@ -165,28 +183,39 @@ describe('ERC7984', function () {
     it("other user's balance", async function () {
       const holderBalanceHandle = await token.confidentialBalanceOf(holder);
 
-      await expect(token.connect(recipient).discloseEncryptedAmount(holderBalanceHandle))
+      await expect(token.connect(recipient).requestDiscloseEncryptedAmount(holderBalanceHandle))
         .to.be.revertedWithCustomError(token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
         .withArgs(holderBalanceHandle, recipient);
     });
 
     it('invalid signature reverts', async function () {
       const holderBalanceHandle = await token.confidentialBalanceOf(holder);
-      await token.connect(holder).discloseEncryptedAmount(holderBalanceHandle);
+      await token.connect(holder).requestDiscloseEncryptedAmount(holderBalanceHandle);
 
-      await expect(token.connect(holder).finalizeDiscloseEncryptedAmount(0, 0, [])).to.be.reverted;
+      await expect(token.connect(holder).discloseEncryptedAmount(holderBalanceHandle, 0, '0x')).to.be.reverted;
     });
 
     afterEach(async function () {
       if (expectedHandle === undefined || expectedAmount === undefined) return;
 
-      await fhevm.awaitDecryptionOracle();
+      const amountDiscloseRequestedEvent = (await token.queryFilter(token.filters.AmountDiscloseRequested()))[0];
 
-      // Check that event was correctly emitted
-      const eventFilter = token.filters.AmountDisclosed();
-      const discloseEvent = (await token.queryFilter(eventFilter))[0];
-      expect(discloseEvent.args[0]).to.equal(expectedHandle);
-      expect(discloseEvent.args[1]).to.equal(expectedAmount);
+      expect(expectedHandle).to.equal(amountDiscloseRequestedEvent.args[0]);
+      expect(requester).to.equal(amountDiscloseRequestedEvent.args[1]);
+
+      const publicDecryptResults = await fhevm.publicDecrypt([expectedHandle]);
+
+      await expect(
+        token
+          .connect(holder)
+          .discloseEncryptedAmount(
+            expectedHandle,
+            publicDecryptResults.abiEncodedClearValues,
+            publicDecryptResults.decryptionProof,
+          ),
+      )
+        .to.emit(token, 'AmountDisclosed')
+        .withArgs(expectedHandle, expectedAmount);
     });
   });
 

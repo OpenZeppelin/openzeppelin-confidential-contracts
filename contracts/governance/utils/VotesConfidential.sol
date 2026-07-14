@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.2.0) (governance/utils/VotesConfidential.sol)
-pragma solidity ^0.8.24;
+// OpenZeppelin Confidential Contracts (last updated v0.5.0) (governance/utils/VotesConfidential.sol)
 
-import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+pragma solidity ^0.8.26;
+
+import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC6372} from "@openzeppelin/contracts/interfaces/IERC6372.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
@@ -14,7 +15,7 @@ import {CheckpointsConfidential} from "./../../utils/structs/CheckpointsConfiden
 
 /**
  * @dev A confidential votes contract tracking confidential voting power of accounts over time.
- * It features vote delegation to delegators.
+ * It features vote delegation to delegatees.
 
  * This contract keeps a history (checkpoints) of each account's confidential vote power. Confidential
  * voting power can be delegated either by calling the {delegate} function directly, or by providing
@@ -23,7 +24,7 @@ import {CheckpointsConfidential} from "./../../utils/structs/CheckpointsConfiden
  * allowed to access them. Ensure that {HandleAccessManager-_validateHandleAllowance} is implemented properly, allowing all 
  * necessary addresses to access voting power handles.
  *
- * By default, voting units does not account for voting power. This makes transfers of underlying
+ * By default, transfer of voting units does not account for voting power. This makes transfers of
  * voting units cheaper. The downside is that it requires users to delegate to themselves in order
  * to activate checkpoints and have their voting power tracked.
  */
