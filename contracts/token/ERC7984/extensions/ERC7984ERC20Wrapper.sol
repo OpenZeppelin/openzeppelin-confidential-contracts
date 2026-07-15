@@ -32,8 +32,8 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     /**
      * @dev Per-holder amount that was paid for (i.e. the underlying was pulled into the wrapper) but that {_mint}
      * did not actually mint because doing so would have exceeded the {maxTotalSupply}. These amounts are not reflected
-     * in {confidentialBalanceOf} but remain redeemable by the holder through {unwrap}, which consumes them before
-     * burning any confidential balance. See {_update} for details.
+     * in {confidentialBalanceOf} (they can be read with {unmintedAmountOf}) but remain redeemable by the holder through
+     * {unwrap}, which consumes them before burning any confidential balance. See {_update} for details.
      *
      * NOTE: With the default {_checkConfidentialTotalSupply}, wrapping reverts on overflow, so no unminted amount is
      * ever recorded. This bookkeeping only becomes relevant for derived contracts whose overflow handling lets {_mint}
@@ -197,6 +197,16 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      */
     function unwrapRequester(bytes32 unwrapRequestId) public view virtual returns (address) {
         return _unwrapRequests[unwrapRequestId];
+    }
+
+    /**
+     * @dev Returns the encrypted amount that `holder` paid for but that was not minted because {_update} capped the
+     * confidential total supply. This amount is redeemable through {unwrap}. See {_unmintedAmounts}.
+     *
+     * NOTE: Returns an uninitialized handle (decrypting to 0) for a `holder` that never had an unminted amount recorded.
+     */
+    function unmintedAmountOf(address holder) public view virtual returns (euint64) {
+        return _unmintedAmounts[holder];
     }
 
     /**

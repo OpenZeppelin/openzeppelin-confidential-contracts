@@ -381,6 +381,15 @@ describe('ERC7984ERC20Wrapper', function () {
           this.holder,
         ),
       ).to.eventually.equal(maxConfidentialSupply);
+      // ... the capped amount is recorded as unminted ...
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.wrapper.unmintedAmountOf(this.holder.address),
+          this.wrapper.target,
+          this.holder,
+        ),
+      ).to.eventually.equal(unminted);
       // ... but the underlying was transferred into the wrapper
       await expect(this.token.balanceOf(this.wrapper)).to.eventually.equal(wrapperUnderlyingBefore + unminted * rate);
 
@@ -409,11 +418,28 @@ describe('ERC7984ERC20Wrapper', function () {
           this.holder,
         ),
       ).to.eventually.equal(maxConfidentialSupply);
+      // the unminted amount has been fully consumed
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.wrapper.unmintedAmountOf(this.holder.address),
+          this.wrapper.target,
+          this.holder,
+        ),
+      ).to.eventually.equal(0);
     });
 
     it('consumes the unminted amount before burning the confidential balance', async function () {
       const unminted = 50n;
       await this.wrapper.connect(this.holder).wrap(this.holder.address, unminted * rate);
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.wrapper.unmintedAmountOf(this.holder.address),
+          this.wrapper.target,
+          this.holder,
+        ),
+      ).to.eventually.equal(unminted);
 
       // Unwrap more than the unminted amount: the excess is burned from the confidential balance
       const unwrapAmount = 80n;
@@ -434,7 +460,7 @@ describe('ERC7984ERC20Wrapper', function () {
 
       // The full requested amount is returned ...
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(holderUnderlyingBefore + unwrapAmount * rate);
-      // ... and only the part exceeding the unminted amount was burned from the confidential balance
+      // ... only the part exceeding the unminted amount was burned from the confidential balance ...
       await expect(
         fhevm.userDecryptEuint(
           FhevmType.euint64,
@@ -443,6 +469,15 @@ describe('ERC7984ERC20Wrapper', function () {
           this.holder,
         ),
       ).to.eventually.equal(maxConfidentialSupply - (unwrapAmount - unminted));
+      // ... and the unminted amount has been fully consumed
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.wrapper.unmintedAmountOf(this.holder.address),
+          this.wrapper.target,
+          this.holder,
+        ),
+      ).to.eventually.equal(0);
     });
   });
 
