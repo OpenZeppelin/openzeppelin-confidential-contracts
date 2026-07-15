@@ -342,6 +342,110 @@ describe('ERC7984ERC20Wrapper', function () {
     });
   });
 
+  describe('Unminted amounts', function () {
+    // 18-decimal underlying => rate is 10 ** (18 - 6)
+    const rate = 10n ** 12n;
+    const maxConfidentialSupply = 2n ** 64n - 1n;
+
+    beforeEach(async function () {
+      // Wrapper whose `_checkConfidentialTotalSupply` is a no-op, so `_update` silently caps the minted amount
+      // instead of reverting on overflow. This is what makes an unminted amount observable.
+      this.wrapper = await ethers.deployContract('$ERC7984ERC20WrapperUncheckedSupplyMock', [
+        this.token,
+        name,
+        symbol,
+        uri,
+      ]);
+
+      // Fund the holder with enough underlying to fill the confidential supply up to its maximum (plus some extra)
+      await this.token.$_mint(this.holder.address, (maxConfidentialSupply + 1000n) * rate);
+      await this.token.connect(this.holder).approve(this.wrapper, ethers.MaxUint256);
+
+      // Bring the confidential total supply up to its maximum
+      await this.wrapper.connect(this.holder).wrap(this.holder.address, maxConfidentialSupply * rate);
+    });
+
+    it('records the capped amount as unminted and keeps it redeemable', async function () {
+      const unminted = 100n;
+      const wrapperUnderlyingBefore = await this.token.balanceOf(this.wrapper);
+
+      // Wrapping again overflows the confidential supply: nothing is minted, but the underlying is still pulled in
+      await this.wrapper.connect(this.holder).wrap(this.holder.address, unminted * rate);
+
+      // The confidential balance is unchanged (the mint was capped) ...
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.wrapper.confidentialBalanceOf(this.holder.address),
+          this.wrapper.target,
+          this.holder,
+        ),
+      ).to.eventually.equal(maxConfidentialSupply);
+      // ... but the underlying was transferred into the wrapper
+      await expect(this.token.balanceOf(this.wrapper)).to.eventually.equal(wrapperUnderlyingBefore + unminted * rate);
+
+      // The holder can recover the unminted amount through `unwrap` without touching their confidential balance
+      const holderUnderlyingBefore = await this.token.balanceOf(this.holder);
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.wrapper.target, this.holder.address)
+        .add64(unminted)
+        .encrypt();
+      await this.wrapper
+        .connect(this.holder)
+        ['unwrap(address,address,bytes32,bytes)'](
+          this.holder,
+          this.holder,
+          encryptedInput.handles[0],
+          encryptedInput.inputProof,
+        );
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
+
+      await expect(this.token.balanceOf(this.holder)).to.eventually.equal(holderUnderlyingBefore + unminted * rate);
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.wrapper.confidentialBalanceOf(this.holder.address),
+          this.wrapper.target,
+          this.holder,
+        ),
+      ).to.eventually.equal(maxConfidentialSupply);
+    });
+
+    it('consumes the unminted amount before burning the confidential balance', async function () {
+      const unminted = 50n;
+      await this.wrapper.connect(this.holder).wrap(this.holder.address, unminted * rate);
+
+      // Unwrap more than the unminted amount: the excess is burned from the confidential balance
+      const unwrapAmount = 80n;
+      const holderUnderlyingBefore = await this.token.balanceOf(this.holder);
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.wrapper.target, this.holder.address)
+        .add64(unwrapAmount)
+        .encrypt();
+      await this.wrapper
+        .connect(this.holder)
+        ['unwrap(address,address,bytes32,bytes)'](
+          this.holder,
+          this.holder,
+          encryptedInput.handles[0],
+          encryptedInput.inputProof,
+        );
+      await publicDecryptAndFinalizeUnwrap(this.wrapper, this.holder);
+
+      // The full requested amount is returned ...
+      await expect(this.token.balanceOf(this.holder)).to.eventually.equal(holderUnderlyingBefore + unwrapAmount * rate);
+      // ... and only the part exceeding the unminted amount was burned from the confidential balance
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.wrapper.confidentialBalanceOf(this.holder.address),
+          this.wrapper.target,
+          this.holder,
+        ),
+      ).to.eventually.equal(maxConfidentialSupply - (unwrapAmount - unminted));
+    });
+  });
+
   describe('Initialization', function () {
     describe('decimals', function () {
       it('when underlying has 6 decimals', async function () {
