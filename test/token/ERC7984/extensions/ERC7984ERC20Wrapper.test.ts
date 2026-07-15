@@ -66,6 +66,26 @@ describe('ERC7984ERC20Wrapper', function () {
           ).to.eventually.equal(10);
         });
 
+        it("wrap event shouldn't be decryptable by sender with different recipient", async function () {
+          const amountToWrap = ethers.parseUnits('100', 18);
+          if (viaCallback) {
+            await this.token
+              .connect(this.holder)
+              ['transferAndCall(address,uint256,bytes)'](
+                this.wrapper,
+                amountToWrap,
+                ethers.solidityPacked(['address'], [this.recipient.address]),
+              );
+          } else {
+            await this.wrapper.connect(this.holder).wrap(this.recipient.address, amountToWrap);
+          }
+
+          const [, , encryptedWrappedAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.Wrap()))[0].args;
+          await expect(
+            fhevm.userDecryptEuint(FhevmType.euint64, encryptedWrappedAmount, this.wrapper.target, this.holder),
+          ).to.be.rejected;
+        });
+
         it('with multiple of rate', async function () {
           const amountToWrap = ethers.parseUnits('100', 18);
 

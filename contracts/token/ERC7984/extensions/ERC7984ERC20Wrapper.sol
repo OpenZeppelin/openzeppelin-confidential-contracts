@@ -210,8 +210,6 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      */
     function _wrap(address to, uint256 amount) internal virtual returns (euint64) {
         euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
-        FHE.allowTransient(wrappedAmountSent, msg.sender);
-
         emit Wrap(to, amount - (amount % rate()), wrappedAmountSent);
 
         return wrappedAmountSent;
