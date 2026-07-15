@@ -1,3 +1,4 @@
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behaviour';
 // @ts-ignore
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { mine } from '@nomicfoundation/hardhat-network-helpers';
@@ -285,4 +286,6 @@ describe('ERC7984Votes', function () {
       await expect(this.token.CLOCK_MODE()).to.be.revertedWithCustomError(this.token, 'ERC6372InconsistentClock');
     });
   });
+
+  shouldBehaveLikeERC7984('$ERC7984VotesMock');
 });

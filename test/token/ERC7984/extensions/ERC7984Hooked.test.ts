@@ -1,5 +1,6 @@
 import { $ERC7984Hooked } from '../../../../types/contracts-exposed/token/ERC7984/extensions/rwa/ERC7984Hooked.sol/$ERC7984Hooked';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behaviour';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
@@ -143,4 +144,7 @@ describe('ERC7984Hooked', function () {
       });
     }
   });
+
+  // Arbitrary non-zero owner; the behaviour does not install modules so `_authorizeModuleChange` is never hit.
+  shouldBehaveLikeERC7984('$ERC7984HookedMock', '0x0000000000000000000000000000000000000001');
 });
