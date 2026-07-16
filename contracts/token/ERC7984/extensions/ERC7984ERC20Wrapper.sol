@@ -29,6 +29,18 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
     mapping(bytes32 unwrapRequestId => address recipient) private _unwrapRequests;
 
+    /**
+     * @dev Per-holder amount that was paid for (i.e. the underlying was pulled into the wrapper) but that {_mint}
+     * did not actually mint because doing so would have exceeded the {maxTotalSupply}. These amounts are not reflected
+     * in {confidentialBalanceOf} (they can be read with {unmintedAmountOf}) but remain redeemable by the holder through
+     * {unwrap}, which consumes them before burning any confidential balance. See {_update} for details.
+     *
+     * NOTE: With the default {_checkConfidentialTotalSupply}, wrapping reverts on overflow, so no unminted amount is
+     * ever recorded. This bookkeeping only becomes relevant for derived contracts whose overflow handling lets {_mint}
+     * silently cap the minted amount instead of reverting.
+     */
+    mapping(address holder => euint64 amount) private _unmintedAmounts;
+
     error InvalidUnwrapRequest(bytes32 unwrapRequestId);
     error ERC7984TotalSupplyOverflow();
 
@@ -188,6 +200,16 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /**
+     * @dev Returns the encrypted amount that `holder` paid for but that was not minted because {_update} capped the
+     * confidential total supply. This amount is redeemable through {unwrap}. See {_unmintedAmounts}.
+     *
+     * NOTE: Returns an uninitialized handle (decrypting to 0) for a `holder` that never had an unminted amount recorded.
+     */
+    function unmintedAmountOf(address holder) public view virtual returns (euint64) {
+        return _unmintedAmounts[holder];
+    }
+
+    /**
      * @dev This function must revert if the new {confidentialTotalSupply} is invalid (overflow occurred).
      *
      * NOTE: Overflow can be detected here since the wrapper holdings are non-confidential. In other cases, it may be impossible
@@ -200,12 +222,20 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         }
     }
 
-    /// @inheritdoc ERC7984
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
+    /**
+     * @inheritdoc ERC7984
+     * @dev On mint (`from == address(0)`), the difference between the requested `amount` and the amount actually
+     * minted by {ERC7984-_update} (which caps at {maxTotalSupply}) is registered as an unminted amount for `to`, so
+     * the underlying tokens already pulled into the wrapper remain redeemable through {unwrap}. See {_unmintedAmounts}.
+     */
+    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
         }
-        return super._update(from, to, amount);
+        transferred = super._update(from, to, amount);
+        if (from == address(0)) {
+            _increaseUnmintedAmount(to, FHE.sub(amount, transferred));
+        }
     }
 
     /**
@@ -224,8 +254,11 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(to != address(0), ERC7984InvalidReceiver(to));
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
-        // try to burn, see how much we actually got
-        euint64 unwrapAmount_ = _burn(from, amount);
+        // Consume from unminted amounts first, then burn the rest, and see how much we actually got
+        euint64 fromUnmintedAmount = _decreaseUnmintedAmount(from, amount);
+        euint64 fromBurnedAmount = _burn(from, FHE.sub(amount, fromUnmintedAmount));
+        euint64 unwrapAmount_ = FHE.add(fromUnmintedAmount, fromBurnedAmount);
+
         FHE.makePubliclyDecryptable(unwrapAmount_);
 
         assert(unwrapRequester(euint64.unwrap(unwrapAmount_)) == address(0));
@@ -238,6 +271,42 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
         emit UnwrapRequested(to, unwrapRequestId, unwrapAmount_);
         return unwrapRequestId;
+    }
+
+    /**
+     * @dev Adds `amount` to the unminted balance of `holder`. See {_unmintedAmounts}.
+     *
+     * When `amount` is uninitialized there is nothing to record, and when `holder` has no prior unminted balance the
+     * stored handle is set directly to `amount`. Both cases skip the {FHE-add}, so no homomorphic work is done in the
+     * common case where nothing was left unminted.
+     */
+    function _increaseUnmintedAmount(address holder, euint64 amount) internal virtual {
+        if (!FHE.isInitialized(amount)) return;
+
+        euint64 current = _unmintedAmounts[holder];
+        euint64 unmintedAmount = FHE.isInitialized(current) ? FHE.add(current, amount) : amount;
+        _unmintedAmounts[holder] = unmintedAmount;
+        FHE.allowThis(unmintedAmount);
+        FHE.allow(unmintedAmount, holder);
+    }
+
+    /**
+     * @dev Consumes up to `amount` from the unminted balance of `holder` and returns the consumed amount. See
+     * {_unmintedAmounts}.
+     *
+     * When `holder` has no unminted balance the function returns an encrypted zero without any homomorphic work, which
+     * is the common case (e.g. an account that received its confidential tokens through a transfer rather than {wrap}).
+     */
+    function _decreaseUnmintedAmount(address holder, euint64 amount) internal virtual returns (euint64) {
+        euint64 unmintedAmount = _unmintedAmounts[holder];
+        if (!FHE.isInitialized(unmintedAmount)) return FHE.asEuint64(0);
+
+        euint64 consumedAmount = FHE.min(unmintedAmount, amount);
+        unmintedAmount = FHE.sub(unmintedAmount, consumedAmount);
+        _unmintedAmounts[holder] = unmintedAmount;
+        FHE.allowThis(unmintedAmount);
+        FHE.allow(unmintedAmount, holder);
+        return consumedAmount;
     }
 
     /**
