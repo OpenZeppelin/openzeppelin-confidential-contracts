@@ -1,90 +1,65 @@
-import { $ERC7984Mock } from '../../../types/contracts-exposed/mocks/token/ERC7984/ERC7984Mock.sol/$ERC7984Mock';
 import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
-import { shouldBehaveLikeERC7984 } from './ERC7984.behaviour';
+import { deployERC7984Fixture, shouldBehaveLikeERC7984 } from './ERC7984.behaviour';
 import { FhevmType } from '@fhevm/hardhat-plugin';
-import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
-const contract = '$ERC7984Mock';
-const name = 'ConfidentialFungibleToken';
-const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
-
-async function deployFixture(_contract?: string, extraDeploymentArgs: any[] = []) {
-  const [holder, recipient, operator, anyone] = await ethers.getSigners();
-  const token = (await ethers.deployContract(_contract ? _contract : contract, [
-    name,
-    symbol,
-    uri,
-    ...extraDeploymentArgs,
-  ])) as any as $ERC7984Mock;
-  const encryptedInput = await fhevm
-    .createEncryptedInput(await token.getAddress(), holder.address)
-    .add64(1000)
-    .encrypt();
-  await token
-    .connect(holder)
-    ['$_mint(address,bytes32,bytes)'](holder, encryptedInput.handles[0], encryptedInput.inputProof);
-  return { token, holder, recipient, operator, anyone };
-}
-
 describe('ERC7984', function () {
+  beforeEach(async function () {
+    Object.assign(this, await deployERC7984Fixture());
+  });
+
   describe('ERC165', function () {
     it('should support interface', async function () {
-      const { token } = await deployFixture();
-      await expect(token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
-      await expect(token.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.false;
-      await expect(token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.false;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.false;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.false;
     });
 
     it('should not support interface', async function () {
-      const { token } = await deployFixture();
-      await expect(token.supportsInterface(INVALID_ID)).to.eventually.be.false;
+      await expect(this.token.supportsInterface(INVALID_ID)).to.eventually.be.false;
     });
   });
 
   describe('mint', function () {
     for (const existingUser of [false, true]) {
       it(`to ${existingUser ? 'existing' : 'new'} user`, async function () {
-        const { token, holder } = await deployFixture();
         if (existingUser) {
           const encryptedInput = await fhevm
-            .createEncryptedInput(await token.getAddress(), holder.address)
+            .createEncryptedInput(await this.token.getAddress(), this.holder.address)
             .add64(1000)
             .encrypt();
 
-          await token
-            .connect(holder)
-            ['$_mint(address,bytes32,bytes)'](holder, encryptedInput.handles[0], encryptedInput.inputProof);
+          await this.token
+            .connect(this.holder)
+            ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
         }
 
-        const balanceOfHandleHolder = await token.confidentialBalanceOf(holder);
+        const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, await token.getAddress(), holder),
+          fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, await this.token.getAddress(), this.holder),
         ).to.eventually.equal(existingUser ? 2000 : 1000);
 
         // Check total supply
-        const totalSupplyHandle = await token.confidentialTotalSupply();
+        const totalSupplyHandle = await this.token.confidentialTotalSupply();
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, totalSupplyHandle, await token.getAddress(), holder),
+          fhevm.userDecryptEuint(FhevmType.euint64, totalSupplyHandle, await this.token.getAddress(), this.holder),
         ).to.eventually.equal(existingUser ? 2000 : 1000);
       });
     }
 
     it('from zero address', async function () {
-      const { token, holder } = await deployFixture();
       const encryptedInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), holder.address)
+        .createEncryptedInput(await this.token.getAddress(), this.holder.address)
         .add64(400)
         .encrypt();
 
       await expect(
-        token
-          .connect(holder)
+        this.token
+          .connect(this.holder)
           ['$_mint(address,bytes32,bytes)'](ethers.ZeroAddress, encryptedInput.handles[0], encryptedInput.inputProof),
       )
-        .to.be.revertedWithCustomError(token, 'ERC7984InvalidReceiver')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidReceiver')
         .withArgs(ethers.ZeroAddress);
     });
   });
@@ -92,134 +67,126 @@ describe('ERC7984', function () {
   describe('burn', function () {
     for (const sufficientBalance of [false, true]) {
       it(`from a user with ${sufficientBalance ? 'sufficient' : 'insufficient'} balance`, async function () {
-        const { token, holder } = await deployFixture();
         const burnAmount = sufficientBalance ? 400 : 1100;
 
         const encryptedInput = await fhevm
-          .createEncryptedInput(await token.getAddress(), holder.address)
+          .createEncryptedInput(await this.token.getAddress(), this.holder.address)
           .add64(burnAmount)
           .encrypt();
 
-        await token
-          .connect(holder)
-          ['$_burn(address,bytes32,bytes)'](holder, encryptedInput.handles[0], encryptedInput.inputProof);
+        await this.token
+          .connect(this.holder)
+          ['$_burn(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
 
-        const balanceOfHandleHolder = await token.confidentialBalanceOf(holder);
+        const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, await token.getAddress(), holder),
+          fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, await this.token.getAddress(), this.holder),
         ).to.eventually.equal(sufficientBalance ? 600 : 1000);
 
         // Check total supply
-        const totalSupplyHandle = await token.confidentialTotalSupply();
+        const totalSupplyHandle = await this.token.confidentialTotalSupply();
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, totalSupplyHandle, await token.getAddress(), holder),
+          fhevm.userDecryptEuint(FhevmType.euint64, totalSupplyHandle, await this.token.getAddress(), this.holder),
         ).to.eventually.equal(sufficientBalance ? 600 : 1000);
       });
     }
 
     it('from zero address', async function () {
-      const { token, holder } = await deployFixture();
       const encryptedInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), holder.address)
+        .createEncryptedInput(await this.token.getAddress(), this.holder.address)
         .add64(400)
         .encrypt();
 
       await expect(
-        token
-          .connect(holder)
+        this.token
+          .connect(this.holder)
           ['$_burn(address,bytes32,bytes)'](ethers.ZeroAddress, encryptedInput.handles[0], encryptedInput.inputProof),
       )
-        .to.be.revertedWithCustomError(token, 'ERC7984InvalidSender')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidSender')
         .withArgs(ethers.ZeroAddress);
     });
   });
 
   describe('disclose', function () {
-    let [holder, recipient]: HardhatEthersSigner[] = [];
-    let token: $ERC7984Mock;
-    let expectedAmount: any;
-    let expectedHandle: any;
-    let requester: HardhatEthersSigner | undefined;
-
     beforeEach(async function () {
-      ({ token, holder, recipient } = await deployFixture());
-      expectedAmount = undefined;
-      expectedHandle = undefined;
-      requester = undefined;
+      this.expectedAmount = undefined;
+      this.expectedHandle = undefined;
+      this.requester = undefined;
     });
 
     it('user balance', async function () {
-      const holderBalanceHandle = await token.confidentialBalanceOf(holder);
+      const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
 
-      await token.connect(holder).requestDiscloseEncryptedAmount(holderBalanceHandle);
+      await this.token.connect(this.holder).requestDiscloseEncryptedAmount(holderBalanceHandle);
 
-      requester = holder.address;
-      expectedAmount = 1000n;
-      expectedHandle = holderBalanceHandle;
+      this.requester = this.holder.address;
+      this.expectedAmount = 1000n;
+      this.expectedHandle = holderBalanceHandle;
     });
 
     it('transaction amount', async function () {
       const encryptedInput = await fhevm
-        .createEncryptedInput(await token.getAddress(), holder.address)
+        .createEncryptedInput(await this.token.getAddress(), this.holder.address)
         .add64(400)
         .encrypt();
 
-      const tx = await token['confidentialTransfer(address,bytes32,bytes)'](
-        recipient,
+      const tx = await this.token['confidentialTransfer(address,bytes32,bytes)'](
+        this.recipient,
         encryptedInput.handles[0],
         encryptedInput.inputProof,
       );
 
-      const transferEvent = (await tx.wait()).logs.filter((log: any) => log.address === token.target)[0];
+      const transferEvent = (await tx.wait()).logs.filter((log: any) => log.address === this.token.target)[0];
       const transferAmount = transferEvent.args[2];
 
-      await token.connect(recipient).requestDiscloseEncryptedAmount(transferAmount);
+      await this.token.connect(this.recipient).requestDiscloseEncryptedAmount(transferAmount);
 
-      requester = recipient.address;
-      expectedAmount = 400n;
-      expectedHandle = transferAmount;
+      this.requester = this.recipient.address;
+      this.expectedAmount = 400n;
+      this.expectedHandle = transferAmount;
     });
 
     it("other user's balance", async function () {
-      const holderBalanceHandle = await token.confidentialBalanceOf(holder);
+      const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
 
-      await expect(token.connect(recipient).requestDiscloseEncryptedAmount(holderBalanceHandle))
-        .to.be.revertedWithCustomError(token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
-        .withArgs(holderBalanceHandle, recipient);
+      await expect(this.token.connect(this.recipient).requestDiscloseEncryptedAmount(holderBalanceHandle))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
+        .withArgs(holderBalanceHandle, this.recipient);
     });
 
     it('invalid signature reverts', async function () {
-      const holderBalanceHandle = await token.confidentialBalanceOf(holder);
-      await token.connect(holder).requestDiscloseEncryptedAmount(holderBalanceHandle);
+      const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
+      await this.token.connect(this.holder).requestDiscloseEncryptedAmount(holderBalanceHandle);
 
-      await expect(token.connect(holder).discloseEncryptedAmount(holderBalanceHandle, 0, '0x')).to.be.reverted;
+      await expect(this.token.connect(this.holder).discloseEncryptedAmount(holderBalanceHandle, 0, '0x')).to.be
+        .reverted;
     });
 
     afterEach(async function () {
-      if (expectedHandle === undefined || expectedAmount === undefined) return;
+      if (this.expectedHandle === undefined || this.expectedAmount === undefined) return;
 
-      const amountDiscloseRequestedEvent = (await token.queryFilter(token.filters.AmountDiscloseRequested()))[0];
+      const amountDiscloseRequestedEvent = (
+        await this.token.queryFilter(this.token.filters.AmountDiscloseRequested())
+      )[0];
 
-      expect(expectedHandle).to.equal(amountDiscloseRequestedEvent.args[0]);
-      expect(requester).to.equal(amountDiscloseRequestedEvent.args[1]);
+      expect(this.expectedHandle).to.equal(amountDiscloseRequestedEvent.args[0]);
+      expect(this.requester).to.equal(amountDiscloseRequestedEvent.args[1]);
 
-      const publicDecryptResults = await fhevm.publicDecrypt([expectedHandle]);
+      const publicDecryptResults = await fhevm.publicDecrypt([this.expectedHandle]);
 
       await expect(
-        token
-          .connect(holder)
+        this.token
+          .connect(this.holder)
           .discloseEncryptedAmount(
-            expectedHandle,
+            this.expectedHandle,
             publicDecryptResults.abiEncodedClearValues,
             publicDecryptResults.decryptionProof,
           ),
       )
-        .to.emit(token, 'AmountDisclosed')
-        .withArgs(expectedHandle, expectedAmount);
+        .to.emit(this.token, 'AmountDisclosed')
+        .withArgs(this.expectedHandle, this.expectedAmount);
     });
   });
 
-  shouldBehaveLikeERC7984(contract);
+  shouldBehaveLikeERC7984();
 });
-
-export { deployFixture as deployERC7984Fixture };
