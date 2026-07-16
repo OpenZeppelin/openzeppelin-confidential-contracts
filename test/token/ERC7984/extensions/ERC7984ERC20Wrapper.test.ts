@@ -67,7 +67,7 @@ describe('ERC7984ERC20Wrapper', function () {
         });
 
         it("wrap event shouldn't be decryptable by sender with different recipient", async function () {
-          const amountToWrap = ethers.parseUnits('100', 18);
+          const amountToWrap = ethers.parseUnits('99', 18);
           if (viaCallback) {
             await this.token
               .connect(this.holder)
