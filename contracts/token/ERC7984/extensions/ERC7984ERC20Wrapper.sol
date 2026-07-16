@@ -80,10 +80,14 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * Returns the amount of wrapped token sent.
      */
     function wrap(address to, uint256 amount) public virtual override returns (euint64) {
-        // take ownership of the tokens
         SafeERC20.safeTransferFrom(IERC20(underlying()), msg.sender, address(this), amount - (amount % rate()));
 
-        return _wrap(to, amount);
+        euint64 wrappedAmount = _wrap(to, amount);
+        if (to != msg.sender) {
+            FHE.allowTransient(wrappedAmount, msg.sender);
+        }
+
+        return wrappedAmount;
     }
 
     /// @dev Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
