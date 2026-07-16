@@ -33,7 +33,8 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * @dev Per-holder amount that was paid for (i.e. the underlying was pulled into the wrapper) but that {_mint}
      * did not actually mint because doing so would have exceeded the {maxTotalSupply}. These amounts are not reflected
      * in {confidentialBalanceOf} (they can be read with {unmintedAmountOf}) but remain redeemable by the holder through
-     * {unwrap}, which consumes them before burning any confidential balance. See {_update} for details.
+     * {unwrap}, which consumes them before burning any confidential balance. See {_mintOrIncreaseUnmintedAmount} and
+     * {_burnOrDecreaseUnmintedAmount} for details.
      *
      * NOTE: With the default {_checkConfidentialTotalSupply}, wrapping reverts on overflow, so no unminted amount is
      * ever recorded. This bookkeeping only becomes relevant for derived contracts whose overflow handling lets {_mint}
@@ -74,7 +75,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        _mintOrIncreaseUnmintedAmount(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
 
         // transfer excess back to the sender
         uint256 excess = amount % rate();
@@ -96,7 +97,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         SafeERC20.safeTransferFrom(IERC20(underlying()), msg.sender, address(this), amount - (amount % rate()));
 
         // mint confidential token
-        euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        euint64 wrappedAmountSent = _mintOrIncreaseUnmintedAmount(
+            to,
+            FHE.asEuint64(SafeCast.toUint64(amount / rate()))
+        );
         FHE.allowTransient(wrappedAmountSent, msg.sender);
 
         return wrappedAmountSent;
@@ -223,19 +227,60 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /**
+     * @dev Mints up to `amount` confidential tokens to `to` and records any shortfall as an unminted amount. Returns
+     * the amount actually minted.
+     *
+     * When {_mint} caps the minted amount (because minting the full `amount` would exceed {maxTotalSupply}), the
+     * difference is added to the unminted balance of `to`, so the underlying tokens already pulled into the wrapper
+     * remain redeemable through {unwrap}. See {_unmintedAmounts}.
+     */
+    function _mintOrIncreaseUnmintedAmount(address to, euint64 amount) internal virtual returns (euint64) {
+        // mint
+        euint64 mintedAmount = _mint(to, amount);
+
+        // missing
+        euint64 missingAmount = FHE.sub(amount, mintedAmount);
+
+        // update unminted amount
+        euint64 current = _unmintedAmounts[to];
+        euint64 newUnmintedAmount = FHE.add(current, missingAmount);
+        _unmintedAmounts[to] = newUnmintedAmount;
+        FHE.allowThis(newUnmintedAmount);
+        FHE.allow(newUnmintedAmount, to);
+
+        return mintedAmount;
+    }
+
+    /**
+     * @dev Redeems up to `amount` from `from`, consuming the unminted balance first and burning the remainder from the
+     * confidential balance. Returns the total amount redeemed (consumed plus burned).
+     *
+     * Consuming the unminted balance first ensures the underlying tokens that were pulled in but never minted (see
+     * {_unmintedAmounts}) are released before any confidential balance is burned.
+     */
+    function _burnOrDecreaseUnmintedAmount(address from, euint64 amount) internal virtual returns (euint64) {
+        euint64 current = _unmintedAmounts[from];
+        euint64 consumedAmount = FHE.min(current, amount);
+        euint64 newUnmintedAmount = FHE.sub(current, consumedAmount);
+        _unmintedAmounts[from] = newUnmintedAmount;
+        FHE.allowThis(newUnmintedAmount);
+        FHE.allow(newUnmintedAmount, from);
+
+        euint64 burnedAmount = _burn(from, FHE.sub(amount, consumedAmount));
+        return FHE.add(consumedAmount, burnedAmount);
+    }
+
+    /**
      * @inheritdoc ERC7984
-     * @dev On mint (`from == address(0)`), the difference between the requested `amount` and the amount actually
-     * minted by {ERC7984-_update} (which caps at {maxTotalSupply}) is registered as an unminted amount for `to`, so
-     * the underlying tokens already pulled into the wrapper remain redeemable through {unwrap}. See {_unmintedAmounts}.
+     * @dev On mint (`from == address(0)`), {_checkConfidentialTotalSupply} is invoked before the update to reject (by
+     * default) any wrap that would exceed {maxTotalSupply}. Recording the unminted amount when a derived contract
+     * lets {_mint} cap silently is handled by {_mintOrIncreaseUnmintedAmount}. See {_unmintedAmounts}.
      */
     function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
         }
-        transferred = super._update(from, to, amount);
-        if (from == address(0)) {
-            _increaseUnmintedAmount(to, FHE.sub(amount, transferred));
-        }
+        return super._update(from, to, amount);
     }
 
     /// @dev Internal logic for handling the creation of unwrap requests. Returns the unwrap request id.
@@ -244,9 +289,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
         // Consume from unminted amounts first, then burn the rest, and see how much we actually got
-        euint64 fromUnmintedAmount = _decreaseUnmintedAmount(from, amount);
-        euint64 fromBurnedAmount = _burn(from, FHE.sub(amount, fromUnmintedAmount));
-        euint64 unwrapAmount_ = FHE.add(fromUnmintedAmount, fromBurnedAmount);
+        euint64 unwrapAmount_ = _burnOrDecreaseUnmintedAmount(from, amount);
 
         FHE.makePubliclyDecryptable(unwrapAmount_);
 
@@ -260,42 +303,6 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
         emit UnwrapRequested(to, unwrapRequestId, unwrapAmount_);
         return unwrapRequestId;
-    }
-
-    /**
-     * @dev Adds `amount` to the unminted balance of `holder`. See {_unmintedAmounts}.
-     *
-     * When `amount` is uninitialized there is nothing to record, and when `holder` has no prior unminted balance the
-     * stored handle is set directly to `amount`. Both cases skip the {FHE-add}, so no homomorphic work is done in the
-     * common case where nothing was left unminted.
-     */
-    function _increaseUnmintedAmount(address holder, euint64 amount) internal virtual {
-        if (!FHE.isInitialized(amount)) return;
-
-        euint64 current = _unmintedAmounts[holder];
-        euint64 unmintedAmount = FHE.isInitialized(current) ? FHE.add(current, amount) : amount;
-        _unmintedAmounts[holder] = unmintedAmount;
-        FHE.allowThis(unmintedAmount);
-        FHE.allow(unmintedAmount, holder);
-    }
-
-    /**
-     * @dev Consumes up to `amount` from the unminted balance of `holder` and returns the consumed amount. See
-     * {_unmintedAmounts}.
-     *
-     * When `holder` has no unminted balance the function returns an encrypted zero without any homomorphic work, which
-     * is the common case (e.g. an account that received its confidential tokens through a transfer rather than {wrap}).
-     */
-    function _decreaseUnmintedAmount(address holder, euint64 amount) internal virtual returns (euint64) {
-        euint64 unmintedAmount = _unmintedAmounts[holder];
-        if (!FHE.isInitialized(unmintedAmount)) return FHE.asEuint64(0);
-
-        euint64 consumedAmount = FHE.min(unmintedAmount, amount);
-        unmintedAmount = FHE.sub(unmintedAmount, consumedAmount);
-        _unmintedAmounts[holder] = unmintedAmount;
-        FHE.allowThis(unmintedAmount);
-        FHE.allow(unmintedAmount, holder);
-        return consumedAmount;
     }
 
     /**
