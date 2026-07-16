@@ -6,6 +6,7 @@ import {FHE, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984} from "./../interfaces/IERC7984.sol";
+import {HandleHelper} from "./../utils/HandleHelper.sol";
 
 /**
  * @dev A vesting wallet is an ownable contract that can receive ERC7984 tokens, and release these
@@ -26,6 +27,8 @@ import {IERC7984} from "./../interfaces/IERC7984.sol";
  * Confidential vesting wallet contracts can be deployed (as clones) using the {VestingWalletConfidentialFactory}.
  */
 abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGuardTransient {
+    using HandleHelper for euint64;
+
     /// @custom:storage-location erc7201:openzeppelin.storage.VestingWalletConfidential
     struct VestingWalletStorage {
         mapping(address token => euint128) _tokenReleased;
@@ -78,7 +81,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     function release(address token) public virtual nonReentrant {
         euint64 amount = releasable(token);
         FHE.allowTransient(amount, token);
-        euint64 amountSent = IERC7984(token).confidentialTransfer(owner(), amount);
+        euint64 amountSent = IERC7984(token).confidentialTransfer(owner(), amount.toExternal(), hex"");
 
         // This could overflow if the total supply is re-sent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
         euint128 newReleasedAmount = FHE.add(released(token), amountSent);

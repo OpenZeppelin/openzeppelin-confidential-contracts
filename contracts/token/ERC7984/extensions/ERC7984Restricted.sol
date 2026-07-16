@@ -54,10 +54,15 @@ abstract contract ERC7984Restricted is ERC7984 {
      * The default restriction behavior can be changed (for a pass-through for instance) by overriding
      * {_checkSenderRestriction} and/or {_checkRecipientRestriction}.
      */
-    function _update(address from, address to, euint64 value) internal virtual override returns (euint64) {
+    function _update(
+        address from,
+        address to,
+        euint64 value,
+        bytes32 memo
+    ) internal virtual override returns (euint64) {
         _checkSenderRestriction(from);
         _checkRecipientRestriction(to);
-        return super._update(from, to, value);
+        return super._update(from, to, value, memo);
     }
 
     /// @dev Updates the restriction of a user account.

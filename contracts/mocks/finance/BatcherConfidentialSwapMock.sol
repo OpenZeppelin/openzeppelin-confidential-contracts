@@ -6,9 +6,12 @@ import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {BatcherConfidential} from "./../../finance/BatcherConfidential.sol";
+import {HandleHelper} from "./../../utils/HandleHelper.sol";
 import {ExchangeMock} from "./../finance/ExchangeMock.sol";
 
 abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConfidential {
+    using HandleHelper for euint64;
+
     ExchangeMock public exchange;
     address public admin;
     ExecuteOutcome public outcome = ExecuteOutcome.Complete;
@@ -35,14 +38,19 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
     function join(externalEuint64 externalAmount, bytes calldata inputProof) public virtual returns (euint64) {
         euint64 amount = FHE.fromExternal(externalAmount, inputProof);
         FHE.allowTransient(amount, address(fromToken()));
-        euint64 transferred = fromToken().confidentialTransferFrom(msg.sender, address(this), amount);
+        euint64 transferred = fromToken().confidentialTransferFrom(
+            msg.sender,
+            address(this),
+            amount.toExternal(),
+            hex""
+        );
 
         euint64 joinedAmount = _join(msg.sender, transferred);
         euint64 refundAmount = FHE.sub(transferred, joinedAmount);
 
         FHE.allowTransient(refundAmount, address(fromToken()));
 
-        fromToken().confidentialTransfer(msg.sender, refundAmount);
+        fromToken().confidentialTransfer(msg.sender, refundAmount.toExternal(), hex"");
 
         return joinedAmount;
     }
