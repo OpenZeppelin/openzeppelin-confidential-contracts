@@ -8,6 +8,12 @@ import {IERC7984} from "./IERC7984.sol";
 
 /// @dev Interface for ERC7984ERC20Wrapper contract.
 interface IERC7984ERC20Wrapper is IERC7984 {
+    /**
+     * @dev Emitted when `underlyingAmount` of the underlying token was wrapped into `encryptedWrappedAmount`
+     * confidential tokens and sent to `to`.
+     */
+    event Wrap(address indexed to, uint256 underlyingAmount, euint64 encryptedWrappedAmount);
+
     /// @dev Emitted when an unwrap request is made for a given `receiver`, `unwrapRequestId`, and `amount`.
     event UnwrapRequested(address indexed receiver, bytes32 indexed unwrapRequestId, euint64 amount);
 
