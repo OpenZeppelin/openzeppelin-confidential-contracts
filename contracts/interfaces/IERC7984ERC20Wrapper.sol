@@ -11,13 +11,21 @@ interface IERC7984ERC20Wrapper is IERC7984 {
     /**
      * @dev Emitted when `underlyingAmount` of the underlying token was wrapped into `encryptedWrappedAmount`
      * confidential tokens and sent to `to`.
+     * 
+     * NOTE: `amount` is denominated in confidential wrapper tokens (this contract's units), not in 
+     * underlying ERC-20 tokens.
      */
     event Wrap(address indexed to, uint256 underlyingAmount, euint64 encryptedWrappedAmount);
 
     /// @dev Emitted when an unwrap request is made for a given `receiver`, `unwrapRequestId`, and `amount`.
     event UnwrapRequested(address indexed receiver, bytes32 indexed unwrapRequestId, euint64 amount);
 
-    /// @dev Emitted when an unwrap request is finalized for a given `receiver`, `unwrapRequestId`, `encryptedAmount`, and `cleartextAmount`.
+    /** 
+     * @dev Emitted when an unwrap request is finalized for a given `receiver`, `unwrapRequestId`, `encryptedAmount`, and `cleartextAmount`.
+     * 
+     * NOTE: `cleartextAmount` is the decrypted unwrap amount denominated in confidential wrapper tokens
+     * (this contract's units), not in underlying ERC-20 tokens.
+     */
     event UnwrapFinalized(
         address indexed receiver,
         bytes32 indexed unwrapRequestId,
@@ -38,10 +46,7 @@ interface IERC7984ERC20Wrapper is IERC7984 {
      *
      * Returns the unwrap request id.
      *
-     * NOTE: The returned unwrap request id must never be zero. The amount carried by the resulting 
-     * `UnwrapRequested` event is denominated in confidential wrapper tokens (this contract's units), 
-     * not in underlying ERC-20 tokens. The corresponding underlying amount is the wrapper amount 
-     * multiplied by {rate}.
+     * NOTE: The returned unwrap request id must never be zero.
      */
     function unwrap(
         address from,
@@ -53,14 +58,7 @@ interface IERC7984ERC20Wrapper is IERC7984 {
     /// @dev Returns the address of the underlying ERC-20 token that is being wrapped.
     function underlying() external view returns (address);
 
-    /**
-     * @dev Finalizes an unwrap request identified by `unwrapRequestId` with the given `unwrapAmountCleartext` and `decryptionProof`.
-     * 
-     * NOTE: `unwrapAmountCleartext` is the decrypted unwrap amount denominated in confidential wrapper tokens
-     * (this contract's units), not in underlying ERC-20 tokens. The amount of underlying tokens transferred to
-     * `to` is `unwrapAmountCleartext * rate()`. The same cleartext value (in wrapper units) is carried by the
-     * emitted `UnwrapFinalized` event.
-     */
+    /// @dev Finalizes an unwrap request identified by `unwrapRequestId` with the given `unwrapAmountCleartext` and `decryptionProof`.
     function finalizeUnwrap(
         bytes32 unwrapRequestId,
         uint64 unwrapAmountCleartext,
