@@ -1,6 +1,7 @@
 import { IACL__factory } from '../../../../types';
 import { $ERC7984OmnibusMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984/extensions/ERC7984OmnibusMock.sol/$ERC7984OmnibusMock';
 import { getAclAddress } from '../../../helpers/accounts';
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behaviour';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
@@ -201,6 +202,8 @@ describe('ERC7984Omnibus', function () {
       }
     });
   }
+
+  shouldBehaveLikeERC7984('$ERC7984OmnibusMock');
 });
 
 const doConfidentialTransferOmnibus = (

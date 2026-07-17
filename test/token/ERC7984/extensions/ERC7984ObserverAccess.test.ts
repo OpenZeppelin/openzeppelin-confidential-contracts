@@ -1,3 +1,4 @@
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behaviour';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { mine } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
@@ -137,4 +138,6 @@ describe('ERC7984ObserverAccess', function () {
       ).to.eventually.equal(900);
     });
   });
+
+  shouldBehaveLikeERC7984('$ERC7984ObserverAccessMock');
 });

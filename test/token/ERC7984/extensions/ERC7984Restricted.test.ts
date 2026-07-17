@@ -1,6 +1,6 @@
 const { ethers, fhevm } = require('hardhat');
 const { expect } = require('chai');
-const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
+const { shouldBehaveLikeERC7984 } = require('../ERC7984.behaviour');
 
 const initialSupply = 1000n;
 
@@ -15,7 +15,7 @@ async function fixture() {
 
 describe('ERC7984Restricted', function () {
   beforeEach(async function () {
-    Object.assign(this, await loadFixture(fixture));
+    Object.assign(this, await fixture());
   });
 
   describe('restriction management', function () {
@@ -235,4 +235,6 @@ describe('ERC7984Restricted', function () {
       });
     });
   });
+
+  shouldBehaveLikeERC7984('$ERC7984RestrictedMock');
 });

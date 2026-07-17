@@ -1,5 +1,6 @@
 import { callAndGetResult } from '../../../helpers/event';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behaviour';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
@@ -840,4 +841,9 @@ describe('ERC7984Rwa', function () {
       );
     });
   });
+
+  // In its default state (unpaused, no restrictions, nothing frozen) an RWA token behaves like a plain ERC7984.
+  // The `$_mint` helper bypasses the agent-only mint path, so the shared fixture can seed balances. The admin
+  // address is arbitrary since the behaviour never exercises agent/admin actions.
+  shouldBehaveLikeERC7984('$ERC7984RwaMock', '0x0000000000000000000000000000000000000001');
 });
