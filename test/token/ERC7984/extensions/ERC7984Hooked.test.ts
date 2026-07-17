@@ -1,4 +1,4 @@
-import { $ERC7984Hooked } from '../../../../types/contracts-exposed/token/ERC7984/extensions/rwa/ERC7984Hooked.sol/$ERC7984Hooked';
+import { $ERC7984Hooked } from '../../../../types/contracts-exposed/token/ERC7984/extensions/ERC7984Hooked.sol/$ERC7984Hooked';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
@@ -28,6 +28,19 @@ describe('ERC7984Hooked', function () {
     });
   });
 
+  describe('ERC165', async function () {
+    it('should support interface', async function () {
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC165)).to.eventually.be.true;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984Hooked)).to.eventually.be.true;
+    });
+
+    it('should not support interface', async function () {
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.false;
+      await expect(this.token.supportsInterface(INVALID_ID)).to.eventually.be.false;
+    });
+  });
+
   describe('install module', async function () {
     it('should emit event', async function () {
       await expect(this.token.$_installModule(this.hookModule, '0x'))
@@ -47,9 +60,9 @@ describe('ERC7984Hooked', function () {
       await expect(this.token.modules(0, ethers.MaxInt256)).to.eventually.deep.equal([this.hookModule.target]);
     });
 
-    it('should gate via `_authorizeModuleChange`', async function () {
+    it('should gate via `_checkModuleManager`', async function () {
       await expect(this.token.connect(this.anyone).installModule(this.hookModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedModuleManager')
         .withArgs(this.anyone);
 
       await this.token.connect(this.admin).installModule(this.hookModule, '0x');
@@ -109,9 +122,9 @@ describe('ERC7984Hooked', function () {
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.false;
     });
 
-    it('should gate via `_authorizeModuleChange`', async function () {
+    it('should gate via `_checkModuleManager`', async function () {
       await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule))
-        .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedModuleManager')
         .withArgs(this.anyone);
 
       await this.token.connect(this.admin).uninstallModule(this.hookModule);
@@ -148,6 +161,17 @@ describe('ERC7984Hooked', function () {
         ).to.eventually.equal(approve ? 100 : 0);
       });
     }
+  });
+
+  describe('isModuleManager', async function () {
+    it('should authorize the module manager (mock gates by ownable)', async function () {
+      await expect(this.token.isModuleManager(this.admin)).to.eventually.be.true;
+    });
+
+    it('should not authorize a non-module-manager', async function () {
+      await expect(this.token.isModuleManager(this.anyone)).to.eventually.be.false;
+      await expect(this.token.isModuleManager(this.holder)).to.eventually.be.false;
+    });
   });
 
   shouldBehaveLikeERC7984(name, symbol, uri, decimals);
