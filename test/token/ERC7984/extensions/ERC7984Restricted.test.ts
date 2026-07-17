@@ -1,13 +1,17 @@
 const { ethers, fhevm } = require('hardhat');
 const { expect } = require('chai');
-const { shouldBehaveLikeERC7984 } = require('../ERC7984.behaviour');
+const { shouldBehaveLikeERC7984 } = require('../ERC7984.behavior');
 
+const name = 'token';
+const symbol = 'tk';
+const uri = 'uri';
+const decimals = 6;
 const initialSupply = 1000n;
 
 async function fixture() {
   const [holder, recipient, approved] = await ethers.getSigners();
 
-  const token = await ethers.deployContract('$ERC7984RestrictedMock', ['token', 'tk', 'uri']);
+  const token = await ethers.deployContract('$ERC7984RestrictedMock', [name, symbol, uri]);
   await token['$_mint(address,uint64)'](holder, initialSupply);
 
   return { holder, recipient, approved, token };
@@ -236,5 +240,5 @@ describe('ERC7984Restricted', function () {
     });
   });
 
-  shouldBehaveLikeERC7984('$ERC7984RestrictedMock');
+  shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
 });

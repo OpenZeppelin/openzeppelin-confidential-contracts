@@ -1,4 +1,4 @@
-import { shouldBehaveLikeERC7984 } from '../ERC7984.behaviour';
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { mine } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
@@ -7,6 +7,7 @@ import { ethers, fhevm } from 'hardhat';
 const name = 'Observer Access Token';
 const symbol = 'OAT';
 const uri = 'https://example.com/metadata';
+const decimals = 6;
 
 describe('ERC7984ObserverAccess', function () {
   beforeEach(async function () {
@@ -139,5 +140,5 @@ describe('ERC7984ObserverAccess', function () {
     });
   });
 
-  shouldBehaveLikeERC7984('$ERC7984ObserverAccessMock');
+  shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
 });

@@ -1,33 +1,33 @@
-import { $ERC7984Mock } from '../../../types/contracts-exposed/mocks/token/ERC7984/ERC7984Mock.sol/$ERC7984Mock';
 import { allowHandle } from '../../helpers/accounts';
 import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import hre, { ethers, fhevm } from 'hardhat';
 
-// Shared behaviour for ERC7984 tokens. Callers pass the mock contract name (and any extra
-// constructor args); the suite deploys it and assigns `token`, `holder`, `recipient`, `operator`
-// and `anyone` onto the Mocha context before each test.
+// Shared behavior for ERC7984 tokens. Callers must deploy `this.token`. Holder (account[0]) must not be
+// minted more than 1000 tokens.
 function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, decimals: number, opts: any = {}) {
-  describe('behaves like ERC7984', function () {
+  describe.only('behaves like ERC7984', function () {
     beforeEach(async function () {
       const accounts = await ethers.getSigners();
       [this.holder, this.recipient, this.operator, this.anyone] = accounts;
 
       // standardize holder initial balance to 1000
+      let amountToMint = 1000;
       if (!!opts.holderInitialBalance) {
         if (opts.holderInitialBalance > 1000) {
           throw new Error('Holder initial balance cannot be greater than 1000');
         }
-        const encryptedInput = await fhevm
-          .createEncryptedInput(this.token.target, this.holder.address)
-          .add64(opts.holderInitialBalance - 1000)
-          .encrypt();
-
-        await this.token
-          .connect(this.holder)
-          ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
+        amountToMint -= opts.holderInitialBalance;
       }
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.token.target, this.holder.address)
+        .add64(amountToMint)
+        .encrypt();
+
+      await this.token
+        .connect(this.holder)
+        ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
     });
 
     describe('constructor', function () {
@@ -43,7 +43,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
         await expect(this.token.contractURI()).to.eventually.equal(uri);
       });
 
-      it('decimals is 6', async function () {
+      it('sets the decimals', async function () {
         await expect(this.token.decimals()).to.eventually.equal(decimals);
       });
     });
@@ -51,8 +51,12 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
     describe('ERC165', function () {
       it('should support interface', async function () {
         await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
-        await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.false;
-        await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.false;
+        await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.equal(
+          !!opts.supportsERC7984ERC20Wrapper,
+        );
+        await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.equal(
+          !!opts.supportsERC7984RWA,
+        );
       });
 
       it('should not support interface', async function () {
