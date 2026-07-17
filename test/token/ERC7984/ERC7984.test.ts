@@ -1,4 +1,4 @@
-import { shouldBehaveLikeERC7984 } from './ERC7984.behaviour';
+import { shouldBehaveLikeERC7984 } from './ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
