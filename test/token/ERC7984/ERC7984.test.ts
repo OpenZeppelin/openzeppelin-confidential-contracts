@@ -1,25 +1,36 @@
-import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
-import { deployERC7984Fixture, shouldBehaveLikeERC7984 } from './ERC7984.behaviour';
+import { shouldBehaveLikeERC7984 } from './ERC7984.behaviour';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
+const name = 'ConfidentialFungibleToken';
+const symbol = 'CFT';
+const uri = 'https://example.com/metadata';
+const decimals = 6;
+
 describe('ERC7984', function () {
   beforeEach(async function () {
-    Object.assign(this, await deployERC7984Fixture());
+    const accounts = await ethers.getSigners();
+    const [holder, recipient, operator] = accounts;
+
+    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol, uri]);
+    this.accounts = accounts.slice(3);
+    this.holder = holder;
+    this.recipient = recipient;
+    this.token = token;
+    this.operator = operator;
+
+    const encryptedInput = await fhevm
+      .createEncryptedInput(this.token.target, this.holder.address)
+      .add64(1000)
+      .encrypt();
+
+    await this.token
+      .connect(this.holder)
+      ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
   });
 
-  describe('ERC165', function () {
-    it('should support interface', async function () {
-      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
-      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.false;
-      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.false;
-    });
-
-    it('should not support interface', async function () {
-      await expect(this.token.supportsInterface(INVALID_ID)).to.eventually.be.false;
-    });
-  });
+  shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
 
   describe('mint', function () {
     for (const existingUser of [false, true]) {
@@ -187,6 +198,4 @@ describe('ERC7984', function () {
         .withArgs(this.expectedHandle, this.expectedAmount);
     });
   });
-
-  shouldBehaveLikeERC7984();
 });

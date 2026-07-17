@@ -1,41 +1,33 @@
 import { $ERC7984Mock } from '../../../types/contracts-exposed/mocks/token/ERC7984/ERC7984Mock.sol/$ERC7984Mock';
 import { allowHandle } from '../../helpers/accounts';
+import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import hre, { ethers, fhevm } from 'hardhat';
 
-const name = 'ConfidentialFungibleToken';
-const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
-
-// Deploys an ERC7984 mock (or a compatible extension mock) and mints 1000 tokens to `holder`.
-// Returns the props consumed by `shouldBehaveLikeERC7984`, meant to be assigned onto the Mocha
-// context via `Object.assign(this, await deployERC7984Fixture())` in a `beforeEach` hook.
-async function deployERC7984Fixture(contract: string = '$ERC7984Mock', extraDeploymentArgs: any[] = []) {
-  const [holder, recipient, operator, anyone] = await ethers.getSigners();
-  const token = (await ethers.deployContract(contract, [
-    name,
-    symbol,
-    uri,
-    ...extraDeploymentArgs,
-  ])) as any as $ERC7984Mock;
-  const encryptedInput = await fhevm
-    .createEncryptedInput(await token.getAddress(), holder.address)
-    .add64(1000)
-    .encrypt();
-  await token
-    .connect(holder)
-    ['$_mint(address,bytes32,bytes)'](holder, encryptedInput.handles[0], encryptedInput.inputProof);
-  return { token, holder, recipient, operator, anyone };
-}
-
 // Shared behaviour for ERC7984 tokens. Callers pass the mock contract name (and any extra
 // constructor args); the suite deploys it and assigns `token`, `holder`, `recipient`, `operator`
 // and `anyone` onto the Mocha context before each test.
-function shouldBehaveLikeERC7984(contract?: string, ...extraDeploymentArgs: any[]) {
+function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, decimals: number, opts: any = {}) {
   describe('behaves like ERC7984', function () {
     beforeEach(async function () {
-      Object.assign(this, await deployERC7984Fixture(contract, extraDeploymentArgs));
+      const accounts = await ethers.getSigners();
+      [this.holder, this.recipient, this.operator, this.anyone] = accounts;
+
+      // standardize holder initial balance to 1000
+      if (!!opts.holderInitialBalance) {
+        if (opts.holderInitialBalance > 1000) {
+          throw new Error('Holder initial balance cannot be greater than 1000');
+        }
+        const encryptedInput = await fhevm
+          .createEncryptedInput(this.token.target, this.holder.address)
+          .add64(opts.holderInitialBalance - 1000)
+          .encrypt();
+
+        await this.token
+          .connect(this.holder)
+          ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
+      }
     });
 
     describe('constructor', function () {
@@ -52,23 +44,35 @@ function shouldBehaveLikeERC7984(contract?: string, ...extraDeploymentArgs: any[
       });
 
       it('decimals is 6', async function () {
-        await expect(this.token.decimals()).to.eventually.equal(6);
+        await expect(this.token.decimals()).to.eventually.equal(decimals);
+      });
+    });
+
+    describe('ERC165', function () {
+      it('should support interface', async function () {
+        await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
+        await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.false;
+        await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.false;
+      });
+
+      it('should not support interface', async function () {
+        await expect(this.token.supportsInterface(INVALID_ID)).to.eventually.be.false;
       });
     });
 
     describe('confidentialBalanceOf', function () {
-      it('handle can be reencryped by owner', async function () {
+      it('handle can be decrypted by owner', async function () {
         const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, await this.token.getAddress(), this.holder),
         ).to.eventually.equal(1000);
       });
 
-      it('handle cannot be reencryped by non-owner', async function () {
+      it('handle cannot be decrypted by non-owner', async function () {
         const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
         await expect(
           fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, await this.token.getAddress(), this.anyone),
-        ).to.be.rejectedWith(generateReencryptionErrorMessage(balanceOfHandleHolder, this.anyone.address));
+        ).to.be.rejectedWith(generateDecryptionErrorMessage(balanceOfHandleHolder, this.anyone.address));
       });
     });
 
@@ -216,7 +220,7 @@ function shouldBehaveLikeERC7984(contract?: string, ...extraDeploymentArgs: any[
                   await this.token.getAddress(),
                   this.operator,
                 ),
-              ).to.be.rejectedWith(generateReencryptionErrorMessage(transferAmountHandle, this.operator.address));
+              ).to.be.rejectedWith(generateDecryptionErrorMessage(transferAmountHandle, this.operator.address));
 
               await expect(
                 fhevm.userDecryptEuint(
@@ -461,8 +465,8 @@ function shouldBehaveLikeERC7984(contract?: string, ...extraDeploymentArgs: any[
   });
 }
 
-function generateReencryptionErrorMessage(handle: string, account: string): string {
+function generateDecryptionErrorMessage(handle: string, account: string): string {
   return `User ${account} is not authorized to user decrypt handle ${handle}`;
 }
 
-export { deployERC7984Fixture, shouldBehaveLikeERC7984 };
+export { shouldBehaveLikeERC7984 };
