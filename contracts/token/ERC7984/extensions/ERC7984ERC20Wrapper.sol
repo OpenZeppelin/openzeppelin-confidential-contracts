@@ -270,13 +270,8 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         return FHE.add(consumedAmount, burnedAmount);
     }
 
-    /**
-     * @inheritdoc ERC7984
-     * @dev On mint (`from == address(0)`), {_checkConfidentialTotalSupply} is invoked before the update to reject (by
-     * default) any wrap that would exceed {maxTotalSupply}. Recording the unminted amount when a derived contract
-     * lets {_mint} cap silently is handled by {_mintOrIncreaseUnmintedAmount}. See {_unmintedAmounts}.
-     */
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
+    /// @inheritdoc ERC7984
+    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
         }
