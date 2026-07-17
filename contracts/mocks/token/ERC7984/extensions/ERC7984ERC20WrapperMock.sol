@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {ERC7984ERC20Wrapper, ERC7984} from "../../../../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {ERC7984Mock} from "../ERC7984Mock.sol";
 
-contract ERC7984ERC20WrapperMock is ERC7984ERC20Wrapper, ZamaEthereumConfig, ERC7984Mock {
+contract ERC7984ERC20WrapperMock is ERC7984ERC20Wrapper, ERC7984Mock {
     constructor(
         IERC20 token,
         string memory name,
