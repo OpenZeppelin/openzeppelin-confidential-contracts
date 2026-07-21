@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {ERC7984ERC20Wrapper, ERC7984} from "../../../../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
