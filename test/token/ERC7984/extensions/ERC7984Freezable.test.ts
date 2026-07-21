@@ -17,13 +17,7 @@ describe('ERC7984Freezable', function () {
     const token = await ethers.deployContract('$ERC7984FreezableMock', [name, symbol, uri]);
     const acl = IACL__factory.connect(await getAclAddress(), ethers.provider);
 
-    this.holder = holder;
-    this.recipient = recipient;
-    this.freezer = freezer;
-    this.operator = operator;
-    this.anyone = anyone;
-    this.token = token;
-    this.acl = acl;
+    Object.assign(this, { holder, recipient, freezer, operator, anyone, token, acl });
   });
 
   it(`should set and get confidential frozen`, async function () {
