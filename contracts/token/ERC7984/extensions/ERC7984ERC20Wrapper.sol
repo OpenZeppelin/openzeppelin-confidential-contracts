@@ -21,6 +21,9 @@ import {ERC7984} from "./../ERC7984.sol";
  *
  * WARNING: Minting assumes the full amount of the underlying token transfer has been received, hence some non-standard
  * tokens such as fee-on-transfer or other deflationary-type tokens are not supported by this wrapper.
+ *
+ * WARNING: This wrapper assumes that all minting activity will succeed. Any overrides to the {_mint} or
+ * {_update} functions must ensure they do not cause wrapping to fail silently.
  */
 abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363Receiver {
     IERC20 private immutable _underlying;
