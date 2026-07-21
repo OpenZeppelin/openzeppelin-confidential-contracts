@@ -167,9 +167,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
         euint64 newDeposit = FHE.sub(deposit, sent);
 
-        FHE.allowThis(newTotalDeposits);
-        FHE.allowThis(newDeposit);
-        FHE.allow(newDeposit, msg.sender);
+        newTotalDeposits = FHE.allowThis(newTotalDeposits);
+        newDeposit = FHE.allowThis(newDeposit);
+        newDeposit = FHE.allow(newDeposit, msg.sender);
 
         _batches[batchId].totalDeposits = newTotalDeposits;
         _batches[batchId].deposits[msg.sender] = newDeposit;
@@ -374,8 +374,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         ebool transferSuccess = FHE.ne(amountTransferred, FHE.asEuint64(0));
         euint64 newDeposit = FHE.select(transferSuccess, FHE.asEuint64(0), deposit);
 
-        FHE.allowThis(newDeposit);
-        FHE.allow(newDeposit, account);
+        newDeposit = FHE.allowThis(newDeposit);
+        newDeposit = FHE.allow(newDeposit, account);
         _batches[batchId].deposits[account] = newDeposit;
 
         emit Claimed(batchId, account, amountTransferred);
@@ -394,11 +394,11 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         euint64 joinedAmount = FHE.select(success, amount, FHE.asEuint64(0));
         euint64 newDeposits = FHE.add(deposits(batchId, to), joinedAmount);
 
-        FHE.allowThis(newTotalDeposits);
-        FHE.allowThis(newDeposits);
-        FHE.allowThis(joinedAmount);
-        FHE.allow(newDeposits, to);
-        FHE.allow(joinedAmount, to);
+        newTotalDeposits = FHE.allowThis(newTotalDeposits);
+        newDeposits = FHE.allowThis(newDeposits);
+        newDeposits = FHE.allow(newDeposits, to);
+        joinedAmount = FHE.allowThis(joinedAmount);
+        joinedAmount = FHE.allow(joinedAmount, to);
 
         _batches[batchId].totalDeposits = newTotalDeposits;
         _batches[batchId].deposits[to] = newDeposits;

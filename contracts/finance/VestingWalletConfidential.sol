@@ -82,8 +82,8 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
 
         // This could overflow if the total supply is re-sent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
         euint128 newReleasedAmount = FHE.add(released(token), amountSent);
-        FHE.allow(newReleasedAmount, owner());
-        FHE.allowThis(newReleasedAmount);
+        newReleasedAmount = FHE.allow(newReleasedAmount, owner());
+        newReleasedAmount = FHE.allowThis(newReleasedAmount);
         _getVestingWalletStorage()._tokenReleased[token] = newReleasedAmount;
         emit VestingWalletConfidentialTokenReleased(token, amountSent);
     }

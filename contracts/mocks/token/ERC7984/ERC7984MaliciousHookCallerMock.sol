@@ -42,16 +42,16 @@ contract ERC7984MaliciousHookCallerMock is HandleAccessManager, ZamaEthereumConf
     /// allowance check passes before the unallowed balance handles are encountered.
     function callPreTransfer(address hookModule, address from, address to, uint64 amount) external {
         euint64 encryptedAmount = FHE.asEuint64(amount);
-        FHE.allowThis(encryptedAmount);
-        FHE.allowTransient(encryptedAmount, hookModule);
+        encryptedAmount = FHE.allowThis(encryptedAmount);
+        encryptedAmount = FHE.allowTransient(encryptedAmount, hookModule);
         IERC7984HookModule(hookModule).preTransfer(from, to, encryptedAmount);
     }
 
     /// @dev Calls `hookModule.postTransfer` with this contract as the token (msg.sender).
     function callPostTransfer(address hookModule, address from, address to, uint64 amount) external {
         euint64 encryptedAmount = FHE.asEuint64(amount);
-        FHE.allowThis(encryptedAmount);
-        FHE.allowTransient(encryptedAmount, hookModule);
+        encryptedAmount = FHE.allowThis(encryptedAmount);
+        encryptedAmount = FHE.allowTransient(encryptedAmount, hookModule);
         IERC7984HookModule(hookModule).postTransfer(from, to, encryptedAmount);
     }
 

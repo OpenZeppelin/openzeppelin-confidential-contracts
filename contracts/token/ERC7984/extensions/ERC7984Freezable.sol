@@ -33,8 +33,8 @@ abstract contract ERC7984Freezable is ERC7984 {
     /// @dev Returns the confidential available (unfrozen) balance of an account. Gives ACL allowance to `account`.
     function confidentialAvailable(address account) public virtual returns (euint64) {
         euint64 amount = _confidentialAvailable(account);
-        FHE.allowThis(amount);
-        FHE.allow(amount, account);
+        amount = FHE.allowThis(amount);
+        amount = FHE.allow(amount, account);
         return amount;
     }
 
@@ -45,8 +45,8 @@ abstract contract ERC7984Freezable is ERC7984 {
 
     /// @dev Internal function to freeze a confidential amount of tokens for an account.
     function _setConfidentialFrozen(address account, euint64 encryptedAmount) internal virtual {
-        FHE.allowThis(encryptedAmount);
-        FHE.allow(encryptedAmount, account);
+        encryptedAmount = FHE.allowThis(encryptedAmount);
+        encryptedAmount = FHE.allow(encryptedAmount, account);
         _frozenBalances[account] = encryptedAmount;
         emit TokensFrozen(account, encryptedAmount);
     }

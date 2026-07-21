@@ -46,9 +46,9 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
 
     /// @dev Sets the encrypted max balance for a given token, grants the module persistent ACL, and emits an event.
     function _setMaxBalance(address token, euint64 newMaxBalance) internal virtual {
+        newMaxBalance = FHE.allowThis(newMaxBalance);
+        newMaxBalance = FHE.allow(newMaxBalance, msg.sender);
         _maxBalances[token] = newMaxBalance;
-        FHE.allowThis(newMaxBalance);
-        FHE.allow(newMaxBalance, msg.sender);
 
         emit ERC7984BalanceCapHookModuleMaxBalanceSet(token, newMaxBalance);
     }

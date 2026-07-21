@@ -127,8 +127,8 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     ) internal virtual {
         if (FHE.isInitialized(compliant)) {
             if (from != address(0)) {
-                FHE.allowThis(compliant);
-                FHE.allow(compliant, from);
+                compliant = FHE.allowThis(compliant);
+                compliant = FHE.allow(compliant, from);
             }
         }
         emit ERC7984HookModuleResult(token, from, to, encryptedAmount, compliant, context);
