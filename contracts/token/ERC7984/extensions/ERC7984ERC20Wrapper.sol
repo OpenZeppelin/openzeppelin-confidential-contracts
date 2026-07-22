@@ -21,6 +21,9 @@ import {ERC7984} from "./../ERC7984.sol";
  *
  * WARNING: Minting assumes the full amount of the underlying token transfer has been received, hence some non-standard
  * tokens such as fee-on-transfer or other deflationary-type tokens are not supported by this wrapper.
+ *
+ * WARNING: This wrapper assumes that all minting activity will succeed. Any overrides to the {_mint} or
+ * {_update} functions must ensure they do not cause wrapping to fail silently.
  */
 abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363Receiver {
     IERC20 private immutable _underlying;
@@ -62,7 +65,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
         // mint confidential token
         address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        _wrap(to, amount);
 
         // transfer excess back to the sender
         uint256 excess = amount % rate();
@@ -80,14 +83,14 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * Returns the amount of wrapped token sent.
      */
     function wrap(address to, uint256 amount) public virtual override returns (euint64) {
-        // take ownership of the tokens
         SafeERC20.safeTransferFrom(IERC20(underlying()), msg.sender, address(this), amount - (amount % rate()));
 
-        // mint confidential token
-        euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
-        FHE.allowTransient(wrappedAmountSent, msg.sender);
+        euint64 wrappedAmount = _wrap(to, amount);
+        if (to != msg.sender) {
+            FHE.allowTransient(wrappedAmount, msg.sender);
+        }
 
-        return wrappedAmountSent;
+        return wrappedAmount;
     }
 
     /// @dev Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
@@ -211,6 +214,17 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
             _checkConfidentialTotalSupply();
         }
         return super._update(from, to, amount, isForced);
+    }
+
+    /**
+     * @dev Internal logic for handling wrapping of tokens. Sourcing of the underlying token must be handled by the caller.
+     * The `amount` parameter is the amount of underlying tokens to wrap.
+     */
+    function _wrap(address to, uint256 amount) internal virtual returns (euint64) {
+        euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        emit Wrap(to, amount - (amount % rate()), wrappedAmountSent);
+
+        return wrappedAmountSent;
     }
 
     /// @dev Internal logic for handling the creation of unwrap requests. Returns the unwrap request id.

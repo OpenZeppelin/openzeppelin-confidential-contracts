@@ -5,8 +5,9 @@ import { ethers, fhevm } from 'hardhat';
 
 describe('ERC7984BalanceCapHookModule', function () {
   beforeEach(async function () {
-    const [anyone, admin, agent1, holder, recipient] = await ethers.getSigners();
-    const token = (await ethers.deployContract('$ERC7984RwaHookedMock', ['name', 'symbol', 'uri', admin])) as any;
+    const [anyone, admin, holder, recipient] = await ethers.getSigners();
+    // The token's `isModuleManager` (mock) gates module configuration to the owner (`admin`).
+    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])) as any;
     const complianceModule = (await ethers.deployContract('$ERC7984BalanceCapHookModuleMock')) as any;
 
     await token['$_mint(address,uint64)'](holder, 20000n.toString());
@@ -25,7 +26,6 @@ describe('ERC7984BalanceCapHookModule', function () {
           [encryptedInput.handles[0], encryptedInput.inputProof],
         ),
       );
-    await token.connect(admin).addAgent(agent1);
 
     const encryptCap = async (signer: HardhatEthersSigner, value: number | bigint) =>
       fhevm
@@ -37,7 +37,6 @@ describe('ERC7984BalanceCapHookModule', function () {
       token,
       complianceModule,
       admin,
-      agent1,
       recipient,
       holder,
       anyone,
@@ -118,9 +117,9 @@ describe('ERC7984BalanceCapHookModule', function () {
     });
 
     it('should allow self transfer always', async function () {
-      const lowerCap = await this.encryptCap(this.agent1, 900);
+      const lowerCap = await this.encryptCap(this.admin, 900);
       await this.complianceModule
-        .connect(this.agent1)
+        .connect(this.admin)
         .setMaxBalance(this.token, lowerCap.handles[0], lowerCap.inputProof);
       const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.holder, 1000);
       const transferEvent = await tx.wait().then((res: any) => {
@@ -169,22 +168,22 @@ describe('ERC7984BalanceCapHookModule', function () {
   });
 
   describe('setMaxBalance', function () {
-    it('should be gated to agent', async function () {
+    it('should be gated to the module manager', async function () {
       const enc = await this.encryptCap(this.anyone, 100);
-      await expect(
-        this.complianceModule.connect(this.anyone).setMaxBalance(this.token, enc.handles[0], enc.inputProof),
-      ).to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedAccount');
+      await expect(this.complianceModule.connect(this.anyone).setMaxBalance(this.token, enc.handles[0], enc.inputProof))
+        .to.be.revertedWithCustomError(this.complianceModule, 'ERC7984HookModuleUnauthorizedModuleManager')
+        .withArgs(this.anyone);
     });
 
     it('should set max balance', async function () {
-      const enc = await this.encryptCap(this.agent1, 100);
-      await this.complianceModule.connect(this.agent1).setMaxBalance(this.token, enc.handles[0], enc.inputProof);
+      const enc = await this.encryptCap(this.admin, 100);
+      await this.complianceModule.connect(this.admin).setMaxBalance(this.token, enc.handles[0], enc.inputProof);
       await expect(this.complianceModule.maxBalance(this.token)).to.eventually.eq(ethers.hexlify(enc.handles[0]));
     });
 
     it('should emit event', async function () {
-      const enc = await this.encryptCap(this.agent1, 100);
-      await expect(this.complianceModule.connect(this.agent1).setMaxBalance(this.token, enc.handles[0], enc.inputProof))
+      const enc = await this.encryptCap(this.admin, 100);
+      await expect(this.complianceModule.connect(this.admin).setMaxBalance(this.token, enc.handles[0], enc.inputProof))
         .to.emit(this.complianceModule, 'ERC7984BalanceCapHookModuleMaxBalanceSet')
         .withArgs(this.token, ethers.hexlify(enc.handles[0]));
     });

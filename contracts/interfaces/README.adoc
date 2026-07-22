@@ -7,12 +7,15 @@ These interfaces are available as `.sol` files and are useful to interact with t
 
 - {IERC7984}
 - {IERC7984Receiver}
-- {IERC7984Rwa}
+- {IERC7984ERC20Wrapper}
+- {IERC7984Hooked}
+- {IERC7984HookModule}
 
 == Core
 {{IERC7984}}
 {{IERC7984Receiver}}
 
 == Extensions
-{{IERC7984Rwa}}
 {{IERC7984ERC20Wrapper}}
+{{IERC7984Hooked}}
+{{IERC7984HookModule}}
