@@ -285,7 +285,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
 
     /**
      * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
-     * If `isForced` is true, extensions should treat the update as a permissioned flow such as a refund or force transfer.
+     * If `isForced` is true, extensions should treat the update as a permissioned flow such as a refund or force transfer
+     * and not apply any additional restrictions.
+     *
      * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
      */
     function _update(
