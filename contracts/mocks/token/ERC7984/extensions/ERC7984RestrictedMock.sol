@@ -2,8 +2,7 @@
 
 pragma solidity ^0.8.27;
 
-import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984Restricted} from "../../../../token/ERC7984/extensions/ERC7984Restricted.sol";
 import {ERC7984Mock} from "../ERC7984Mock.sol";
 
