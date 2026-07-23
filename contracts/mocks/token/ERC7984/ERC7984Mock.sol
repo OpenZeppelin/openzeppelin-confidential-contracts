@@ -70,11 +70,11 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public returns (euint64 transferred) {
-        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof), false);
     }
 
     function $_mint(address to, uint64 amount) public returns (euint64 transferred) {
-        return _mint(to, FHE.asEuint64(amount));
+        return _mint(to, FHE.asEuint64(amount), false);
     }
 
     function $_transfer(
@@ -97,7 +97,7 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
     }
 
     function $_burn(address from, uint64 amount) public returns (euint64 transferred) {
-        return _burn(from, FHE.asEuint64(amount));
+        return _burn(from, FHE.asEuint64(amount), false);
     }
 
     function $_burn(
@@ -105,7 +105,7 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public returns (euint64 transferred) {
-        return _burn(from, FHE.fromExternal(encryptedAmount, inputProof));
+        return _burn(from, FHE.fromExternal(encryptedAmount, inputProof), false);
     }
 
     function $_update(

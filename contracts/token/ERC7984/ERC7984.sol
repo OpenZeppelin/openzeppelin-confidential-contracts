@@ -230,14 +230,14 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         emit OperatorSet(holder, operator, until);
     }
 
-    function _mint(address to, euint64 amount) internal returns (euint64 transferred) {
+    function _mint(address to, euint64 amount, bool isForced) internal returns (euint64 transferred) {
         require(to != address(0), ERC7984InvalidReceiver(address(0)));
-        return _update(address(0), to, amount, false);
+        return _update(address(0), to, amount, isForced);
     }
 
-    function _burn(address from, euint64 amount) internal returns (euint64 transferred) {
+    function _burn(address from, euint64 amount, bool isForced) internal returns (euint64 transferred) {
         require(from != address(0), ERC7984InvalidSender(address(0)));
-        return _update(from, address(0), amount, false);
+        return _update(from, address(0), amount, isForced);
     }
 
     function _transfer(address from, address to, euint64 amount, bool isForced) internal returns (euint64 transferred) {
