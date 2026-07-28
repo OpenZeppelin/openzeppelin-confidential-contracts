@@ -138,17 +138,17 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     }
 
     /**
-     * @dev Reverts if `token` is not authorized (via the FHE ACL) to access the encrypted `handle` it returned.
+     * @dev Reverts if `token` is not authorized (via the ACL) to access the encrypted `handle`.
      *
      * {release} and {vestedAmount} consume encrypted handles returned by an arbitrary, caller-supplied `token`
      * (from {IERC7984-confidentialBalanceOf} and {IERC7984-confidentialTransfer}) and combine them with this
-     * wallet's own FHE permissions. Because FHE handles are global and not namespaced by token, a malicious
+     * wallet's own FHE permissions. Because FHE handles are global, and not namespaced by token, a malicious
      * `token` could return a handle belonging to a *different* {IERC7984} token this wallet holds, tricking the
-     * wallet into computing over -- and disclosing -- a confidential balance it is not meant to. Requiring that
+     * wallet into computing over a confidential balance it is not meant to. Requiring that
      * `token` itself is allowed on the handle ensures the handle genuinely originates from `token`.
      *
      * An uninitialized handle (e.g. a zero balance) is treated as zero by FHE arithmetic and is skipped, so
-     * honest zero-value releases do not revert. Mirrors {ERC7984HookModule-_accessHandle}.
+     * honest zero-value releases do not revert.
      */
     function _checkTokenHandleAccess(address token, euint64 handle) private view {
         require(
