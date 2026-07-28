@@ -40,6 +40,9 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
     /// @dev Emitted when releasable vested tokens are released.
     event VestingWalletConfidentialTokenReleased(address indexed token, euint64 amount);
 
+    /// @dev The `token` is not authorized (via the FHE ACL) to access the encrypted `handle` it returned.
+    error VestingWalletConfidentialUnauthorizedHandle(euint64 handle, address token);
+
     /// @dev Timestamp at which the vesting starts.
     function start() public view virtual returns (uint64) {
         return _getVestingWalletStorage()._start;
@@ -79,6 +82,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         euint64 amount = releasable(token);
         FHE.allowTransient(amount, token);
         euint64 amountSent = IERC7984(token).confidentialTransfer(owner(), amount);
+        _checkTokenHandleAccess(token, amountSent);
 
         // This could overflow if the total supply is re-sent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
         euint128 newReleasedAmount = FHE.add(released(token), amountSent);
@@ -93,8 +97,9 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      * Default implementation is a linear vesting curve.
      */
     function vestedAmount(address token, uint48 timestamp) public virtual returns (euint128) {
-        return
-            _vestingSchedule(FHE.add(released(token), IERC7984(token).confidentialBalanceOf(address(this))), timestamp);
+        euint64 balance = IERC7984(token).confidentialBalanceOf(address(this));
+        _checkTokenHandleAccess(token, balance);
+        return _vestingSchedule(FHE.add(released(token), balance), timestamp);
     }
 
     /**
@@ -130,6 +135,26 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         } else {
             return FHE.div(FHE.mul(totalAllocation, (timestamp - start())), duration());
         }
+    }
+
+    /**
+     * @dev Reverts if `token` is not authorized (via the FHE ACL) to access the encrypted `handle` it returned.
+     *
+     * {release} and {vestedAmount} consume encrypted handles returned by an arbitrary, caller-supplied `token`
+     * (from {IERC7984-confidentialBalanceOf} and {IERC7984-confidentialTransfer}) and combine them with this
+     * wallet's own FHE permissions. Because FHE handles are global and not namespaced by token, a malicious
+     * `token` could return a handle belonging to a *different* {IERC7984} token this wallet holds, tricking the
+     * wallet into computing over -- and disclosing -- a confidential balance it is not meant to. Requiring that
+     * `token` itself is allowed on the handle ensures the handle genuinely originates from `token`.
+     *
+     * An uninitialized handle (e.g. a zero balance) is treated as zero by FHE arithmetic and is skipped, so
+     * honest zero-value releases do not revert. Mirrors {ERC7984HookModule-_accessHandle}.
+     */
+    function _checkTokenHandleAccess(address token, euint64 handle) private view {
+        require(
+            !FHE.isInitialized(handle) || FHE.isAllowed(handle, token),
+            VestingWalletConfidentialUnauthorizedHandle(handle, token)
+        );
     }
 
     function _getVestingWalletStorage() private pure returns (VestingWalletStorage storage $) {
