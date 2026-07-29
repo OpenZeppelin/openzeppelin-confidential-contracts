@@ -26,6 +26,7 @@ For convenience, this directory also includes:
 == Contracts
 :VestingWalletStorage: pass:normal[xref:#VestingWalletConfidential-VestingWalletStorage[`++VestingWalletStorage++`]]
 :VestingWalletConfidentialTokenReleased: pass:normal[xref:#VestingWalletConfidential-VestingWalletConfidentialTokenReleased-address-euint64-[`++VestingWalletConfidentialTokenReleased++`]]
+:VestingWalletConfidentialUnauthorizedHandle: pass:normal[xref:#VestingWalletConfidential-VestingWalletConfidentialUnauthorizedHandle-euint64-address-[`++VestingWalletConfidentialUnauthorizedHandle++`]]
 :start: pass:normal[xref:#VestingWalletConfidential-start--[`++start++`]]
 :duration: pass:normal[xref:#VestingWalletConfidential-duration--[`++duration++`]]
 :end: pass:normal[xref:#VestingWalletConfidential-end--[`++end++`]]
@@ -144,6 +145,7 @@ Confidential vesting wallet contracts can be deployed (as clones) using the {Ves
 [.contract-index]
 .Errors
 --
+* `++VestingWalletConfidentialUnauthorizedHandle(handle, token)++`
 
 [.contract-subindex-inherited]
 .ReentrancyGuardTransient
@@ -232,6 +234,12 @@ This returns the amount vested, as a function of time, for an asset given its to
 ==== `[.contract-item-name]#++VestingWalletConfidentialTokenReleased++#++(address indexed token, euint64 amount)++` [.item-kind]#event#
 
 Emitted when releasable vested tokens are released.
+
+[.contract-item]
+[[VestingWalletConfidential-VestingWalletConfidentialUnauthorizedHandle-euint64-address-]]
+==== `[.contract-item-name]#++VestingWalletConfidentialUnauthorizedHandle++#++(euint64 handle, address token)++` [.item-kind]#error#
+
+The `token` is not authorized (via the FHE ACL) to access the encrypted `handle` it returned.
 
 :VestingWalletCliffStorage: pass:normal[xref:#VestingWalletCliffConfidential-VestingWalletCliffStorage[`++VestingWalletCliffStorage++`]]
 :VestingWalletCliffConfidentialInvalidCliffDuration: pass:normal[xref:#VestingWalletCliffConfidential-VestingWalletCliffConfidentialInvalidCliffDuration-uint64-uint64-[`++VestingWalletCliffConfidentialInvalidCliffDuration++`]]
@@ -340,6 +348,7 @@ starts at the vesting start timestamp (see {VestingWalletConfidential}).
 
 [.contract-subindex-inherited]
 .VestingWalletConfidential
+* `++VestingWalletConfidentialUnauthorizedHandle(handle, token)++`
 
 [.contract-subindex-inherited]
 .ReentrancyGuardTransient

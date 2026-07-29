@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (last updated v0.3.0) (finance/VestingWalletConfidential.sol)
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.26;
 
 import {FHE, ebool, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -39,6 +39,9 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
 
     /// @dev Emitted when releasable vested tokens are released.
     event VestingWalletConfidentialTokenReleased(address indexed token, euint64 amount);
+
+    /// @dev The `token` is not authorized (via the FHE ACL) to access the encrypted `handle` it returned.
+    error VestingWalletConfidentialUnauthorizedHandle(euint64 handle, address token);
 
     /// @dev Timestamp at which the vesting starts.
     function start() public view virtual returns (uint64) {
@@ -80,6 +83,7 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         euint64 amount = releasable(token);
         FHE.allowTransient(amount, token);
         euint64 amountSent = IERC7984(token).confidentialTransfer(owner(), amount);
+        _checkTokenHandleAccess(token, amountSent);
 
         // This could overflow if the total supply is resent `type(uint128).max/type(uint64).max` times. This is an accepted risk.
         euint128 newReleasedAmount = FHE.add(released(token), amountSent);
@@ -94,8 +98,9 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
      * Default implementation is a linear vesting curve.
      */
     function vestedAmount(address token, uint48 timestamp) public virtual returns (euint128) {
-        return
-            _vestingSchedule(FHE.add(released(token), IERC7984(token).confidentialBalanceOf(address(this))), timestamp);
+        euint64 balance = IERC7984(token).confidentialBalanceOf(address(this));
+        _checkTokenHandleAccess(token, balance);
+        return _vestingSchedule(FHE.add(released(token), balance), timestamp);
     }
 
     /**
@@ -131,6 +136,19 @@ abstract contract VestingWalletConfidential is OwnableUpgradeable, ReentrancyGua
         } else {
             return FHE.div(FHE.mul(totalAllocation, (timestamp - start())), duration());
         }
+    }
+
+    /**
+     * @dev Reverts if `token` is not authorized (via the ACL) to access the encrypted `handle`.
+     *
+     * An uninitialized handle (e.g. a zero balance) is treated as zero by FHE arithmetic and is skipped, so
+     * honest zero-value releases do not revert.
+     */
+    function _checkTokenHandleAccess(address token, euint64 handle) private view {
+        require(
+            !FHE.isInitialized(handle) || FHE.isAllowed(handle, token),
+            VestingWalletConfidentialUnauthorizedHandle(handle, token)
+        );
     }
 
     function _getVestingWalletStorage() private pure returns (VestingWalletStorage storage $) {
