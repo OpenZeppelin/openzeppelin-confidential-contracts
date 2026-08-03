@@ -1,4 +1,7 @@
 {
+  "lib/forge-fhevm": {
+    "rev": "3ee696fba62a32314fde457de28cc29f1191c4cb"
+  },
   "lib/openzeppelin-contracts": {
     "branch": {
       "name": "release-v5.6",
