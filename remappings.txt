@@ -1,4 +1,3 @@
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
 forge-fhevm/=lib/forge-fhevm/src/
-@fhevm/host-contracts/=lib/forge-fhevm/src/fhevm-host
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
