@@ -2581,6 +2581,7 @@ The module is not installed.
 The maximum number of modules has been exceeded.
 
 == Utilities
+:ERC7984UtilsUnauthorizedUseOfEncryptedAmount: pass:normal[xref:#ERC7984Utils-ERC7984UtilsUnauthorizedUseOfEncryptedAmount-ebool-address-[`++ERC7984UtilsUnauthorizedUseOfEncryptedAmount++`]]
 :checkOnTransferReceived: pass:normal[xref:#ERC7984Utils-checkOnTransferReceived-address-address-address-euint64-bytes-[`++checkOnTransferReceived++`]]
 
 :checkOnTransferReceived-address-address-address-euint64-bytes: pass:normal[xref:#ERC7984Utils-checkOnTransferReceived-address-address-address-euint64-bytes-[`++checkOnTransferReceived++`]]
@@ -2603,6 +2604,13 @@ Library that provides common {ERC7984} utility functions.
 
 --
 
+[.contract-index]
+.Errors
+--
+* `++ERC7984UtilsUnauthorizedUseOfEncryptedAmount(retval, to)++`
+
+--
+
 [.contract-item]
 [[ERC7984Utils-checkOnTransferReceived-address-address-address-euint64-bytes-]]
 ==== `[.contract-item-name]#++checkOnTransferReceived++#++(address operator, address from, address to, euint64 amount, bytes data) → ebool++` [.item-kind]#internal#
@@ -2615,6 +2623,10 @@ recipient has non-zero code, it must implement
 {IERC7984Receiver-onConfidentialTransferReceived} and return an `ebool` indicating
 whether the transfer was accepted or not. If the `ebool` is `false`, the transfer function
 should try to refund the `from` address.
+
+[.contract-item]
+[[ERC7984Utils-ERC7984UtilsUnauthorizedUseOfEncryptedAmount-ebool-address-]]
+==== `[.contract-item-name]#++ERC7984UtilsUnauthorizedUseOfEncryptedAmount++#++(ebool retval, address to)++` [.item-kind]#error#
 
 :ERC7984HookModuleUnauthorizedAccount: pass:normal[xref:#ERC7984HookModule-ERC7984HookModuleUnauthorizedAccount-address-[`++ERC7984HookModuleUnauthorizedAccount++`]]
 :ERC7984HookModuleUnauthorizedUseOfEncryptedAmount: pass:normal[xref:#ERC7984HookModule-ERC7984HookModuleUnauthorizedUseOfEncryptedAmount-euint64-address-[`++ERC7984HookModuleUnauthorizedUseOfEncryptedAmount++`]]
