@@ -23,7 +23,9 @@ import {ERC7984} from "./../ERC7984.sol";
  * tokens such as fee-on-transfer or other deflationary-type tokens are not supported by this wrapper.
  *
  * WARNING: This wrapper assumes that all minting activity will succeed. Any overrides to the {_mint} or
- * {_update} functions must ensure they do not cause wrapping to fail silently.
+ * {_update} functions must ensure they do not cause wrapping to fail silently. This extension should not be
+ * combined with {ERC7984Hooked} modules that may silently fail such as {ERC7984BalanceCapHookModule} and
+ * {ERC7984HolderCapHookModule}.
  */
 abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363Receiver {
     IERC20 private immutable _underlying;
