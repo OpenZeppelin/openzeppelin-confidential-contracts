@@ -487,6 +487,28 @@ describe('ERC7984', function () {
         .withArgs(unauthorizedRetval, maliciousReceiver.target);
     });
 
+    it.only('with callback returning an uninitialized value', async function () {
+      const receiver = await ethers.deployContract('ERC7984UnauthorizedReceiverMock', [this.token.target]);
+
+      await this.token
+        .connect(this.holder)
+        ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
+          receiver.target,
+          this.encryptedInput.handles[0],
+          this.encryptedInput.inputProof,
+          '0x',
+        );
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.token.confidentialBalanceOf(this.holder),
+          this.token.target,
+          this.holder,
+        ),
+      ).to.eventually.equal(1000);
+    });
+
     it('with callback reverting without a reason', async function () {
       await expect(
         this.token
