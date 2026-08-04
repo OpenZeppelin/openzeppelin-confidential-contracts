@@ -1,9 +1,15 @@
 # openzeppelin-confidential-contracts
 
 
+## 0.4.2 (2026-08-04)
+
+- `VestingWalletConfidential`: Ensure that tokens are allowed to access handles they return (or the handle is uninitialized). ([#425](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/425))
+- `ERC7984`: check that `IERC7984Receiver` has ACL access to the ebool they return (or the handle is uninitialized). ([#425](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/425))
+
 ## 0.4.1 (2026-06-08)
 
 ### Bug Fixes
+
 - `BatcherConfidential`: Enable decryption of the `joinedAmount` in `BatcherConfidential`. ([#387](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/387))
 
 ## 0.4.0 (2026-03-20)
