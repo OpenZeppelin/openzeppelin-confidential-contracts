@@ -32,7 +32,10 @@ library ERC7984Utils {
             try IERC7984Receiver(to).onConfidentialTransferReceived(operator, from, amount, data) returns (
                 ebool retval
             ) {
-                require(FHE.isAllowed(retval, to), ERC7984UtilsUnauthorizedUseOfEncryptedAmount(retval, to));
+                require(
+                    !FHE.isInitialized(retval) || FHE.isAllowed(retval, to),
+                    ERC7984UtilsUnauthorizedUseOfEncryptedAmount(retval, to)
+                );
                 return retval;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
