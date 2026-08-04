@@ -27,8 +27,9 @@ contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock, Ownable {
     function _update(
         address from,
         address to,
-        euint64 amount
+        euint64 amount,
+        bool isForced
     ) internal virtual override(ERC7984Mock, ERC7984Hooked) returns (euint64) {
-        return super._update(from, to, amount);
+        return super._update(from, to, amount, isForced);
     }
 }

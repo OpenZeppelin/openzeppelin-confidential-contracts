@@ -55,16 +55,21 @@ abstract contract ERC7984Freezable is ERC7984 {
      * @dev See {ERC7984-_update}.
      *
      * The `from` account must have sufficient unfrozen balance,
-     * otherwise 0 tokens are transferred.
+     * otherwise 0 tokens are transferred. Forced updates skip this check.
      * The default freezing behavior can be changed (for a pass-through for instance) by overriding
      * {_confidentialAvailable}. The internal function is used for actual gating (not the public function)
      * to avoid unnecessarily granting ACL allowances.
      */
-    function _update(address from, address to, euint64 encryptedAmount) internal virtual override returns (euint64) {
-        if (from != address(0)) {
+    function _update(
+        address from,
+        address to,
+        euint64 encryptedAmount,
+        bool isForced
+    ) internal virtual override returns (euint64) {
+        if (from != address(0) && !isForced) {
             euint64 unfrozen = _confidentialAvailable(from);
             encryptedAmount = FHE.select(FHE.le(encryptedAmount, unfrozen), encryptedAmount, FHE.asEuint64(0));
         }
-        return super._update(from, to, encryptedAmount);
+        return super._update(from, to, encryptedAmount, isForced);
     }
 }

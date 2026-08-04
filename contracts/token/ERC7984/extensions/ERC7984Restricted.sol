@@ -51,13 +51,19 @@ abstract contract ERC7984Restricted is ERC7984 {
      * * `from` must be allowed to transfer tokens (see {canTransact}).
      * * `to` must be allowed to receive tokens (see {canTransact}).
      *
-     * The default restriction behavior can be changed (for a pass-through for instance) by overriding
-     * {_checkSenderRestriction} and/or {_checkRecipientRestriction}.
+     * Forced updates skip sender and recipient restriction checks.
      */
-    function _update(address from, address to, euint64 value) internal virtual override returns (euint64) {
-        _checkSenderRestriction(from);
-        _checkRecipientRestriction(to);
-        return super._update(from, to, value);
+    function _update(
+        address from,
+        address to,
+        euint64 value,
+        bool isForced
+    ) internal virtual override returns (euint64) {
+        if (!isForced) {
+            _checkSenderRestriction(from);
+            _checkRecipientRestriction(to);
+        }
+        return super._update(from, to, value, isForced);
     }
 
     /// @dev Updates the restriction of a user account.
