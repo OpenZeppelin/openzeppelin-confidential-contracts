@@ -487,7 +487,7 @@ describe('ERC7984', function () {
         .withArgs(unauthorizedRetval, maliciousReceiver.target);
     });
 
-    it.only('with callback returning an uninitialized value', async function () {
+    it('with callback returning an uninitialized value', async function () {
       const receiver = await ethers.deployContract('ERC7984UnauthorizedReceiverMock', [this.token.target]);
 
       await this.token
