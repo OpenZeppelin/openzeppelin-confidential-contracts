@@ -8,7 +8,12 @@ import {ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 interface IERC7984Receiver {
     /**
      * @dev Called upon receiving a confidential token transfer. Returns an encrypted boolean indicating success
-     * of the callback. If false is returned, the transfer must be reversed.
+     * of the callback. If false is returned, the token contract will attempt to refund the transfer.
+     *
+     * NOTE: The calling contract (token) must be granted ACL allowance to read the confidential return value if
+     * it is initialized. Uninitialized return values are treated as a false boolean.
+     *
+     * WARNING: Do not manually refund the transfer AND return false, as this can lead to double refunds.
      */
     function onConfidentialTransferReceived(
         address operator,
