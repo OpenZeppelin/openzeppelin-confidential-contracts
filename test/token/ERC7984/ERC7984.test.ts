@@ -490,12 +490,17 @@ describe('ERC7984', function () {
     it('with callback returning an uninitialized value', async function () {
       const receiver = await ethers.deployContract('ERC7984UnauthorizedReceiverMock', [this.token.target]);
 
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.token.target, this.holder.address)
+        .add64(100)
+        .encrypt();
+
       await this.token
         .connect(this.holder)
         ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
           receiver.target,
-          this.encryptedInput.handles[0],
-          this.encryptedInput.inputProof,
+          encryptedInput.handles[0],
+          encryptedInput.inputProof,
           '0x',
         );
 
