@@ -3,8 +3,8 @@
 
 ## 0.3.2 (2026-08-04)
 
-- `VestingWalletConfidential`: Ensure that tokens are allowed to access handles they return (or the handle is uninitialized). ([#426](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/426))
-- `ERC7984`: check that `IERC7984Receiver` has ACL access to the ebool they return (or the handle is uninitialized). ([#429](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/429))
+- `VestingWalletConfidential`: Ensure that tokens are allowed to access handles they return (or the handle is uninitialized). ([#423](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/423))
+- `ERC7984`: Check that `IERC7984Receiver` has ACL access to the ebool they return (or the handle is uninitialized). ([#428](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/428))
 
 ## 0.3.1 (2026-01-06)
 
