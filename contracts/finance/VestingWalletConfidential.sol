@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0) (finance/VestingWalletConfidential.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.4.2) (finance/VestingWalletConfidential.sol)
 pragma solidity ^0.8.26;
 
 import {FHE, ebool, euint64, euint128} from "@fhevm/solidity/lib/FHE.sol";
