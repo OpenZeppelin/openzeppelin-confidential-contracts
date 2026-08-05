@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (last updated v0.5.1) (finance/BatcherConfidential.sol)
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
 import {FHE, externalEuint64, euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
