@@ -472,6 +472,91 @@ describe('BatcherConfidential', function () {
       ).to.eventually.eq(0);
     });
 
+    it('should send refund to the caller selected recipient', async function () {
+      const beforeBalance = await fhevm.userDecryptEuint(
+        FhevmType.euint64,
+        await this.fromToken.confidentialBalanceOf(this.recipient),
+        this.fromToken,
+        this.recipient,
+      );
+
+      await this.batcher.connect(this.holder)['quit(uint256,address)'](this.batchId, this.recipient);
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.fromToken.confidentialBalanceOf(this.recipient),
+          this.fromToken,
+          this.recipient,
+        ),
+      ).to.eventually.eq(beforeBalance + this.deposit);
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.batcher.deposits(this.batchId, this.holder),
+          this.batcher,
+          this.holder,
+        ),
+      ).to.eventually.eq(0);
+    });
+
+    it('should allow retrying a redirected quit if the transfer fails', async function () {
+      const expectTotalDeposits = async (amount: bigint) =>
+        expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.totalDeposits(this.batchId),
+            this.batcher,
+            this.operator,
+          ),
+        ).to.eventually.eq(amount);
+
+      const beforeBalance = await fhevm.userDecryptEuint(
+        FhevmType.euint64,
+        await this.fromToken.confidentialBalanceOf(this.recipient),
+        this.fromToken,
+        this.recipient,
+      );
+
+      await expectTotalDeposits(this.deposit);
+
+      await this.fromToken['$_burn(address,uint64)'](this.batcher, this.deposit);
+      await this.batcher.connect(this.holder)['quit(uint256,address)'](this.batchId, this.recipient);
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.batcher.deposits(this.batchId, this.holder),
+          this.batcher,
+          this.holder,
+        ),
+      ).to.eventually.eq(this.deposit);
+      await expectTotalDeposits(this.deposit);
+
+      await this.fromToken['$_mint(address,uint64)'](this.batcher, this.deposit);
+      await this.batcher.connect(this.holder)['quit(uint256,address)'](this.batchId, this.recipient);
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.fromToken.confidentialBalanceOf(this.recipient),
+          this.fromToken,
+          this.recipient,
+        ),
+      ).to.eventually.eq(beforeBalance + this.deposit);
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.batcher.deposits(this.batchId, this.holder),
+          this.batcher,
+          this.holder,
+        ),
+      ).to.eventually.eq(0);
+      await expectTotalDeposits(0n);
+    });
+
     it('should decrease total deposits', async function () {
       await this.batcher.quit(this.batchId);
 
