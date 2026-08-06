@@ -155,28 +155,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * This function must be unrestricted in cases where batch dispatching fails.
      */
     function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
-
-        euint64 deposit = deposits(batchId, msg.sender);
-        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, msg.sender));
-
-        euint64 totalDeposits_ = totalDeposits(batchId);
-
-        FHE.allowTransient(deposit, address(fromToken()));
-        euint64 sent = fromToken().confidentialTransfer(msg.sender, deposit);
-        euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
-        euint64 newDeposit = FHE.sub(deposit, sent);
-
-        FHE.allowThis(newTotalDeposits);
-        FHE.allowThis(newDeposit);
-        FHE.allow(newDeposit, msg.sender);
-
-        _batches[batchId].totalDeposits = newTotalDeposits;
-        _batches[batchId].deposits[msg.sender] = newDeposit;
-
-        emit Quit(batchId, msg.sender, sent);
-
-        return sent;
+        return _quit(batchId, msg.sender);
     }
 
     /**
@@ -381,6 +360,35 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         emit Claimed(batchId, account, amountTransferred);
 
         return amountTransferred;
+    }
+
+    /**
+     * @dev Quits the batch with id `batchId` for `account`, returning the entire deposit to `account`.
+     * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
+     */
+    function _quit(uint256 batchId, address account) internal virtual returns (euint64) {
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
+
+        euint64 deposit = deposits(batchId, account);
+        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, account));
+
+        euint64 totalDeposits_ = totalDeposits(batchId);
+
+        FHE.allowTransient(deposit, address(fromToken()));
+        euint64 sent = fromToken().confidentialTransfer(account, deposit);
+        euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
+        euint64 newDeposit = FHE.sub(deposit, sent);
+
+        FHE.allowThis(newTotalDeposits);
+        FHE.allowThis(newDeposit);
+        FHE.allow(newDeposit, account);
+
+        _batches[batchId].totalDeposits = newTotalDeposits;
+        _batches[batchId].deposits[account] = newDeposit;
+
+        emit Quit(batchId, account, sent);
+
+        return sent;
     }
 
     /**
