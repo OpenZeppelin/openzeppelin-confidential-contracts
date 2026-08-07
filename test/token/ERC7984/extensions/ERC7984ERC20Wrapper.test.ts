@@ -196,6 +196,30 @@ describe('ERC7984ERC20Wrapper', function () {
             ).to.eventually.equal(ethers.parseUnits('100', 6));
           });
 
+          it('reverts with short transfer data', async function () {
+            const amountToWrap = ethers.parseUnits('100', 18);
+
+            await expect(
+              this.token
+                .connect(this.holder)
+                ['transferAndCall(address,uint256,bytes)'](this.wrapper, amountToWrap, '0x1234'),
+            ).to.be.revertedWithCustomError(this.wrapper, 'ERC7984InvalidTransferReceivedData');
+          });
+
+          it('reverts with abi-encoded transfer data', async function () {
+            const amountToWrap = ethers.parseUnits('100', 18);
+
+            await expect(
+              this.token
+                .connect(this.holder)
+                ['transferAndCall(address,uint256,bytes)'](
+                  this.wrapper,
+                  amountToWrap,
+                  ethers.AbiCoder.defaultAbiCoder().encode(['address'], [this.recipient.address]),
+                ),
+            ).to.be.revertedWithCustomError(this.wrapper, 'ERC7984InvalidTransferReceivedData');
+          });
+
           it('from unauthorized caller', async function () {
             await expect(this.wrapper.connect(this.holder).onTransferReceived(this.holder, this.holder, 100, '0x'))
               .to.be.revertedWithCustomError(this.wrapper, 'ERC7984UnauthorizedCaller')

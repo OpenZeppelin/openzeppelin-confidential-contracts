@@ -36,6 +36,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
     error InvalidUnwrapRequest(bytes32 unwrapRequestId);
     error ERC7984TotalSupplyOverflow();
+    error ERC7984InvalidTransferReceivedData();
 
     constructor(IERC20 underlying_) {
         _underlying = underlying_;
@@ -52,12 +53,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /**
-     * @dev `ERC1363` callback function which wraps tokens to the address specified in `data` or
-     * the address `from` (if no address is specified in `data`). This function refunds any excess tokens
-     * sent beyond the nearest multiple of {rate} to `from`. See {wrap} for more details on wrapping tokens.
+     * @dev `ERC1363` callback function which wraps tokens to the address resolved by
+     * {_getOnTransferReceivedWrapRecipient}. This function refunds any excess tokens sent beyond the nearest
+     * multiple of {rate} to `from`. See {wrap} for more details on wrapping tokens.
      */
     function onTransferReceived(
-        address /*operator*/,
+        address operator,
         address from,
         uint256 amount,
         bytes calldata data
@@ -66,7 +67,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(underlying() == msg.sender, ERC7984UnauthorizedCaller(msg.sender));
 
         // mint confidential token
-        address to = data.length < 20 ? from : address(bytes20(data));
+        address to = _getOnTransferReceivedWrapRecipient(operator, from, amount, data);
         _wrap(to, amount);
 
         // transfer excess back to the sender
@@ -211,6 +212,31 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
             _checkConfidentialTotalSupply();
         }
         return super._update(from, to, amount);
+    }
+
+    /**
+     * @dev Resolves the wrap recipient from an ERC-1363 `onTransferReceived` callback.
+     *
+     * Default encoding:
+     *
+     * * empty `data`: wrap to `from`
+     * * exactly 20 bytes: wrap to the recipient encoded in `data`
+     * * otherwise: revert with {ERC7984InvalidTransferReceivedData}
+     */
+    function _getOnTransferReceivedWrapRecipient(
+        address /*operator*/,
+        address from,
+        uint256 /*amount*/,
+        bytes memory data
+    ) internal virtual returns (address) {
+        uint256 length = data.length;
+        if (length == 0) {
+            return from;
+        }
+        if (length == 20) {
+            return address(bytes20(data));
+        }
+        revert ERC7984InvalidTransferReceivedData();
     }
 
     /**
