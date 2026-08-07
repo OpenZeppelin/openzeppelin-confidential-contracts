@@ -501,8 +501,6 @@ describe('BatcherConfidential', function () {
 
     describe('on behalf of', function () {
       it('should send tokens to the depositor, not the caller', async function () {
-        const caller = this.accounts[0];
-
         const holderBalanceBefore = await fhevm.userDecryptEuint(
           FhevmType.euint64,
           await this.fromToken.confidentialBalanceOf(this.holder),
@@ -510,7 +508,7 @@ describe('BatcherConfidential', function () {
           this.holder,
         );
 
-        await this.batcher.connect(caller)['$_quit(uint256,address)'](this.batchId, this.holder);
+        await this.batcher.connect(this.operator)['$_quit(uint256,address)'](this.batchId, this.holder);
 
         await expect(
           fhevm.userDecryptEuint(
@@ -523,9 +521,7 @@ describe('BatcherConfidential', function () {
       });
 
       it('should clear the depositor deposits', async function () {
-        const caller = this.accounts[0];
-
-        await this.batcher.connect(caller)['$_quit(uint256,address)'](this.batchId, this.holder);
+        await this.batcher.connect(this.operator)['$_quit(uint256,address)'](this.batchId, this.holder);
 
         await expect(
           fhevm.userDecryptEuint(
@@ -538,9 +534,7 @@ describe('BatcherConfidential', function () {
       });
 
       it('should emit event with the depositor address', async function () {
-        const caller = this.accounts[0];
-
-        await expect(this.batcher.connect(caller)['$_quit(uint256,address)'](this.batchId, this.holder))
+        await expect(this.batcher.connect(this.operator)['$_quit(uint256,address)'](this.batchId, this.holder))
           .to.emit(this.batcher, 'Quit')
           .withArgs(this.batchId, this.holder.address, anyValue);
       });
