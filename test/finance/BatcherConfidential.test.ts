@@ -387,8 +387,6 @@ describe('BatcherConfidential', function () {
 
     describe('on behalf of (relayer)', function () {
       it('should send tokens to the depositor, not the relayer', async function () {
-        const relayer = this.accounts[0];
-
         const holderBalanceBefore = await fhevm.userDecryptEuint(
           FhevmType.euint64,
           await this.toToken.confidentialBalanceOf(this.holder),
@@ -396,7 +394,7 @@ describe('BatcherConfidential', function () {
           this.holder,
         );
 
-        await this.batcher.connect(relayer).claim(this.batchId, this.holder);
+        await this.batcher.connect(this.operator).claim(this.batchId, this.holder);
 
         const expectedAmount = BigInt(this.exchangeRate * this.deposit) / exchangeRateMantissa;
 
@@ -411,9 +409,7 @@ describe('BatcherConfidential', function () {
       });
 
       it('should clear the depositor deposits', async function () {
-        const relayer = this.accounts[0];
-
-        await this.batcher.connect(relayer).claim(this.batchId, this.holder);
+        await this.batcher.connect(this.operator).claim(this.batchId, this.holder);
 
         await expect(
           fhevm.userDecryptEuint(
@@ -426,9 +422,7 @@ describe('BatcherConfidential', function () {
       });
 
       it('should emit event with the depositor address', async function () {
-        const relayer = this.accounts[0];
-
-        await expect(this.batcher.connect(relayer).claim(this.batchId, this.holder))
+        await expect(this.batcher.connect(this.operator).claim(this.batchId, this.holder))
           .to.emit(this.batcher, 'Claimed')
           .withArgs(this.batchId, this.holder.address, anyValue);
       });
@@ -503,6 +497,53 @@ describe('BatcherConfidential', function () {
       await expect(this.batcher.quit(this.batchId))
         .to.emit(this.batcher, 'Quit')
         .withArgs(this.batchId, this.holder.address, anyValue);
+    });
+
+    describe('on behalf of', function () {
+      it('should send tokens to the depositor, not the caller', async function () {
+        const caller = this.accounts[0];
+
+        const holderBalanceBefore = await fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.fromToken.confidentialBalanceOf(this.holder),
+          this.fromToken,
+          this.holder,
+        );
+
+        await this.batcher.connect(caller)['$_quit(uint256,address)'](this.batchId, this.holder);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.fromToken.confidentialBalanceOf(this.holder),
+            this.fromToken,
+            this.holder,
+          ),
+        ).to.eventually.eq(holderBalanceBefore + this.deposit);
+      });
+
+      it('should clear the depositor deposits', async function () {
+        const caller = this.accounts[0];
+
+        await this.batcher.connect(caller)['$_quit(uint256,address)'](this.batchId, this.holder);
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.batcher.deposits(this.batchId, this.holder),
+            this.batcher,
+            this.holder,
+          ),
+        ).to.eventually.eq(0);
+      });
+
+      it('should emit event with the depositor address', async function () {
+        const caller = this.accounts[0];
+
+        await expect(this.batcher.connect(caller)['$_quit(uint256,address)'](this.batchId, this.holder))
+          .to.emit(this.batcher, 'Quit')
+          .withArgs(this.batchId, this.holder.address, anyValue);
+      });
     });
   });
 
