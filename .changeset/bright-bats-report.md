@@ -2,4 +2,4 @@
 'openzeppelin-confidential-contracts': patch
 ---
 
-`BatcherConfidential`: Extract internal `_quit` helper (mirrors `_claim`).
+`BatcherConfidential`: Extract logic from `quit` into internal function `_quit`.
