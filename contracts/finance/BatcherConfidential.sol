@@ -148,7 +148,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * @dev Quit the batch with id `batchId`. Entire deposit is returned to the user.
      * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
      *
-     * NOTE: Developers should consider adding additional restrictions to this function
+     * NOTE: Developers should consider adding additional restrictions to {_quit}
      * if maintaining confidentiality of deposits is critical to the application.
      *
      * WARNING: {dispatchBatch} may fail if an incompatible version of {ERC7984ERC20Wrapper} is used.
@@ -334,6 +334,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /**
      * @dev Claims `toToken` for `account`'s deposit in batch with id `batchId`. Tokens are always
      * sent to `account`, enabling third-party relayers to claim on behalf of depositors.
+     *
+     * IMPORTANT: This function is not protected against reentrancy. External functions built on top of it
+     * must be marked `nonReentrant`, as {claim} is.
      */
     function _claim(uint256 batchId, address account) internal virtual returns (euint64) {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
@@ -365,6 +368,12 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /**
      * @dev Quits the batch with id `batchId` for `account`, returning the entire deposit to `account`.
      * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
+     *
+     * NOTE: Developers should consider adding additional restrictions to this function if maintaining
+     * confidentiality of deposits is critical to the application.
+     *
+     * IMPORTANT: This function is not protected against reentrancy. External functions built on top of it
+     * must be marked `nonReentrant`, as {quit} is.
      */
     function _quit(uint256 batchId, address account) internal virtual returns (euint64) {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
