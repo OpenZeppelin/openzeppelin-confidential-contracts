@@ -571,6 +571,7 @@ Emitted when a vesting wallet is deployed.
 :routeDescription: pass:normal[xref:#BatcherConfidential-routeDescription--[`++routeDescription++`]]
 :batchState: pass:normal[xref:#BatcherConfidential-batchState-uint256-[`++batchState++`]]
 :_claim: pass:normal[xref:#BatcherConfidential-_claim-uint256-address-[`++_claim++`]]
+:_quit: pass:normal[xref:#BatcherConfidential-_quit-uint256-address-[`++_quit++`]]
 :_join: pass:normal[xref:#BatcherConfidential-_join-address-euint64-[`++_join++`]]
 :_executeRoute: pass:normal[xref:#BatcherConfidential-_executeRoute-uint256-uint256-[`++_executeRoute++`]]
 :_validateStateBitmap: pass:normal[xref:#BatcherConfidential-_validateStateBitmap-uint256-bytes32-[`++_validateStateBitmap++`]]
@@ -594,6 +595,7 @@ Emitted when a vesting wallet is deployed.
 :routeDescription-: pass:normal[xref:#BatcherConfidential-routeDescription--[`++routeDescription++`]]
 :batchState-uint256: pass:normal[xref:#BatcherConfidential-batchState-uint256-[`++batchState++`]]
 :_claim-uint256-address: pass:normal[xref:#BatcherConfidential-_claim-uint256-address-[`++_claim++`]]
+:_quit-uint256-address: pass:normal[xref:#BatcherConfidential-_quit-uint256-address-[`++_quit++`]]
 :_join-address-euint64: pass:normal[xref:#BatcherConfidential-_join-address-euint64-[`++_join++`]]
 :_executeRoute-uint256-uint256: pass:normal[xref:#BatcherConfidential-_executeRoute-uint256-uint256-[`++_executeRoute++`]]
 :_validateStateBitmap-uint256-bytes32: pass:normal[xref:#BatcherConfidential-_validateStateBitmap-uint256-bytes32-[`++_validateStateBitmap++`]]
@@ -651,6 +653,7 @@ underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancel
 * `++routeDescription()++`
 * `++batchState(batchId)++`
 * `++_claim(batchId, account)++`
+* `++_quit(batchId, account)++`
 * `++_join(to, amount)++`
 * `++_executeRoute(batchId, amount)++`
 * `++_validateStateBitmap(batchId, allowedStates)++`
@@ -725,7 +728,7 @@ NOTE: This function is not gated and can be called by anyone. Claims could be fr
 Quit the batch with id `batchId`. Entire deposit is returned to the user.
 This can only be called if the batch has not yet been dispatched or if the batch was canceled.
 
-NOTE: Developers should consider adding additional restrictions to this function
+NOTE: Developers should consider adding additional restrictions to {_quit}
 if maintaining confidentiality of deposits is critical to the application.
 
 WARNING: {dispatchBatch} may fail if an incompatible version of {ERC7984ERC20Wrapper} is used.
@@ -825,6 +828,22 @@ Returns the current state of a batch. Reverts if the batch does not exist.
 
 Claims `toToken` for `account`'s deposit in batch with id `batchId`. Tokens are always
 sent to `account`, enabling third-party relayers to claim on behalf of depositors.
+
+IMPORTANT: This function is not protected against reentrancy. External functions built on top of it
+must be marked `nonReentrant`, as {claim} is.
+
+[.contract-item]
+[[BatcherConfidential-_quit-uint256-address-]]
+==== `[.contract-item-name]#++_quit++#++(uint256 batchId, address account) → euint64++` [.item-kind]#internal#
+
+Quits the batch with id `batchId` for `account`, returning the entire deposit to `account`.
+This can only be called if the batch has not yet been dispatched or if the batch was canceled.
+
+NOTE: Developers should consider adding additional restrictions to this function if maintaining
+confidentiality of deposits is critical to the application.
+
+IMPORTANT: This function is not protected against reentrancy. External functions built on top of it
+must be marked `nonReentrant`, as {quit} is.
 
 [.contract-item]
 [[BatcherConfidential-_join-address-euint64-]]
