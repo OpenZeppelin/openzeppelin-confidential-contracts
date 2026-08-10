@@ -1,6 +1,10 @@
 # openzeppelin-confidential-contracts
 
 
+## 0.5.3 (2026-08-10)
+
+- `BatcherConfidential`: Extract logic from `quit` into internal function `_quit`. Developers can now call `_quit(batchId, address)` from a derived contract to quit on behalf of a depositor. ([#435](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/435))
+
 ## 0.5.2 (2026-08-04)
 
 - `VestingWalletConfidential`: Ensure that tokens are allowed to access handles they return (or the handle is uninitialized). ([#423](https://github.com/OpenZeppelin/openzeppelin-confidential-contracts/pull/423))
