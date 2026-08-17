@@ -56,6 +56,12 @@ export const SIGNATURES = {
     'postTransfer(address,address,bytes32)',
     'onInstall(bytes)',
   ],
+  ERC7984Hooked: [
+    'isModuleInstalled(address)',
+    'installModule(address,bytes)',
+    'uninstallModule(address)',
+    'isModuleManager(address)',
+  ],
 };
 
 export const INTERFACE_IDS = mapValues(SIGNATURES, interfaceId);

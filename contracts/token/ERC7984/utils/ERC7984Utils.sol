@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/utils/ERC7984Utils.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.5.2) (token/ERC7984/utils/ERC7984Utils.sol)
 pragma solidity ^0.8.26;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
@@ -9,6 +9,8 @@ import {ERC7984} from "../ERC7984.sol";
 
 /// @dev Library that provides common {ERC7984} utility functions.
 library ERC7984Utils {
+    error ERC7984UtilsUnauthorizedUseOfEncryptedAmount(ebool retval, address to);
+
     /**
      * @dev Performs a transfer callback to the recipient of the transfer `to`. Should be invoked
      * after all transfers "withCallback" on a {ERC7984}.
@@ -30,6 +32,10 @@ library ERC7984Utils {
             try IERC7984Receiver(to).onConfidentialTransferReceived(operator, from, amount, data) returns (
                 ebool retval
             ) {
+                require(
+                    !FHE.isInitialized(retval) || FHE.isAllowed(retval, to),
+                    ERC7984UtilsUnauthorizedUseOfEncryptedAmount(retval, to)
+                );
                 return retval;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {

@@ -464,6 +464,56 @@ describe('ERC7984', function () {
       });
     }
 
+    it('with callback returning encrypted value without recipient ACL', async function () {
+      const eboolOwner = await ethers.deployContract('ERC7984UnauthorizedReceiverMock', [this.token.target]);
+      await eboolOwner.createReturnValue(true);
+      const unauthorizedRetval = await eboolOwner.getReturnValue();
+
+      const maliciousReceiver = await ethers.deployContract('ERC7984UnauthorizedReceiverMock', [this.token.target]);
+      await maliciousReceiver.setReturnValue(unauthorizedRetval);
+
+      const utils = await ethers.getContractFactory('ERC7984Utils');
+      await expect(
+        this.token
+          .connect(this.holder)
+          ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
+            maliciousReceiver.target,
+            this.encryptedInput.handles[0],
+            this.encryptedInput.inputProof,
+            '0x',
+          ),
+      )
+        .to.be.revertedWithCustomError(utils, 'ERC7984UtilsUnauthorizedUseOfEncryptedAmount')
+        .withArgs(unauthorizedRetval, maliciousReceiver.target);
+    });
+
+    it('with callback returning an uninitialized value', async function () {
+      const receiver = await ethers.deployContract('ERC7984UnauthorizedReceiverMock', [this.token.target]);
+
+      const encryptedInput = await fhevm
+        .createEncryptedInput(this.token.target, this.holder.address)
+        .add64(100)
+        .encrypt();
+
+      await this.token
+        .connect(this.holder)
+        ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
+          receiver.target,
+          encryptedInput.handles[0],
+          encryptedInput.inputProof,
+          '0x',
+        );
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.token.confidentialBalanceOf(this.holder),
+          this.token.target,
+          this.holder,
+        ),
+      ).to.eventually.equal(1000);
+    });
+
     it('with callback reverting without a reason', async function () {
       await expect(
         this.token

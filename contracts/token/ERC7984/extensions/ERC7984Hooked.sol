@@ -4,8 +4,10 @@
 pragma solidity ^0.8.26;
 
 import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {IERC7984Hooked} from "./../../../interfaces/IERC7984Hooked.sol";
 import {IERC7984HookModule} from "./../../../interfaces/IERC7984HookModule.sol";
 import {HandleAccessManager} from "./../../../utils/HandleAccessManager.sol";
 import {ERC7984} from "./../ERC7984.sol";
@@ -23,15 +25,10 @@ import {ERC7984} from "./../ERC7984.sol";
  * ACL access allows hook modules to grant themselves (or any other address) allowance to view any handle the token has access to.
  * ACL allowances granted by the hook module persist even after the module is uninstalled.
  */
-abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
+abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked {
     using EnumerableSet for *;
 
     EnumerableSet.AddressSet private _modules;
-
-    /// @dev Emitted when a module is installed.
-    event ERC7984HookedModuleInstalled(address module);
-    /// @dev Emitted when a module is uninstalled.
-    event ERC7984HookedModuleUninstalled(address module);
 
     /// @dev The address is not a valid module.
     error ERC7984HookedInvalidModule(address module);
@@ -41,30 +38,30 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
     error ERC7984HookedNonexistentModule(address module);
     /// @dev The maximum number of modules has been exceeded.
     error ERC7984HookedExceededMaxModules();
+    /// @dev The caller is not a module manager.
+    error ERC7984HookedUnauthorizedModuleManager(address caller);
 
-    modifier onlyAuthorizedModuleChange() {
-        _authorizeModuleChange();
+    modifier onlyModuleManager() {
+        _checkModuleManager(msg.sender);
         _;
     }
 
-    /// @dev Checks if a module is installed.
-    function isModuleInstalled(address module) public view virtual returns (bool) {
-        return _modules.contains(module);
-    }
-
-    /**
-     * @dev Installs a hook module.
-     *
-     * Consider gas footprint of the module before adding it since all modules will perform
-     * both steps (pre-hook, post-hook) on all transfers.
-     */
-    function installModule(address module, bytes memory initData) public virtual onlyAuthorizedModuleChange {
+    /// @inheritdoc IERC7984Hooked
+    function installModule(address module, bytes memory initData) public virtual onlyModuleManager {
         _installModule(module, initData);
     }
 
-    /// @dev Uninstalls a hook module.
-    function uninstallModule(address module) public virtual onlyAuthorizedModuleChange {
+    /// @inheritdoc IERC7984Hooked
+    function uninstallModule(address module) public virtual onlyModuleManager {
         _uninstallModule(module);
+    }
+
+    /// @inheritdoc IERC7984Hooked
+    function isModuleManager(address account) public view virtual returns (bool);
+
+    /// @inheritdoc IERC7984Hooked
+    function isModuleInstalled(address module) public view virtual returns (bool) {
+        return _modules.contains(module);
     }
 
     /**
@@ -81,8 +78,10 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
         return 15;
     }
 
-    /// @dev Authorization logic for installing and uninstalling modules. Must be implemented by the concrete contract.
-    function _authorizeModuleChange() internal virtual;
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984, IERC165) returns (bool) {
+        return interfaceId == type(IERC7984Hooked).interfaceId || super.supportsInterface(interfaceId);
+    }
 
     /// @dev Internal function which installs a hook module.
     function _installModule(address module, bytes memory initData) internal virtual {
@@ -103,6 +102,11 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager {
         require(_modules.remove(module), ERC7984HookedNonexistentModule(module));
 
         emit ERC7984HookedModuleUninstalled(module);
+    }
+
+    /// @dev Checks if the account is authorized to install and uninstall modules.
+    function _checkModuleManager(address account) internal virtual {
+        require(isModuleManager(account), ERC7984HookedUnauthorizedModuleManager(account));
     }
 
     /**
