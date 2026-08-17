@@ -67,7 +67,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(underlying() == msg.sender, ERC7984UnauthorizedCaller(msg.sender));
 
         // mint confidential token
-        address to = _getOnTransferReceivedWrapRecipient(operator, from, amount, data);
+        address to = _getOnTransferReceivedWrapRecipient(operator, from, data);
         _wrap(to, amount);
 
         // transfer excess back to the sender
@@ -226,7 +226,6 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     function _getOnTransferReceivedWrapRecipient(
         address /*operator*/,
         address from,
-        uint256 /*amount*/,
         bytes calldata data
     ) internal view virtual returns (address) {
         uint256 length = data.length;
