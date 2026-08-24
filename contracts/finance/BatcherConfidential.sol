@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.5.1) (finance/BatcherConfidential.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.5.3) (finance/BatcherConfidential.sol)
 
 pragma solidity ^0.8.26;
 
@@ -148,35 +148,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * @dev Quit the batch with id `batchId`. Entire deposit is returned to the user.
      * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
      *
-     * NOTE: Developers should consider adding additional restrictions to this function
+     * NOTE: Developers should consider adding additional restrictions to {_quit}
      * if maintaining confidentiality of deposits is critical to the application.
      *
      * WARNING: {dispatchBatch} may fail if an incompatible version of {ERC7984ERC20Wrapper} is used.
      * This function must be unrestricted in cases where batch dispatching fails.
      */
     function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
-
-        euint64 deposit = deposits(batchId, msg.sender);
-        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, msg.sender));
-
-        euint64 totalDeposits_ = totalDeposits(batchId);
-
-        FHE.allowTransient(deposit, address(fromToken()));
-        euint64 sent = fromToken().confidentialTransfer(msg.sender, deposit);
-        euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
-        euint64 newDeposit = FHE.sub(deposit, sent);
-
-        FHE.allowThis(newTotalDeposits);
-        FHE.allowThis(newDeposit);
-        FHE.allow(newDeposit, msg.sender);
-
-        _batches[batchId].totalDeposits = newTotalDeposits;
-        _batches[batchId].deposits[msg.sender] = newDeposit;
-
-        emit Quit(batchId, msg.sender, sent);
-
-        return sent;
+        return _quit(batchId, msg.sender);
     }
 
     /**
@@ -355,6 +334,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /**
      * @dev Claims `toToken` for `account`'s deposit in batch with id `batchId`. Tokens are always
      * sent to `account`, enabling third-party relayers to claim on behalf of depositors.
+     *
+     * IMPORTANT: This function is not protected against reentrancy. External functions built on top of it
+     * must be marked `nonReentrant`, as {claim} is.
      */
     function _claim(uint256 batchId, address account) internal virtual returns (euint64) {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
@@ -381,6 +363,41 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         emit Claimed(batchId, account, amountTransferred);
 
         return amountTransferred;
+    }
+
+    /**
+     * @dev Quits the batch with id `batchId` for `account`, returning the entire deposit to `account`.
+     * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
+     *
+     * NOTE: Developers should consider adding additional restrictions to this function if maintaining
+     * confidentiality of deposits is critical to the application.
+     *
+     * IMPORTANT: This function is not protected against reentrancy. External functions built on top of it
+     * must be marked `nonReentrant`, as {quit} is.
+     */
+    function _quit(uint256 batchId, address account) internal virtual returns (euint64) {
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
+
+        euint64 deposit = deposits(batchId, account);
+        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, account));
+
+        euint64 totalDeposits_ = totalDeposits(batchId);
+
+        FHE.allowTransient(deposit, address(fromToken()));
+        euint64 sent = fromToken().confidentialTransfer(account, deposit);
+        euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
+        euint64 newDeposit = FHE.sub(deposit, sent);
+
+        FHE.allowThis(newTotalDeposits);
+        FHE.allowThis(newDeposit);
+        FHE.allow(newDeposit, account);
+
+        _batches[batchId].totalDeposits = newTotalDeposits;
+        _batches[batchId].deposits[account] = newDeposit;
+
+        emit Quit(batchId, account, sent);
+
+        return sent;
     }
 
     /**
