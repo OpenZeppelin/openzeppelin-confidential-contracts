@@ -141,6 +141,23 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
 
           // Edge cases to run with sender as caller
           if (asSender) {
+            it('from address with no balance should pass', async function () {
+              const encryptedInput = await fhevm
+                .createEncryptedInput(await this.token.getAddress(), this.recipient.address)
+                .add64(100)
+                .encrypt();
+
+              await expect(
+                this.token
+                  .connect(this.recipient)
+                  ['confidentialTransfer(address,bytes32,bytes)'](
+                    this.holder.address,
+                    encryptedInput.handles[0],
+                    encryptedInput.inputProof,
+                  ),
+              ).to.not.be.reverted;
+            });
+
             it('to zero address', async function () {
               const encryptedInput = await fhevm
                 .createEncryptedInput(await this.token.getAddress(), this.holder.address)
@@ -419,6 +436,56 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
           ).to.eventually.equal(callbackSuccess ? 0 : 1000);
         });
       }
+
+      it('with callback returning encrypted value without recipient ACL', async function () {
+        const eboolOwner = await ethers.deployContract('ERC7984UnauthorizedReceiverMock', [this.token.target]);
+        await eboolOwner.createReturnValue(true);
+        const unauthorizedRetval = await eboolOwner.getReturnValue();
+
+        const maliciousReceiver = await ethers.deployContract('ERC7984UnauthorizedReceiverMock', [this.token.target]);
+        await maliciousReceiver.setReturnValue(unauthorizedRetval);
+
+        const utils = await ethers.getContractFactory('ERC7984Utils');
+        await expect(
+          this.token
+            .connect(this.holder)
+            ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
+              maliciousReceiver.target,
+              this.encryptedInput.handles[0],
+              this.encryptedInput.inputProof,
+              '0x',
+            ),
+        )
+          .to.be.revertedWithCustomError(utils, 'ERC7984UtilsUnauthorizedUseOfEncryptedAmount')
+          .withArgs(unauthorizedRetval, maliciousReceiver.target);
+      });
+
+      it('with callback returning an uninitialized value', async function () {
+        const receiver = await ethers.deployContract('ERC7984UnauthorizedReceiverMock', [this.token.target]);
+
+        const encryptedInput = await fhevm
+          .createEncryptedInput(await this.token.getAddress(), this.holder.address)
+          .add64(100)
+          .encrypt();
+
+        await this.token
+          .connect(this.holder)
+          ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
+            receiver.target,
+            encryptedInput.handles[0],
+            encryptedInput.inputProof,
+            '0x',
+          );
+
+        await expect(
+          fhevm.userDecryptEuint(
+            FhevmType.euint64,
+            await this.token.confidentialBalanceOf(this.holder),
+            await this.token.getAddress(),
+            this.holder,
+          ),
+        ).to.eventually.equal(1000);
+      });
 
       it('with callback reverting without a reason', async function () {
         await expect(
