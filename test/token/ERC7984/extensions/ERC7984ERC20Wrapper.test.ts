@@ -1,5 +1,6 @@
 import { ERC7984ERC20WrapperMock } from '../../../../types';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
@@ -31,13 +32,20 @@ describe('ERC7984ERC20Wrapper', function () {
     await this.token.connect(this.holder).approve(this.wrapper, ethers.MaxUint256);
   });
 
+  describe('should behave like ERC7984', function () {
+    beforeEach(async function () {
+      this.token = this.wrapper;
+    });
+    shouldBehaveLikeERC7984(name, symbol, uri, 6, { supportsERC7984ERC20Wrapper: true });
+  });
+
   describe('ERC165', async function () {
     it('should support interface', async function () {
       await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC165)).to.eventually.be.true;
       await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC1363Receiver)).to.eventually.be.true;
       await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
       await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.true;
-      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.false;
+      await expect(this.wrapper.supportsInterface(INTERFACE_IDS.ERC7984RWA)).to.eventually.be.false;
     });
 
     it('should not support interface', async function () {
