@@ -230,20 +230,25 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         emit OperatorSet(holder, operator, until);
     }
 
-    function _mint(address to, euint64 amount, bool isForced) internal returns (euint64 transferred) {
+    function _mint(address to, euint64 amount, bool bypassRestrictions) internal returns (euint64 transferred) {
         require(to != address(0), ERC7984InvalidReceiver(address(0)));
-        return _update(address(0), to, amount, isForced);
+        return _update(address(0), to, amount, bypassRestrictions);
     }
 
-    function _burn(address from, euint64 amount, bool isForced) internal returns (euint64 transferred) {
+    function _burn(address from, euint64 amount, bool bypassRestrictions) internal returns (euint64 transferred) {
         require(from != address(0), ERC7984InvalidSender(address(0)));
-        return _update(from, address(0), amount, isForced);
+        return _update(from, address(0), amount, bypassRestrictions);
     }
 
-    function _transfer(address from, address to, euint64 amount, bool isForced) internal returns (euint64 transferred) {
+    function _transfer(
+        address from,
+        address to,
+        euint64 amount,
+        bool bypassRestrictions
+    ) internal returns (euint64 transferred) {
         require(from != address(0), ERC7984InvalidSender(address(0)));
         require(to != address(0), ERC7984InvalidReceiver(address(0)));
-        return _update(from, to, amount, isForced);
+        return _update(from, to, amount, bypassRestrictions);
     }
 
     /**
@@ -285,7 +290,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
 
     /**
      * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
-     * If `isForced` is true, extensions should treat the update as a permissioned flow such as a refund or force transfer
+     * If `bypassRestrictions` is true, extensions should treat the update as a permissioned flow such as a refund or force transfer
      * and not apply any additional restrictions.
      *
      * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
@@ -294,7 +299,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         address from,
         address to,
         euint64 amount,
-        bool /* isForced */
+        bool /* bypassRestrictions */
     ) internal virtual returns (euint64 transferred) {
         ebool success;
         euint64 ptr;

@@ -14,9 +14,9 @@ contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, HandleAccessMana
         address from,
         address to,
         euint64 amount,
-        bool isForced
+        bool bypassRestrictions
     ) internal virtual override(ERC7984Mock, ERC7984Freezable) returns (euint64) {
-        return super._update(from, to, amount, isForced);
+        return super._update(from, to, amount, bypassRestrictions);
     }
 
     // solhint-disable-next-line func-name-mixedcase

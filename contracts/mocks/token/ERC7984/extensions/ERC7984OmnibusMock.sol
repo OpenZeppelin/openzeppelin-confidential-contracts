@@ -11,8 +11,8 @@ abstract contract ERC7984OmnibusMock is ERC7984Omnibus, ERC7984Mock {
         address from,
         address to,
         euint64 amount,
-        bool isForced
+        bool bypassRestrictions
     ) internal virtual override(ERC7984Mock, ERC7984) returns (euint64) {
-        return super._update(from, to, amount, isForced);
+        return super._update(from, to, amount, bypassRestrictions);
     }
 }

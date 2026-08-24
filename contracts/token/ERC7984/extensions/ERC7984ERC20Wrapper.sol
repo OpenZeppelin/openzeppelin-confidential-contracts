@@ -208,12 +208,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         address from,
         address to,
         euint64 amount,
-        bool isForced
+        bool bypassRestrictions
     ) internal virtual override returns (euint64) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
         }
-        return super._update(from, to, amount, isForced);
+        return super._update(from, to, amount, bypassRestrictions);
     }
 
     /**

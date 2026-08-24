@@ -17,8 +17,8 @@ contract ERC7984ObserverAccessMock is ERC7984ObserverAccess, ERC7984Mock {
         address from,
         address to,
         euint64 amount,
-        bool isForced
+        bool bypassRestrictions
     ) internal virtual override(ERC7984ObserverAccess, ERC7984Mock) returns (euint64) {
-        return super._update(from, to, amount, isForced);
+        return super._update(from, to, amount, bypassRestrictions);
     }
 }

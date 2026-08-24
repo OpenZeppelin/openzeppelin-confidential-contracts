@@ -55,14 +55,19 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         address from,
         address to,
         euint64 amount,
-        bool isForced
+        bool bypassRestrictions
     ) internal virtual override returns (euint64 transferred) {
-        transferred = super._update(from, to, amount, isForced);
+        transferred = super._update(from, to, amount, bypassRestrictions);
         FHE.allow(confidentialTotalSupply(), _OWNER);
     }
 
-    function $_update(address from, address to, uint64 amount, bool isForced) public returns (euint64 transferred) {
-        return _update(from, to, FHE.asEuint64(amount), isForced);
+    function $_update(
+        address from,
+        address to,
+        uint64 amount,
+        bool bypassRestrictions
+    ) public returns (euint64 transferred) {
+        return _update(from, to, FHE.asEuint64(amount), bypassRestrictions);
     }
 
     function $_mint(
@@ -113,8 +118,8 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
-        bool isForced
+        bool bypassRestrictions
     ) public virtual returns (euint64 transferred) {
-        return _update(from, to, FHE.fromExternal(encryptedAmount, inputProof), isForced);
+        return _update(from, to, FHE.fromExternal(encryptedAmount, inputProof), bypassRestrictions);
     }
 }

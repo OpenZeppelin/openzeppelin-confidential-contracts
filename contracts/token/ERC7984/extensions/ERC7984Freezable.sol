@@ -64,12 +64,12 @@ abstract contract ERC7984Freezable is ERC7984 {
         address from,
         address to,
         euint64 encryptedAmount,
-        bool isForced
+        bool bypassRestrictions
     ) internal virtual override returns (euint64) {
-        if (from != address(0) && !isForced) {
+        if (from != address(0) && !bypassRestrictions) {
             euint64 unfrozen = _confidentialAvailable(from);
             encryptedAmount = FHE.select(FHE.le(encryptedAmount, unfrozen), encryptedAmount, FHE.asEuint64(0));
         }
-        return super._update(from, to, encryptedAmount, isForced);
+        return super._update(from, to, encryptedAmount, bypassRestrictions);
     }
 }

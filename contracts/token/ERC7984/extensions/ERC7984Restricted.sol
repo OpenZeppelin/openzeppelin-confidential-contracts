@@ -57,13 +57,13 @@ abstract contract ERC7984Restricted is ERC7984 {
         address from,
         address to,
         euint64 value,
-        bool isForced
+        bool bypassRestrictions
     ) internal virtual override returns (euint64) {
-        if (!isForced) {
+        if (!bypassRestrictions) {
             _checkSenderRestriction(from);
             _checkRecipientRestriction(to);
         }
-        return super._update(from, to, value, isForced);
+        return super._update(from, to, value, bypassRestrictions);
     }
 
     /// @dev Updates the restriction of a user account.
