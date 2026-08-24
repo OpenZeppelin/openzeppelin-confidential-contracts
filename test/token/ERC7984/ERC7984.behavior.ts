@@ -407,8 +407,8 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
           ).to.eventually.equal(callbackSuccess ? 0 : 1000);
 
           // Verify event contents
-          await expect(tx).to.emit(recipientContract, 'ConfidentialTransferCallback').withArgs(callbackSuccess);
-          const transferEvents = (await tx.wait()).logs.filter((log: any) => log.address === token.target);
+          await expect(tx).to.emit(this.recipientContract, 'ConfidentialTransferCallback').withArgs(callbackSuccess);
+          const transferEvents = (await tx.wait()).logs.filter((log: any) => log.address === this.token.target);
 
           const outboundTransferEvent = transferEvents[0];
           const inboundTransferEvent = transferEvents[1];
