@@ -2,11 +2,15 @@
 
 pragma solidity ^0.8.27;
 
-import {euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984Restricted} from "../../../../token/ERC7984/extensions/ERC7984Restricted.sol";
 import {ERC7984Mock} from "../ERC7984Mock.sol";
 
-abstract contract ERC7984RestrictedMock is ERC7984Restricted, ERC7984Mock {
+abstract contract ERC7984RestrictedMock is ERC7984Mock, ERC7984Restricted {
+    function transfer(address to, uint64 amount) public {
+        _transfer(msg.sender, to, FHE.asEuint64(amount), false);
+    }
+
     function _update(
         address from,
         address to,
