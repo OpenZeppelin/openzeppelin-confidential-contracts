@@ -39,7 +39,27 @@ WARNING: Setting an operator for any amount of time allows the operator to _**ta
 
 The token standard exposes transfer functions with and without callbacks. It is up to the caller to decide if a callback is necessary for the transfer. For smart contracts that support it, callbacks allow the operator approval step to be skipped and directly invoke the receiver contract via a callback.
 
-Smart contracts that are the target of a callback must implement xref:api:interfaces.adoc#IERC7984Receiver[`++IERC7984Receiver++`]. After balances are updated for a transfer, the callback is triggered by calling the xref:api:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`++onConfidentialTransferReceived++`] function. The function must either revert or return an `ebool` indicating success. If the callback returns false, the ERC-7984 token contract attempts to refund the tokens from the recipient to the sender using a forced update, allowing extensions to skip additional transfer restrictions for the refund leg.
+Smart contracts that are the target of a callback must implement xref:api:interfaces.adoc#IERC7984Receiver[`++IERC7984Receiver++`]. After balances are updated for a transfer, the callback is triggered by calling the xref:api:interfaces.adoc#IERC7984Receiver-onConfidentialTransferReceived-address-address-euint64-bytes-[`++onConfidentialTransferReceived++`] function. The function must either revert or return an `ebool` indicating success. If the callback returns false, the ERC-7984 token contract attempts to refund the tokens from the recipient to the sender with `bypassRestrictions` set to true, indicating to extensions that additional transfer restrictions should be skipped for the refund leg.
+
+[[bypass-restrictions]]
+=== Bypassing restrictions
+
+All balance changes--transfers, mints, and burns--flow through the internal xref:api:token.adoc#ERC7984-_update-address-address-euint64-bool-[`++_update++`] function, which takes a `bypassRestrictions` flag. When this flag is `true`, extensions that override `_update` should skip any transfer restrictions they would normally enforce.
+
+This flag exists so that trusted, permissioned flows are not silently blocked by an extension. Because a confidential transfer that fails validation moves `0` tokens rather than reverting, a blocked update in one of these flows would be a silent loss of funds. Setting `bypassRestrictions` guarantees the balance change goes through.
+
+The library sets `bypassRestrictions` in two places:
+
+* *Callback refunds*: when a xref:#callback[callback] returns false, the refund from the recipient back to the sender bypasses restrictions, so the tokens always return to the sender regardless of any restrictions.
+* *Wrapping*: xref:api:token.adoc#ERC7984ERC20Wrapper[`++ERC7984ERC20Wrapper++`] mints confidential tokens with restrictions bypassed. Since the underlying ERC-20 has already been transferred in, the mint must not silently fail.
+
+The extensions shipped in this library honor the flag as follows when it is set:
+
+* xref:api:token.adoc#ERC7984Restricted[`++ERC7984Restricted++`]: skips the sender and recipient restriction checks.
+* xref:api:token.adoc#ERC7984Freezable[`++ERC7984Freezable++`]: skips the unfrozen balance check.
+* xref:api:token.adoc#ERC7984Hooked[`++ERC7984Hooked++`]: skips pre-transfer hook gating, but still runs post-transfer hooks.
+
+WARNING: When writing a custom extension that overrides `_update`, you are responsible for respecting the `bypassRestrictions` flag. Any restriction you add should be skipped when the flag is `true`--otherwise permissioned flows such as refunds and wrapping may fail. Conversely, only pass `true` from trusted code paths, since it bypasses every restriction check.
 
 [[examples]]
 == Examples
@@ -67,12 +87,12 @@ function wrap(address to, uint256 amount) public virtual {
     // take ownership of the tokens
     SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
 
-    // mint confidential token
-    _mint(to, (amount / rate()).toUint64().asEuint64());
+    // mint confidential token (bypassing restrictions, see below)
+    _mint(to, (amount / rate()).toUint64().asEuint64(), true);
 }
 ----
 
-The `ERC20` token is simply transferred in, which would revert on failure. We then transfer out the correct amount of the ERC-7984 using the internal `_mint` function, which is guaranteed to succeed.
+The `ERC20` token is simply transferred in, which would revert on failure. We then transfer out the correct amount of the ERC-7984 using the internal `_mint` function. The mint passes `bypassRestrictions` as `true` (see xref:#bypass-restrictions[bypassing restrictions]), so it skips any extension restrictions and is guaranteed to succeed--otherwise the underlying tokens would be locked in the wrapper with nothing minted in return.
 
 ==== Swap ERC-7984 to ERC-7984
 

@@ -51,7 +51,7 @@ abstract contract ERC7984Restricted is ERC7984 {
      * * `from` must be allowed to transfer tokens (see {canTransact}).
      * * `to` must be allowed to receive tokens (see {canTransact}).
      *
-     * Forced updates skip sender and recipient restriction checks.
+     * Updates with `bypassRestrictions` set to true skip the sender and recipient restriction checks.
      */
     function _update(
         address from,

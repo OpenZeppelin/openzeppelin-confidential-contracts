@@ -267,8 +267,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * the hook can still return false, in which case the refund transfers zero tokens. The sender's tokens
      * end up with the recipient rather than being refunded.
      *
-     * Refunds are treated as forced updates so extensions can identify and skip additional transfer restrictions.
-     * Extensions that ignore the forced update flag may still cause a refund to fail.
+     * Refunds set `bypassRestrictions` to true so extensions can identify and skip additional transfer restrictions.
+     * Extensions that ignore the `bypassRestrictions` flag may still cause a refund to fail.
      */
     function _transferAndCall(
         address from,
@@ -290,8 +290,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
 
     /**
      * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
-     * If `bypassRestrictions` is true, extensions should treat the update as a permissioned flow such as a refund or force transfer
-     * and not apply any additional restrictions.
+     * If `bypassRestrictions` is true, extensions should treat the update as a permissioned flow such as a refund or
+     * wrap and not apply any additional restrictions.
      *
      * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
      */

@@ -55,7 +55,7 @@ abstract contract ERC7984Freezable is ERC7984 {
      * @dev See {ERC7984-_update}.
      *
      * The `from` account must have sufficient unfrozen balance,
-     * otherwise 0 tokens are transferred. Forced updates skip this check.
+     * otherwise 0 tokens are transferred. Updates with `bypassRestrictions` set to true skip this check.
      * The default freezing behavior can be changed (for a pass-through for instance) by overriding
      * {_confidentialAvailable}. The internal function is used for actual gating (not the public function)
      * to avoid unnecessarily granting ACL allowances.
