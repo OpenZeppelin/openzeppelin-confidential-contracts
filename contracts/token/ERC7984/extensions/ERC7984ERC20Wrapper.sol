@@ -247,7 +247,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * @dev Internal logic for handling wrapping of tokens. Sourcing of the underlying token must be handled by the caller.
      * The `amount` parameter is the amount of underlying tokens to wrap.
      *
-     * NOTE: Wrapping tokens mints with `bypassRestrictions` set to true on the confidential token to ensure there is no 
+     * NOTE: Wrapping tokens mints with `bypassRestrictions` set to true on the confidential token to ensure there is no
      * silent failure. This will bypass any restrictions on the confidential token implemented in other extensions.
      */
     function _wrap(address to, uint256 amount) internal virtual returns (euint64) {
