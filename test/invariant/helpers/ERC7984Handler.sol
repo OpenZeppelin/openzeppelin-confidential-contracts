@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {BaseHandler} from "./BaseHandler.sol";
+import {ERC7984Mock} from "./../../../contracts/mocks/token/ERC7984/ERC7984Mock.sol";
 import {AddressSet, LibAddressSet} from "./AddressSet.sol";
-import {ERC7984Mock} from "../../../contracts/mocks/token/ERC7984/ERC7984Mock.sol";
+import {BaseHandler} from "./BaseHandler.sol";
 
 /// @dev Managed handler for {ERC7984} accounting invariants.
 ///

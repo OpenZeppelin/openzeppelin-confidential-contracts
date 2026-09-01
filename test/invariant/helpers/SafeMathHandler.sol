@@ -2,8 +2,8 @@
 pragma solidity ^0.8.27;
 
 import {ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHESafeMathMock} from "./../../../contracts/mocks/utils/FHESafeMathMock.sol";
 import {BaseHandler} from "./BaseHandler.sol";
-import {FHESafeMathMock} from "../../../contracts/mocks/utils/FHESafeMathMock.sol";
 
 /// @dev Managed handler for {FHESafeMath} correctness (INV-04).
 ///
