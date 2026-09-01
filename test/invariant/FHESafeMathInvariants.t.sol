@@ -29,7 +29,7 @@ contract FHESafeMathInvariants is FhevmTest {
 
     /// INV-04: the tryIncrease/tryDecrease accumulator and the tryAdd/trySub fresh ops
     /// always match the reference plaintext computation (value AND success flag).
-    function invariant_INV04_safeMathMatchesModel() public {
+    function invariant_safeMathMatchesModel() public {
         if (handler.hasOp()) {
             assertEq(uint256(decrypt(handler.acc())), handler.shadowAcc(), "acc != shadow");
             assertEq(decrypt(handler.lastSuccess()), handler.expectedSuccess(), "success flag mismatch");

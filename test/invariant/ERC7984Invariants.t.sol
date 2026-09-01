@@ -31,7 +31,7 @@ contract ERC7984Invariants is FhevmTest {
     }
 
     /// INV-01: confidentialTotalSupply == Σ confidentialBalanceOf(actor).
-    function invariant_INV01_supplyEqualsSumOfBalances() public {
+    function invariant_supplyEqualsSumOfBalances() public {
         address[] memory actors = handler.actors();
         uint256 sum;
         for (uint256 i; i < actors.length; ++i) {
@@ -41,7 +41,7 @@ contract ERC7984Invariants is FhevmTest {
     }
 
     /// INV-02: supply == net minted, cross-checked against the shadow model.
-    function invariant_INV02_supplyEqualsNetMinted() public {
+    function invariant_supplyEqualsNetMinted() public {
         uint256 supply = decrypt(token.confidentialTotalSupply());
         assertEq(supply, handler.shadowSupply(), "supply != shadow supply");
         assertEq(supply, handler.ghostMinted() - handler.ghostBurned(), "supply != minted - burned");
@@ -49,7 +49,7 @@ contract ERC7984Invariants is FhevmTest {
 
     /// INV-03: no balance exceeds supply (underflow/overflow-wrap detector), and each
     /// balance equals its shadow (so an overflowing mint stayed a no-op).
-    function invariant_INV03_noBalanceExceedsSupply() public {
+    function invariant_noBalanceExceedsSupply() public {
         uint256 supply = decrypt(token.confidentialTotalSupply());
         address[] memory actors = handler.actors();
         for (uint256 i; i < actors.length; ++i) {
