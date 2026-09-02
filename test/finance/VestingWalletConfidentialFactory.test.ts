@@ -1,5 +1,6 @@
 import { $VestingWalletConfidentialFactoryMock } from '../../types/contracts-exposed/mocks/finance/VestingWalletConfidentialFactoryMock.sol/$VestingWalletConfidentialFactoryMock';
 import { $ERC7984Mock } from '../../types/contracts-exposed/mocks/token/ERC7984/ERC7984Mock.sol/$ERC7984Mock';
+import { MAX_OPERATOR_LIMIT } from '../helpers/erc7984';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
@@ -35,9 +36,17 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
       .connect(holder)
       ['$_mint(address,bytes32,bytes)'](holder.address, encryptedInput.handles[0], encryptedInput.inputProof);
     const until = (await time.latest()) + days(1);
-    await expect(await token.connect(holder).setOperator(await factory.getAddress(), until))
+    const limitInput = await fhevm
+      .createEncryptedInput(await token.getAddress(), holder.address)
+      .add64(MAX_OPERATOR_LIMIT)
+      .encrypt();
+    await expect(
+      await token
+        .connect(holder)
+        .setOperator(await factory.getAddress(), until, limitInput.handles[0], limitInput.inputProof),
+    )
       .to.emit(token, 'OperatorSet')
-      .withArgs(holder, await factory.getAddress(), until);
+      .withArgs(holder, await factory.getAddress(), until, ethers.hexlify(limitInput.handles[0]));
 
     Object.assign(this, {
       accounts,

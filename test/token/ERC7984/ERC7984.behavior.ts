@@ -1,4 +1,5 @@
 import { allowHandle } from '../../helpers/accounts';
+import { setOperator } from '../../helpers/erc7984';
 import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
@@ -86,7 +87,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
           beforeEach(async function () {
             if (!asSender) {
               const timestamp = (await ethers.provider.getBlock('latest'))!.timestamp + 100;
-              await this.token.connect(this.holder).setOperator(this.operator.address, timestamp);
+              await setOperator(this.token, this.holder, this.operator.address, timestamp);
             }
           });
 
@@ -111,7 +112,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
                 });
 
                 it('without operator approval should fail', async function () {
-                  await this.token.$_setOperator(this.holder, this.operator, 0);
+                  await setOperator(this.token, this.holder, this.operator.address, 0);
 
                   await expect(
                     this.token
@@ -327,7 +328,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
             if (usingTransferFrom) {
               describe('without operator approval', function () {
                 beforeEach(async function () {
-                  await this.token.connect(this.holder).setOperator(this.operator.address, 0);
+                  await setOperator(this.token, this.holder, this.operator.address, 0);
                   await allowHandle(
                     hre,
                     this.holder,

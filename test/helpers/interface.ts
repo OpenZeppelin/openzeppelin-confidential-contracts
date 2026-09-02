@@ -19,7 +19,7 @@ export const SIGNATURES = {
     'decimals()',
     'isOperator(address,address)',
     'name()',
-    'setOperator(address,uint48)',
+    'setOperator(address,uint48,bytes32,bytes)',
     'symbol()',
   ],
   ERC7984ERC20Wrapper: [

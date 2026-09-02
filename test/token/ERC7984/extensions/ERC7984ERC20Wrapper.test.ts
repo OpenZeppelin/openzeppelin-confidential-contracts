@@ -1,4 +1,5 @@
 import { ERC7984ERC20WrapperMock } from '../../../../types';
+import { setOperator } from '../../../helpers/erc7984';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
@@ -322,7 +323,7 @@ describe('ERC7984ERC20Wrapper', function () {
         .add64(withdrawalAmount)
         .encrypt();
 
-      await this.wrapper.connect(this.holder).setOperator(this.operator.address, (await time.latest()) + 1000);
+      await setOperator(this.wrapper, this.holder, this.operator.address, (await time.latest()) + 1000);
 
       await this.wrapper
         .connect(this.operator)
