@@ -44,6 +44,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /// @dev The given holder `holder` is not authorized to spend on behalf of `spender`.
     error ERC7984UnauthorizedSpender(address holder, address spender);
 
+    /// @dev The given operator `operator` is invalid.
+    error ERC7984InvalidOperator(address operator);
+
     /**
      * @dev The caller `user` does not have access to the encrypted amount `amount`.
      *
@@ -225,7 +228,14 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         emit AmountDisclosed(encryptedAmount, cleartextAmount);
     }
 
+    /**
+     * @dev Sets the operator status of `operator` for `holder` until `until`.
+     *
+     * NOTE: A holder is always an operator of itself and has unrestricted access to its own tokens. That cannot be
+     * changed, therefore setting `holder` as its own operator reverts.
+     */
     function _setOperator(address holder, address operator, uint48 until) internal virtual {
+        require(holder != operator, ERC7984InvalidOperator(operator));
         _operators[holder][operator] = until;
         emit OperatorSet(holder, operator, until);
     }
