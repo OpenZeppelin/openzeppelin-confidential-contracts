@@ -11,7 +11,7 @@ interface IERC7984 is IERC165 {
      * @dev Emitted when the expiration timestamp for an operator `operator` is updated for a given `holder`.
      * The operator may move any amount of tokens on behalf of the holder until the timestamp `until`.
      */
-    event OperatorSet(address indexed holder, address indexed operator, uint48 until);
+    event OperatorSet(address indexed holder, address indexed operator, uint48 until, euint64 limit);
 
     /// @dev Emitted when a confidential transfer is made from `from` to `to` of encrypted amount `amount`.
     event ConfidentialTransfer(address indexed from, address indexed to, euint64 indexed amount);
@@ -43,14 +43,14 @@ interface IERC7984 is IERC165 {
     function confidentialBalanceOf(address account) external view returns (euint64);
 
     /// @dev Returns true if `spender` is currently an operator for `holder`.
-    function isOperator(address holder, address spender) external view returns (bool);
+    function isOperator(address holder, address spender) external view returns (bool, euint64);
 
     /**
      * @dev Sets `operator` as an operator for `holder` until the timestamp `until`.
      *
      * NOTE: An operator may transfer any amount of tokens on behalf of a holder while approved.
      */
-    function setOperator(address operator, uint48 until) external;
+    function setOperator(address operator, uint48 until, externalEuint64 limit, bytes calldata inputProof) external;
 
     /**
      * @dev Transfers the encrypted amount `encryptedAmount` to `to` with the given input proof `inputProof`.
