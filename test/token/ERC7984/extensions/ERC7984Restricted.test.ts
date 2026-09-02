@@ -1,6 +1,7 @@
 const { ethers, fhevm } = require('hardhat');
 const { expect } = require('chai');
 const { shouldBehaveLikeERC7984 } = require('../ERC7984.behavior');
+const { setOperator } = require('../../../helpers/erc7984');
 
 const name = 'token';
 const symbol = 'tk';
@@ -112,7 +113,7 @@ describe('ERC7984Restricted', function () {
 
       beforeEach(async function () {
         const timestamp = (await ethers.provider.getBlock('latest')).timestamp;
-        await this.token.connect(this.holder).setOperator(this.approved, timestamp + 1000);
+        await setOperator(this.token, this.holder, this.approved, timestamp + 1000);
 
         // Create encrypted input for the transfer amount
         encryptedInput = await fhevm
