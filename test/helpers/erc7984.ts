@@ -1,21 +1,20 @@
-import { Addressable, Signer, resolveAddress } from 'ethers';
+import { AddressLike, Signer, ZeroHash, resolveAddress } from 'ethers';
 import { fhevm } from 'hardhat';
 
-/// Largest limit an `euint64` allowance can hold, used when a test does not care about the operator limit.
-export const MAX_OPERATOR_LIMIT = 2n ** 64n - 1n;
-
-/// Encrypts `limit` and registers `operator` as an operator of `holder` until `until`.
+/// Registers `operator` as an operator of `holder` until `until`, encrypting `limit` when one is given.
+/// Omitting `limit` sends the empty handle, which registers an unlimited operator.
 export async function setOperator(
-  token: any,
+  token: any, // ethers.Contract (that implement ERC7984)
   holder: Signer,
-  operator: string | Addressable,
+  operator: AddressLike,
   until: bigint | number,
-  limit: bigint | number = MAX_OPERATOR_LIMIT,
+  limit?: bigint | number,
 ) {
-  const input = await fhevm
-    .createEncryptedInput(await resolveAddress(token), await holder.getAddress())
-    .add64(limit)
-    .encrypt();
+  const input = await (limit === undefined
+    ? Promise.resolve({ handles: [ZeroHash], inputProof: '0x' })
+    : Promise.all([resolveAddress(token), holder.getAddress()]).then(([tokenAddress, holderAddress]) =>
+        fhevm.createEncryptedInput(tokenAddress, holderAddress).add64(limit).encrypt(),
+      ));
 
   return token.connect(holder).setOperator(operator, until, input.handles[0], input.inputProof);
 }

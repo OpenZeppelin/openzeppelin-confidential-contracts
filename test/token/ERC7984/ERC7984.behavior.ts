@@ -81,6 +81,107 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
       });
     });
 
+    describe('operator limit', function () {
+      const until = 2n ** 48n - 1n;
+
+      // Transfers `amount` from the holder to the recipient, as the operator.
+      const transferFrom = async function (this: any, amount: number) {
+        const input = await fhevm
+          .createEncryptedInput(await this.token.getAddress(), this.operator.address)
+          .add64(amount)
+          .encrypt();
+
+        return this.token
+          .connect(this.operator)
+          ['confidentialTransferFrom(address,address,bytes32,bytes)'](
+            this.holder,
+            this.recipient,
+            input.handles[0],
+            input.inputProof,
+          );
+      };
+
+      const decrypt = async function (this: any, handle: string, account: any) {
+        return fhevm.userDecryptEuint(FhevmType.euint64, handle, await this.token.getAddress(), account);
+      };
+
+      describe('without a limit', function () {
+        beforeEach(async function () {
+          await setOperator(this.token, this.holder, this.operator.address, until);
+        });
+
+        it('registers an uninitialized limit', async function () {
+          await expect(this.token.isOperator(this.holder, this.operator)).to.eventually.deep.equal([
+            true,
+            ethers.ZeroHash,
+          ]);
+        });
+
+        it('does not constrain the operator', async function () {
+          await transferFrom.call(this, 600);
+          await transferFrom.call(this, 400);
+
+          await expect(
+            decrypt.call(this, await this.token.confidentialBalanceOf(this.recipient), this.recipient),
+          ).to.eventually.equal(1000);
+          await expect(this.token.isOperator(this.holder, this.operator)).to.eventually.deep.equal([
+            true,
+            ethers.ZeroHash,
+          ]);
+        });
+      });
+
+      describe('with a limit', function () {
+        beforeEach(async function () {
+          await setOperator(this.token, this.holder, this.operator.address, until, 300);
+        });
+
+        it('limit is decryptable by the holder and the operator', async function () {
+          const [, limit] = await this.token.isOperator(this.holder, this.operator);
+
+          await expect(decrypt.call(this, limit, this.holder)).to.eventually.equal(300);
+          await expect(decrypt.call(this, limit, this.operator)).to.eventually.equal(300);
+          await expect(decrypt.call(this, limit, this.anyone)).to.be.rejectedWith(
+            generateDecryptionErrorMessage(limit, this.anyone.address),
+          );
+        });
+
+        it('a transfer within the limit consumes it', async function () {
+          await transferFrom.call(this, 100);
+
+          await expect(
+            decrypt.call(this, await this.token.confidentialBalanceOf(this.recipient), this.recipient),
+          ).to.eventually.equal(100);
+
+          const [, limit] = await this.token.isOperator(this.holder, this.operator);
+          await expect(decrypt.call(this, limit, this.holder)).to.eventually.equal(200);
+        });
+
+        it('the limit is consumed across transfers', async function () {
+          await transferFrom.call(this, 100);
+          await transferFrom.call(this, 200);
+
+          await expect(
+            decrypt.call(this, await this.token.confidentialBalanceOf(this.recipient), this.recipient),
+          ).to.eventually.equal(300);
+
+          const [, limit] = await this.token.isOperator(this.holder, this.operator);
+          await expect(decrypt.call(this, limit, this.holder)).to.eventually.equal(0);
+        });
+
+        it('a transfer over the limit moves nothing and leaves the limit untouched', async function () {
+          await transferFrom.call(this, 301);
+
+          await expect(
+            decrypt.call(this, await this.token.confidentialBalanceOf(this.holder), this.holder),
+          ).to.eventually.equal(1000);
+
+          const [, limit] = await this.token.isOperator(this.holder, this.operator);
+          await expect(decrypt.call(this, limit, this.holder)).to.eventually.equal(300);
+        });
+      });
+    });
+
     describe('transfer', function () {
       for (const asSender of [true, false]) {
         describe(asSender ? 'as sender' : 'as operator', function () {

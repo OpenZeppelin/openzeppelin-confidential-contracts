@@ -120,7 +120,12 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 limit,
         bytes calldata inputProof
     ) public virtual {
-        _setOperator(msg.sender, operator, until, FHE.fromExternal(limit, inputProof));
+        _setOperator(
+            msg.sender,
+            operator,
+            until,
+            externalEuint64.unwrap(limit) == bytes32(0) ? euint64.wrap(0) : FHE.fromExternal(limit, inputProof)
+        );
     }
 
     /// @inheritdoc IERC7984
@@ -246,11 +251,19 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         emit AmountDisclosed(encryptedAmount, cleartextAmount);
     }
 
+    /**
+     * @dev Registers `operator` as an operator of `holder` until `until`, with an encrypted spending allowance.
+     *
+     * An uninitialized `limit` means the operator is unlimited. Uninitialized handles cannot be granted through the
+     * ACL, so the allowances are only set for an actual limit.
+     */
     function _setOperator(address holder, address operator, uint48 until, euint64 limit) internal virtual {
         _operators[holder][operator] = OperatorDetails({until: until, limit: limit});
-        FHE.allowThis(limit);
-        FHE.allow(limit, holder);
-        FHE.allow(limit, operator);
+        if (FHE.isInitialized(limit)) {
+            FHE.allowThis(limit);
+            FHE.allow(limit, holder);
+            FHE.allow(limit, operator);
+        }
         emit OperatorSet(holder, operator, until, limit);
     }
 
