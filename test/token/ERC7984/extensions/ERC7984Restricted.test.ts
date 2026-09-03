@@ -1,5 +1,6 @@
 const { ethers, fhevm } = require('hardhat');
 const { expect } = require('chai');
+const { FhevmType } = require('@fhevm/hardhat-plugin');
 const { shouldBehaveLikeERC7984 } = require('../ERC7984.behavior');
 
 const name = 'token';
@@ -73,20 +74,22 @@ describe('ERC7984Restricted', function () {
   describe('restricted token operations', function () {
     describe('transfer', function () {
       it('allows transfer when sender and recipient have DEFAULT restriction', async function () {
-        await this.token.connect(this.holder).transfer(this.recipient, initialSupply);
+        await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, initialSupply);
       });
 
       it('allows transfer when sender and recipient are ALLOWED', async function () {
         await this.token.$_allowUser(this.holder); // Sets to ALLOWED
         await this.token.$_allowUser(this.recipient); // Sets to ALLOWED
 
-        await this.token.connect(this.holder).transfer(this.recipient, initialSupply);
+        await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, initialSupply);
       });
 
       it('reverts when sender is BLOCKED', async function () {
         await this.token.$_blockUser(this.holder); // Sets to BLOCKED
 
-        await expect(this.token.connect(this.holder).transfer(this.recipient, initialSupply))
+        await expect(
+          this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, initialSupply),
+        )
           .to.be.revertedWithCustomError(this.token, 'UserRestricted')
           .withArgs(this.holder);
       });
@@ -94,7 +97,9 @@ describe('ERC7984Restricted', function () {
       it('reverts when recipient is BLOCKED', async function () {
         await this.token.$_blockUser(this.recipient); // Sets to BLOCKED
 
-        await expect(this.token.connect(this.holder).transfer(this.recipient, initialSupply))
+        await expect(
+          this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, initialSupply),
+        )
           .to.be.revertedWithCustomError(this.token, 'UserRestricted')
           .withArgs(this.recipient);
       });
@@ -103,7 +108,33 @@ describe('ERC7984Restricted', function () {
         await this.token.$_blockUser(this.holder); // Sets to BLOCKED
         await this.token.$_resetUser(this.holder); // Sets back to DEFAULT
 
-        await this.token.connect(this.holder).transfer(this.recipient, initialSupply);
+        await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, initialSupply);
+      });
+
+      describe('forced update', function () {
+        it('bypasses sender restriction', async function () {
+          await this.token.$_blockUser(this.holder); // Sets to BLOCKED
+          await this.token['$_update(address,address,uint64,bool)'](this.holder, this.recipient, initialSupply, true);
+
+          await expect(
+            fhevm.userDecryptEuint(
+              FhevmType.euint64,
+              await this.token.confidentialBalanceOf(this.holder),
+              this.token.target,
+              this.holder,
+            ),
+          ).to.eventually.equal(0n);
+        });
+
+        it('bypasses recipient restriction', async function () {
+          await this.token.$_blockUser(this.recipient); // Sets to BLOCKED
+          await this.token['$_update(address,address,uint64,bool)'](this.holder, this.recipient, initialSupply, true);
+
+          const balance = await this.token.confidentialBalanceOf(this.holder);
+          await expect(
+            fhevm.userDecryptEuint(FhevmType.euint64, balance, this.token.target, this.holder),
+          ).to.eventually.equal(0n);
+        });
       });
     });
 

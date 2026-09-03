@@ -161,6 +161,23 @@ describe('ERC7984Hooked', function () {
         ).to.eventually.equal(approve ? 100 : 0);
       });
     }
+
+    it('refund bypasses pre-transfer hooks disabled during callback', async function () {
+      const receiver = await ethers.deployContract('ERC7984ReceiverMutatorMock');
+
+      await this.token
+        .connect(this.holder)
+        ['confidentialTransferAndCall(address,uint64,bytes)'](
+          receiver,
+          4000,
+          ethers.AbiCoder.defaultAbiCoder().encode(['uint8', 'address'], [2, this.hookModule.target]),
+        );
+
+      const holderBalance = await this.token.confidentialBalanceOf(this.holder);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, holderBalance, this.token.target, this.holder),
+      ).to.eventually.equal(1000);
+    });
   });
 
   describe('isModuleManager', async function () {

@@ -44,9 +44,30 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         return confidentialTransfer(to, ciphertext);
     }
 
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
-        transferred = super._update(from, to, amount);
+    function confidentialTransferAndCall(address to, uint64 amount, bytes calldata data) public returns (euint64) {
+        euint64 ciphertext = FHE.asEuint64(amount);
+        FHE.allowTransient(ciphertext, msg.sender);
+
+        return confidentialTransferAndCall(to, ciphertext, data);
+    }
+
+    function _update(
+        address from,
+        address to,
+        euint64 amount,
+        bool bypassRestrictions
+    ) internal virtual override returns (euint64 transferred) {
+        transferred = super._update(from, to, amount, bypassRestrictions);
         FHE.allow(confidentialTotalSupply(), _OWNER);
+    }
+
+    function $_update(
+        address from,
+        address to,
+        uint64 amount,
+        bool bypassRestrictions
+    ) public returns (euint64 transferred) {
+        return _update(from, to, FHE.asEuint64(amount), bypassRestrictions);
     }
 
     function $_mint(
@@ -54,11 +75,11 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public returns (euint64 transferred) {
-        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _mint(to, FHE.fromExternal(encryptedAmount, inputProof), false);
     }
 
     function $_mint(address to, uint64 amount) public returns (euint64 transferred) {
-        return _mint(to, FHE.asEuint64(amount));
+        return _mint(to, FHE.asEuint64(amount), false);
     }
 
     function $_transfer(
@@ -67,7 +88,7 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public returns (euint64 transferred) {
-        return _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof), false);
     }
 
     function $_transferAndCall(
@@ -81,7 +102,7 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
     }
 
     function $_burn(address from, uint64 amount) public returns (euint64 transferred) {
-        return _burn(from, FHE.asEuint64(amount));
+        return _burn(from, FHE.asEuint64(amount), false);
     }
 
     function $_burn(
@@ -89,15 +110,16 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public returns (euint64 transferred) {
-        return _burn(from, FHE.fromExternal(encryptedAmount, inputProof));
+        return _burn(from, FHE.fromExternal(encryptedAmount, inputProof), false);
     }
 
     function $_update(
         address from,
         address to,
         externalEuint64 encryptedAmount,
-        bytes calldata inputProof
+        bytes calldata inputProof,
+        bool bypassRestrictions
     ) public virtual returns (euint64 transferred) {
-        return _update(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _update(from, to, FHE.fromExternal(encryptedAmount, inputProof), bypassRestrictions);
     }
 }

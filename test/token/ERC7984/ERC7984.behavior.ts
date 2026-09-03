@@ -311,7 +311,9 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
                   functionParams.unshift(from);
                   await contract.connect(sender).confidentialTransferFromAndCall(...functionParams);
                 } else {
-                  await contract.connect(sender).confidentialTransferAndCall(...functionParams);
+                  await contract
+                    .connect(sender)
+                    ['confidentialTransferAndCall(address,bytes32,bytes)'](...functionParams);
                 }
               } else {
                 if (usingTransferFrom) {

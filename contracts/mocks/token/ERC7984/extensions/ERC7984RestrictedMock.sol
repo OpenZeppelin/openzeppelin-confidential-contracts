@@ -8,14 +8,15 @@ import {ERC7984Mock} from "../ERC7984Mock.sol";
 
 abstract contract ERC7984RestrictedMock is ERC7984Mock, ERC7984Restricted {
     function transfer(address to, uint64 amount) public {
-        _transfer(msg.sender, to, FHE.asEuint64(amount));
+        _transfer(msg.sender, to, FHE.asEuint64(amount), false);
     }
 
     function _update(
         address from,
         address to,
-        euint64 amount
+        euint64 amount,
+        bool bypassRestrictions
     ) internal virtual override(ERC7984Mock, ERC7984Restricted) returns (euint64) {
-        return super._update(from, to, amount);
+        return super._update(from, to, amount, bypassRestrictions);
     }
 }

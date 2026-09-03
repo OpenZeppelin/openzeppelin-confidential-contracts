@@ -207,11 +207,16 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /// @inheritdoc ERC7984
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64) {
+    function _update(
+        address from,
+        address to,
+        euint64 amount,
+        bool bypassRestrictions
+    ) internal virtual override returns (euint64) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
         }
-        return super._update(from, to, amount);
+        return super._update(from, to, amount, bypassRestrictions);
     }
 
     /**
@@ -241,9 +246,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     /**
      * @dev Internal logic for handling wrapping of tokens. Sourcing of the underlying token must be handled by the caller.
      * The `amount` parameter is the amount of underlying tokens to wrap.
+     *
+     * NOTE: Wrapping tokens mints with `bypassRestrictions` set to true on the confidential token to ensure there is no
+     * silent failure. This will bypass any restrictions on the confidential token implemented in other extensions.
      */
     function _wrap(address to, uint256 amount) internal virtual returns (euint64) {
-        euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())));
+        euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), true);
         emit Wrap(to, amount - (amount % rate()), wrappedAmountSent);
 
         return wrappedAmountSent;
@@ -255,7 +263,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
         // try to burn, see how much we actually got
-        euint64 unwrapAmount_ = _burn(from, amount);
+        euint64 unwrapAmount_ = _burn(from, amount, false);
         FHE.makePubliclyDecryptable(unwrapAmount_);
 
         assert(unwrapRequester(euint64.unwrap(unwrapAmount_)) == address(0));
