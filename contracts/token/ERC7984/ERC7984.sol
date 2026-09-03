@@ -235,7 +235,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * changed, therefore setting `holder` as its own operator reverts.
      */
     function _setOperator(address holder, address operator, uint48 until) internal virtual {
-        require(holder != operator, ERC7984InvalidOperator(operator));
+        require(holder != operator && operator != address(0), ERC7984InvalidOperator(operator));
         _operators[holder][operator] = until;
         emit OperatorSet(holder, operator, until);
     }
