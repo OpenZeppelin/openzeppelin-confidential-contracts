@@ -102,6 +102,12 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
           .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidOperator')
           .withArgs(this.holder.address);
       });
+
+      it('reverts when operator is the zero address', async function () {
+        await expect(this.token.connect(this.holder).setOperator(ethers.ZeroAddress, 0))
+          .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidOperator')
+          .withArgs(ethers.ZeroAddress);
+      });
     });
 
     describe('transfer', function () {
