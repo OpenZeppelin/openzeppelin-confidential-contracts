@@ -445,7 +445,10 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * Additionally, the following must hold:
      *
      * - `swappedAmount >= ceil(unwrapAmountCleartext / 10 ** exchangeRateDecimals()) * toToken().rate()` (the exchange rate must not be 0)
+     * - `swappedAmount / toToken().rate() * 10 ** exchangeRateDecimals() / unwrapAmountCleartext <= type(uint64).max` (the exchange rate must fit in `uint64`)
      * - `swappedAmount \<= type(uint64).max * toToken().rate()` (the wrapped amount of {toToken} must fit in `uint64`)
+     * 
+     * Where `swappedAmount` is the batcher's balance of underlying {toToken} after route execution.
      * ====
      */
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (ExecuteOutcome);
