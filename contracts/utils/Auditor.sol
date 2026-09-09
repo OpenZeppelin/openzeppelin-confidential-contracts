@@ -9,7 +9,7 @@ import {FHE} from "@fhevm/solidity/lib/FHE.sol";
  * have the ability to decrypt all handles the granting contract is allowed to decrypt. Auditors
  * do not have the ability to operate on this encrypted data.
  */
-contract Auditor {
+abstract contract Auditor {
     address private immutable _PLACEHOLDER_WILDCARD_ADDRESS = address(type(uint160).max);
 
     /// @dev Add an auditor to the ACL. The auditor remains until explicitly revoked by calling {_removeAuditor}.
