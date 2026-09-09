@@ -49,6 +49,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /// @dev The given holder `holder` is not authorized to spend on behalf of `spender`.
     error ERC7984UnauthorizedSpender(address holder, address spender);
 
+    /// @dev The given operator `operator` is invalid.
+    error ERC7984InvalidOperator(address operator);
+
     /**
      * @dev The caller `user` does not have access to the encrypted amount `amount`.
      *
@@ -256,8 +259,12 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      *
      * An uninitialized `limit` means the operator is unlimited. Uninitialized handles cannot be granted through the
      * ACL, so the allowances are only set for an actual limit.
+     *
+     * NOTE: A holder is always an operator of itself and has unrestricted access to its own tokens. That cannot be
+     * changed, therefore setting `holder` as its own operator reverts.
      */
     function _setOperator(address holder, address operator, uint48 until, euint64 limit) internal virtual {
+        require(holder != operator && operator != address(0), ERC7984InvalidOperator(operator));
         _operators[holder][operator] = OperatorDetails({until: until, limit: limit});
         if (FHE.isInitialized(limit)) {
             FHE.allowThis(limit);

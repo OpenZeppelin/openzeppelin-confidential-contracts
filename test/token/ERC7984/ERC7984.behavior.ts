@@ -81,6 +81,39 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
       });
     });
 
+    describe('setOperator', function () {
+      it('sets the operator', async function () {
+        const timestamp = (await ethers.provider.getBlock('latest'))!.timestamp + 100;
+
+        await expect(setOperator(this.token, this.holder, this.operator.address, timestamp))
+          .to.emit(this.token, 'OperatorSet')
+          .withArgs(this.holder.address, this.operator.address, timestamp, ethers.ZeroHash);
+
+        await expect(this.token.isOperator(this.holder, this.operator)).to.eventually.deep.equal([
+          true,
+          ethers.ZeroHash,
+        ]);
+      });
+
+      it('holder is its own operator', async function () {
+        await expect(this.token.isOperator(this.holder, this.holder)).to.eventually.deep.equal([true, ethers.ZeroHash]);
+      });
+
+      it('reverts when holder is the operator', async function () {
+        const timestamp = (await ethers.provider.getBlock('latest'))!.timestamp + 100;
+
+        await expect(setOperator(this.token, this.holder, this.holder.address, timestamp))
+          .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidOperator')
+          .withArgs(this.holder.address);
+      });
+
+      it('reverts when operator is the zero address', async function () {
+        await expect(setOperator(this.token, this.holder, ethers.ZeroAddress, 0))
+          .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidOperator')
+          .withArgs(ethers.ZeroAddress);
+      });
+    });
+
     describe('operator limit', function () {
       const until = 2n ** 48n - 1n;
 
