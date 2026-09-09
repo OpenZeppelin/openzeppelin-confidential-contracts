@@ -28,11 +28,16 @@ import {ERC7984} from "./../ERC7984.sol";
  * {ERC7984HolderCapHookModule}.
  */
 abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363Receiver {
+    struct UnwrapRequest {
+        address recipient;
+        bytes12 metadata;
+    }
+
     IERC20 private immutable _underlying;
     uint8 private immutable _decimals;
     uint256 private immutable _rate;
 
-    mapping(bytes32 unwrapRequestId => address recipient) private _unwrapRequests;
+    mapping(bytes32 unwrapRequestId => UnwrapRequest unwrapRequest) private _unwrapRequests;
 
     error InvalidUnwrapRequest(bytes32 unwrapRequestId);
     error ERC7984TotalSupplyOverflow();
@@ -99,7 +104,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     /// @dev Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
     function unwrap(address from, address to, euint64 amount) public virtual returns (bytes32) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        return _unwrap(from, to, amount);
+        return _unwrap(from, to, amount, bytes12(0));
     }
 
     /**
@@ -113,7 +118,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (bytes32) {
-        return _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof), bytes12(0));
     }
 
     /// @inheritdoc IERC7984ERC20Wrapper
@@ -190,7 +195,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * `unwrapRequestId`. Returns `address(0)` if there is no pending unwrap request with id `unwrapRequestId`.
      */
     function unwrapRequester(bytes32 unwrapRequestId) public view virtual returns (address) {
-        return _unwrapRequests[unwrapRequestId];
+        return _unwrapRequests[unwrapRequestId].recipient;
     }
 
     /**
@@ -250,7 +255,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /// @dev Internal logic for handling the creation of unwrap requests. Returns the unwrap request id.
-    function _unwrap(address from, address to, euint64 amount) internal virtual returns (bytes32) {
+    function _unwrap(
+        address from,
+        address to,
+        euint64 amount,
+        bytes12 unwrapMetadata
+    ) internal virtual returns (bytes32) {
         require(to != address(0), ERC7984InvalidReceiver(to));
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
@@ -264,10 +274,15 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         // cipher-texts are unique--this holds here but is not always true. Be cautious when assuming
         // cipher-text uniqueness.
         bytes32 unwrapRequestId = euint64.unwrap(unwrapAmount_);
-        _unwrapRequests[unwrapRequestId] = to;
+        _unwrapRequests[unwrapRequestId] = UnwrapRequest({recipient: to, metadata: unwrapMetadata});
 
         emit UnwrapRequested(to, unwrapRequestId, unwrapAmount_);
         return unwrapRequestId;
+    }
+
+    /// @dev Returns the metadata associated with a pending unwrap request identified by `unwrapRequestId`.
+    function _unwrapRequestMetadata(bytes32 unwrapRequestId) internal view virtual returns (bytes12) {
+        return _unwrapRequests[unwrapRequestId].metadata;
     }
 
     /**
