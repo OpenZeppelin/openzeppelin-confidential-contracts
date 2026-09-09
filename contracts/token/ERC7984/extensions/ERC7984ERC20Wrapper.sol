@@ -251,7 +251,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * silent failure. This will bypass any restrictions on the confidential token implemented in other extensions.
      */
     function _wrap(address to, uint256 amount) internal virtual returns (euint64) {
-        euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), true);
+        euint64 wrappedAmountSent = _update(address(0), to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), true);
         emit Wrap(to, amount - (amount % rate()), wrappedAmountSent);
 
         return wrappedAmountSent;
@@ -263,7 +263,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
         // try to burn, see how much we actually got
-        euint64 unwrapAmount_ = _burn(from, amount, false);
+        euint64 unwrapAmount_ = _burn(from, amount);
         FHE.makePubliclyDecryptable(unwrapAmount_);
 
         assert(unwrapRequester(euint64.unwrap(unwrapAmount_)) == address(0));
