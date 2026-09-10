@@ -287,7 +287,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
      *
      * This variant sets the `bypassRestrictions` flag to false, which is the default behavior for most transfers.
-     * This function is not virtual. Override the generic {_update-address-address-euint64-bool-} function to customize transfer behavior.
+     * This function is not virtual. Override the generic {_update-address-address-euint64-bool} function to customize transfer behavior.
      *
      * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
      */
