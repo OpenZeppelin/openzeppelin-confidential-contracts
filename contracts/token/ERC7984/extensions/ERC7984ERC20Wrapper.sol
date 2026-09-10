@@ -251,6 +251,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * silent failure. This will bypass any restrictions on the confidential token implemented in other extensions.
      */
     function _wrap(address to, uint256 amount) internal virtual returns (euint64) {
+        require(to != address(0), ERC7984InvalidReceiver(to));
         euint64 wrappedAmountSent = _update(address(0), to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), true);
         emit Wrap(to, amount - (amount % rate()), wrappedAmountSent);
 
