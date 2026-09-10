@@ -114,13 +114,13 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64) {
-        return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), false);
+        return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
     /// @inheritdoc IERC7984
     function confidentialTransfer(address to, euint64 amount) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        return _transfer(msg.sender, to, amount, false);
+        return _transfer(msg.sender, to, amount);
     }
 
     /// @inheritdoc IERC7984
@@ -131,7 +131,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof
     ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof), false);
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -140,7 +140,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     function confidentialTransferFrom(address from, address to, euint64 amount) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(from, to, amount, false);
+        euint64 transferred = _transfer(from, to, amount);
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -230,25 +230,20 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         emit OperatorSet(holder, operator, until);
     }
 
-    function _mint(address to, euint64 amount, bool bypassRestrictions) internal returns (euint64 transferred) {
+    function _mint(address to, euint64 amount) internal returns (euint64 transferred) {
         require(to != address(0), ERC7984InvalidReceiver(address(0)));
-        return _update(address(0), to, amount, bypassRestrictions);
+        return _update(address(0), to, amount);
     }
 
-    function _burn(address from, euint64 amount, bool bypassRestrictions) internal returns (euint64 transferred) {
+    function _burn(address from, euint64 amount) internal returns (euint64 transferred) {
         require(from != address(0), ERC7984InvalidSender(address(0)));
-        return _update(from, address(0), amount, bypassRestrictions);
+        return _update(from, address(0), amount);
     }
 
-    function _transfer(
-        address from,
-        address to,
-        euint64 amount,
-        bool bypassRestrictions
-    ) internal returns (euint64 transferred) {
+    function _transfer(address from, address to, euint64 amount) internal returns (euint64 transferred) {
         require(from != address(0), ERC7984InvalidSender(address(0)));
         require(to != address(0), ERC7984InvalidReceiver(address(0)));
-        return _update(from, to, amount, bypassRestrictions);
+        return _update(from, to, amount);
     }
 
     /**
@@ -277,15 +272,27 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata data
     ) internal returns (euint64 transferred) {
         // Try to transfer amount + replace input with actually transferred amount.
-        euint64 sent = _transfer(from, to, amount, false);
+        euint64 sent = _transfer(from, to, amount);
 
         // Perform callback
         ebool success = ERC7984Utils.checkOnTransferReceived(msg.sender, from, to, sent, data);
 
         // Try to refund if callback fails
-        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent), true);
+        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent), true); // set bypassRestrictions to true for refunds
         transferred = FHE.sub(sent, refund);
         FHE.allowTransient(transferred, msg.sender);
+    }
+
+    /**
+     * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
+     *
+     * This variant sets the `bypassRestrictions` flag to false, which is the default behavior for most transfers.
+     * This function is not virtual. Override the generic {_update-address-address-euint64-bool} function to customize transfer behavior.
+     *
+     * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
+     */
+    function _update(address from, address to, euint64 amount) internal returns (euint64 transferred) {
+        return _update(from, to, amount, false);
     }
 
     /**

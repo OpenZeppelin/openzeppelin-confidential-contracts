@@ -8,7 +8,7 @@ import {ERC7984Mock} from "../ERC7984Mock.sol";
 
 abstract contract ERC7984RestrictedMock is ERC7984Mock, ERC7984Restricted {
     function transfer(address to, uint64 amount) public {
-        _transfer(msg.sender, to, FHE.asEuint64(amount), false);
+        _transfer(msg.sender, to, FHE.asEuint64(amount));
     }
 
     function _update(
