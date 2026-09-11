@@ -10,8 +10,8 @@ import {ERC7984HookModule} from "../../../../token/ERC7984/utils/ERC7984HookModu
 contract ERC7984HookModuleMock is ERC7984HookModule, ZamaEthereumConfig {
     bool public isCompliant = true;
 
-    event PostTransfer();
-    event PreTransfer();
+    event PostTransfer(address operator, address from, address to);
+    event PreTransfer(address operator, address from, address to);
 
     event OnInstall(bytes initData);
 
@@ -24,7 +24,13 @@ contract ERC7984HookModuleMock is ERC7984HookModule, ZamaEthereumConfig {
         isCompliant = isCompliant_;
     }
 
-    function _preTransfer(address token, address from, address, euint64) internal override returns (ebool) {
+    function _preTransfer(
+        address token,
+        address operator,
+        address from,
+        address to,
+        euint64
+    ) internal override returns (ebool) {
         euint64 fromBalance = IERC7984(token).confidentialBalanceOf(from);
 
         if (FHE.isInitialized(fromBalance)) {
@@ -32,12 +38,18 @@ contract ERC7984HookModuleMock is ERC7984HookModule, ZamaEthereumConfig {
             assert(FHE.isAllowed(fromBalance, address(this)));
         }
 
-        emit PreTransfer();
+        emit PreTransfer(operator, from, to);
         return FHE.asEbool(isCompliant);
     }
 
-    function _postTransfer(address token, address from, address to, euint64 amount) internal override {
-        emit PostTransfer();
-        super._postTransfer(token, from, to, amount);
+    function _postTransfer(
+        address token,
+        address operator,
+        address from,
+        address to,
+        euint64 amount
+    ) internal override {
+        emit PostTransfer(operator, from, to);
+        super._postTransfer(token, operator, from, to, amount);
     }
 }

@@ -139,15 +139,29 @@ describe('ERC7984Hooked', function () {
     });
 
     it('should call pre-transfer hooks', async function () {
-      await expect(
-        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
-      ).to.emit(this.hookModule, 'PreTransfer');
+      await expect(this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n))
+        .to.emit(this.hookModule, 'PreTransfer')
+        .withArgs(this.holder, this.holder, this.recipient);
     });
 
     it('should call post-transfer hooks', async function () {
-      await expect(
-        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
-      ).to.emit(this.hookModule, 'PostTransfer');
+      await expect(this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n))
+        .to.emit(this.hookModule, 'PostTransfer')
+        .withArgs(this.holder, this.holder, this.recipient);
+    });
+
+    it('should pass the operator to the hooks on an operator-initiated transfer', async function () {
+      await this.token.connect(this.holder).setOperator(this.anyone, 2n ** 48n - 1n);
+
+      const creation = await (await this.token.connect(this.anyone).createEncryptedAmount(100)).wait();
+      const handle = creation.logs.filter((log: any) => log.fragment?.name === 'EncryptedAmountCreated')[0].args[0];
+
+      const tx = this.token
+        .connect(this.anyone)
+        ['confidentialTransferFrom(address,address,bytes32)'](this.holder, this.recipient, handle);
+
+      await expect(tx).to.emit(this.hookModule, 'PreTransfer').withArgs(this.anyone, this.holder, this.recipient);
+      await expect(tx).to.emit(this.hookModule, 'PostTransfer').withArgs(this.anyone, this.holder, this.recipient);
     });
 
     for (const approve of [true, false]) {

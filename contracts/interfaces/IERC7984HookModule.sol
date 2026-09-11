@@ -21,11 +21,15 @@ interface IERC7984HookModule is IERC165 {
     /**
      * @dev Hook that runs before a transfer. Should not mutate token state. Module is already
      * granted transient access to `encryptedAmount`.
+     *
+     * `operator` is the address that initiated the transfer on the token. It is equal to `from` for
+     * direct transfers, and differs from it when the transfer is initiated by an approved operator or
+     * by the token itself (e.g. mints, burns and forced transfers).
      */
-    function preTransfer(address from, address to, euint64 encryptedAmount) external returns (ebool);
+    function preTransfer(address operator, address from, address to, euint64 encryptedAmount) external returns (ebool);
 
-    /// @dev Performs operation after transfer.
-    function postTransfer(address from, address to, euint64 encryptedAmount) external;
+    /// @dev Performs operation after transfer. See {preTransfer} for the meaning of `operator`.
+    function postTransfer(address operator, address from, address to, euint64 encryptedAmount) external;
 
     /// @dev Performs operations after installation.
     function onInstall(bytes calldata initData) external;

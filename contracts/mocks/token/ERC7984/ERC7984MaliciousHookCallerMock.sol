@@ -44,7 +44,7 @@ contract ERC7984MaliciousHookCallerMock is HandleAccessManager, ZamaEthereumConf
         euint64 encryptedAmount = FHE.asEuint64(amount);
         FHE.allowThis(encryptedAmount);
         FHE.allowTransient(encryptedAmount, hookModule);
-        IERC7984HookModule(hookModule).preTransfer(from, to, encryptedAmount);
+        IERC7984HookModule(hookModule).preTransfer(msg.sender, from, to, encryptedAmount);
     }
 
     /// @dev Calls `hookModule.postTransfer` with this contract as the token (msg.sender).
@@ -52,7 +52,7 @@ contract ERC7984MaliciousHookCallerMock is HandleAccessManager, ZamaEthereumConf
         euint64 encryptedAmount = FHE.asEuint64(amount);
         FHE.allowThis(encryptedAmount);
         FHE.allowTransient(encryptedAmount, hookModule);
-        IERC7984HookModule(hookModule).postTransfer(from, to, encryptedAmount);
+        IERC7984HookModule(hookModule).postTransfer(msg.sender, from, to, encryptedAmount);
     }
 
     /// @dev Silently returns without reverting and without granting any handle allowance.

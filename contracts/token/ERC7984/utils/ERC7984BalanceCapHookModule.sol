@@ -56,12 +56,13 @@ contract ERC7984BalanceCapHookModule is ERC7984HookModule {
     /// @inheritdoc ERC7984HookModule
     function _preTransfer(
         address token,
+        address operator,
         address from,
         address to,
         euint64 encryptedAmount
     ) internal override returns (ebool result) {
         // super call
-        result = super._preTransfer(token, from, to, encryptedAmount);
+        result = super._preTransfer(token, operator, from, to, encryptedAmount);
 
         // in non trivial cases, check (and document) compliance.
         if (to != address(0) && to != from && FHE.isInitialized(maxBalance(token))) {
