@@ -1,6 +1,7 @@
 import { IACL__factory } from '../../../../types';
 import { $ERC7984OmnibusMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984/extensions/ERC7984OmnibusMock.sol/$ERC7984OmnibusMock';
 import { getAclAddress } from '../../../helpers/accounts';
+import { setOperator } from '../../../helpers/erc7984';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
@@ -33,7 +34,7 @@ describe('ERC7984Omnibus', function () {
             describe(withProof ? 'with transfer proof' : 'without transfer proof', function () {
               beforeEach(async function () {
                 if (transferFrom) {
-                  await this.token.connect(this.holder).setOperator(this.operator.address, 999999999999);
+                  await setOperator(this.token, this.holder, this.operator.address, 999999999999);
                 }
               });
 
