@@ -1,5 +1,5 @@
 ---
-'openzeppelin-confidential-contracts': patch
+'openzeppelin-confidential-contracts': minor
 ---
 
-`BatcherConfidential`: allow callers to redirect `quit` refunds to a recipient address.
+`BatcherConfidential`: replace `quit(uint256)` with `quit(uint256,address)` so callers can choose the refund recipient, and update `_quit` accordingly.

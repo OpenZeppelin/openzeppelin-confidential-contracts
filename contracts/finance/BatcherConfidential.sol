@@ -145,23 +145,15 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     }
 
     /**
-     * @dev Quit the batch with id `batchId`. Entire deposit is returned to the user.
-     * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
+     * @dev Quit the batch with id `batchId`, attempting to return the caller's deposit to `recipient`.
+     *
+     * If the {fromToken} transfer returns 0, no amount is deducted and the caller can retry with another recipient.
      *
      * NOTE: Developers should consider adding additional restrictions to {_quit}
      * if maintaining confidentiality of deposits is critical to the application.
      *
      * WARNING: {dispatchBatch} may fail if an incompatible version of {ERC7984ERC20Wrapper} is used.
      * This function must be unrestricted in cases where batch dispatching fails.
-     */
-    function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        return _quit(batchId, msg.sender);
-    }
-
-    /**
-     * @dev Quit the batch with id `batchId`, attempting to return the caller's deposit to `recipient`.
-     *
-     * If the {fromToken} transfer returns 0, no amount is deducted and the caller can retry with another recipient.
      */
     function quit(uint256 batchId, address recipient) public virtual nonReentrant returns (euint64) {
         return _quit(batchId, msg.sender, recipient);
@@ -375,7 +367,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     }
 
     /**
-     * @dev Quits the batch with id `batchId` for `account`, returning the entire deposit to `account`.
+     * @dev Quits the batch with id `batchId` for `account`, returning the deposit to `recipient`.
      * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
      *
      * NOTE: Developers should consider adding additional restrictions to this function if maintaining
@@ -383,13 +375,6 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      *
      * IMPORTANT: This function is not protected against reentrancy. External functions built on top of it
      * must be marked `nonReentrant`, as {quit} is.
-     */
-    function _quit(uint256 batchId, address account) internal virtual returns (euint64) {
-        return _quit(batchId, account, account);
-    }
-
-    /**
-     * @dev Quits the batch with id `batchId` for `account`, returning the deposit to `recipient`.
      */
     function _quit(uint256 batchId, address account, address recipient) internal virtual returns (euint64) {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));

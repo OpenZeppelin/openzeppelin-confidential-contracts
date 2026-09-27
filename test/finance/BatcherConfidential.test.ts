@@ -445,7 +445,7 @@ describe('BatcherConfidential', function () {
         this.holder,
       );
 
-      await this.batcher.quit(this.batchId);
+      await this.batcher.quit(this.batchId, this.holder);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -552,7 +552,7 @@ describe('BatcherConfidential', function () {
     });
 
     it('should decrease total deposits', async function () {
-      await this.batcher.quit(this.batchId);
+      await this.batcher.quit(this.batchId, this.holder);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -567,46 +567,50 @@ describe('BatcherConfidential', function () {
     it('should fail if batch already dispatched', async function () {
       await this.batcher.connect(this.holder).dispatchBatch();
 
-      await expect(this.batcher.quit(this.batchId))
+      await expect(this.batcher.quit(this.batchId, this.holder))
         .to.be.revertedWithCustomError(this.batcher, 'BatchUnexpectedState')
         .withArgs(this.batchId, BatchState.Dispatched, encodeStateBitmap(BatchState.Pending, BatchState.Canceled));
     });
 
     it('should revert if caller did not participate in the batch', async function () {
-      await expect(this.batcher.connect(this.recipient).quit(this.batchId))
+      await expect(this.batcher.connect(this.recipient).quit(this.batchId, this.recipient))
         .to.be.revertedWithCustomError(this.batcher, 'ZeroDeposits')
         .withArgs(this.batchId, this.recipient.address);
     });
 
     it('should emit event', async function () {
-      await expect(this.batcher.quit(this.batchId))
+      await expect(this.batcher.quit(this.batchId, this.holder))
         .to.emit(this.batcher, 'Quit')
         .withArgs(this.batchId, this.holder.address, anyValue);
     });
 
     describe('on behalf of', function () {
-      it('should send tokens to the depositor, not the caller', async function () {
-        const holderBalanceBefore = await fhevm.userDecryptEuint(
+      it('should send tokens to the recipient, not the caller', async function () {
+        const recipientBalanceBefore = await fhevm.userDecryptEuint(
           FhevmType.euint64,
-          await this.fromToken.confidentialBalanceOf(this.holder),
+          await this.fromToken.confidentialBalanceOf(this.recipient),
           this.fromToken,
-          this.holder,
+          this.recipient,
         );
 
-        await this.batcher.connect(this.operator)['$_quit(uint256,address)'](this.batchId, this.holder);
+        await this.batcher
+          .connect(this.operator)
+          ['$_quit(uint256,address,address)'](this.batchId, this.holder, this.recipient);
 
         await expect(
           fhevm.userDecryptEuint(
             FhevmType.euint64,
-            await this.fromToken.confidentialBalanceOf(this.holder),
+            await this.fromToken.confidentialBalanceOf(this.recipient),
             this.fromToken,
-            this.holder,
+            this.recipient,
           ),
-        ).to.eventually.eq(holderBalanceBefore + this.deposit);
+        ).to.eventually.eq(recipientBalanceBefore + this.deposit);
       });
 
       it('should clear the depositor deposits', async function () {
-        await this.batcher.connect(this.operator)['$_quit(uint256,address)'](this.batchId, this.holder);
+        await this.batcher
+          .connect(this.operator)
+          ['$_quit(uint256,address,address)'](this.batchId, this.holder, this.recipient);
 
         await expect(
           fhevm.userDecryptEuint(
@@ -619,7 +623,11 @@ describe('BatcherConfidential', function () {
       });
 
       it('should emit event with the depositor address', async function () {
-        await expect(this.batcher.connect(this.operator)['$_quit(uint256,address)'](this.batchId, this.holder))
+        await expect(
+          this.batcher
+            .connect(this.operator)
+            ['$_quit(uint256,address,address)'](this.batchId, this.holder, this.recipient),
+        )
           .to.emit(this.batcher, 'Quit')
           .withArgs(this.batchId, this.holder.address, anyValue);
       });
@@ -861,7 +869,7 @@ describe('BatcherConfidential', function () {
       this.holder,
     );
 
-    await batcher.connect(this.holder).quit(batchId1);
+    await batcher.connect(this.holder).quit(batchId1, this.holder);
 
     const balanceAfter = await fhevm.userDecryptEuint(
       FhevmType.euint64,
