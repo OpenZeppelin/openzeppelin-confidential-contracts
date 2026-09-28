@@ -138,16 +138,41 @@ describe('ERC7984Hooked', function () {
       await this.token['$_mint(address,uint64)'](this.holder, 1000);
     });
 
-    it('should call pre-transfer hooks', async function () {
-      await expect(
-        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
-      ).to.emit(this.hookModule, 'PreTransfer');
+    it('should call pre-transfer hooks with the operator', async function () {
+      await expect(this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n))
+        .to.emit(this.hookModule, 'PreTransfer')
+        .withArgs(this.holder.address);
     });
 
-    it('should call post-transfer hooks', async function () {
+    it('should call post-transfer hooks with the operator', async function () {
+      await expect(this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n))
+        .to.emit(this.hookModule, 'PostTransfer')
+        .withArgs(this.holder.address);
+    });
+
+    it('should pass a delegated operator to pre and post transfer hooks', async function () {
+      const timestamp = (await ethers.provider.getBlock('latest'))!.timestamp + 100;
+      await this.token.connect(this.holder).setOperator(this.anyone.address, timestamp);
+
+      const encryptedInput = await fhevm
+        .createEncryptedInput(await this.token.getAddress(), this.anyone.address)
+        .add64(100)
+        .encrypt();
+
       await expect(
-        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
-      ).to.emit(this.hookModule, 'PostTransfer');
+        this.token
+          .connect(this.anyone)
+          ['confidentialTransferFrom(address,address,bytes32,bytes)'](
+            this.holder.address,
+            this.recipient.address,
+            encryptedInput.handles[0],
+            encryptedInput.inputProof,
+          ),
+      )
+        .to.emit(this.hookModule, 'PreTransfer')
+        .withArgs(this.anyone.address)
+        .to.emit(this.hookModule, 'PostTransfer')
+        .withArgs(this.anyone.address);
     });
 
     for (const approve of [true, false]) {

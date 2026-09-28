@@ -12,8 +12,14 @@ contract ERC7984HolderCapHookModuleMock is ERC7984HolderCapHookModule, ZamaEther
         _owner = owner_;
     }
 
-    function _postTransfer(address token, address from, address to, euint64 encryptedAmount) internal override {
-        super._postTransfer(token, from, to, encryptedAmount);
+    function _postTransfer(
+        address token,
+        address operator,
+        address from,
+        address to,
+        euint64 encryptedAmount
+    ) internal override {
+        super._postTransfer(token, operator, from, to, encryptedAmount);
 
         FHE.allow(holderCount(token), _owner);
     }
