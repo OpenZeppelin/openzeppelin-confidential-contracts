@@ -1,5 +1,5 @@
 // TODO: Replace file content with symlink to lib/openzeppelin-contracts when available.
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const semver = require('semver');
 const { range } = require('./helpers');
 
@@ -9,7 +9,7 @@ module.exports = {
     .flatMap(({ major, minor, patch }) => range(patch + 1).map(p => `${major}.${minor}.${p}`)),
   compile: (source, version) =>
     new Promise((resolve, reject) =>
-      exec(`forge build ${source} --use ${version} --out out/solc-${version}`, error =>
+      execFile('forge', ['build', source, '--use', version, '--out', `out/solc-${version}`], error =>
         error ? reject(error) : resolve(),
       ),
     ),
