@@ -13,5 +13,21 @@ cache_path = 'cache_forge'
 runs = 5000
 max_test_rejects = 150000
 
+# Fast by default so a local `forge test` stays snappy. CI runs the heavier campaign
+# via `FOUNDRY_PROFILE=ci` (see [profile.ci.invariant] below).
+[invariant]
+runs = 16
+depth = 30
+fail_on_revert = true
+shrink_run_limit = 5000
+
+# Heavier invariant campaign used on push in CI: `FOUNDRY_PROFILE=ci forge test`.
+# The `ci` profile inherits everything else from [profile.default].
+[profile.ci.invariant]
+runs = 128
+depth = 100
+fail_on_revert = true
+shrink_run_limit = 5000
+
 [lint]
 lint_on_build = false
