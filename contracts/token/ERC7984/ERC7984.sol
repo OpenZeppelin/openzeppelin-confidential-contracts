@@ -25,8 +25,13 @@ import {ERC7984Utils} from "./utils/ERC7984Utils.sol";
  * - Safe overflow/underflow handling for FHE operations
  */
 abstract contract ERC7984 is IERC7984, ERC165 {
+    struct OperatorDetails {
+        uint48 until;
+        euint64 limit;
+    }
+
     mapping(address holder => euint64) private _balances;
-    mapping(address holder => mapping(address spender => uint48)) private _operators;
+    mapping(address holder => mapping(address spender => OperatorDetails)) private _operators;
     euint64 private _totalSupply;
     string private _name;
     string private _symbol;
@@ -99,16 +104,31 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     }
 
     /// @inheritdoc IERC7984
-    function isOperator(address holder, address spender) public view virtual returns (bool) {
-        return holder == spender || block.timestamp <= _operators[holder][spender];
+    function isOperator(address holder, address spender) public view virtual returns (bool success, euint64 limit) {
+        if (holder == spender) {
+            return (true, euint64.wrap(0));
+        } else {
+            OperatorDetails memory details = _operators[holder][spender];
+            return (details.until >= block.timestamp, details.limit);
+        }
     }
 
     /**
      * @dev See {IERC7984-setOperator}. Operators are given ACL allowance (ability to decrypt) for the transferred amount
      * of transfers they initiate.
      */
-    function setOperator(address operator, uint48 until) public virtual {
-        _setOperator(msg.sender, operator, until);
+    function setOperator(
+        address operator,
+        uint48 until,
+        externalEuint64 limit,
+        bytes calldata inputProof
+    ) public virtual {
+        _setOperator(
+            msg.sender,
+            operator,
+            until,
+            externalEuint64.unwrap(limit) == bytes32(0) ? euint64.wrap(0) : FHE.fromExternal(limit, inputProof)
+        );
     }
 
     /// @inheritdoc IERC7984
@@ -133,8 +153,11 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64) {
-        require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        euint64 transferred = _transfer(
+            from,
+            to,
+            _consumeOperatorAllowance(from, msg.sender, FHE.fromExternal(encryptedAmount, inputProof))
+        );
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -142,8 +165,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /// @inheritdoc IERC7984
     function confidentialTransferFrom(address from, address to, euint64 amount) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(from, to, amount);
+        euint64 transferred = _transfer(from, to, _consumeOperatorAllowance(from, msg.sender, amount));
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -176,8 +198,13 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64) {
-        require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        return _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data);
+        return
+            _transferAndCall(
+                from,
+                to,
+                _consumeOperatorAllowance(from, msg.sender, FHE.fromExternal(encryptedAmount, inputProof)),
+                data
+            );
     }
 
     /// @inheritdoc IERC7984
@@ -188,8 +215,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata data
     ) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        return _transferAndCall(from, to, amount, data);
+        return _transferAndCall(from, to, _consumeOperatorAllowance(from, msg.sender, amount), data);
     }
 
     /**
@@ -229,15 +255,44 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     }
 
     /**
-     * @dev Sets the operator status of `operator` for `holder` until `until`.
+     * @dev Registers `operator` as an operator of `holder` until `until`, with an encrypted spending allowance.
+     *
+     * An uninitialized `limit` means the operator is unlimited. Uninitialized handles cannot be granted through the
+     * ACL, so the allowances are only set for an actual limit.
      *
      * NOTE: A holder is always an operator of itself and has unrestricted access to its own tokens. That cannot be
      * changed, therefore setting `holder` as its own operator reverts.
      */
-    function _setOperator(address holder, address operator, uint48 until) internal virtual {
+    function _setOperator(address holder, address operator, uint48 until, euint64 limit) internal virtual {
         require(holder != operator && operator != address(0), ERC7984InvalidOperator(operator));
-        _operators[holder][operator] = until;
-        emit OperatorSet(holder, operator, until);
+        _operators[holder][operator] = OperatorDetails({until: until, limit: limit});
+        if (FHE.isInitialized(limit)) {
+            FHE.allowThis(limit);
+            FHE.allow(limit, holder);
+            FHE.allow(limit, operator);
+        }
+        emit OperatorSet(holder, operator, until, limit);
+    }
+
+    function _consumeOperatorAllowance(
+        address holder,
+        address operator,
+        euint64 amount
+    ) internal virtual returns (euint64) {
+        (bool success, euint64 limit) = isOperator(holder, operator);
+        require(success, ERC7984UnauthorizedSpender(holder, operator));
+
+        if (!FHE.isInitialized(limit)) {
+            return amount;
+        } else {
+            euint64 consumed = FHE.select(FHE.le(amount, limit), amount, FHE.asEuint64(0));
+            euint64 newLimit = FHE.sub(limit, consumed);
+            _operators[holder][operator].limit = newLimit;
+            FHE.allowThis(newLimit);
+            FHE.allow(newLimit, holder);
+            FHE.allow(newLimit, operator);
+            return consumed;
+        }
     }
 
     function _mint(address to, euint64 amount) internal returns (euint64 transferred) {

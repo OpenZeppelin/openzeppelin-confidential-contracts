@@ -1,6 +1,7 @@
 import { BatcherConfidentialSwapMock } from '../../types';
 import { $ERC20Mock } from '../../types/contracts-exposed/mocks/token/ERC20Mock.sol/$ERC20Mock';
 import { $ERC7984ERC20Wrapper } from '../../types/contracts-exposed/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol/$ERC7984ERC20Wrapper';
+import { setOperator } from '../helpers/erc7984';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
@@ -87,7 +88,7 @@ describe('BatcherConfidential', function () {
     ]);
 
     for (const approver of [holder, recipient]) {
-      await fromToken.connect(approver).setOperator(batcher, 2n ** 48n - 1n);
+      await setOperator(fromToken, approver, batcher, 2n ** 48n - 1n);
     }
 
     Object.assign(this, {
@@ -733,7 +734,7 @@ describe('BatcherConfidential', function () {
       ethers.ZeroAddress, // no need for an exchange in this test
       this.operator,
     ]);
-    await this.fromToken.connect(this.holder).setOperator(batcher, 2n ** 48n - 1n);
+    await setOperator(this.fromToken, this.holder, batcher, 2n ** 48n - 1n);
 
     // ========================== First batch ==========================
     const batchId1 = await batcher.currentBatchId();
