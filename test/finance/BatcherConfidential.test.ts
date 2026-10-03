@@ -581,7 +581,7 @@ describe('BatcherConfidential', function () {
     it('should emit event', async function () {
       await expect(this.batcher.quit(this.batchId, this.holder))
         .to.emit(this.batcher, 'Quit')
-        .withArgs(this.batchId, this.holder.address, anyValue);
+        .withArgs(this.batchId, this.holder.address, this.holder.address, anyValue);
     });
 
     describe('on behalf of', function () {
@@ -622,14 +622,30 @@ describe('BatcherConfidential', function () {
         ).to.eventually.eq(0);
       });
 
-      it('should emit event with the depositor address', async function () {
+      it('should emit event with the depositor and recipient addresses', async function () {
         await expect(
           this.batcher
             .connect(this.operator)
             ['$_quit(uint256,address,address)'](this.batchId, this.holder, this.recipient),
         )
           .to.emit(this.batcher, 'Quit')
-          .withArgs(this.batchId, this.holder.address, anyValue);
+          .withArgs(this.batchId, this.holder.address, this.recipient.address, anyValue);
+      });
+
+      it('should allow the depositor to decrypt the amount sent to another recipient', async function () {
+        const tx = await this.batcher
+          .connect(this.operator)
+          ['$_quit(uint256,address,address)'](this.batchId, this.holder, this.recipient);
+        const receipt = await tx.wait();
+        const [event] = await this.batcher.queryFilter(
+          this.batcher.filters.Quit(),
+          receipt!.blockNumber,
+          receipt!.blockNumber,
+        );
+
+        await expect(
+          fhevm.userDecryptEuint(FhevmType.euint64, event.args.amount, this.batcher, this.holder),
+        ).to.eventually.eq(this.deposit);
       });
     });
   });

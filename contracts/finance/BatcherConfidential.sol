@@ -81,8 +81,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev Emitted when an `account` claims their `amount` from batch with id `batchId`.
     event Claimed(uint256 indexed batchId, address indexed account, euint64 amount);
 
-    /// @dev Emitted when an `account` quits a batch with id `batchId`.
-    event Quit(uint256 indexed batchId, address indexed account, euint64 amount);
+    /// @dev Emitted when an `account` quits a batch with id `batchId`, sending `amount` to `recipient`.
+    event Quit(uint256 indexed batchId, address indexed account, address indexed recipient, euint64 amount);
 
     /// @dev The `batchId` does not exist. Batch IDs start at 1 and must be less than or equal to {currentBatchId}.
     error BatchNonexistent(uint256 batchId);
@@ -392,11 +392,12 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         FHE.allowThis(newTotalDeposits);
         FHE.allowThis(newDeposit);
         FHE.allow(newDeposit, account);
+        FHE.allow(sent, account);
 
         _batches[batchId].totalDeposits = newTotalDeposits;
         _batches[batchId].deposits[account] = newDeposit;
 
-        emit Quit(batchId, account, sent);
+        emit Quit(batchId, account, recipient, sent);
 
         return sent;
     }
