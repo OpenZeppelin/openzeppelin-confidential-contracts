@@ -1,13 +1,19 @@
 import { $ERC7984Hooked } from '../../../../types/contracts-exposed/token/ERC7984/extensions/ERC7984Hooked.sol/$ERC7984Hooked';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
+const name = 'name';
+const symbol = 'symbol';
+const uri = 'uri';
+const decimals = 6;
+
 describe('ERC7984Hooked', function () {
   beforeEach(async function () {
     const [admin, holder, recipient, anyone] = await ethers.getSigners();
-    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])).connect(
+    const token = (await ethers.deployContract('$ERC7984HookedMock', [name, symbol, uri, admin])).connect(
       anyone,
     ) as $ERC7984Hooked;
     const hookModule = await ethers.deployContract('$ERC7984HookModuleMock');
@@ -155,6 +161,23 @@ describe('ERC7984Hooked', function () {
         ).to.eventually.equal(approve ? 100 : 0);
       });
     }
+
+    it('refund bypasses pre-transfer hooks disabled during callback', async function () {
+      const receiver = await ethers.deployContract('ERC7984ReceiverMutatorMock');
+
+      await this.token
+        .connect(this.holder)
+        ['confidentialTransferAndCall(address,uint64,bytes)'](
+          receiver,
+          4000,
+          ethers.AbiCoder.defaultAbiCoder().encode(['uint8', 'address'], [2, this.hookModule.target]),
+        );
+
+      const holderBalance = await this.token.confidentialBalanceOf(this.holder);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, holderBalance, this.token.target, this.holder),
+      ).to.eventually.equal(1000);
+    });
   });
 
   describe('isModuleManager', async function () {
@@ -167,4 +190,6 @@ describe('ERC7984Hooked', function () {
       await expect(this.token.isModuleManager(this.holder)).to.eventually.be.false;
     });
   });
+
+  shouldBehaveLikeERC7984(name, symbol, uri, decimals);
 });

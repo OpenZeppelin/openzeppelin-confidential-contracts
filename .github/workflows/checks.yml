@@ -13,6 +13,9 @@ concurrency:
 env:
   MNEMONIC: "exchange vintage ocean narrow danger return culture ignore trim solve clock hidden buddy wise emotion"
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: "ubuntu-latest"

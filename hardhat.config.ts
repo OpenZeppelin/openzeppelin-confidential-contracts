@@ -36,7 +36,7 @@ const config: HardhatUserConfig = {
   },
   docgen: require('./docs/config'),
   exposed: {
-    imports: true,
+    imports: false,
     initializers: true,
   },
 };

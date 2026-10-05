@@ -1,3 +1,4 @@
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 // @ts-ignore
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { mine } from '@nomicfoundation/hardhat-network-helpers';
@@ -8,6 +9,7 @@ import { ethers, fhevm } from 'hardhat';
 const name = 'ConfidentialFungibleTokenVotes';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
+const decimals = 6;
 
 describe('ERC7984Votes', function () {
   beforeEach(async function () {
@@ -285,4 +287,6 @@ describe('ERC7984Votes', function () {
       await expect(this.token.CLOCK_MODE()).to.be.revertedWithCustomError(this.token, 'ERC6372InconsistentClock');
     });
   });
+
+  shouldBehaveLikeERC7984(name, symbol, uri, decimals);
 });
