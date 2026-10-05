@@ -1,6 +1,5 @@
 import { impersonateAccount, setBalance } from '@nomicfoundation/hardhat-network-helpers';
 import { Addressable, Signer, ethers } from 'ethers';
-import fs from 'fs';
 import { fhevm } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
@@ -12,15 +11,19 @@ export async function impersonate(hre: HardhatRuntimeEnvironment, account: strin
     .then(() => hre.ethers.getSigner(account));
 }
 
-export async function getAclAddress() {
-  return (await fhevm.getRelayerMetadata()).ACLAddress;
+export function getAclAddress() {
+  const aclAddress = fhevm.client.chain?.fhevm.contracts.acl.address;
+  if (aclAddress === undefined) {
+    throw new Error('FHEVM client chain is not initialized');
+  }
+  return aclAddress;
 }
 
 export async function allowHandle(hre: HardhatRuntimeEnvironment, from: Signer, to: Addressable, handle: string) {
-  const acl_abi = JSON.parse(
-    fs.readFileSync('node_modules/@fhevm/host-contracts/artifacts/contracts/ACL.sol/ACL.json', 'utf8'),
-  ).abi;
-  const aclContract = await hre.ethers.getContractAt(acl_abi, await getAclAddress());
+  const aclContract = await hre.ethers.getContractAt(
+    ['function allow(bytes32 handle, address account)'],
+    getAclAddress(),
+  );
 
-  await aclContract.connect(from).allow(handle, to);
+  await aclContract.connect(from).allow(handle, await ethers.resolveAddress(to));
 }
