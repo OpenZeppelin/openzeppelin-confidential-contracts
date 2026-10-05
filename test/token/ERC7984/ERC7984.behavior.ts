@@ -569,7 +569,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
 }
 
 function generateDecryptionErrorMessage(handle: string, account: string): string {
-  return `User ${account} is not authorized to user decrypt handle ${handle}`;
+  return `User ${account} is not authorized to decrypt handle ${handle}!\nVersion: @fhevm/sdk@0.13.4`;
 }
 
 export { shouldBehaveLikeERC7984 };
