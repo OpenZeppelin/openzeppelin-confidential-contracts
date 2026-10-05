@@ -20,7 +20,7 @@ async function confidentialAvailableHandle(token: any, account: Signer) {
   return event.args[0];
 }
 
-describe.only('ERC7984Freezable', function () {
+describe('ERC7984Freezable', function () {
   beforeEach(async function () {
     const [holder, recipient, freezer, operator, anyone] = await ethers.getSigners();
     const token = await ethers.deployContract('$ERC7984FreezableMock', [name, symbol, uri]);
