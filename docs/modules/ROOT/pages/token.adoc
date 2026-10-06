@@ -101,15 +101,19 @@ Each extension registers only its own identifier and delegates the rest to `supe
 
 NOTE: The identifiers above are informational. Compute them with `type(IERC7984).interfaceId` rather than hardcoding the literals: these interfaces are draft and the identifiers change whenever a function signature is added, removed or changed.
 
-The extensions that only constrain balance updates--xref:api:token.adoc#ERC7984Freezable[`++ERC7984Freezable++`], xref:api:token.adoc#ERC7984Restricted[`++ERC7984Restricted++`], xref:api:token.adoc#ERC7984Omnibus[`++ERC7984Omnibus++`], xref:api:token.adoc#ERC7984ObserverAccess[`++ERC7984ObserverAccess++`] and xref:api:token.adoc#ERC7984Votes[`++ERC7984Votes++`]--do not register an identifier of their own. Their presence cannot be detected through ERC-165.
+The remaining extensions--xref:api:token.adoc#ERC7984Freezable[`++ERC7984Freezable++`], xref:api:token.adoc#ERC7984Restricted[`++ERC7984Restricted++`], xref:api:token.adoc#ERC7984Omnibus[`++ERC7984Omnibus++`], xref:api:token.adoc#ERC7984ObserverAccess[`++ERC7984ObserverAccess++`] and xref:api:token.adoc#ERC7984Votes[`++ERC7984Votes++`]--do not register an identifier of their own. Their presence cannot be detected through ERC-165.
 
 ==== Combining extensions
 
-When a token inherits from more than one contract that defines `supportsInterface`, Solidity requires an explicit override listing each of them. Forwarding to `super` preserves the C3-linearized chain, so every identifier along it is still reported:
+Inheriting a single extension needs no work: `ERC7984Hooked` already overrides `supportsInterface`, and a token deriving only from it reports every identifier along that chain without declaring anything.
+
+An explicit override is required only when the token inherits `supportsInterface` through two parallel bases--for example an extension alongside another `ERC7984`-derived contract. Solidity then wants the bases that define the function listed, and forwarding to `super` preserves the C3-linearized chain so every identifier along it is still reported:
 
 [source,solidity]
 ----
-contract MyToken is ERC7984Hooked {
+contract MyToken is ERC7984Hooked, ERC7984Freezable {
+    // combining two extensions also requires overriding `_update`, omitted here
+
     function supportsInterface(
         bytes4 interfaceId
     ) public view virtual override(ERC7984Hooked, ERC7984) returns (bool) {
@@ -118,7 +122,9 @@ contract MyToken is ERC7984Hooked {
 }
 ----
 
-If a custom extension adds its own interface, register it the same way the library extensions do--check the new identifier first, then fall through:
+NOTE: The override list names the definitions that are still live--those not already overridden further down the inheritance path. `ERC7984` appears above because the `ERC7984Freezable` branch still carries `ERC7984`'s definition of `supportsInterface`. In a token whose only base is `ERC7984Hooked`, that definition has already been overridden, and naming `ERC7984` in the list is a compile error.
+
+If a custom extension adds its own interface, register it the same way the library extensions do--check the new identifier first, then fall through. A single inheritance path needs only a bare `override`:
 
 [source,solidity]
 ----
