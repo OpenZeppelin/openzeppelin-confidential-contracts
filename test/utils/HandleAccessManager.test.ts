@@ -15,7 +15,7 @@ describe('HandleAccessManager', function () {
     const handle = await createHandle(this.mock, 101);
 
     await expect(fhevm.userDecryptEuint(FhevmType.euint64, handle, this.mock.target, this.holder)).to.be.rejectedWith(
-      `User ${this.holder.address} is not authorized to decrypt handle ${handle}!\nVersion: @fhevm/sdk@0.13.4`,
+      new RegExp(`User ${this.holder.address} is not authorized to decrypt handle ${handle}!`),
     );
   });
 
@@ -40,7 +40,7 @@ describe('HandleAccessManager', function () {
     await this.mock.getHandleAllowance(handle, this.holder.address, false);
 
     await expect(fhevm.userDecryptEuint(FhevmType.euint64, handle, this.mock.target, this.holder)).to.be.rejectedWith(
-      `User ${this.holder.address} is not authorized to decrypt handle ${handle}!\nVersion: @fhevm/sdk@0.13.4`,
+      new RegExp(`User ${this.holder.address} is not authorized to decrypt handle ${handle}!`),
     );
   });
 });
