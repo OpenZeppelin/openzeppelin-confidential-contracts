@@ -61,6 +61,36 @@ The extensions shipped in this library honor the flag as follows when it is set:
 
 WARNING: When writing a custom extension that overrides `_update`, you are responsible for respecting the `bypassRestrictions` flag. Any restriction you add should be skipped when the flag is `true`--otherwise permissioned flows such as refunds and wrapping may fail. Conversely, only pass `true` from trusted code paths, since it bypasses every restriction check.
 
+[[erc165]]
+=== Interface detection
+
+xref:api:token.adoc#ERC7984[`++ERC7984++`] implements https://eips.ethereum.org/EIPS/eip-165[ERC-165], so other contracts can detect at runtime whether an address is a confidential token and which extensions it exposes. The xref:api:interfaces.adoc#IERC7984[`++IERC7984++`] interface itself inherits `IERC165`, which makes `supportsInterface` part of the standard's surface rather than an optional add-on.
+
+The table below lists every identifier the library registers. A plain `ERC7984` token reports the first two; each extension adds its own.
+
+[cols="1,1,3"]
+|===
+| Interface | Identifier | Registered by
+
+| `IERC165`
+| `0x01ffc9a7`
+| `ERC165` (inherited)
+
+| `IERC7984`
+| `0x4958f2a4`
+| xref:api:token.adoc#ERC7984[`++ERC7984++`]
+
+| `IERC7984ERC20Wrapper`
+| `0x1f1c62b2`
+| xref:api:token.adoc#ERC7984ERC20Wrapper[`++ERC7984ERC20Wrapper++`]
+
+| `IERC7984Hooked`
+| `0xc314aa05`
+| xref:api:token.adoc#ERC7984Hooked[`++ERC7984Hooked++`]
+|===
+
+NOTE: The identifiers above are informational. Compute them with `type(IERC7984).interfaceId` rather than hardcoding the literals: these interfaces are draft and the identifiers change whenever a function signature is added, removed or changed.
+
 [[examples]]
 == Examples
 
