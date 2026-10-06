@@ -61,6 +61,83 @@ The extensions shipped in this library honor the flag as follows when it is set:
 
 WARNING: When writing a custom extension that overrides `_update`, you are responsible for respecting the `bypassRestrictions` flag. Any restriction you add should be skipped when the flag is `true`--otherwise permissioned flows such as refunds and wrapping may fail. Conversely, only pass `true` from trusted code paths, since it bypasses every restriction check.
 
+[[erc165]]
+=== Interface detection
+
+xref:api:token.adoc#ERC7984[`++ERC7984++`] implements https://eips.ethereum.org/EIPS/eip-165[ERC-165], so other contracts can detect at runtime whether an address is a confidential token and which extensions it exposes. The xref:api:interfaces.adoc#IERC7984[`++IERC7984++`] interface itself inherits `IERC165`, which makes `supportsInterface` part of the standard's surface rather than an optional add-on.
+
+The table below lists every identifier the library registers. A plain `ERC7984` token reports the first two; each extension adds its own.
+
+[cols="1,1,3"]
+|===
+| Interface | Identifier | Registered by
+
+| `IERC165`
+| `0x01ffc9a7`
+| `ERC165` (inherited)
+
+| `IERC7984`
+| `0x4958f2a4`
+| xref:api:token.adoc#ERC7984[`++ERC7984++`]
+
+| `IERC7984ERC20Wrapper`
+| `0x1f1c62b2`
+| xref:api:token.adoc#ERC7984ERC20Wrapper[`++ERC7984ERC20Wrapper++`]
+
+| `IERC1363Receiver`
+| `0x88a7ca5c`
+| xref:api:token.adoc#ERC7984ERC20Wrapper[`++ERC7984ERC20Wrapper++`], so the wrapper can be funded by an `ERC1363` `transferAndCall`
+
+| `IERC7984Hooked`
+| `0xc314aa05`
+| xref:api:token.adoc#ERC7984Hooked[`++ERC7984Hooked++`]
+
+| `IERC7984HookModule`
+| `0x573c7f87`
+| xref:api:token.adoc#ERC7984HookModule[`++ERC7984HookModule++`] (the module, not the token)
+|===
+
+Each extension registers only its own identifier and delegates the rest to `super`, so the set of supported identifiers accumulates along the inheritance chain. A wrapper, for example, answers `true` for `IERC165`, `IERC7984`, `IERC7984ERC20Wrapper` and `IERC1363Receiver`. This follows from how Solidity computes `type(I).interfaceId`: it XORs the selectors of the functions *declared* in `I` only, ignoring inherited ones. `IERC7984ERC20Wrapper` extends `IERC7984`, but its identifier covers just the wrapper-specific functions--which is why both identifiers have to be registered, and why a caller looking for "any confidential token" should check `IERC7984` rather than a specific extension.
+
+NOTE: The identifiers above are informational. Compute them with `type(IERC7984).interfaceId` rather than hardcoding the literals: these interfaces are draft and the identifiers change whenever a function signature is added, removed or changed.
+
+The extensions that only constrain balance updates--xref:api:token.adoc#ERC7984Freezable[`++ERC7984Freezable++`], xref:api:token.adoc#ERC7984Restricted[`++ERC7984Restricted++`], xref:api:token.adoc#ERC7984Omnibus[`++ERC7984Omnibus++`], xref:api:token.adoc#ERC7984ObserverAccess[`++ERC7984ObserverAccess++`] and xref:api:token.adoc#ERC7984Votes[`++ERC7984Votes++`]--do not register an identifier of their own. Their presence cannot be detected through ERC-165.
+
+==== Combining extensions
+
+When a token inherits from more than one contract that defines `supportsInterface`, Solidity requires an explicit override listing each of them. Forwarding to `super` preserves the C3-linearized chain, so every identifier along it is still reported:
+
+[source,solidity]
+----
+contract MyToken is ERC7984Hooked {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC7984Hooked, ERC7984) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+}
+----
+
+If a custom extension adds its own interface, register it the same way the library extensions do--check the new identifier first, then fall through:
+
+[source,solidity]
+----
+function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+    return interfaceId == type(IMyExtension).interfaceId || super.supportsInterface(interfaceId);
+}
+----
+
+WARNING: Dropping the `super` call--or overriding `supportsInterface` without forwarding--silently removes `IERC7984` from the reported set. Integrations that gate on ERC-165, such as the ones below, will then reject the token.
+
+==== Where the library relies on ERC-165
+
+Two places in the library query `supportsInterface` on an external address and revert when the answer is negative, both through `ERC165Checker` so that a non-contract or a non-compliant contract fails gracefully:
+
+* xref:api:token.adoc#ERC7984Hooked-installModule-address-bytes-[`++ERC7984Hooked.installModule++`] requires the module to advertise `IERC7984HookModule`, rejecting it with `ERC7984HookedInvalidModule` otherwise. Inheriting xref:api:token.adoc#ERC7984HookModule[`++ERC7984HookModule++`] registers that identifier for you.
+* xref:api:finance.adoc#BatcherConfidential[`++BatcherConfidential++`] requires both of its configured tokens to advertise `IERC7984ERC20Wrapper` at construction.
+
+IMPORTANT: The transfer xref:#callback[callback] is deliberately *not* gated on ERC-165. xref:api:interfaces.adoc#IERC7984Receiver[`++IERC7984Receiver++`] does not extend `IERC165`, and `ERC7984Utils` decides whether to call the receiver purely from whether the recipient has code. A recipient contract therefore does not need to register anything to receive a transfer with callback--but it does need to implement `onConfidentialTransferReceived`: a recipient with code that does not implement it makes the transfer revert, with `ERC7984InvalidReceiver` when the failed call returns no revert data.
+
 [[examples]]
 == Examples
 
