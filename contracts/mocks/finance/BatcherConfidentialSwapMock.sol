@@ -8,11 +8,30 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {BatcherConfidential} from "./../../finance/BatcherConfidential.sol";
 import {ExchangeMock} from "./../finance/ExchangeMock.sol";
 
+/// @dev The exposed mint of `$ERC20Mock`, used to simulate an external service delivering tokens.
+interface IERC20MintMock {
+    // solhint-disable-next-line func-name-mixedcase
+    function $_mint(address to, uint256 value) external;
+}
+
 abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConfidential {
+    enum RouteMode {
+        Swap, // Swap through the exchange and receive the outcome in the same call
+        Send, // Send the input to the exchange and receive the outcome later
+        Revert, // Revert
+        KeepInput, // Return without spending the input
+        SendAndReceive, // Swap through the exchange but report the outcome as not received
+        BurnGasThenSwap // Burn gas before swapping
+    }
+
     ExchangeMock public exchange;
     address public admin;
-    ExecuteOutcome public outcome = ExecuteOutcome.Complete;
-    bool public partialTransfersToToken;
+    RouteMode public routeMode = RouteMode.Swap;
+    bool public outcomeReceived;
+    bool public settleReceivesToToken;
+    uint256 public routeGasLimit = 3_000_000;
+
+    error RouteReverted();
 
     constructor(ExchangeMock exchange_, address admin_) {
         exchange = exchange_;
@@ -23,12 +42,20 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         return "Exchange fromToken for toToken by swapping through the mock exchange.";
     }
 
-    function setExecutionOutcome(ExecuteOutcome outcome_) public {
-        outcome = outcome_;
+    function setRouteMode(RouteMode routeMode_) public {
+        routeMode = routeMode_;
     }
 
-    function setPartialTransfersToToken(bool value) public {
-        partialTransfersToToken = value;
+    function setOutcomeReceived(bool value) public {
+        outcomeReceived = value;
+    }
+
+    function setSettleReceivesToToken(bool value) public {
+        settleReceivesToToken = value;
+    }
+
+    function setRouteGasLimit(uint256 value) public {
+        routeGasLimit = value;
     }
 
     /// @dev Join the current batch with `externalAmount` and `inputProof`.
@@ -72,15 +99,35 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         return joinedAmount;
     }
 
-    function _executeRoute(uint256, uint256 unwrapAmount) internal override returns (ExecuteOutcome) {
-        if (outcome == ExecuteOutcome.Complete || (outcome == ExecuteOutcome.Partial && partialTransfersToToken)) {
-            // Approve exchange to spend unwrapped tokens
-            uint256 rawAmount = unwrapAmount * fromToken().rate();
-            IERC20(fromToken().underlying()).approve(address(exchange), rawAmount);
+    function _executeRoute(uint256, uint256 unwrapAmount) internal override returns (bool) {
+        uint256 rawAmount = unwrapAmount * fromToken().rate();
+        RouteMode mode = routeMode;
 
-            // Swap unwrapped tokens via exchange
-            exchange.swapAToB(rawAmount);
+        if (mode == RouteMode.Revert) revert RouteReverted();
+        if (mode == RouteMode.KeepInput) return false;
+        if (mode == RouteMode.Send) {
+            IERC20(fromToken().underlying()).transfer(address(exchange), rawAmount);
+            return false;
         }
-        return outcome;
+        if (mode == RouteMode.BurnGasThenSwap) {
+            for (uint256 i = 0; i < 200; ++i) {
+                assembly ("memory-safe") {
+                    sstore(add(0x1000, i), add(i, 1))
+                }
+            }
+        }
+
+        IERC20(fromToken().underlying()).approve(address(exchange), rawAmount);
+        exchange.swapAToB(rawAmount);
+        return mode != RouteMode.SendAndReceive;
+    }
+
+    function _routeGasLimit() internal view override returns (uint256) {
+        return routeGasLimit;
+    }
+
+    function _settleRoute(uint256, uint256) internal override returns (bool) {
+        if (settleReceivesToToken) IERC20MintMock(toToken().underlying()).$_mint(address(this), 1);
+        return outcomeReceived;
     }
 }
