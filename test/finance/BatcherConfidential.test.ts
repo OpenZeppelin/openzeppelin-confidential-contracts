@@ -555,21 +555,22 @@ describe('BatcherConfidential', function () {
       });
     });
 
-    it('should revert instead of failing the batch when the route runs out of gas', async function () {
-      await this.batcher.setRouteMode(RouteMode.BurnGasThenSwap);
-      const gasNeeded = await this.batcher.dispatchBatchCallback.estimateGas(
-        this.batchId,
-        this.abiEncodedClearValues,
-        this.decryptionProof,
-      );
-
+    it('should revert if sent with too little gas to give the route its full budget', async function () {
+      // Below the route's 3M budget plus the failure reserve.
       await expect(
         this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof, {
-          gasLimit: gasNeeded - 1_500_000n,
+          gasLimit: 3_000_000n,
         }),
       )
         .to.be.revertedWithCustomError(this.batcher, 'InsufficientRouteGas')
         .withArgs(this.batchId);
+    });
+
+    it('should fail the batch when the route needs more than its gas limit', async function () {
+      await this.batcher.setRouteMode(RouteMode.BurnGasThenSwap);
+      await this.batcher.setRouteGasLimit(1_000_000);
+
+      await expect(this.callback()).to.emit(this.batcher, 'BatchFailed').withArgs(this.batchId, '0x');
     });
 
     it('should finalize with zero rates if unwrap amount is 0', async function () {

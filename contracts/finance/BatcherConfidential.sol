@@ -133,7 +133,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev Intermediate steps must not transfer underlying {toToken} or {fromToken} into the batcher.
     error IntermediateStepBalanceChanged(uint256 batchId);
 
-    /// @dev The route of batch `batchId` ran out of gas. The callback must be retried with more gas.
+    /// @dev The callback for batch `batchId` was sent with too little gas to give the route its full
+    /// {_routeGasLimit} and still rewrap the input. The callback must be retried with more gas.
     error InsufficientRouteGas(uint256 batchId);
 
     /// @dev The caller is not authorized to call this function.
@@ -242,10 +243,11 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         uint256 fromBalanceBefore = _underlyingBalance(fromToken());
         uint256 toBalanceBefore = _underlyingBalance(toToken());
 
-        // The route runs with an explicit gas budget so that a route running out of gas can be told apart from one
-        // that reverts: the former would let any caller fail the batch by underfunding the callback.
-        uint256 reserve = _routeFailureGasReserve();
-        uint256 routeGas = gasleft() - reserve;
+        // The route always runs with its full calibrated budget, so a revert, out of gas included, is the route's
+        // own failure and never the result of a caller underfunding the callback. The call forwards at most 63/64 of
+        // the gas left, hence the extra `routeGas / 63`.
+        uint256 routeGas = _routeGasLimit();
+        require(gasleft() >= routeGas + routeGas / 63 + _routeFailureGasReserve(), InsufficientRouteGas(batchId));
         try this.executeRoute{gas: routeGas}(batchId, unwrapAmountCleartext) returns (bool outcomeReceived) {
             if (outcomeReceived) {
                 _finalize(batchId);
@@ -256,10 +258,6 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
                 emit BatchSettling(batchId);
             }
         } catch (bytes memory reason) {
-            // A route that ran out of gas used its whole budget, leaving less than `reserve + routeGas / 64`. The
-            // callback then reverts so it can be retried with more gas.
-            require(gasleft() >= reserve + routeGas / 64, InsufficientRouteGas(batchId));
-
             // The route's effects are reverted, so the batcher holds the whole unwrapped input.
             fromToken().wrap(address(this), inputAmount);
             _batches[batchId].state = BatchState.Failed;
@@ -540,9 +538,15 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     }
 
     /**
-     * @dev Gas {dispatchBatchCallback} keeps back from the route to rewrap the input if the route reverts. A route
-     * that reverts after using more than 63/64 of its budget is treated as out of gas and the callback reverts.
+     * @dev Gas given to {_executeRoute} on every callback. A route that needs more fails the batch, so it should be
+     * calibrated against the route, with a margin, before deployment. The callback must be sent with at least this
+     * much gas, plus the 1/64 the EVM keeps back and the {_routeFailureGasReserve}.
      */
+    function _routeGasLimit() internal view virtual returns (uint256) {
+        return 3_000_000;
+    }
+
+    /// @dev Gas {dispatchBatchCallback} keeps back from the route to rewrap the input if the route reverts.
     function _routeFailureGasReserve() internal view virtual returns (uint256) {
         return 500_000;
     }

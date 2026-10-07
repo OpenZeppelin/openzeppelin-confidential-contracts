@@ -29,6 +29,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
     RouteMode public routeMode = RouteMode.Swap;
     bool public outcomeReceived;
     bool public settleReceivesToToken;
+    uint256 public routeGasLimit = 3_000_000;
 
     error RouteReverted();
 
@@ -51,6 +52,10 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
 
     function setSettleReceivesToToken(bool value) public {
         settleReceivesToToken = value;
+    }
+
+    function setRouteGasLimit(uint256 value) public {
+        routeGasLimit = value;
     }
 
     /// @dev Join the current batch with `externalAmount` and `inputProof`.
@@ -115,6 +120,10 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         IERC20(fromToken().underlying()).approve(address(exchange), rawAmount);
         exchange.swapAToB(rawAmount);
         return mode != RouteMode.SendAndReceive;
+    }
+
+    function _routeGasLimit() internal view override returns (uint256) {
+        return routeGasLimit;
     }
 
     function _settleRoute(uint256, uint256) internal override returns (bool) {
