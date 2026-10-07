@@ -563,8 +563,8 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
   });
 }
 
-function generateDecryptionErrorMessage(handle: string, account: string): string {
-  return `User ${account} is not authorized to decrypt handle ${handle}!\nVersion: @fhevm/sdk@0.13.4`;
+function generateDecryptionErrorMessage(handle: string, account: string): RegExp {
+  return new RegExp(`User ${account} is not authorized to decrypt handle ${handle}!`);
 }
 
 export { shouldBehaveLikeERC7984 };
