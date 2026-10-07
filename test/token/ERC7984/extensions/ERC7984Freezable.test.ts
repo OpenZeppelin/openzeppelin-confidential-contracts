@@ -3,13 +3,22 @@ import { getAclAddress } from '../../../helpers/accounts';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
-import { AddressLike, BytesLike, EventLog } from 'ethers';
+import { AddressLike, BytesLike, EventLog, Signer } from 'ethers';
 import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
 const decimals = 6;
+
+async function confidentialAvailableHandle(token: any, account: Signer) {
+  const tx = await token.connect(account).confidentialAvailableAccess(await account.getAddress());
+  const receipt = await tx.wait();
+  const event = receipt.logs.find(
+    (log: EventLog) => log.address === token.target && log.fragment?.name === 'ConfidentialAvailableAccessed',
+  ) as EventLog;
+  return event.args[0];
+}
 
 describe('ERC7984Freezable', function () {
   beforeEach(async function () {
@@ -59,9 +68,7 @@ describe('ERC7984Freezable', function () {
     await expect(
       fhevm.userDecryptEuint(FhevmType.euint64, balanceHandle, await this.token.getAddress(), this.recipient),
     ).to.eventually.equal(1000);
-    const confidentialAvailableArgs = this.recipient.address;
-    const availableHandle = await this.token.confidentialAvailable.staticCall(confidentialAvailableArgs);
-    await (this.token as any).connect(this.recipient).confidentialAvailableAccess(confidentialAvailableArgs);
+    const availableHandle = await confidentialAvailableHandle(this.token, this.recipient);
     await expect(
       fhevm.userDecryptEuint(FhevmType.euint64, availableHandle, await this.token.getAddress(), this.recipient),
     ).to.eventually.equal(900);
@@ -90,9 +97,7 @@ describe('ERC7984Freezable', function () {
         encryptedInput.handles[0],
         encryptedInput.inputProof,
       );
-    const confidentialAvailableArgs = this.recipient.address;
-    const availableHandle = await this.token.confidentialAvailable.staticCall(confidentialAvailableArgs);
-    await (this.token as any).connect(this.recipient).confidentialAvailableAccess(confidentialAvailableArgs);
+    const availableHandle = await confidentialAvailableHandle(this.token, this.recipient);
     await expect(
       fhevm.userDecryptEuint(FhevmType.euint64, availableHandle, await this.token.getAddress(), this.recipient),
     ).to.eventually.equal(900);
