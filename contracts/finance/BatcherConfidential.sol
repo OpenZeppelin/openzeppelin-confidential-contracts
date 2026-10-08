@@ -146,6 +146,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /**
      * @dev Quit the batch with id `batchId`, attempting to return the caller's deposit to `recipient`.
+     * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
      *
      * If the {fromToken} transfer returns 0, no amount is deducted and the caller can retry with another recipient.
      *

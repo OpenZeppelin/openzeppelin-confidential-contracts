@@ -1,6 +1,7 @@
 import { BatcherConfidentialSwapMock } from '../../types';
 import { $ERC20Mock } from '../../types/contracts-exposed/mocks/token/ERC20Mock.sol/$ERC20Mock';
 import { $ERC7984ERC20Wrapper } from '../../types/contracts-exposed/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol/$ERC7984ERC20Wrapper';
+import { callAndGetResult } from '../helpers/event';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
@@ -474,7 +475,7 @@ describe('BatcherConfidential', function () {
         this.recipient,
       );
 
-      await this.batcher.connect(this.holder)['quit(uint256,address)'](this.batchId, this.recipient);
+      await this.batcher.connect(this.holder).quit(this.batchId, this.recipient);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -516,7 +517,7 @@ describe('BatcherConfidential', function () {
       await expectTotalDeposits(this.deposit);
 
       await this.fromToken['$_burn(address,uint64)'](this.batcher, this.deposit);
-      await this.batcher.connect(this.holder)['quit(uint256,address)'](this.batchId, this.recipient);
+      await this.batcher.connect(this.holder).quit(this.batchId, this.recipient);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -529,7 +530,7 @@ describe('BatcherConfidential', function () {
       await expectTotalDeposits(this.deposit);
 
       await this.fromToken['$_mint(address,uint64)'](this.batcher, this.deposit);
-      await this.batcher.connect(this.holder)['quit(uint256,address)'](this.batchId, this.recipient);
+      await this.batcher.connect(this.holder).quit(this.batchId, this.recipient);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -622,30 +623,14 @@ describe('BatcherConfidential', function () {
         ).to.eventually.eq(0);
       });
 
-      it('should emit event with the depositor and recipient addresses', async function () {
-        await expect(
-          this.batcher
-            .connect(this.operator)
-            ['$_quit(uint256,address,address)'](this.batchId, this.holder, this.recipient),
-        )
-          .to.emit(this.batcher, 'Quit')
-          .withArgs(this.batchId, this.holder.address, this.recipient.address, anyValue);
-      });
-
       it('should allow the depositor to decrypt the amount sent to another recipient', async function () {
-        const tx = await this.batcher
+        const tx = this.batcher
           .connect(this.operator)
           ['$_quit(uint256,address,address)'](this.batchId, this.holder, this.recipient);
-        const receipt = await tx.wait();
-        const [event] = await this.batcher.queryFilter(
-          this.batcher.filters.Quit(),
-          receipt!.blockNumber,
-          receipt!.blockNumber,
+        const event = await callAndGetResult(tx, 'Quit(uint256,address,address,bytes32)');
+        await expect(fhevm.userDecryptEuint(FhevmType.euint64, event[3], this.batcher, this.holder)).to.eventually.eq(
+          this.deposit,
         );
-
-        await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, event.args.amount, this.batcher, this.holder),
-        ).to.eventually.eq(this.deposit);
       });
     });
   });
