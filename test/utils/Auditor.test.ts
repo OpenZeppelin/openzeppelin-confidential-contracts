@@ -8,7 +8,21 @@ import { ethers, fhevm } from 'hardhat';
 
 const WILDCARD = '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF';
 const NEVER_EXPIRES = 2n ** 64n - 1n;
-const handleCreatedSignature = 'HandleCreated(bytes32)';
+
+const createHandle = async (mock: any, amount: bigint) => {
+  const [handle] = await callAndGetResult(mock.createHandle(amount), 'HandleCreated(bytes32)');
+  return handle;
+};
+
+const wildcardDelegationExpiration = (ctx: any) =>
+  Promise.all([ctx.mock, ctx.auditor].map(contract => ethers.resolveAddress(contract))).then(([mock, auditor]) =>
+    ctx.acl.getUserDecryptionDelegationExpirationDate(mock, auditor, WILDCARD),
+  );
+
+const isHandleDelegated = (ctx: any, contractAddress: any, handle: string) =>
+  Promise.all([ctx.mock, ctx.auditor].map(contract => ethers.resolveAddress(contract))).then(([mock, auditor]) =>
+    ctx.acl.isHandleDelegatedForUserDecryption(mock, auditor, contractAddress, handle),
+  );
 
 describe('Auditor', function () {
   beforeEach(async function () {
@@ -98,14 +112,3 @@ describe('Auditor', function () {
     });
   });
 });
-
-const createHandle = async (mock: any, amount: bigint) => {
-  const [handle] = await callAndGetResult(mock.createHandle(amount), handleCreatedSignature);
-  return handle;
-};
-
-const wildcardDelegationExpiration = (ctx: any) =>
-  ctx.acl.getUserDecryptionDelegationExpirationDate(ctx.mock.target, ctx.auditor.address, WILDCARD);
-
-const isHandleDelegated = (ctx: any, contractAddress: any, handle: string) =>
-  ctx.acl.isHandleDelegatedForUserDecryption(ctx.mock.target, ctx.auditor.address, contractAddress, handle);
