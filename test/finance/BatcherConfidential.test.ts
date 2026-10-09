@@ -668,6 +668,17 @@ describe('BatcherConfidential', function () {
       await this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof);
     });
 
+    it('should revert if unwrap fails in the wrapper', async function () {
+      // Move the wrapper's underlying to the batcher, standing in for funds that belong to other batches.
+      const wrapperBalance = await this.fromTokenUnderlying.balanceOf(this.fromToken);
+      await this.fromTokenUnderlying.$_burn(this.fromToken, wrapperBalance);
+      await this.fromTokenUnderlying.$_mint(this.batcher, wrapperBalance);
+
+      await expect(
+        this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof),
+      ).to.be.revertedWithCustomError(this.fromTokenUnderlying, 'ERC20InsufficientBalance');
+    });
+
     it('should emit event on batch finalization', async function () {
       await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
         .to.emit(this.batcher, 'BatchFinalized')

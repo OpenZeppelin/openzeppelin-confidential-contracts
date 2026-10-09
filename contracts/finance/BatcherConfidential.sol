@@ -7,11 +7,13 @@ import {FHE, externalEuint64, euint64, ebool} from "@fhevm/solidity/lib/FHE.sol"
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import {LowLevelCall} from "@openzeppelin/contracts/utils/LowLevelCall.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984ERC20Wrapper} from "./../interfaces/IERC7984ERC20Wrapper.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
+import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
 /**
@@ -199,7 +201,12 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         // finalize unwrap call will fail if already called by this contract or by anyone else
         try IERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapRequestId_, unwrapAmountCleartext, decryptionProof) {
             // No need to validate input since `finalizeUnwrap` request succeeded
-        } catch {
+        } catch (bytes memory reason) {
+            // A still pending request means the unwrap failed in the wrapper and no underlying was received
+            if (ERC7984ERC20Wrapper(address(fromToken())).unwrapRequester(unwrapRequestId_) != address(0)) {
+                LowLevelCall.bubbleRevert(reason);
+            }
+
             // Must validate input since `finalizeUnwrap` request failed
             bytes32[] memory handles = new bytes32[](1);
             handles[0] = euint64.unwrap(fromToken().unwrapAmount(unwrapRequestId_));
