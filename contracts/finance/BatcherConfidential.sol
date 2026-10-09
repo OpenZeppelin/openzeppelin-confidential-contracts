@@ -12,6 +12,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984ERC20Wrapper} from "./../interfaces/IERC7984ERC20Wrapper.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
+import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
 /**
@@ -116,6 +117,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev Intermediate steps must not result in underlying {toToken} being transferred to or from the batcher.
     error IntermediateStepToTokenBalanceChanged(uint256 batchId);
 
+    /// @dev The unwrap of batch `batchId` is still pending: its underlying {fromToken} has not reached the batcher.
+    error UnwrapPending(uint256 batchId);
+
     constructor(IERC7984ERC20Wrapper fromToken_, IERC7984ERC20Wrapper toToken_) {
         require(
             ERC165Checker.supportsInterface(address(fromToken_), type(IERC7984ERC20Wrapper).interfaceId),
@@ -196,7 +200,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Dispatched));
 
         bytes32 unwrapRequestId_ = unwrapRequestId(batchId);
-        // finalize unwrap call will fail if already called by this contract or by anyone else
+        // finalize unwrap call will fail if already called by this contract or by anyone else, or if the transfer to
+        // the batcher is refused (e.g. paused or restricted wrapper or underlying)
         try IERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapRequestId_, unwrapAmountCleartext, decryptionProof) {
             // No need to validate input since `finalizeUnwrap` request succeeded
         } catch {
@@ -204,6 +209,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             bytes32[] memory handles = new bytes32[](1);
             handles[0] = euint64.unwrap(fromToken().unwrapAmount(unwrapRequestId_));
             FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
+
+            // A refused unwrap is still pending. The route must not run on underlying it has not received, which
+            // may belong to other batches. An empty batch has nothing to receive and cancels below.
+            require(
+                unwrapAmountCleartext == 0 ||
+                    ERC7984ERC20Wrapper(address(fromToken())).unwrapRequester(unwrapRequestId_) == address(0),
+                UnwrapPending(batchId)
+            );
         }
 
         uint256 beforeUnderlyingToTokenBalance;

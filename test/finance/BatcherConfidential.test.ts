@@ -751,6 +751,73 @@ describe('BatcherConfidential', function () {
         .to.emit(this.batcher, 'BatchCanceled')
         .withArgs(batchId);
     });
+
+    describe('while the unwrap is refused', function () {
+      beforeEach(async function () {
+        await this.fromToken.setRefuseFinalizeUnwrap(true);
+      });
+
+      it('should revert and keep the batch dispatched', async function () {
+        await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+          .to.be.revertedWithCustomError(this.batcher, 'UnwrapPending')
+          .withArgs(this.batchId);
+
+        await expect(this.batcher.batchState(this.batchId)).to.eventually.eq(BatchState.Dispatched);
+      });
+
+      it('should settle once the unwrap can be finalized', async function () {
+        await expect(
+          this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof),
+        ).to.be.revertedWithCustomError(this.batcher, 'UnwrapPending');
+
+        await this.fromToken.setRefuseFinalizeUnwrap(false);
+        await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+          .to.emit(this.batcher, 'BatchFinalized')
+          .withArgs(this.batchId, 10n ** 6n);
+      });
+
+      it("should not route another batch's underlying", async function () {
+        // A second batch is dispatched and its unwrap is finalized by anyone, before the refusal applies.
+        const otherBatchId = await this.batcher.currentBatchId();
+        await this.batcher.connect(this.recipient).join(this.joinAmount);
+        await this.batcher.connect(this.recipient).dispatchBatch();
+
+        const [, otherAmount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[1].args;
+        const other = await fhevm.publicDecrypt([otherAmount]);
+
+        await this.fromToken.setRefuseFinalizeUnwrap(false);
+        await this.fromToken.finalizeUnwrap(otherAmount, other.abiEncodedClearValues, other.decryptionProof);
+        await this.fromToken.setRefuseFinalizeUnwrap(true);
+
+        const balance = await this.fromTokenUnderlying.balanceOf(this.batcher);
+        expect(balance).to.eq(this.joinAmount * this.fromTokenRate);
+
+        // The first batch cannot settle on the second batch's underlying.
+        await expect(
+          this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof),
+        ).to.be.revertedWithCustomError(this.batcher, 'UnwrapPending');
+        await expect(this.fromTokenUnderlying.balanceOf(this.batcher)).to.eventually.eq(balance);
+
+        // The second batch settles on its own underlying.
+        await expect(
+          this.batcher.dispatchBatchCallback(otherBatchId, other.abiEncodedClearValues, other.decryptionProof),
+        )
+          .to.emit(this.batcher, 'BatchFinalized')
+          .withArgs(otherBatchId, 10n ** 6n);
+      });
+
+      it('should cancel if unwrap amount is 0', async function () {
+        const batchId = await this.batcher.currentBatchId();
+        await this.batcher.connect(this.holder).dispatchBatch();
+
+        const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[1].args;
+        const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+
+        await expect(this.batcher.dispatchBatchCallback(batchId, abiEncodedClearValues, decryptionProof))
+          .to.emit(this.batcher, 'BatchCanceled')
+          .withArgs(batchId);
+      });
+    });
   });
 
   describe('dispatchBatch', function () {
