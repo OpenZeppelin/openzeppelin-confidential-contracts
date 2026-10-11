@@ -8,6 +8,9 @@ import {IERC7984} from "./IERC7984.sol";
 
 /// @dev Interface for ERC7984ERC20Wrapper contract.
 interface IERC7984ERC20Wrapper is IERC7984 {
+    /// @dev The unwrap request `unwrapRequestId` does not exist or was already finalized.
+    error InvalidUnwrapRequest(bytes32 unwrapRequestId);
+
     /**
      * @dev Emitted when `underlyingAmount` of the underlying token was wrapped into `encryptedWrappedAmount`
      * confidential tokens and sent to `to`.
@@ -60,7 +63,11 @@ interface IERC7984ERC20Wrapper is IERC7984 {
     /// @dev Returns the address of the underlying ERC-20 token that is being wrapped.
     function underlying() external view returns (address);
 
-    /// @dev Finalizes an unwrap request identified by `unwrapRequestId` with the given `unwrapAmountCleartext` and `decryptionProof`.
+    /**
+     * @dev Finalizes an unwrap request identified by `unwrapRequestId` with the given `unwrapAmountCleartext` and `decryptionProof`.
+     *
+     * MUST revert with {InvalidUnwrapRequest} if `unwrapRequestId` does not exist or was already finalized.
+     */
     function finalizeUnwrap(
         bytes32 unwrapRequestId,
         uint64 unwrapAmountCleartext,

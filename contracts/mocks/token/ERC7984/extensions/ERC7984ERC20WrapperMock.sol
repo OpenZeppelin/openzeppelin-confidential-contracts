@@ -7,12 +7,29 @@ import {ERC7984ERC20Wrapper, ERC7984} from "../../../../token/ERC7984/extensions
 import {ERC7984Mock} from "../ERC7984Mock.sol";
 
 contract ERC7984ERC20WrapperMock is ERC7984ERC20Wrapper, ERC7984Mock {
+    bool public refuseFinalizeUnwrap;
+
+    error FinalizeUnwrapRefused();
+
     constructor(
         IERC20 token,
         string memory name,
         string memory symbol,
         string memory uri
     ) ERC7984ERC20Wrapper(token) ERC7984Mock(name, symbol, uri) {}
+
+    function setRefuseFinalizeUnwrap(bool refuse) public {
+        refuseFinalizeUnwrap = refuse;
+    }
+
+    function finalizeUnwrap(
+        bytes32 unwrapRequestId,
+        uint64 unwrapAmountCleartext,
+        bytes calldata decryptionProof
+    ) public virtual override {
+        require(!refuseFinalizeUnwrap, FinalizeUnwrapRefused());
+        super.finalizeUnwrap(unwrapRequestId, unwrapAmountCleartext, decryptionProof);
+    }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC7984ERC20Wrapper, ERC7984) returns (bool) {
         return super.supportsInterface(interfaceId);

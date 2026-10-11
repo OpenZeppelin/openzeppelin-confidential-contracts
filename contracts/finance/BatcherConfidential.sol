@@ -13,7 +13,6 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984ERC20Wrapper} from "./../interfaces/IERC7984ERC20Wrapper.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
-import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
 /**
@@ -202,8 +201,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         try IERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapRequestId_, unwrapAmountCleartext, decryptionProof) {
             // No need to validate input since `finalizeUnwrap` request succeeded
         } catch (bytes memory reason) {
-            // A still pending request means the unwrap failed in the wrapper and no underlying was received
-            if (ERC7984ERC20Wrapper(address(fromToken())).unwrapRequester(unwrapRequestId_) != address(0)) {
+            // Only an already finalized request is safe to skip. Any other failure means no underlying was received,
+            // and the route would spend underlying that belongs to other batches. An empty batch has nothing to
+            // receive and cancels below.
+            if (
+                unwrapAmountCleartext != 0 &&
+                keccak256(reason) !=
+                keccak256(abi.encodeWithSelector(IERC7984ERC20Wrapper.InvalidUnwrapRequest.selector, unwrapRequestId_))
+            ) {
                 LowLevelCall.bubbleRevert(reason);
             }
 
