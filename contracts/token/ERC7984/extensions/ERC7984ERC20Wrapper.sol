@@ -39,6 +39,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
     mapping(bytes32 unwrapRequestId => UnwrapRequest unwrapRequest) private _unwrapRequests;
 
+    error InvalidUnwrapRequest(bytes32 unwrapRequestId);
     error ERC7984TotalSupplyOverflow();
     error ERC7984InvalidTransferReceivedData();
 

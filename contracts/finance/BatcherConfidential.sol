@@ -13,6 +13,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984ERC20Wrapper} from "./../interfaces/IERC7984ERC20Wrapper.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
+import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 
 /**
@@ -207,7 +208,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             if (
                 unwrapAmountCleartext != 0 &&
                 keccak256(reason) !=
-                keccak256(abi.encodeWithSelector(IERC7984ERC20Wrapper.InvalidUnwrapRequest.selector, unwrapRequestId_))
+                keccak256(abi.encodeWithSelector(ERC7984ERC20Wrapper.InvalidUnwrapRequest.selector, unwrapRequestId_))
             ) {
                 LowLevelCall.bubbleRevert(reason);
             }
