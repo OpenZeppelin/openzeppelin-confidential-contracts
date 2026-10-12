@@ -89,7 +89,7 @@ The table below lists every identifier the library registers. A plain `ERC7984` 
 | xref:api:token.adoc#ERC7984Hooked[`++ERC7984Hooked++`]
 |===
 
-NOTE: The identifiers above are informational. Compute them with `type(IERC7984).interfaceId` rather than hardcoding the literals: these interfaces are draft and the identifiers change whenever a function signature is added, removed or changed.
+NOTE: The identifiers above are informational. Compute them with their corresponding interface (for example `type(IERC7984).interfaceId`) rather than hardcoding the literals. These interfaces are draft and the identifiers change whenever a function signature is added, removed or changed.
 
 [[examples]]
 == Examples
