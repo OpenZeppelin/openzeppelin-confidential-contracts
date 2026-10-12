@@ -10,15 +10,15 @@ import {FHE} from "@fhevm/solidity/lib/FHE.sol";
  * do not have the ability to operate on this encrypted data.
  */
 abstract contract Auditor {
-    address private constant _WILDCARD_DELEGATION_ADDRESS = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+    address private constant WILDCARD_DELEGATION_ADDRESS = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
     /// @dev Add an auditor to the ACL. The auditor remains until explicitly revoked by calling {_removeAuditor}.
     function _addAuditor(address auditor) internal virtual {
-        FHE.delegateUserDecryptionWithoutExpiration(auditor, _WILDCARD_DELEGATION_ADDRESS);
+        FHE.delegateUserDecryptionWithoutExpiration(auditor, WILDCARD_DELEGATION_ADDRESS);
     }
 
     /// @dev Remove an auditor from the ACL. The auditor must have previously been added by calling {_addAuditor}.
     function _removeAuditor(address auditor) internal virtual {
-        FHE.revokeUserDecryptionDelegation(auditor, _WILDCARD_DELEGATION_ADDRESS);
+        FHE.revokeUserDecryptionDelegation(auditor, WILDCARD_DELEGATION_ADDRESS);
     }
 }
