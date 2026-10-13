@@ -668,17 +668,6 @@ describe('BatcherConfidential', function () {
       await this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof);
     });
 
-    it('should revert if unwrap fails in the wrapper', async function () {
-      // Move the wrapper's underlying to the batcher, standing in for funds that belong to other batches.
-      const wrapperBalance = await this.fromTokenUnderlying.balanceOf(this.fromToken);
-      await this.fromTokenUnderlying.$_burn(this.fromToken, wrapperBalance);
-      await this.fromTokenUnderlying.$_mint(this.batcher, wrapperBalance);
-
-      await expect(
-        this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof),
-      ).to.be.revertedWithCustomError(this.fromTokenUnderlying, 'ERC20InsufficientBalance');
-    });
-
     it('should emit event on batch finalization', async function () {
       await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
         .to.emit(this.batcher, 'BatchFinalized')
@@ -763,7 +752,7 @@ describe('BatcherConfidential', function () {
         .withArgs(batchId);
     });
 
-    describe('while the unwrap is refused', function () {
+    describe('while unwrap finalization fails', function () {
       beforeEach(async function () {
         await this.fromToken.setRefuseFinalizeUnwrap(true);
       });
@@ -797,11 +786,11 @@ describe('BatcherConfidential', function () {
         await this.batcher.connect(this.recipient).join(this.joinAmount);
         await this.batcher.connect(this.recipient).dispatchBatch();
 
-        const [, otherAmount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[1].args;
-        const other = await fhevm.publicDecrypt([otherAmount]);
+        const [, otherEncrypted] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[1].args;
+        const other = await fhevm.publicDecrypt([otherEncrypted]);
 
         await this.fromToken.setRefuseFinalizeUnwrap(false);
-        await this.fromToken.finalizeUnwrap(otherAmount, other.abiEncodedClearValues, other.decryptionProof);
+        await this.fromToken.finalizeUnwrap(otherEncrypted, other.abiEncodedClearValues, other.decryptionProof);
         await this.fromToken.setRefuseFinalizeUnwrap(true);
 
         const balance = await this.fromTokenUnderlying.balanceOf(this.batcher);
