@@ -32,6 +32,11 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
  *
  * NOTE: The batcher does not support {ERC7984ERC20Wrapper} contracts prior to v0.4.0.
  *
+ * WARNING: {fromToken} must revert with `InvalidUnwrapRequest(unwrapRequestId)` when
+ * {IERC7984ERC20Wrapper-finalizeUnwrap} is called for an already finalized request, since any other revert reason is
+ * bubbled up and bricks the batch. This case is reached when a `Partial` route calls {dispatchBatchCallback} more than
+ * once, or when unwrap finalization is permissionless and a third party finalizes the request first.
+ *
  * NOTE: The batcher could be used to maintain confidentiality of deposits--by default there are no confidentiality guarantees.
  * If desired, developers should consider restricting certain functions to increase confidentiality.
  *
