@@ -32,10 +32,9 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
  *
  * NOTE: The batcher does not support {ERC7984ERC20Wrapper} contracts prior to v0.4.0.
  *
- * WARNING: {fromToken} must revert with `InvalidUnwrapRequest(unwrapRequestId)` when
- * {IERC7984ERC20Wrapper-finalizeUnwrap} is called for an already finalized request, since any other revert reason is
- * bubbled up and bricks the batch. This case is reached when a `Partial` route calls {dispatchBatchCallback} more than
- * once, or when unwrap finalization is permissionless and a third party finalizes the request first.
+ * NOTE: If a wrapper from another library is used, developers should override {_isFromTokenPendingUnwrapRequest} to properly
+ * fetch the unwrap request state. If not overridden, the batcher will allow batches to consume underlying {fromToken} even if
+ * the unwrap request finalization for that batch fails.
  *
  * NOTE: The batcher could be used to maintain confidentiality of deposits--by default there are no confidentiality guarantees.
  * If desired, developers should consider restricting certain functions to increase confidentiality.
@@ -210,11 +209,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             // Only an already finalized request is safe to skip. Any other failure means no underlying was received,
             // and the route would spend underlying that belongs to other batches. An empty batch has nothing to
             // receive and cancels below.
-            if (
-                unwrapAmountCleartext != 0 &&
-                keccak256(reason) !=
-                keccak256(abi.encodeWithSelector(ERC7984ERC20Wrapper.InvalidUnwrapRequest.selector, unwrapRequestId_))
-            ) {
+            if (unwrapAmountCleartext != 0 && _isFromTokenPendingUnwrapRequest(unwrapRequestId_)) {
                 LowLevelCall.bubbleRevert(reason);
             }
 
@@ -473,6 +468,22 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * ====
      */
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (ExecuteOutcome);
+
+    /**
+     * @dev Checks if the given `unwrapRequestId_` is a pending unwrap request on the {fromToken} initiated by the batcher.
+     * This function returns false if the wrapper does not support this functionality. Developers should override this function
+     * as necessary if not using the {ERC7984ERC20Wrapper} from this library.
+     */
+    function _isFromTokenPendingUnwrapRequest(bytes32 unwrapRequestId_) internal view virtual returns (bool) {
+        (bool success, bytes memory res) = address(fromToken()).staticcall(
+            abi.encodeCall(ERC7984ERC20Wrapper.unwrapRequester, (unwrapRequestId_))
+        );
+        if (success && res.length == 32 && address(bytes20(bytes32(res) << 96)) == address(this)) {
+            return true;
+        }
+
+        return false;
+    }
 
     /**
      * @dev Check that the current state of a batch matches the requirements described by the `allowedStates` bitmap.
