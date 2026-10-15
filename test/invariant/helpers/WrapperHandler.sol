@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {ERC7984ERC20WrapperMock} from "./../../../contracts/mocks/token/ERC7984/extensions/ERC7984ERC20WrapperMock.sol";
 import {BaseHandler} from "./BaseHandler.sol";
 
@@ -63,11 +63,12 @@ contract WrapperHandler is BaseHandler {
 
     /// @dev Wrap `mintedUnits * rate` underlying (plus sub-rate `dust` that gets refunded)
     /// from `from` to `to`.
-    function wrap(uint256 fromSeed, uint256 toSeed, uint256 amount, uint256 dustSeed)
-        external
-        newBlock
-        countCall("wrap")
-    {
+    function wrap(
+        uint256 fromSeed,
+        uint256 toSeed,
+        uint256 amount,
+        uint256 dustSeed
+    ) external newBlock countCall("wrap") {
         address from = _rand(fromSeed);
         address to = _rand(toSeed);
 

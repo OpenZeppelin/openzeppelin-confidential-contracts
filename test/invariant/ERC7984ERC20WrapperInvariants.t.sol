@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {FhevmTest} from "forge-fhevm/FhevmTest.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {ERC20Mock} from "../../contracts/mocks/token/ERC20Mock.sol";
-import {ERC7984ERC20WrapperMock} from "../../contracts/mocks/token/ERC7984/extensions/ERC7984ERC20WrapperMock.sol";
+import {FhevmTest} from "forge-fhevm/FhevmTest.sol";
+import {ERC20Mock} from "./../../contracts/mocks/token/ERC20Mock.sol";
+import {ERC7984ERC20WrapperMock} from "./../../contracts/mocks/token/ERC7984/extensions/ERC7984ERC20WrapperMock.sol";
 import {WrapperHandler, IUnwrapDecryptor} from "./helpers/WrapperHandler.sol";
 
 /// @dev Invariants INV-W01..W04 from invariants.md — ERC7984ERC20Wrapper backing.
