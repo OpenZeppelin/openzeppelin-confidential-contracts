@@ -1,8 +1,8 @@
-import { allowHandle } from '../../helpers/accounts';
+import { allowHandle } from '../../helpers/acl';
 import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
-import hre, { ethers, fhevm } from 'hardhat';
+import { ethers, fhevm } from 'hardhat';
 
 // Shared behavior for ERC7984 tokens. Callers must deploy `this.token`. Holder (account[0]) must not be
 // minted more than 1000 tokens.
@@ -360,12 +360,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
               describe('without operator approval', function () {
                 beforeEach(async function () {
                   await this.token.connect(this.holder).setOperator(this.operator.address, 0);
-                  await allowHandle(
-                    hre,
-                    this.holder,
-                    this.operator,
-                    await this.token.confidentialBalanceOf(this.holder),
-                  );
+                  await allowHandle(this.holder, this.operator, await this.token.confidentialBalanceOf(this.holder));
                 });
 
                 it('should revert', async function () {
