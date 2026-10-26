@@ -740,6 +740,41 @@ describe('BatcherConfidential', function () {
         .withArgs(this.batchId, this.joinAmount, 0);
     });
 
+    describe('near the minimum exchange rate', function () {
+      beforeEach(async function () {
+        // Large enough for the exchange rate to land on any value.
+        const joinAmount = exchangeRateMantissa;
+        const batchId = await this.batcher.currentBatchId();
+
+        await this.batcher.connect(this.holder).join(joinAmount);
+        await this.batcher.connect(this.holder).dispatchBatch();
+
+        const [, amount] = (await this.fromToken.queryFilter(this.fromToken.filters.UnwrapRequested()))[1].args;
+        const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amount]);
+        const minExchangeRate = await this.batcher.minExchangeRate();
+
+        Object.assign(this, { joinAmount, batchId, abiEncodedClearValues, decryptionProof, minExchangeRate });
+      });
+
+      it('should revert below the minimum exchange rate', async function () {
+        await this.exchange.setExchangeRate(
+          (ethers.parseEther('1') * (this.minExchangeRate - 1n)) / exchangeRateMantissa,
+        );
+
+        await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+          .to.be.revertedWithCustomError(this.batcher, 'InvalidExchangeRate')
+          .withArgs(this.batchId, this.joinAmount, this.minExchangeRate - 1n);
+      });
+
+      it('should finalize at the minimum exchange rate', async function () {
+        await this.exchange.setExchangeRate((ethers.parseEther('1') * this.minExchangeRate) / exchangeRateMantissa);
+
+        await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+          .to.emit(this.batcher, 'BatchFinalized')
+          .withArgs(this.batchId, this.minExchangeRate);
+      });
+    });
+
     it('should cancel if unwrap amount is 0', async function () {
       const batchId = await this.batcher.currentBatchId();
       await this.batcher.connect(this.holder).dispatchBatch();

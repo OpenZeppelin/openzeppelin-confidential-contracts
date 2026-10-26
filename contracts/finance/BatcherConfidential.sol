@@ -242,9 +242,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
                 Math.mulDiv(wrappedAmount, uint256(10) ** exchangeRateDecimals(), unwrapAmountCleartext)
             );
 
-            // Ensure valid exchange rate: not 0 and will not overflow when calculating user outputs
+            // Ensure valid exchange rate: precise enough and will not overflow when calculating user outputs
             require(
-                exchangeRate_ != 0 && wrappedAmount <= type(uint64).max,
+                exchangeRate_ >= minExchangeRate() && wrappedAmount <= type(uint64).max,
                 InvalidExchangeRate(batchId, unwrapAmountCleartext, exchangeRate_)
             );
             _batches[batchId].exchangeRate = exchangeRate_;
@@ -323,6 +323,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev The number of decimals of precision for the exchange rate.
     function exchangeRateDecimals() public pure virtual returns (uint8) {
         return 6;
+    }
+
+    /**
+     * @dev The lowest exchange rate, in {exchangeRateDecimals}, a batch can finalize at. Rounding the rate down
+     * leaves less than `1 / minExchangeRate()` of the batch's {toToken} output unclaimable.
+     */
+    function minExchangeRate() public pure virtual returns (uint64) {
+        return 1e3;
     }
 
     /// @dev Human readable description of what the batcher does.
@@ -460,7 +468,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      *
      * Additionally, the following must hold:
      *
-     * - `swappedAmount >= ceil(unwrapAmountCleartext / 10 ** exchangeRateDecimals()) * toToken().rate()` (the exchange rate must not be 0)
+     * - `swappedAmount >= ceil(minExchangeRate() * unwrapAmountCleartext / 10 ** exchangeRateDecimals()) * toToken().rate()` (the exchange rate must be at least {minExchangeRate})
      * - `swappedAmount / toToken().rate() * 10 ** exchangeRateDecimals() / unwrapAmountCleartext <= type(uint64).max` (the exchange rate must fit in `uint64`)
      * - `swappedAmount \<= type(uint64).max * toToken().rate()` (the wrapped amount of {toToken} must fit in `uint64`)
      *
