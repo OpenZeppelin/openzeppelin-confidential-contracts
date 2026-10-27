@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {FhevmTest} from "forge-fhevm/FhevmTest.sol";
 import {ERC20Mock} from "./../../contracts/mocks/token/ERC20Mock.sol";
 import {ERC7984ERC20WrapperMock} from "./../../contracts/mocks/token/ERC7984/extensions/ERC7984ERC20WrapperMock.sol";
-import {WrapperHandler, IUnwrapDecryptor} from "./helpers/WrapperHandler.sol";
+import {ERC7984ERC20WrapperHandler, IUnwrapDecryptor} from "./helpers/ERC7984ERC20WrapperHandler.sol";
 
 /// @dev Invariants INV-W01..W04 from invariants.md — ERC7984ERC20Wrapper backing.
 ///
@@ -20,7 +20,7 @@ import {WrapperHandler, IUnwrapDecryptor} from "./helpers/WrapperHandler.sol";
 contract ERC7984ERC20WrapperInvariants is FhevmTest, IUnwrapDecryptor {
     ERC20Mock internal underlying;
     ERC7984ERC20WrapperMock internal wrapper;
-    WrapperHandler internal handler;
+    ERC7984ERC20WrapperHandler internal handler;
     uint256 internal rate;
 
     function setUp() public override {
@@ -33,13 +33,13 @@ contract ERC7984ERC20WrapperInvariants is FhevmTest, IUnwrapDecryptor {
         wrapper = new ERC7984ERC20WrapperMock(IERC20(address(underlying)), "Wrapped", "WND", "");
         rate = wrapper.rate();
 
-        handler = new WrapperHandler(wrapper, IERC20(address(underlying)), IUnwrapDecryptor(address(this)));
+        handler = new ERC7984ERC20WrapperHandler(wrapper, IERC20(address(underlying)), IUnwrapDecryptor(address(this)));
 
         bytes4[] memory selectors = new bytes4[](4);
-        selectors[0] = WrapperHandler.wrap.selector;
-        selectors[1] = WrapperHandler.unwrap.selector;
-        selectors[2] = WrapperHandler.finalize.selector;
-        selectors[3] = WrapperHandler.donate.selector;
+        selectors[0] = ERC7984ERC20WrapperHandler.wrap.selector;
+        selectors[1] = ERC7984ERC20WrapperHandler.unwrap.selector;
+        selectors[2] = ERC7984ERC20WrapperHandler.finalize.selector;
+        selectors[3] = ERC7984ERC20WrapperHandler.donate.selector;
 
         targetContract(address(handler));
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));

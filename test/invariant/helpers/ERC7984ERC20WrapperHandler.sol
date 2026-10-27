@@ -20,7 +20,7 @@ interface IUnwrapDecryptor {
 /// units) plus ghost accumulators for pending unwraps, direct donations, and cumulative
 /// underlying in/out. `unwrap` is bounded to the actor's shadow balance so the burn is
 /// exact (burned == requested) and `fail_on_revert = true` holds.
-contract WrapperHandler is BaseHandler {
+contract ERC7984ERC20WrapperHandler is BaseHandler {
     uint256 internal constant MAX_UNITS = type(uint64).max;
 
     ERC7984ERC20WrapperMock public immutable wrapper;
