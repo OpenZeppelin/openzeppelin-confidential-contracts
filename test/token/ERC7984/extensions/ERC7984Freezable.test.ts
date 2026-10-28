@@ -1,5 +1,4 @@
-import { IACL__factory } from '../../../../types';
-import { getAclAddress } from '../../../helpers/accounts';
+import { getAcl } from '../../../helpers/acl';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
@@ -24,7 +23,7 @@ describe('ERC7984Freezable', function () {
   beforeEach(async function () {
     const [holder, recipient, freezer, operator, anyone] = await ethers.getSigners();
     const token = await ethers.deployContract('$ERC7984FreezableMock', [name, symbol, uri]);
-    const acl = IACL__factory.connect(await getAclAddress(), ethers.provider);
+    const acl = (await getAcl()).connect(holder);
 
     Object.assign(this, { holder, recipient, freezer, operator, anyone, token, acl });
   });
