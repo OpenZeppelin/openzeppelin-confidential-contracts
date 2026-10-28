@@ -242,9 +242,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
                 Math.mulDiv(wrappedAmount, uint256(10) ** exchangeRateDecimals(), unwrapAmountCleartext)
             );
 
-            // Ensure valid exchange rate: not 0 and will not overflow when calculating user outputs
+            // Ensure valid exchange rate and that user outputs will not overflow
             require(
-                exchangeRate_ != 0 && wrappedAmount <= type(uint64).max,
+                _validateExchangeRate(exchangeRate_) && wrappedAmount <= type(uint64).max,
                 InvalidExchangeRate(batchId, unwrapAmountCleartext, exchangeRate_)
             );
             _batches[batchId].exchangeRate = exchangeRate_;
@@ -461,6 +461,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * Additionally, the following must hold:
      *
      * - `swappedAmount >= ceil(unwrapAmountCleartext / 10 ** exchangeRateDecimals()) * toToken().rate()` (the exchange rate must not be 0)
+     * - The exchange rate must pass {_validateExchangeRate}
      * - `swappedAmount / toToken().rate() * 10 ** exchangeRateDecimals() / unwrapAmountCleartext <= type(uint64).max` (the exchange rate must fit in `uint64`)
      * - `swappedAmount \<= type(uint64).max * toToken().rate()` (the wrapped amount of {toToken} must fit in `uint64`)
      *
@@ -483,6 +484,20 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         }
 
         return false;
+    }
+
+    /**
+     * @dev Returns whether a batch can finalize at `exchangeRate_`. By default, any nonzero rate is valid.
+     *
+     * The exchange rate is rounded down to {exchangeRateDecimals}, so up to `1 / exchangeRate_` of a batch's
+     * {toToken} output can stay unclaimable. Developers can override this function to require a minimum rate.
+     *
+     * WARNING: {dispatchBatchCallback} reverts while the rate is rejected, so a batch whose route keeps producing
+     * a rejected rate never finalizes. Overrides must still reject `0`: a batch stored with a rate of `0` stays
+     * `BatchState.Dispatched` and cannot be claimed.
+     */
+    function _validateExchangeRate(uint64 exchangeRate_) internal view virtual returns (bool) {
+        return exchangeRate_ != 0;
     }
 
     /**
