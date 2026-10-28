@@ -13,6 +13,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
     address public admin;
     ExecuteOutcome public outcome = ExecuteOutcome.Complete;
     bool public partialTransfersToToken;
+    uint64 public minExchangeRate;
 
     constructor(ExchangeMock exchange_, address admin_) {
         exchange = exchange_;
@@ -29,6 +30,10 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
 
     function setPartialTransfersToToken(bool value) public {
         partialTransfersToToken = value;
+    }
+
+    function setMinExchangeRate(uint64 minExchangeRate_) public {
+        minExchangeRate = minExchangeRate_;
     }
 
     /// @dev Join the current batch with `externalAmount` and `inputProof`.
@@ -70,6 +75,10 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         euint64 joinedAmount = super._join(to, amount);
         FHE.allow(totalDeposits(currentBatchId()), admin);
         return joinedAmount;
+    }
+
+    function _validateExchangeRate(uint64 exchangeRate_) internal view virtual override returns (bool) {
+        return super._validateExchangeRate(exchangeRate_) && exchangeRate_ >= minExchangeRate;
     }
 
     function _executeRoute(uint256, uint256 unwrapAmount) internal override returns (ExecuteOutcome) {
