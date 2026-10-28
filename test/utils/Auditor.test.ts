@@ -15,11 +15,13 @@ describe('Auditor', function () {
   beforeEach(async function () {
     const [holder, auditor, other] = await ethers.getSigners();
     const mock = await ethers.deployContract('$AuditorMock');
-    const acl = (await getAcl()).connect(holder);
 
+    const connectedAcl = (await getAcl()).connect(holder);
     // alias for easier readability
-    acl.isHandleDelegated = acl.isHandleDelegatedForUserDecryption.bind(acl);
-    acl.delegationExpiration = acl.getUserDecryptionDelegationExpirationDate.bind(acl);
+    const acl = Object.assign(connectedAcl, {
+      isHandleDelegated: connectedAcl.isHandleDelegatedForUserDecryption,
+      delegationExpiration: connectedAcl.getUserDecryptionDelegationExpirationDate,
+    });
 
     Object.assign(this, { holder, auditor, other, mock, acl });
   });
