@@ -1,9 +1,9 @@
-import { allowHandle } from '../../helpers/accounts';
+import { allowHandle } from '../../helpers/acl';
 import { setOperator } from '../../helpers/erc7984';
 import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
-import hre, { ethers, fhevm } from 'hardhat';
+import { ethers, fhevm } from 'hardhat';
 
 // Shared behavior for ERC7984 tokens. Callers must deploy `this.token`. Holder (account[0]) must not be
 // minted more than 1000 tokens.
@@ -416,7 +416,9 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
                   functionParams.unshift(from);
                   await contract.connect(sender).confidentialTransferFromAndCall(...functionParams);
                 } else {
-                  await contract.connect(sender).confidentialTransferAndCall(...functionParams);
+                  await contract
+                    .connect(sender)
+                    ['confidentialTransferAndCall(address,bytes32,bytes)'](...functionParams);
                 }
               } else {
                 if (usingTransferFrom) {
@@ -463,12 +465,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
               describe('without operator approval', function () {
                 beforeEach(async function () {
                   await setOperator(this.token, this.holder, this.operator.address, 0);
-                  await allowHandle(
-                    hre,
-                    this.holder,
-                    this.operator,
-                    await this.token.confidentialBalanceOf(this.holder),
-                  );
+                  await allowHandle(this.holder, this.operator, await this.token.confidentialBalanceOf(this.holder));
                 });
 
                 it('should revert', async function () {
@@ -671,8 +668,8 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
   });
 }
 
-function generateDecryptionErrorMessage(handle: string, account: string): string {
-  return `User ${account} is not authorized to user decrypt handle ${handle}`;
+function generateDecryptionErrorMessage(handle: string, account: string): RegExp {
+  return new RegExp(`User ${account} is not authorized to decrypt handle ${handle}!`);
 }
 
 export { shouldBehaveLikeERC7984 };

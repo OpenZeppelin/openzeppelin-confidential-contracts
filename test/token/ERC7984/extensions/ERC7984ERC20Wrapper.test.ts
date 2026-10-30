@@ -75,26 +75,6 @@ describe('ERC7984ERC20Wrapper', function () {
           ).to.eventually.equal(10);
         });
 
-        it("wrap event shouldn't be decryptable by sender with different recipient", async function () {
-          const amountToWrap = ethers.parseUnits('99', 18);
-          if (viaCallback) {
-            await this.token
-              .connect(this.holder)
-              ['transferAndCall(address,uint256,bytes)'](
-                this.wrapper,
-                amountToWrap,
-                ethers.solidityPacked(['address'], [this.recipient.address]),
-              );
-          } else {
-            await this.wrapper.connect(this.holder).wrap(this.recipient.address, amountToWrap);
-          }
-
-          const [, , encryptedWrappedAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.Wrap()))[0].args;
-          await expect(
-            fhevm.userDecryptEuint(FhevmType.euint64, encryptedWrappedAmount, this.wrapper.target, this.holder),
-          ).to.be.rejected;
-        });
-
         it('with multiple of rate', async function () {
           const amountToWrap = ethers.parseUnits('100', 18);
 
@@ -186,10 +166,10 @@ describe('ERC7984ERC20Wrapper', function () {
           ).to.be.revertedWithCustomError(this.wrapper, 'ERC7984TotalSupplyOverflow');
         });
 
-        if (viaCallback) {
-          it('to another address', async function () {
-            const amountToWrap = ethers.parseUnits('100', 18);
+        it('to another address', async function () {
+          const amountToWrap = ethers.parseUnits('100', 18);
 
+          if (viaCallback) {
             await this.token
               .connect(this.holder)
               ['transferAndCall(address,uint256,bytes)'](
@@ -197,14 +177,56 @@ describe('ERC7984ERC20Wrapper', function () {
                 amountToWrap,
                 ethers.solidityPacked(['address'], [this.recipient.address]),
               );
+          } else {
+            await this.wrapper.connect(this.holder).wrap(this.recipient.address, amountToWrap);
+          }
 
-            await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
-            const wrappedBalanceHandle = await this.wrapper.confidentialBalanceOf(this.recipient.address);
-            await expect(
-              fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.recipient),
-            ).to.eventually.equal(ethers.parseUnits('100', 6));
-          });
+          await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
+          const wrappedBalanceHandle = await this.wrapper.confidentialBalanceOf(this.recipient.address);
+          await expect(
+            fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.recipient),
+          ).to.eventually.equal(ethers.parseUnits('100', 6));
+        });
 
+        it('to zero address fails', async function () {
+          const amountToWrap = ethers.parseUnits('100', 18);
+
+          const tx = viaCallback
+            ? this.token
+                .connect(this.holder)
+                ['transferAndCall(address,uint256,bytes)'](
+                  this.wrapper,
+                  amountToWrap,
+                  ethers.solidityPacked(['address'], [ethers.ZeroAddress]),
+                )
+            : this.wrapper.connect(this.holder).wrap(ethers.ZeroAddress, amountToWrap);
+
+          await expect(tx)
+            .to.be.revertedWithCustomError(this.wrapper, 'ERC7984InvalidReceiver')
+            .withArgs(ethers.ZeroAddress);
+        });
+
+        it("wrap event shouldn't be decryptable by sender with different recipient", async function () {
+          const amountToWrap = ethers.parseUnits('99', 18);
+          if (viaCallback) {
+            await this.token
+              .connect(this.holder)
+              ['transferAndCall(address,uint256,bytes)'](
+                this.wrapper,
+                amountToWrap,
+                ethers.solidityPacked(['address'], [this.recipient.address]),
+              );
+          } else {
+            await this.wrapper.connect(this.holder).wrap(this.recipient.address, amountToWrap);
+          }
+
+          const [, , encryptedWrappedAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.Wrap()))[0].args;
+          await expect(
+            fhevm.userDecryptEuint(FhevmType.euint64, encryptedWrappedAmount, this.wrapper.target, this.holder),
+          ).to.be.rejected;
+        });
+
+        if (viaCallback) {
           it('reverts with short transfer data', async function () {
             const amountToWrap = ethers.parseUnits('100', 18);
 
@@ -407,10 +429,36 @@ describe('ERC7984ERC20Wrapper', function () {
     it('returns unwrap amount', async function () {
       await this.wrapper
         .connect(this.holder)
-        .$_unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
+        .$_unwrap(
+          this.holder,
+          this.holder,
+          await this.wrapper.confidentialBalanceOf(this.holder.address),
+          `0x${'00'.repeat(12)}`,
+        );
 
       const [unwrapAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.return$_unwrap()))[0].args;
       await expect(this.wrapper.unwrapRequester(unwrapAmount)).to.eventually.eq(this.holder);
+    });
+
+    describe('metadata', function () {
+      it('can be associated with an unwrap request', async function () {
+        const metadata = ethers.hexlify(ethers.randomBytes(12));
+        await this.wrapper
+          .connect(this.holder)
+          .$_unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address), metadata);
+
+        const [unwrapRequestId] = (await this.wrapper.queryFilter(this.wrapper.filters.return$_unwrap()))[0].args;
+        await expect(this.wrapper.$_unwrapRequestMetadata(unwrapRequestId)).to.eventually.equal(metadata);
+      });
+
+      it('is 0 by default', async function () {
+        await this.wrapper
+          .connect(this.holder)
+          .unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
+
+        const [, unwrapRequestId] = (await this.wrapper.queryFilter(this.wrapper.filters.UnwrapRequested()))[0].args;
+        await expect(this.wrapper.$_unwrapRequestMetadata(unwrapRequestId)).to.eventually.equal(`0x${'00'.repeat(12)}`);
+      });
     });
   });
 
