@@ -27,6 +27,7 @@ import {ERC7984Utils} from "./utils/ERC7984Utils.sol";
 abstract contract ERC7984 is IERC7984, ERC165 {
     struct OperatorDetails {
         uint48 until;
+        bool unlimited;
         euint64 limit;
     }
 
@@ -111,8 +112,11 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         if (holder == spender) {
             return (true, euint64.wrap(UNLIMITED_OPERATOR));
         } else {
-            OperatorDetails memory details = _operators[holder][spender];
-            return (details.until >= block.timestamp, details.limit);
+            OperatorDetails storage details = _operators[holder][spender];
+            return (
+                details.until >= block.timestamp,
+                details.unlimited ? euint64.wrap(UNLIMITED_OPERATOR) : details.limit
+            );
         }
     }
 
@@ -263,15 +267,21 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * @dev Registers `operator` as an operator of `holder` until `until`, with an encrypted spending allowance.
      *
      * A `limit` of `~bytes32(0)` means the operator is unlimited. That sentinel is not a real handle and cannot be
-     * granted through the ACL, so the allowances are only set for an actual limit.
+     * granted through the ACL, so the allowances are only set for an actual limit. Unlimited operators are flagged
+     * next to `until` in storage, so checking them does not load the limit.
      *
      * NOTE: A holder is always an operator of itself and has unrestricted access to its own tokens. That cannot be
      * changed, therefore setting `holder` as its own operator reverts.
      */
     function _setOperator(address holder, address operator, uint48 until, euint64 limit) internal virtual {
         require(holder != operator && operator != address(0), ERC7984InvalidOperator(operator));
-        _operators[holder][operator] = OperatorDetails({until: until, limit: limit});
-        if (euint64.unwrap(limit) != UNLIMITED_OPERATOR) {
+        bool unlimited = euint64.unwrap(limit) == UNLIMITED_OPERATOR;
+        _operators[holder][operator] = OperatorDetails({
+            until: until,
+            unlimited: unlimited,
+            limit: unlimited ? euint64.wrap(0) : limit
+        });
+        if (!unlimited) {
             FHE.allowThis(limit);
             FHE.allow(limit, holder);
             FHE.allow(limit, operator);
