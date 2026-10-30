@@ -113,10 +113,12 @@ abstract contract ERC7984 is IERC7984, ERC165 {
             return (true, euint64.wrap(UNLIMITED_OPERATOR));
         } else {
             OperatorDetails storage details = _operators[holder][spender];
-            return (
-                details.until >= block.timestamp,
-                details.unlimited ? euint64.wrap(UNLIMITED_OPERATOR) : details.limit
-            );
+            (uint48 until, bool unlimited) = (details.until, details.unlimited);
+            if (until < block.timestamp) {
+                return (false, euint64.wrap(0));
+            } else {
+                return (true, unlimited ? euint64.wrap(UNLIMITED_OPERATOR) : details.limit);
+            }
         }
     }
 
