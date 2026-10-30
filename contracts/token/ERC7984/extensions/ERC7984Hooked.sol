@@ -114,7 +114,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
      *
      * Modified to run pre and post transfer hooks. Zero tokens are transferred if a module does not approve
      * the transfer. Updates with `bypassRestrictions` set to true skip pre-transfer hook gating but still run
-     * post-transfer hooks.
+     * post-transfer hooks. Hooks receive `msg.sender` as the operator that initiated the update.
      */
     function _update(
         address from,
@@ -124,13 +124,18 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
     ) internal virtual override returns (euint64 transferred) {
         euint64 amountToTransfer = bypassRestrictions
             ? encryptedAmount
-            : FHE.select(_runPreTransferHooks(from, to, encryptedAmount), encryptedAmount, FHE.asEuint64(0));
+            : FHE.select(
+                _runPreTransferHooks(msg.sender, from, to, encryptedAmount),
+                encryptedAmount,
+                FHE.asEuint64(0)
+            );
         transferred = super._update(from, to, amountToTransfer, bypassRestrictions);
-        _runPostTransferHooks(from, to, transferred);
+        _runPostTransferHooks(msg.sender, from, to, transferred);
     }
 
-    /// @dev Runs the pre-transfer hooks for all modules.
+    /// @dev Runs the pre-transfer hooks for all modules. `operator` is the account that initiated the update.
     function _runPreTransferHooks(
+        address operator,
         address from,
         address to,
         euint64 encryptedAmount
@@ -140,17 +145,25 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
         compliant = FHE.asEbool(true);
         for (uint256 i = 0; i < modulesLength; ++i) {
             if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules_[i]);
-            compliant = FHE.and(compliant, IERC7984HookModule(modules_[i]).preTransfer(from, to, encryptedAmount));
+            compliant = FHE.and(
+                compliant,
+                IERC7984HookModule(modules_[i]).preTransfer(operator, from, to, encryptedAmount)
+            );
         }
     }
 
-    /// @dev Runs the post-transfer hooks for all modules.
-    function _runPostTransferHooks(address from, address to, euint64 encryptedAmount) internal virtual {
+    /// @dev Runs the post-transfer hooks for all modules. `operator` is the account that initiated the update.
+    function _runPostTransferHooks(
+        address operator,
+        address from,
+        address to,
+        euint64 encryptedAmount
+    ) internal virtual {
         address[] memory modules_ = modules(0, type(uint256).max);
         uint256 modulesLength = modules_.length;
         for (uint256 i = 0; i < modulesLength; i++) {
             if (FHE.isInitialized(encryptedAmount)) FHE.allowTransient(encryptedAmount, modules_[i]);
-            IERC7984HookModule(modules_[i]).postTransfer(from, to, encryptedAmount);
+            IERC7984HookModule(modules_[i]).postTransfer(operator, from, to, encryptedAmount);
         }
     }
 

@@ -26,23 +26,28 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
     }
 
     /// @inheritdoc IERC7984HookModule
-    function preTransfer(address from, address to, euint64 encryptedAmount) public virtual returns (ebool) {
+    function preTransfer(
+        address operator,
+        address from,
+        address to,
+        euint64 encryptedAmount
+    ) public virtual returns (ebool) {
         require(
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        ebool compliant = _preTransfer(msg.sender, from, to, encryptedAmount);
+        ebool compliant = _preTransfer(msg.sender, operator, from, to, encryptedAmount);
         FHE.allowTransient(compliant, msg.sender);
         return compliant;
     }
 
     /// @inheritdoc IERC7984HookModule
-    function postTransfer(address from, address to, euint64 encryptedAmount) public virtual {
+    function postTransfer(address operator, address from, address to, euint64 encryptedAmount) public virtual {
         require(
             FHE.isAllowed(encryptedAmount, msg.sender),
             ERC7984HookModuleUnauthorizedUseOfEncryptedAmount(encryptedAmount, msg.sender)
         );
-        _postTransfer(msg.sender, from, to, encryptedAmount);
+        _postTransfer(msg.sender, operator, from, to, encryptedAmount);
     }
 
     /// @inheritdoc IERC7984HookModule
@@ -74,10 +79,13 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
      * @dev Internal function which runs before a transfer. Transient access is already granted to the module
      * for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
      *
+     * `operator` is the account that initiated the transfer.
+     *
      * NOTE: ACL allowance on `encryptedAmount` is already checked for `msg.sender` in {preTransfer}.
      */
     function _preTransfer(
         address /* token */,
+        address /* operator */,
         address /* from */,
         address /* to */,
         euint64 /* encryptedAmount */
@@ -89,13 +97,16 @@ abstract contract ERC7984HookModule is IERC7984HookModule, ERC165 {
      * @dev Internal function which performs operations after transfers. Transient access is already granted to the module
      * for `encryptedAmount`. If additional handle access is needed from the token, call {_getTokenHandleAllowance}.
      *
+     * `operator` is the account that initiated the transfer.
+     *
      * NOTE: ACL allowance on `encryptedAmount` is already checked for `msg.sender` in {postTransfer}.
      */
     function _postTransfer(
-        address /*token*/,
-        address /*from*/,
-        address /*to*/,
-        euint64 /*encryptedAmount*/
+        address /* token */,
+        address /* operator */,
+        address /* from */,
+        address /* to */,
+        euint64 /* encryptedAmount */
     ) internal virtual {
         // default to no-op
     }

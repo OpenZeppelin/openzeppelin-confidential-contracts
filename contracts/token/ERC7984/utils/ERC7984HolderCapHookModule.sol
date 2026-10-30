@@ -60,11 +60,12 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
     /// @inheritdoc ERC7984HookModule
     function _preTransfer(
         address token,
+        address operator,
         address from,
         address to,
         euint64 encryptedAmount
     ) internal override returns (ebool result) {
-        result = super._preTransfer(token, from, to, encryptedAmount);
+        result = super._preTransfer(token, operator, from, to, encryptedAmount);
 
         // in non trivial cases, check compliance.
         if (to != address(0) && to != from) {
@@ -92,8 +93,14 @@ contract ERC7984HolderCapHookModule is ERC7984HookModule {
     }
 
     /// @inheritdoc ERC7984HookModule
-    function _postTransfer(address token, address from, address to, euint64 encryptedAmount) internal virtual override {
-        super._postTransfer(token, from, to, encryptedAmount);
+    function _postTransfer(
+        address token,
+        address operator,
+        address from,
+        address to,
+        euint64 encryptedAmount
+    ) internal virtual override {
+        super._postTransfer(token, operator, from, to, encryptedAmount);
 
         if (from == to) return;
 
