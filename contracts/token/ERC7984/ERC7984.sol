@@ -25,13 +25,21 @@ import {ERC7984Utils} from "./utils/ERC7984Utils.sol";
  * - Safe overflow/underflow handling for FHE operations
  */
 abstract contract ERC7984 is IERC7984, ERC165 {
+    /**
+     * @dev Operator approval of a holder. `until` and `limited` share a slot, and `limit` is only read when `limited`
+     * is set.
+     *
+     * NOTE: The flag is `limited` rather than `unlimited` so that a zero value means "unlimited". Operator records
+     * written before limits were introduced only store `until` in this same slot, leaving the flag cleared, so they
+     * keep their original meaning of an unlimited operator.
+     */
     struct OperatorDetails {
         uint48 until;
-        bool unlimited;
+        bool limited;
         euint64 limit;
     }
 
-    /// @dev Limit handle that marks an operator as unlimited, both as `setOperator` input and in storage.
+    /// @dev Limit handle that marks an operator as unlimited, as `setOperator` input and as reported by `isOperator`.
     bytes32 private constant UNLIMITED_OPERATOR = ~bytes32(0);
 
     mapping(address holder => euint64) private _balances;
@@ -113,11 +121,11 @@ abstract contract ERC7984 is IERC7984, ERC165 {
             return (true, euint64.wrap(UNLIMITED_OPERATOR));
         } else {
             OperatorDetails storage details = _operators[holder][spender];
-            (uint48 until, bool unlimited) = (details.until, details.unlimited);
+            (uint48 until, bool limited) = (details.until, details.limited);
             if (until < block.timestamp) {
                 return (false, euint64.wrap(0));
             } else {
-                return (true, unlimited ? euint64.wrap(UNLIMITED_OPERATOR) : details.limit);
+                return (true, limited ? details.limit : euint64.wrap(UNLIMITED_OPERATOR));
             }
         }
     }
@@ -269,21 +277,21 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * @dev Registers `operator` as an operator of `holder` until `until`, with an encrypted spending allowance.
      *
      * A `limit` of `~bytes32(0)` means the operator is unlimited. That sentinel is not a real handle and cannot be
-     * granted through the ACL, so the allowances are only set for an actual limit. Unlimited operators are flagged
-     * next to `until` in storage, so checking them does not load the limit.
+     * granted through the ACL, so the allowances are only set for an actual limit. Limited operators are flagged
+     * next to `until` in storage, so checking an unlimited operator does not load the limit.
      *
      * NOTE: A holder is always an operator of itself and has unrestricted access to its own tokens. That cannot be
      * changed, therefore setting `holder` as its own operator reverts.
      */
     function _setOperator(address holder, address operator, uint48 until, euint64 limit) internal virtual {
         require(holder != operator && operator != address(0), ERC7984InvalidOperator(operator));
-        bool unlimited = euint64.unwrap(limit) == UNLIMITED_OPERATOR;
+        bool limited = euint64.unwrap(limit) != UNLIMITED_OPERATOR;
         _operators[holder][operator] = OperatorDetails({
             until: until,
-            unlimited: unlimited,
-            limit: unlimited ? euint64.wrap(0) : limit
+            limited: limited,
+            limit: limited ? limit : euint64.wrap(0)
         });
-        if (!unlimited) {
+        if (limited) {
             FHE.allowThis(limit);
             FHE.allow(limit, holder);
             FHE.allow(limit, operator);
