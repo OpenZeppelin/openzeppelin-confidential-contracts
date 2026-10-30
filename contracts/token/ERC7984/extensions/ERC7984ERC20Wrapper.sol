@@ -272,8 +272,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     ) internal virtual returns (bytes32) {
         require(to != address(0), ERC7984InvalidReceiver(to));
 
-        // try to burn, see how much we actually got
-        euint64 unwrapAmount_ = _burn(from, _consumeOperatorAllowance(from, msg.sender, amount));
+        // try to burn, see how much we actually got, and give back the allowance that was not used
+        (bool limited, euint64 consumed) = _preConsumeOperatorAllowance(from, msg.sender, amount);
+        euint64 unwrapAmount_ = _burn(from, consumed);
+        _postConsumeOperatorAllowance(from, msg.sender, limited, consumed, unwrapAmount_);
         FHE.makePubliclyDecryptable(unwrapAmount_);
 
         assert(unwrapRequester(euint64.unwrap(unwrapAmount_)) == address(0));

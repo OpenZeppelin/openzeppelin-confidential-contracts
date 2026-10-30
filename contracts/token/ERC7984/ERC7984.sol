@@ -172,11 +172,13 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64) {
-        euint64 transferred = _transfer(
+        (bool limited, euint64 consumed) = _preConsumeOperatorAllowance(
             from,
-            to,
-            _consumeOperatorAllowance(from, msg.sender, FHE.fromExternal(encryptedAmount, inputProof))
+            msg.sender,
+            FHE.fromExternal(encryptedAmount, inputProof)
         );
+        euint64 transferred = _transfer(from, to, consumed);
+        _postConsumeOperatorAllowance(from, msg.sender, limited, consumed, transferred);
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -184,7 +186,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /// @inheritdoc IERC7984
     function confidentialTransferFrom(address from, address to, euint64 amount) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        euint64 transferred = _transfer(from, to, _consumeOperatorAllowance(from, msg.sender, amount));
+        (bool limited, euint64 consumed) = _preConsumeOperatorAllowance(from, msg.sender, amount);
+        euint64 transferred = _transfer(from, to, consumed);
+        _postConsumeOperatorAllowance(from, msg.sender, limited, consumed, transferred);
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -217,13 +221,14 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64) {
-        return
-            _transferAndCall(
-                from,
-                to,
-                _consumeOperatorAllowance(from, msg.sender, FHE.fromExternal(encryptedAmount, inputProof)),
-                data
-            );
+        (bool limited, euint64 consumed) = _preConsumeOperatorAllowance(
+            from,
+            msg.sender,
+            FHE.fromExternal(encryptedAmount, inputProof)
+        );
+        euint64 transferred = _transferAndCall(from, to, consumed, data);
+        _postConsumeOperatorAllowance(from, msg.sender, limited, consumed, transferred);
+        return transferred;
     }
 
     /// @inheritdoc IERC7984
@@ -234,7 +239,10 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata data
     ) public virtual returns (euint64) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        return _transferAndCall(from, to, _consumeOperatorAllowance(from, msg.sender, amount), data);
+        (bool limited, euint64 consumed) = _preConsumeOperatorAllowance(from, msg.sender, amount);
+        euint64 transferred = _transferAndCall(from, to, consumed, data);
+        _postConsumeOperatorAllowance(from, msg.sender, limited, consumed, transferred);
+        return transferred;
     }
 
     /**
@@ -299,24 +307,65 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         emit OperatorSet(holder, operator, until, limit);
     }
 
-    function _consumeOperatorAllowance(
+    /**
+     * @dev First half of an operator spend, to run before the tokens move. Checks that `operator` may spend on behalf
+     * of `holder` and takes `amount` out of its allowance. Returns whether the operator is `limited`, as reported by
+     * {isOperator}, and the amount `consumed` the operator may move: `amount` if it fits in the remaining allowance (or
+     * the operator is unlimited), otherwise zero.
+     *
+     * The allowance is reduced in storage before any external call (receiver callback, transfer hook), so that a
+     * reentrant spend sees what is left and cannot use the same allowance twice. Reentrant spends remain possible.
+     *
+     * IMPORTANT: The reduced allowance is only allowed transiently (to the contract, `holder` and `operator`), so that
+     * they can use it during reentrant calls. This function must therefore always be followed by
+     * {_postConsumeOperatorAllowance} in the same call, with the returned values and the amount actually moved. That
+     * second step stores the final allowance and grants persistent access to it.
+     */
+    function _preConsumeOperatorAllowance(
         address holder,
         address operator,
         euint64 amount
-    ) internal virtual returns (euint64) {
+    ) internal virtual returns (bool limited, euint64 consumed) {
         (bool success, euint64 limit) = isOperator(holder, operator);
         require(success, ERC7984UnauthorizedSpender(holder, operator));
 
         if (euint64.unwrap(limit) == UNLIMITED_OPERATOR) {
-            return amount;
+            return (false, amount);
         } else {
-            euint64 consumed = FHE.select(FHE.le(amount, limit), amount, FHE.asEuint64(0));
+            consumed = FHE.select(FHE.le(amount, limit), amount, FHE.asEuint64(0));
             euint64 newLimit = FHE.sub(limit, consumed);
             _operators[holder][operator].limit = newLimit;
+            FHE.allowTransient(newLimit, holder);
+            FHE.allowTransient(newLimit, operator);
+            return (true, consumed);
+        }
+    }
+
+    /**
+     * @dev Second half of an operator spend, to run after the tokens move. `limited` and `consumed` are the values
+     * returned by {_preConsumeOperatorAllowance}, and `transferred` the amount actually moved. Gives back to the
+     * allowance of `operator` the part that was not moved, i.e. `consumed - transferred`. This happens when the holder
+     * balance is too low, when an extension blocks the transfer, or when a receiver callback rejects it and the tokens
+     * are refunded.
+     *
+     * The allowance is read again from storage, so that the leftovers of any reentrant spend are preserved. This is the
+     * only place the allowance gets its ACL permissions. Does nothing when `limited` is false, so that unlimited
+     * operators (as reported by {isOperator}, including any override of it) don't pay for it.
+     */
+    function _postConsumeOperatorAllowance(
+        address holder,
+        address operator,
+        bool limited,
+        euint64 consumed,
+        euint64 transferred
+    ) internal virtual {
+        if (limited) {
+            OperatorDetails storage details = _operators[holder][operator];
+            euint64 newLimit = FHE.add(details.limit, FHE.sub(consumed, transferred));
+            details.limit = newLimit;
             FHE.allowThis(newLimit);
             FHE.allow(newLimit, holder);
             FHE.allow(newLimit, operator);
-            return consumed;
         }
     }
 
