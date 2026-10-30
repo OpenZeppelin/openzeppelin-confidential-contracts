@@ -30,6 +30,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         euint64 limit;
     }
 
+    /// @dev Limit handle that marks an operator as unlimited, both as `setOperator` input and in storage.
+    bytes32 private constant UNLIMITED_OPERATOR = ~bytes32(0);
+
     mapping(address holder => euint64) private _balances;
     mapping(address holder => mapping(address spender => OperatorDetails)) private _operators;
     euint64 private _totalSupply;
@@ -106,7 +109,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /// @inheritdoc IERC7984
     function isOperator(address holder, address spender) public view virtual returns (bool success, euint64 limit) {
         if (holder == spender) {
-            return (true, euint64.wrap(0));
+            return (true, euint64.wrap(UNLIMITED_OPERATOR));
         } else {
             OperatorDetails memory details = _operators[holder][spender];
             return (details.until >= block.timestamp, details.limit);
@@ -127,7 +130,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
             msg.sender,
             operator,
             until,
-            externalEuint64.unwrap(limit) == bytes32(0) ? euint64.wrap(0) : FHE.fromExternal(limit, inputProof)
+            externalEuint64.unwrap(limit) == UNLIMITED_OPERATOR
+                ? euint64.wrap(UNLIMITED_OPERATOR)
+                : FHE.fromExternal(limit, inputProof)
         );
     }
 
@@ -257,8 +262,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     /**
      * @dev Registers `operator` as an operator of `holder` until `until`, with an encrypted spending allowance.
      *
-     * An uninitialized `limit` means the operator is unlimited. Uninitialized handles cannot be granted through the
-     * ACL, so the allowances are only set for an actual limit.
+     * A `limit` of `~bytes32(0)` means the operator is unlimited. That sentinel is not a real handle and cannot be
+     * granted through the ACL, so the allowances are only set for an actual limit.
      *
      * NOTE: A holder is always an operator of itself and has unrestricted access to its own tokens. That cannot be
      * changed, therefore setting `holder` as its own operator reverts.
@@ -266,7 +271,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
     function _setOperator(address holder, address operator, uint48 until, euint64 limit) internal virtual {
         require(holder != operator && operator != address(0), ERC7984InvalidOperator(operator));
         _operators[holder][operator] = OperatorDetails({until: until, limit: limit});
-        if (FHE.isInitialized(limit)) {
+        if (euint64.unwrap(limit) != UNLIMITED_OPERATOR) {
             FHE.allowThis(limit);
             FHE.allow(limit, holder);
             FHE.allow(limit, operator);
@@ -282,7 +287,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         (bool success, euint64 limit) = isOperator(holder, operator);
         require(success, ERC7984UnauthorizedSpender(holder, operator));
 
-        if (!FHE.isInitialized(limit)) {
+        if (euint64.unwrap(limit) == UNLIMITED_OPERATOR) {
             return amount;
         } else {
             euint64 consumed = FHE.select(FHE.le(amount, limit), amount, FHE.asEuint64(0));

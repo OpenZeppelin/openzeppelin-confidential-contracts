@@ -1,6 +1,6 @@
 import { $VestingWalletConfidentialFactoryMock } from '../../types/contracts-exposed/mocks/finance/VestingWalletConfidentialFactoryMock.sol/$VestingWalletConfidentialFactoryMock';
 import { $ERC7984Mock } from '../../types/contracts-exposed/mocks/token/ERC7984/ERC7984Mock.sol/$ERC7984Mock';
-import { setOperator } from '../helpers/erc7984';
+import { UNLIMITED_OPERATOR, setOperator } from '../helpers/erc7984';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
@@ -38,7 +38,7 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
     const until = (await time.latest()) + days(1);
     await expect(await setOperator(token, holder, await factory.getAddress(), until))
       .to.emit(token, 'OperatorSet')
-      .withArgs(holder, await factory.getAddress(), until, ethers.ZeroHash);
+      .withArgs(holder, await factory.getAddress(), until, UNLIMITED_OPERATOR);
 
     Object.assign(this, {
       accounts,

@@ -44,7 +44,7 @@ interface IERC7984 is IERC165 {
 
     /**
      * @dev Returns whether `spender` is currently an operator for `holder`, along with its remaining encrypted
-     * spending allowance. An uninitialized allowance means the operator is not constrained by a limit.
+     * spending allowance. An allowance of `~bytes32(0)` means the operator is not constrained by a limit.
      */
     function isOperator(address holder, address spender) external view returns (bool, euint64);
 
@@ -53,8 +53,8 @@ interface IERC7984 is IERC165 {
      * spending allowance. The allowance is consumed by the transfers the operator initiates, and a transfer that
      * exceeds the remaining allowance moves nothing.
      *
-     * NOTE: Passing an empty `limit` handle sets an unlimited operator, which may transfer any amount of tokens on
-     * behalf of the holder while approved.
+     * NOTE: Passing `~bytes32(0)` as the `limit` handle sets an unlimited operator, which may transfer any amount of
+     * tokens on behalf of the holder while approved.
      */
     function setOperator(address operator, uint48 until, externalEuint64 limit, bytes calldata inputProof) external;
 

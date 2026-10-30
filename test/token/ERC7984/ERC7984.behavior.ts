@@ -1,5 +1,5 @@
 import { allowHandle } from '../../helpers/acl';
-import { setOperator } from '../../helpers/erc7984';
+import { UNLIMITED_OPERATOR, setOperator } from '../../helpers/erc7984';
 import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
@@ -87,16 +87,19 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
 
         await expect(setOperator(this.token, this.holder, this.operator.address, timestamp))
           .to.emit(this.token, 'OperatorSet')
-          .withArgs(this.holder.address, this.operator.address, timestamp, ethers.ZeroHash);
+          .withArgs(this.holder.address, this.operator.address, timestamp, UNLIMITED_OPERATOR);
 
         await expect(this.token.isOperator(this.holder, this.operator)).to.eventually.deep.equal([
           true,
-          ethers.ZeroHash,
+          UNLIMITED_OPERATOR,
         ]);
       });
 
       it('holder is its own operator', async function () {
-        await expect(this.token.isOperator(this.holder, this.holder)).to.eventually.deep.equal([true, ethers.ZeroHash]);
+        await expect(this.token.isOperator(this.holder, this.holder)).to.eventually.deep.equal([
+          true,
+          UNLIMITED_OPERATOR,
+        ]);
       });
 
       it('reverts when holder is the operator', async function () {
@@ -143,10 +146,10 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
           await setOperator(this.token, this.holder, this.operator.address, until);
         });
 
-        it('registers an uninitialized limit', async function () {
+        it('registers the unlimited sentinel', async function () {
           await expect(this.token.isOperator(this.holder, this.operator)).to.eventually.deep.equal([
             true,
-            ethers.ZeroHash,
+            UNLIMITED_OPERATOR,
           ]);
         });
 
@@ -159,7 +162,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
           ).to.eventually.equal(1000);
           await expect(this.token.isOperator(this.holder, this.operator)).to.eventually.deep.equal([
             true,
-            ethers.ZeroHash,
+            UNLIMITED_OPERATOR,
           ]);
         });
       });
