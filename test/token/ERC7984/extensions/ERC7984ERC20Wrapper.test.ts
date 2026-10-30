@@ -1,4 +1,5 @@
 import { ERC7984ERC20WrapperMock } from '../../../../types';
+import { setOperator } from '../../../helpers/erc7984';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
@@ -344,7 +345,7 @@ describe('ERC7984ERC20Wrapper', function () {
         .add64(withdrawalAmount)
         .encrypt();
 
-      await this.wrapper.connect(this.holder).setOperator(this.operator.address, (await time.latest()) + 1000);
+      await setOperator(this.wrapper, this.holder, this.operator.address, (await time.latest()) + 1000);
 
       await this.wrapper
         .connect(this.operator)
@@ -358,6 +359,66 @@ describe('ERC7984ERC20Wrapper', function () {
       await publicDecryptAndFinalizeUnwrap(this.wrapper, this.operator);
 
       await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
+    });
+
+    describe('via an operator with a limit', function () {
+      // Unwraps `amount` (in wrapped units) from the holder as the operator.
+      const unwrapAsOperator = async function (this: any, amount: bigint) {
+        const encryptedInput = await fhevm
+          .createEncryptedInput(this.wrapper.target, this.operator.address)
+          .add64(amount)
+          .encrypt();
+
+        return this.wrapper
+          .connect(this.operator)
+          ['unwrap(address,address,bytes32,bytes)'](
+            this.holder,
+            this.holder,
+            encryptedInput.handles[0],
+            encryptedInput.inputProof,
+          );
+      };
+
+      const decrypt = async function (this: any, handle: string) {
+        return fhevm.userDecryptEuint(FhevmType.euint64, handle, this.wrapper.target, this.holder);
+      };
+
+      const expectState = async function (this: any, balance: bigint, limit: bigint) {
+        await expect(decrypt.call(this, await this.wrapper.confidentialBalanceOf(this.holder))).to.eventually.equal(
+          balance,
+        );
+        const [, remaining] = await this.wrapper.isOperator(this.holder, this.operator);
+        await expect(decrypt.call(this, remaining)).to.eventually.equal(limit);
+      };
+
+      it('consumes the limit, and an unwrap over the remaining limit burns nothing', async function () {
+        await setOperator(
+          this.wrapper,
+          this.holder,
+          this.operator.address,
+          (await time.latest()) + 1000,
+          ethers.parseUnits('60', 6),
+        );
+
+        await unwrapAsOperator.call(this, ethers.parseUnits('10', 6));
+        await expectState.call(this, ethers.parseUnits('90', 6), ethers.parseUnits('50', 6));
+
+        await unwrapAsOperator.call(this, ethers.parseUnits('60', 6));
+        await expectState.call(this, ethers.parseUnits('90', 6), ethers.parseUnits('50', 6));
+      });
+
+      it('an unwrap over the holder balance burns nothing and leaves the limit untouched', async function () {
+        await setOperator(
+          this.wrapper,
+          this.holder,
+          this.operator.address,
+          (await time.latest()) + 1000,
+          ethers.parseUnits('150', 6),
+        );
+
+        await unwrapAsOperator.call(this, ethers.parseUnits('120', 6));
+        await expectState.call(this, ethers.parseUnits('100', 6), ethers.parseUnits('150', 6));
+      });
     });
 
     it('via an unapproved operator', async function () {

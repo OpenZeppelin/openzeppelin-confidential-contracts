@@ -11,7 +11,8 @@ contract SwapERC7984ToERC7984 {
         externalEuint64 amountInput,
         bytes calldata inputProof
     ) public virtual {
-        require(fromToken.isOperator(msg.sender, address(this)));
+        (bool isOperator, ) = fromToken.isOperator(msg.sender, address(this));
+        require(isOperator);
 
         euint64 amount = FHE.fromExternal(amountInput, inputProof);
 
