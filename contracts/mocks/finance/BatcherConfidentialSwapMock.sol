@@ -13,6 +13,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
     address public admin;
     ExecuteOutcome public outcome = ExecuteOutcome.Complete;
     bool public partialTransfersToToken;
+    uint64 public minExchangeRate;
 
     constructor(ExchangeMock exchange_, address admin_) {
         exchange = exchange_;
@@ -31,8 +32,12 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         partialTransfersToToken = value;
     }
 
+    function setMinExchangeRate(uint64 minExchangeRate_) public {
+        minExchangeRate = minExchangeRate_;
+    }
+
     /// @dev Join the current batch with `externalAmount` and `inputProof`.
-    function join(externalEuint64 externalAmount, bytes calldata inputProof) public virtual returns (euint64) {
+    function joinEncrypted(externalEuint64 externalAmount, bytes calldata inputProof) public virtual returns (euint64) {
         euint64 amount = FHE.fromExternal(externalAmount, inputProof);
         FHE.allowTransient(amount, address(fromToken()));
         euint64 transferred = fromToken().confidentialTransferFrom(msg.sender, address(this), amount);
@@ -52,7 +57,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         FHE.allowTransient(ciphertext, msg.sender);
 
         bytes memory callData = abi.encodeWithSignature(
-            "join(bytes32,bytes)",
+            "joinEncrypted(bytes32,bytes)",
             externalEuint64.wrap(euint64.unwrap(ciphertext)),
             hex""
         );
@@ -70,6 +75,10 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         euint64 joinedAmount = super._join(to, amount);
         FHE.allow(totalDeposits(currentBatchId()), admin);
         return joinedAmount;
+    }
+
+    function _validateExchangeRate(uint64 exchangeRate_) internal view virtual override returns (bool) {
+        return super._validateExchangeRate(exchangeRate_) && exchangeRate_ >= minExchangeRate;
     }
 
     function _executeRoute(uint256, uint256 unwrapAmount) internal override returns (ExecuteOutcome) {

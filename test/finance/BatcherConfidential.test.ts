@@ -1,7 +1,7 @@
 import { BatcherConfidentialSwapMock } from '../../types';
 import { $ERC20Mock } from '../../types/contracts-exposed/mocks/token/ERC20Mock.sol/$ERC20Mock';
 import { $ERC7984ERC20Wrapper } from '../../types/contracts-exposed/token/ERC7984/extensions/ERC7984ERC20Wrapper.sol/$ERC7984ERC20Wrapper';
-import { callAndGetResult } from '../helpers/event';
+import { callAndGetResult, callAndGetResultFromEmitter } from '../helpers/event';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
@@ -178,7 +178,7 @@ describe('BatcherConfidential', function () {
               ethers.ZeroHash,
             );
         } else {
-          return batcher.connect(sender)['join(uint64)'](amount);
+          return batcher.connect(sender).join(amount);
         }
       };
 
@@ -740,6 +740,48 @@ describe('BatcherConfidential', function () {
         .withArgs(this.batchId, this.joinAmount, 0);
     });
 
+    describe('with a minimum exchange rate in `_validateExchangeRate`', function () {
+      const minExchangeRate = 1000n;
+
+      beforeEach(async function () {
+        // With a deposit of `exchangeRateMantissa` units, the exchange rate equals the wrapped output,
+        // so the tests can set it exactly.
+        const joinAmount = exchangeRateMantissa;
+        const batchId = await this.batcher.currentBatchId();
+
+        await this.batcher.setMinExchangeRate(minExchangeRate);
+        await this.batcher.connect(this.holder).join(joinAmount);
+
+        const amountHandle = (
+          await callAndGetResultFromEmitter(
+            this.batcher.connect(this.holder).dispatchBatch(),
+            this.fromToken,
+            'UnwrapRequested(address,bytes32,bytes32)',
+          )
+        )[2];
+
+        const { abiEncodedClearValues, decryptionProof } = await fhevm.publicDecrypt([amountHandle]);
+
+        Object.assign(this, { joinAmount, batchId, abiEncodedClearValues, decryptionProof });
+      });
+
+      it('should revert below the minimum exchange rate', async function () {
+        await this.exchange.setExchangeRate((ethers.parseEther('1') * (minExchangeRate - 1n)) / exchangeRateMantissa);
+
+        await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+          .to.be.revertedWithCustomError(this.batcher, 'InvalidExchangeRate')
+          .withArgs(this.batchId, this.joinAmount, minExchangeRate - 1n);
+      });
+
+      it('should finalize at the minimum exchange rate', async function () {
+        await this.exchange.setExchangeRate((ethers.parseEther('1') * minExchangeRate) / exchangeRateMantissa);
+
+        await expect(this.batcher.dispatchBatchCallback(this.batchId, this.abiEncodedClearValues, this.decryptionProof))
+          .to.emit(this.batcher, 'BatchFinalized')
+          .withArgs(this.batchId, minExchangeRate);
+      });
+    });
+
     it('should cancel if unwrap amount is 0', async function () {
       const batchId = await this.batcher.currentBatchId();
       await this.batcher.connect(this.holder).dispatchBatch();
@@ -893,12 +935,12 @@ describe('BatcherConfidential', function () {
     const amount1 = 1337n;
     const amount2 = 4337n;
 
-    const batcher = await ethers.deployContract('$BatcherConfidentialSwapMock', [
+    const batcher = (await ethers.deployContract('$BatcherConfidentialSwapMock', [
       this.fromToken,
       this.toToken,
       ethers.ZeroAddress, // no need for an exchange in this test
       this.operator,
-    ]);
+    ])) as any as BatcherConfidentialSwapMock;
     await this.fromToken.connect(this.holder).setOperator(batcher, 2n ** 48n - 1n);
 
     // ========================== First batch ==========================

@@ -105,7 +105,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     error BatchUnexpectedState(uint256 batchId, BatchState current, bytes32 expectedStates);
 
     /**
-     * @dev Thrown when the given exchange rate is invalid. The exchange rate must be non-zero and the wrapped
+     * @dev The exchange rate must be non-zero and pass {_validateExchangeRate}, and the wrapped
      * amount of {toToken} must be less than or equal to `type(uint64).max`.
      */
     error InvalidExchangeRate(uint256 batchId, uint256 totalDeposits, uint64 exchangeRate);
@@ -242,9 +242,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
                 Math.mulDiv(wrappedAmount, uint256(10) ** exchangeRateDecimals(), unwrapAmountCleartext)
             );
 
-            // Ensure valid exchange rate: not 0 and will not overflow when calculating user outputs
+            // Ensure valid exchange rate and that user outputs will not overflow
             require(
-                exchangeRate_ != 0 && wrappedAmount <= type(uint64).max,
+                exchangeRate_ != 0 && _validateExchangeRate(exchangeRate_) && wrappedAmount <= type(uint64).max,
                 InvalidExchangeRate(batchId, unwrapAmountCleartext, exchangeRate_)
             );
             _batches[batchId].exchangeRate = exchangeRate_;
@@ -463,6 +463,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * - `swappedAmount >= ceil(unwrapAmountCleartext / 10 ** exchangeRateDecimals()) * toToken().rate()` (the exchange rate must not be 0)
      * - `swappedAmount / toToken().rate() * 10 ** exchangeRateDecimals() / unwrapAmountCleartext <= type(uint64).max` (the exchange rate must fit in `uint64`)
      * - `swappedAmount \<= type(uint64).max * toToken().rate()` (the wrapped amount of {toToken} must fit in `uint64`)
+     * - The exchange rate must pass {_validateExchangeRate}
      *
      * Where `swappedAmount` is the batcher's balance of underlying {toToken} after route execution.
      * ====
@@ -483,6 +484,22 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         }
 
         return false;
+    }
+
+    /**
+     * @dev Returns whether a batch can finalize at `exchangeRate_`. {dispatchBatchCallback} always rejects `0` and
+     * calls this function only with non-zero rates. By default, any rate is valid.
+     *
+     * Rounding the exchange rate down to {exchangeRateDecimals} leaves less than `100 / exchangeRate_` percent of a
+     * batch's {toToken} output unclaimable, where `exchangeRate_` is the raw value. For example, a raw rate of `1000`
+     * (1000 {fromToken} to 1 {toToken}) loses less than 0.1%. Each claim also rounds down, losing less than one wei
+     * of {toToken}. Developers can override this function to require a minimum rate.
+     *
+     * WARNING: {dispatchBatchCallback} reverts while the rate is rejected, so a batch whose route keeps producing
+     * a rejected rate will be bricked.
+     */
+    function _validateExchangeRate(uint64 /* exchangeRate_ */) internal view virtual returns (bool) {
+        return true;
     }
 
     /**
