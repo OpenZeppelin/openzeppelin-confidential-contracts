@@ -34,7 +34,12 @@ describe('ERC7984HookModule', function () {
         .encrypt();
 
       await expect(
-        this.hookModule.preTransfer(this.holder.address, this.recipient.address, encryptedAmount.handles[0]),
+        this.hookModule.preTransfer(
+          this.holder.address,
+          this.holder.address,
+          this.recipient.address,
+          encryptedAmount.handles[0],
+        ),
       ).to.be.revertedWithCustomError(this.hookModule, 'ERC7984HookModuleUnauthorizedUseOfEncryptedAmount');
     });
   });
@@ -46,7 +51,12 @@ describe('ERC7984HookModule', function () {
         .add64(100)
         .encrypt();
       await expect(
-        this.hookModule.postTransfer(this.holder.address, this.recipient.address, encryptedAmount.handles[0]),
+        this.hookModule.postTransfer(
+          this.holder.address,
+          this.holder.address,
+          this.recipient.address,
+          encryptedAmount.handles[0],
+        ),
       ).to.be.revertedWithCustomError(this.hookModule, 'ERC7984HookModuleUnauthorizedUseOfEncryptedAmount');
     });
   });
