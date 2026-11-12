@@ -42,7 +42,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         FHE.allowTransient(amount, address(fromToken()));
         euint64 transferred = fromToken().confidentialTransferFrom(msg.sender, address(this), amount);
 
-        (, euint64 joinedAmount) = _join(msg.sender, transferred);
+        euint64 joinedAmount = FHE.select(_join(msg.sender, transferred), transferred, FHE.asEuint64(0));
         euint64 refundAmount = FHE.sub(transferred, joinedAmount);
 
         FHE.allowTransient(refundAmount, address(fromToken()));
@@ -71,9 +71,10 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         return amount;
     }
 
-    function _join(address to, euint64 amount) internal virtual override returns (ebool success, euint64 joinedAmount) {
-        (success, joinedAmount) = super._join(to, amount);
+    function _join(address to, euint64 amount) internal virtual override returns (ebool) {
+        ebool success = super._join(to, amount);
         FHE.allow(totalDeposits(currentBatchId()), admin);
+        return success;
     }
 
     function _validateExchangeRate(uint64 exchangeRate_) internal view virtual override returns (bool) {
