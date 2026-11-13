@@ -273,7 +273,10 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * end up with the recipient rather than being refunded.
      *
      * WARNING: Refunds are subject to the same validation flow as a normal transfer--they may fail for a variety of
-     * reasons (such as failed hook validation in {ERC7984Hooked}). In these cases, the tokens do not return to the sender.
+     * reasons. Checks on encrypted values (such as hook modules in {ERC7984Hooked} or frozen balances in
+     * {ERC7984Freezable}) make the refund transfer zero tokens, so the tokens do not return to the sender. Checks that
+     * revert (such as {ERC7984Restricted} when the recipient became restricted during its callback) revert the whole
+     * call, so the sender keeps its tokens.
      * Refunds intentionally do not set `bypassRestrictions`: the recipient's callback runs before the refund and may
      * change balances, so a refund that skipped restrictions could move tokens that a normal transfer would not
      * (for example frozen tokens in {ERC7984Freezable}, or tokens past the limits of a hook module).
