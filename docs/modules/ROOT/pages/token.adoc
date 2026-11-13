@@ -44,7 +44,7 @@ Smart contracts that are the target of a callback must implement xref:api:interf
 [[bypass-restrictions]]
 === Bypassing restrictions
 
-All balance changes--transfers, mints, and burns--flow through the internal xref:api:token.adoc#ERC7984-_update-address-address-euint64-bool-[`++_update++`] function, which takes a `bypassRestrictions` flag. When this flag is `true`, extensions that override `_update` should skip any transfer restrictions they would normally enforce.
+All balance changes--transfers, mints, and burns--flow through the internal xref:api:token.adoc#ERC7984-_update-address-address-euint64-bytes32-bool-[`++_update++`] function, which takes a `bypassRestrictions` flag. When this flag is `true`, extensions that override `_update` should skip any transfer restrictions they would normally enforce.
 
 This flag exists so that trusted, permissioned flows are not silently blocked by an extension. Because a confidential transfer that fails validation moves `0` tokens rather than reverting, a blocked update in one of these flows would be a silent loss of funds. Setting `bypassRestrictions` guarantees the balance change goes through.
 

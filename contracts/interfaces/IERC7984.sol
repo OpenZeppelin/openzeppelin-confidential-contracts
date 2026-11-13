@@ -14,7 +14,7 @@ interface IERC7984 is IERC165 {
     event OperatorSet(address indexed holder, address indexed operator, uint48 until);
 
     /// @dev Emitted when a confidential transfer is made from `from` to `to` of encrypted amount `amount`.
-    event ConfidentialTransfer(address indexed from, address indexed to, euint64 indexed amount);
+    event ConfidentialTransfer(address indexed from, address indexed to, euint64 amount, bytes32 indexed memo);
 
     /**
      * @dev Emitted when an encrypted amount is disclosed.
@@ -67,7 +67,12 @@ interface IERC7984 is IERC165 {
      * @dev Similar to {confidentialTransfer-address-externalEuint64-bytes} but without an input proof. The caller
      * *must* already be allowed by ACL for the given `amount`.
      */
-    function confidentialTransfer(address to, euint64 amount) external returns (euint64 transferred);
+    function confidentialTransferWithMemo(
+        address to,
+        externalEuint64 encryptedAmount,
+        bytes calldata inputProof,
+        bytes32 memo
+    ) external returns (euint64 transferred);
 
     /**
      * @dev Transfers the encrypted amount `encryptedAmount` from `from` to `to` with the given input proof
@@ -86,7 +91,13 @@ interface IERC7984 is IERC165 {
      * @dev Similar to {confidentialTransferFrom-address-address-externalEuint64-bytes} but without an input proof.
      * The caller *must* be already allowed by ACL for the given `amount`.
      */
-    function confidentialTransferFrom(address from, address to, euint64 amount) external returns (euint64 transferred);
+    function confidentialTransferFromWithMemo(
+        address from,
+        address to,
+        externalEuint64 encryptedAmount,
+        bytes calldata inputProof,
+        bytes32 memo
+    ) external returns (euint64 transferred);
 
     /**
      * @dev Similar to {confidentialTransfer-address-externalEuint64-bytes} but with a callback to `to` after
@@ -104,10 +115,12 @@ interface IERC7984 is IERC165 {
     ) external returns (euint64 transferred);
 
     /// @dev Similar to {confidentialTransfer-address-euint64} but with a callback to `to` after the transfer.
-    function confidentialTransferAndCall(
+    function confidentialTransferAndCallWithMemo(
         address to,
-        euint64 amount,
-        bytes calldata data
+        externalEuint64 encryptedAmount,
+        bytes calldata inputProof,
+        bytes calldata data,
+        bytes32 memo
     ) external returns (euint64 transferred);
 
     /**
@@ -127,10 +140,12 @@ interface IERC7984 is IERC165 {
      * after the transfer.
      *
      */
-    function confidentialTransferFromAndCall(
+    function confidentialTransferFromAndCallWithMemo(
         address from,
         address to,
-        euint64 amount,
-        bytes calldata data
+        externalEuint64 encryptedAmount,
+        bytes calldata inputProof,
+        bytes calldata data,
+        bytes32 memo
     ) external returns (euint64 transferred);
 }

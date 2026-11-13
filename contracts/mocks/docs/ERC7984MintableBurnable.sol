@@ -14,10 +14,10 @@ contract ERC7984MintableBurnable is ERC7984, Ownable {
     ) ERC7984(name, symbol, uri) Ownable(owner) {}
 
     function mint(address to, externalEuint64 amount, bytes memory inputProof) public onlyOwner {
-        _mint(to, FHE.fromExternal(amount, inputProof));
+        _mint(to, FHE.fromExternal(amount, inputProof), hex"");
     }
 
     function burn(address from, externalEuint64 amount, bytes memory inputProof) public onlyOwner {
-        _burn(from, FHE.fromExternal(amount, inputProof));
+        _burn(from, FHE.fromExternal(amount, inputProof), hex"");
     }
 }

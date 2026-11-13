@@ -28,8 +28,9 @@ contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock, Ownable {
         address from,
         address to,
         euint64 amount,
+        bytes32 memo,
         bool bypassRestrictions
     ) internal virtual override(ERC7984Mock, ERC7984Hooked) returns (euint64) {
-        return super._update(from, to, amount, bypassRestrictions);
+        return super._update(from, to, amount, memo, bypassRestrictions);
     }
 }
