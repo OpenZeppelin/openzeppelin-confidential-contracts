@@ -175,10 +175,11 @@ describe('ERC7984Freezable', function () {
     ).to.eventually.equal(1000);
   });
 
-  it('refund bypasses restrictions applied during callback', async function () {
+  it('refund respects frozen balance set during callback', async function () {
     const receiver = await ethers.deployContract('ERC7984ReceiverMutatorMock');
     await this.token.connect(this.holder)['$_mint(address,uint64)'](this.holder.address, 1000);
 
+    // The receiver freezes the received amount during the callback, so the refund transfers 0.
     await this.token
       .connect(this.holder)
       ['confidentialTransferAndCall(address,uint64,bytes)'](
@@ -194,7 +195,47 @@ describe('ERC7984Freezable', function () {
         await this.token.getAddress(),
         this.holder,
       ),
-    ).to.eventually.equal(1000);
+    ).to.eventually.equal(600);
   });
+
+  it('refund cannot move frozen tokens out of the recipient', async function () {
+    const receiver = await ethers.deployContract('ERC7984ReceiverMoverMock');
+    await this.token['$_mint(address,uint64)'](receiver, 1000);
+    await this.token['$_mint(address,uint64)'](this.holder.address, 1000);
+
+    // Freeze the receiver's entire balance.
+    const { handles, inputProof } = await fhevm
+      .createEncryptedInput(await this.token.getAddress(), this.freezer.address)
+      .add64(1000)
+      .encrypt();
+    await this.token
+      .connect(this.freezer)
+      ['$_setConfidentialFrozen(address,bytes32,bytes)'](receiver, handles[0], inputProof);
+
+    // During the callback the receiver spends the 1000 it just received, then rejects the transfer.
+    // The refund would have to come out of its frozen tokens, so it transfers 0.
+    await this.token
+      .connect(this.holder)
+      ['confidentialTransferAndCall(address,uint64,bytes)'](
+        receiver,
+        1000,
+        ethers.AbiCoder.defaultAbiCoder().encode(
+          ['address', 'address', 'uint64'],
+          [receiver.target, this.recipient.address, 1000],
+        ),
+      );
+
+    const balanceOf = async (account: Signer) =>
+      fhevm.userDecryptEuint(
+        FhevmType.euint64,
+        await this.token.confidentialBalanceOf(await account.getAddress()),
+        await this.token.getAddress(),
+        account,
+      );
+    // Total supply is 2000, so the receiver still holds its 1000 frozen tokens.
+    await expect(balanceOf(this.holder)).to.eventually.equal(0);
+    await expect(balanceOf(this.recipient)).to.eventually.equal(1000);
+  });
+
   shouldBehaveLikeERC7984(name, symbol, uri, decimals);
 });
