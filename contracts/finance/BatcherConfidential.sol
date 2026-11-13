@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0) (finance/BatcherConfidential.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.5.3) (finance/BatcherConfidential.sol)
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
-import {FHE, externalEuint64, euint64, ebool, euint128} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, externalEuint64, euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import {LowLevelCall} from "@openzeppelin/contracts/utils/LowLevelCall.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IERC7984ERC20Wrapper} from "./../interfaces/IERC7984ERC20Wrapper.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
+import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
 import {HandleHelper} from "./../utils/HandleHelper.sol";
 
@@ -30,6 +32,10 @@ import {HandleHelper} from "./../utils/HandleHelper.sol";
  * {toToken} dust from rounding down will accumulate in the batcher over time.
  *
  * NOTE: The batcher does not support {ERC7984ERC20Wrapper} contracts prior to v0.4.0.
+ *
+ * NOTE: If a wrapper from another library is used, developers should override {_isFromTokenPendingUnwrapRequest} to properly
+ * fetch the unwrap request state. If not overridden, the batcher will allow batches to consume underlying {fromToken} even if
+ * the unwrap request finalization for that batch fails.
  *
  * NOTE: The batcher could be used to maintain confidentiality of deposits--by default there are no confidentiality guarantees.
  * If desired, developers should consider restricting certain functions to increase confidentiality.
@@ -84,8 +90,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /// @dev Emitted when an `account` claims their `amount` from batch with id `batchId`.
     event Claimed(uint256 indexed batchId, address indexed account, euint64 amount);
 
-    /// @dev Emitted when an `account` quits a batch with id `batchId`.
-    event Quit(uint256 indexed batchId, address indexed account, euint64 amount);
+    /// @dev Emitted when an `account` quits a batch with id `batchId`, sending `amount` to `recipient`.
+    event Quit(uint256 indexed batchId, address indexed account, address indexed recipient, euint64 amount);
 
     /// @dev The `batchId` does not exist. Batch IDs start at 1 and must be less than or equal to {currentBatchId}.
     error BatchNonexistent(uint256 batchId);
@@ -102,7 +108,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     error BatchUnexpectedState(uint256 batchId, BatchState current, bytes32 expectedStates);
 
     /**
-     * @dev Thrown when the given exchange rate is invalid. The exchange rate must be non-zero and the wrapped
+     * @dev The exchange rate must be non-zero and pass {_validateExchangeRate}, and the wrapped
      * amount of {toToken} must be less than or equal to `type(uint64).max`.
      */
     error InvalidExchangeRate(uint256 batchId, uint256 totalDeposits, uint64 exchangeRate);
@@ -115,6 +121,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /// @dev The underlying wrapper tokens are the same.
     error DuplicateUnderlyingTokens();
+
+    /// @dev Intermediate steps must not result in underlying {toToken} being transferred to or from the batcher.
+    error IntermediateStepToTokenBalanceChanged(uint256 batchId);
 
     constructor(IERC7984ERC20Wrapper fromToken_, IERC7984ERC20Wrapper toToken_) {
         require(
@@ -145,38 +154,19 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     }
 
     /**
-     * @dev Quit the batch with id `batchId`. Entire deposit is returned to the user.
+     * @dev Quit the batch with id `batchId`, attempting to return the caller's deposit to `recipient`.
      * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
      *
-     * NOTE: Developers should consider adding additional restrictions to this function
+     * If the {fromToken} transfer returns 0, no amount is deducted and the caller can retry with another recipient.
+     *
+     * NOTE: Developers should consider adding additional restrictions to {_quit}
      * if maintaining confidentiality of deposits is critical to the application.
      *
      * WARNING: {dispatchBatch} may fail if an incompatible version of {ERC7984ERC20Wrapper} is used.
      * This function must be unrestricted in cases where batch dispatching fails.
      */
-    function quit(uint256 batchId) public virtual nonReentrant returns (euint64) {
-        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
-
-        euint64 deposit = deposits(batchId, msg.sender);
-        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, msg.sender));
-
-        euint64 totalDeposits_ = totalDeposits(batchId);
-
-        FHE.allowTransient(deposit, address(fromToken()));
-        euint64 sent = fromToken().confidentialTransfer(msg.sender, deposit.toExternal(), hex"");
-        euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
-        euint64 newDeposit = FHE.sub(deposit, sent);
-
-        FHE.allowThis(newTotalDeposits);
-        FHE.allowThis(newDeposit);
-        FHE.allow(newDeposit, msg.sender);
-
-        _batches[batchId].totalDeposits = newTotalDeposits;
-        _batches[batchId].deposits[msg.sender] = newDeposit;
-
-        emit Quit(batchId, msg.sender, sent);
-
-        return sent;
+    function quit(uint256 batchId, address recipient) public virtual nonReentrant returns (euint64) {
+        return _quit(batchId, msg.sender, recipient);
     }
 
     /**
@@ -189,6 +179,8 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         uint256 batchId = _getAndIncreaseBatchId();
 
         euint64 amountToUnwrap = totalDeposits(batchId);
+        if (!FHE.isInitialized(amountToUnwrap)) amountToUnwrap = FHE.asEuint64(0);
+
         FHE.allowTransient(amountToUnwrap, address(fromToken()));
         _batches[batchId].unwrapRequestId = fromToken().unwrap(
             address(this),
@@ -216,17 +208,27 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         // finalize unwrap call will fail if already called by this contract or by anyone else
         try IERC7984ERC20Wrapper(fromToken()).finalizeUnwrap(unwrapRequestId_, unwrapAmountCleartext, decryptionProof) {
             // No need to validate input since `finalizeUnwrap` request succeeded
-        } catch {
+        } catch (bytes memory reason) {
+            // Only an already finalized request is safe to skip. Any other failure means no underlying was received,
+            // and the route would spend underlying that belongs to other batches. An empty batch has nothing to
+            // receive and cancels below.
+            if (unwrapAmountCleartext != 0 && _isFromTokenPendingUnwrapRequest(unwrapRequestId_)) {
+                LowLevelCall.bubbleRevert(reason);
+            }
+
             // Must validate input since `finalizeUnwrap` request failed
             bytes32[] memory handles = new bytes32[](1);
             handles[0] = euint64.unwrap(fromToken().unwrapAmount(unwrapRequestId_));
             FHE.checkSignatures(handles, abi.encode(unwrapAmountCleartext), decryptionProof);
         }
 
+        uint256 beforeUnderlyingToTokenBalance;
+
         ExecuteOutcome outcome;
         if (unwrapAmountCleartext == 0) {
             outcome = ExecuteOutcome.Cancel;
         } else {
+            beforeUnderlyingToTokenBalance = IERC20(toToken().underlying()).balanceOf(address(this));
             outcome = _executeRoute(batchId, unwrapAmountCleartext);
         }
 
@@ -243,9 +245,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
                 Math.mulDiv(wrappedAmount, uint256(10) ** exchangeRateDecimals(), unwrapAmountCleartext)
             );
 
-            // Ensure valid exchange rate: not 0 and will not overflow when calculating user outputs
+            // Ensure valid exchange rate and that user outputs will not overflow
             require(
-                exchangeRate_ != 0 && wrappedAmount <= type(uint64).max,
+                exchangeRate_ != 0 && _validateExchangeRate(exchangeRate_) && wrappedAmount <= type(uint64).max,
                 InvalidExchangeRate(batchId, unwrapAmountCleartext, exchangeRate_)
             );
             _batches[batchId].exchangeRate = exchangeRate_;
@@ -258,6 +260,11 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
             _batches[batchId].canceled = true;
 
             emit BatchCanceled(batchId);
+        } else if (outcome == ExecuteOutcome.Partial) {
+            require(
+                IERC20(toToken().underlying()).balanceOf(address(this)) == beforeUnderlyingToTokenBalance,
+                IntermediateStepToTokenBalanceChanged(batchId)
+            );
         }
     }
 
@@ -345,6 +352,9 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     /**
      * @dev Claims `toToken` for `account`'s deposit in batch with id `batchId`. Tokens are always
      * sent to `account`, enabling third-party relayers to claim on behalf of depositors.
+     *
+     * IMPORTANT: This function is not protected against reentrancy. External functions built on top of it
+     * must be marked `nonReentrant`, as {claim} is.
      */
     function _claim(uint256 batchId, address account) internal virtual returns (euint64) {
         _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Finalized));
@@ -374,6 +384,42 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
     }
 
     /**
+     * @dev Quits the batch with id `batchId` for `account`, returning the deposit to `recipient`.
+     * This can only be called if the batch has not yet been dispatched or if the batch was canceled.
+     *
+     * NOTE: Developers should consider adding additional restrictions to this function if maintaining
+     * confidentiality of deposits is critical to the application.
+     *
+     * IMPORTANT: This function is not protected against reentrancy. External functions built on top of it
+     * must be marked `nonReentrant`, as {quit} is.
+     */
+    function _quit(uint256 batchId, address account, address recipient) internal virtual returns (euint64) {
+        _validateStateBitmap(batchId, _encodeStateBitmap(BatchState.Pending) | _encodeStateBitmap(BatchState.Canceled));
+
+        euint64 deposit = deposits(batchId, account);
+        require(FHE.isInitialized(deposit), ZeroDeposits(batchId, account));
+
+        euint64 totalDeposits_ = totalDeposits(batchId);
+
+        FHE.allowTransient(deposit, address(fromToken()));
+        euint64 sent = fromToken().confidentialTransfer(recipient, deposit.toExternal(), hex"");
+        euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
+        euint64 newDeposit = FHE.sub(deposit, sent);
+
+        FHE.allowThis(newTotalDeposits);
+        FHE.allowThis(newDeposit);
+        FHE.allow(newDeposit, account);
+        FHE.allow(sent, account);
+
+        _batches[batchId].totalDeposits = newTotalDeposits;
+        _batches[batchId].deposits[account] = newDeposit;
+
+        emit Quit(batchId, account, recipient, sent);
+
+        return sent;
+    }
+
+    /**
      * @dev Joins a batch with amount `amount` on behalf of `to`. Does not do any transfers in.
      * Returns the amount joined with.
      */
@@ -386,6 +432,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
         FHE.allowThis(newTotalDeposits);
         FHE.allowThis(newDeposits);
+        FHE.allowThis(joinedAmount);
         FHE.allow(newDeposits, to);
         FHE.allow(joinedAmount, to);
 
@@ -407,7 +454,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      *
      * NOTE: {dispatchBatchCallback} (and in turn {_executeRoute}) can be repeatedly called until the route execution is complete.
      * If a multi-step route is necessary, intermediate steps should return `ExecuteOutcome.Partial`. Intermediate steps *must* not
-     * result in underlying {toToken} being transferred into the batcher.
+     * result in underlying {toToken} being transferred to or from the batcher.
      *
      * [WARNING]
      * ====
@@ -417,10 +464,46 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
      * Additionally, the following must hold:
      *
      * - `swappedAmount >= ceil(unwrapAmountCleartext / 10 ** exchangeRateDecimals()) * toToken().rate()` (the exchange rate must not be 0)
+     * - `swappedAmount / toToken().rate() * 10 ** exchangeRateDecimals() / unwrapAmountCleartext <= type(uint64).max` (the exchange rate must fit in `uint64`)
      * - `swappedAmount \<= type(uint64).max * toToken().rate()` (the wrapped amount of {toToken} must fit in `uint64`)
+     * - The exchange rate must pass {_validateExchangeRate}
+     *
+     * Where `swappedAmount` is the batcher's balance of underlying {toToken} after route execution.
      * ====
      */
     function _executeRoute(uint256 batchId, uint256 amount) internal virtual returns (ExecuteOutcome);
+
+    /**
+     * @dev Checks if the given `unwrapRequestId_` is a pending unwrap request on the {fromToken} initiated by the batcher.
+     * This function returns false if the wrapper does not support this functionality. Developers should override this function
+     * as necessary if not using the {ERC7984ERC20Wrapper} from this library.
+     */
+    function _isFromTokenPendingUnwrapRequest(bytes32 unwrapRequestId_) internal view virtual returns (bool) {
+        (bool success, bytes memory res) = address(fromToken()).staticcall(
+            abi.encodeCall(ERC7984ERC20Wrapper.unwrapRequester, (unwrapRequestId_))
+        );
+        if (success && res.length == 32 && address(bytes20(bytes32(res) << 96)) == address(this)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @dev Returns whether a batch can finalize at `exchangeRate_`. {dispatchBatchCallback} always rejects `0` and
+     * calls this function only with non-zero rates. By default, any rate is valid.
+     *
+     * Rounding the exchange rate down to {exchangeRateDecimals} leaves less than `100 / exchangeRate_` percent of a
+     * batch's {toToken} output unclaimable, where `exchangeRate_` is the raw value. For example, a raw rate of `1000`
+     * (1000 {fromToken} to 1 {toToken}) loses less than 0.1%. Each claim also rounds down, losing less than one wei
+     * of {toToken}. Developers can override this function to require a minimum rate.
+     *
+     * WARNING: {dispatchBatchCallback} reverts while the rate is rejected, so a batch whose route keeps producing
+     * a rejected rate will be bricked.
+     */
+    function _validateExchangeRate(uint64 /* exchangeRate_ */) internal view virtual returns (bool) {
+        return true;
+    }
 
     /**
      * @dev Check that the current state of a batch matches the requirements described by the `allowedStates` bitmap.

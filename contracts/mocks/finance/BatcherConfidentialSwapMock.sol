@@ -15,6 +15,8 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
     ExchangeMock public exchange;
     address public admin;
     ExecuteOutcome public outcome = ExecuteOutcome.Complete;
+    bool public partialTransfersToToken;
+    uint64 public minExchangeRate;
 
     constructor(ExchangeMock exchange_, address admin_) {
         exchange = exchange_;
@@ -29,8 +31,16 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         outcome = outcome_;
     }
 
+    function setPartialTransfersToToken(bool value) public {
+        partialTransfersToToken = value;
+    }
+
+    function setMinExchangeRate(uint64 minExchangeRate_) public {
+        minExchangeRate = minExchangeRate_;
+    }
+
     /// @dev Join the current batch with `externalAmount` and `inputProof`.
-    function join(externalEuint64 externalAmount, bytes calldata inputProof) public virtual returns (euint64) {
+    function joinEncrypted(externalEuint64 externalAmount, bytes calldata inputProof) public virtual returns (euint64) {
         euint64 amount = FHE.fromExternal(externalAmount, inputProof);
         FHE.allowTransient(amount, address(fromToken()));
         euint64 transferred = fromToken().confidentialTransferFrom(
@@ -55,7 +65,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         FHE.allowTransient(ciphertext, msg.sender);
 
         bytes memory callData = abi.encodeWithSignature(
-            "join(bytes32,bytes)",
+            "joinEncrypted(bytes32,bytes)",
             externalEuint64.wrap(euint64.unwrap(ciphertext)),
             hex""
         );
@@ -63,8 +73,8 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         Address.functionDelegateCall(address(this), callData);
     }
 
-    function quit(uint256 batchId) public virtual override returns (euint64) {
-        euint64 amount = super.quit(batchId);
+    function quit(uint256 batchId, address recipient) public virtual override returns (euint64) {
+        euint64 amount = super.quit(batchId, recipient);
         FHE.allow(totalDeposits(batchId), admin);
         return amount;
     }
@@ -75,8 +85,12 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         return joinedAmount;
     }
 
+    function _validateExchangeRate(uint64 exchangeRate_) internal view virtual override returns (bool) {
+        return super._validateExchangeRate(exchangeRate_) && exchangeRate_ >= minExchangeRate;
+    }
+
     function _executeRoute(uint256, uint256 unwrapAmount) internal override returns (ExecuteOutcome) {
-        if (outcome == ExecuteOutcome.Complete) {
+        if (outcome == ExecuteOutcome.Complete || (outcome == ExecuteOutcome.Partial && partialTransfersToToken)) {
             // Approve exchange to spend unwrapped tokens
             uint256 rawAmount = unwrapAmount * fromToken().rate();
             IERC20(fromToken().underlying()).approve(address(exchange), rawAmount);

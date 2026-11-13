@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.3.0) (token/ERC7984/ERC7984.sol)
-pragma solidity ^0.8.27;
+// OpenZeppelin Confidential Contracts (last updated v0.5.0) (token/ERC7984/ERC7984.sol)
+pragma solidity ^0.8.26;
 
 import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
@@ -43,6 +43,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
 
     /// @dev The given holder `holder` is not authorized to spend on behalf of `spender`.
     error ERC7984UnauthorizedSpender(address holder, address spender);
+
+    /// @dev The given operator `operator` is invalid.
+    error ERC7984InvalidOperator(address operator);
 
     /**
      * @dev The caller `user` does not have access to the encrypted amount `amount`.
@@ -100,7 +103,10 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         return holder == spender || block.timestamp <= _operators[holder][spender];
     }
 
-    /// @inheritdoc IERC7984
+    /**
+     * @dev See {IERC7984-setOperator}. Operators are given ACL allowance (ability to decrypt) for the transferred amount
+     * of transfers they initiate.
+     */
     function setOperator(address operator, uint48 until) public virtual {
         _setOperator(msg.sender, operator, until);
     }
@@ -233,7 +239,14 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         emit AmountDisclosed(encryptedAmount, cleartextAmount);
     }
 
+    /**
+     * @dev Sets the operator status of `operator` for `holder` until `until`.
+     *
+     * NOTE: A holder is always an operator of itself and has unrestricted access to its own tokens. That cannot be
+     * changed, therefore setting `holder` as its own operator reverts.
+     */
     function _setOperator(address holder, address operator, uint48 until) internal virtual {
+        require(holder != operator && operator != address(0), ERC7984InvalidOperator(operator));
         _operators[holder][operator] = until;
         emit OperatorSet(holder, operator, until);
     }
@@ -270,8 +283,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * the hook can still return false, in which case the refund transfers zero tokens. The sender's tokens
      * end up with the recipient rather than being refunded.
      *
-     * WARNING: Refunds are subject to the same validation flow as a normal transfer--they may fail for a variety of
-     * reasons (such as failed hook validation in {ERC7984Hooked}). In these cases, the tokens do not return to the sender.
+     * Refunds set `bypassRestrictions` to true so extensions can identify and skip additional transfer restrictions.
+     * Extensions that ignore the `bypassRestrictions` flag may still cause a refund to fail.
      */
     function _transferAndCall(
         address from,
@@ -287,20 +300,36 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         ebool success = ERC7984Utils.checkOnTransferReceived(msg.sender, from, to, sent, data);
 
         // Try to refund if callback fails
-        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent), hex"");
+        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent), hex"", true); // set bypassRestrictions to true for refunds
         transferred = FHE.sub(sent, refund);
         FHE.allowTransient(transferred, msg.sender);
     }
 
     /**
      * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
-     * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
+     *
+     * This variant sets the `bypassRestrictions` flag to false, which is the default behavior for most transfers.
+     * This function is not virtual. Override the generic {_update-address-address-euint64-bytes32-bool} function to customize transfer behavior.
+     *
+     * Emits a {ConfidentialTransfer} event with the successfully transferred amount and the given `memo`.
+     */
+    function _update(address from, address to, euint64 amount, bytes32 memo) internal returns (euint64 transferred) {
+        return _update(from, to, amount, memo, false);
+    }
+
+    /**
+     * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
+     * If `bypassRestrictions` is true, extensions should treat the update as a permissioned flow such as a refund or
+     * wrap and not apply any additional restrictions.
+     *
+     * Emits a {ConfidentialTransfer} event with the successfully transferred amount and the given `memo`.
      */
     function _update(
         address from,
         address to,
         euint64 amount,
-        bytes32 memo
+        bytes32 memo,
+        bool /* bypassRestrictions */
     ) internal virtual returns (euint64 transferred) {
         ebool success;
         euint64 ptr;

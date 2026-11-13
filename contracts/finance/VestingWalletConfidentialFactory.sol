@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (last updated v0.3.0) (finance/VestingWalletConfidentialFactory.sol)
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.24;
 
 import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";

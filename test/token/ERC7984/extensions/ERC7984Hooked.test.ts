@@ -1,13 +1,19 @@
-import { $ERC7984Hooked } from '../../../../types/contracts-exposed/token/ERC7984/extensions/rwa/ERC7984Hooked.sol/$ERC7984Hooked';
+import { $ERC7984Hooked } from '../../../../types/contracts-exposed/token/ERC7984/extensions/ERC7984Hooked.sol/$ERC7984Hooked';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
 
+const name = 'name';
+const symbol = 'symbol';
+const uri = 'uri';
+const decimals = 6;
+
 describe('ERC7984Hooked', function () {
   beforeEach(async function () {
     const [admin, holder, recipient, anyone] = await ethers.getSigners();
-    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])).connect(
+    const token = (await ethers.deployContract('$ERC7984HookedMock', [name, symbol, uri, admin])).connect(
       anyone,
     ) as $ERC7984Hooked;
     const hookModule = await ethers.deployContract('$ERC7984HookModuleMock');
@@ -19,6 +25,19 @@ describe('ERC7984Hooked', function () {
       recipient,
       holder,
       anyone,
+    });
+  });
+
+  describe('ERC165', async function () {
+    it('should support interface', async function () {
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC165)).to.eventually.be.true;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984)).to.eventually.be.true;
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984Hooked)).to.eventually.be.true;
+    });
+
+    it('should not support interface', async function () {
+      await expect(this.token.supportsInterface(INTERFACE_IDS.ERC7984ERC20Wrapper)).to.eventually.be.false;
+      await expect(this.token.supportsInterface(INVALID_ID)).to.eventually.be.false;
     });
   });
 
@@ -41,9 +60,9 @@ describe('ERC7984Hooked', function () {
       await expect(this.token.modules(0, ethers.MaxInt256)).to.eventually.deep.equal([this.hookModule.target]);
     });
 
-    it('should gate via `_authorizeModuleChange`', async function () {
+    it('should gate via `_checkModuleManager`', async function () {
       await expect(this.token.connect(this.anyone).installModule(this.hookModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedModuleManager')
         .withArgs(this.anyone);
 
       await this.token.connect(this.admin).installModule(this.hookModule, '0x');
@@ -85,7 +104,7 @@ describe('ERC7984Hooked', function () {
     });
 
     it('should emit event', async function () {
-      await expect(this.token.$_uninstallModule(this.hookModule, '0x'))
+      await expect(this.token.$_uninstallModule(this.hookModule))
         .to.emit(this.token, 'ERC7984HookedModuleUninstalled')
         .withArgs(this.hookModule);
     });
@@ -93,33 +112,22 @@ describe('ERC7984Hooked', function () {
     it('should fail if module not installed', async function () {
       const newModule = await ethers.deployContract('$ERC7984HookModuleMock');
 
-      await expect(this.token.$_uninstallModule(newModule, '0x'))
+      await expect(this.token.$_uninstallModule(newModule))
         .to.be.revertedWithCustomError(this.token, 'ERC7984HookedNonexistentModule')
         .withArgs(newModule);
     });
 
-    it('should call `onUninstall` on the module', async function () {
-      await expect(this.token.$_uninstallModule(this.hookModule, '0xffff'))
-        .to.emit(this.hookModule, 'OnUninstall')
-        .withArgs('0xffff');
-    });
-
     it('should remove module from modules list', async function () {
-      await this.token.$_uninstallModule(this.hookModule, '0x');
+      await this.token.$_uninstallModule(this.hookModule);
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.false;
     });
 
-    it("should not revert if module's `onUninstall` reverts", async function () {
-      await this.hookModule.setRevertOnUninstall(true);
-      await this.token.$_uninstallModule(this.hookModule, '0x');
-    });
-
-    it('should gate via `_authorizeModuleChange`', async function () {
-      await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule, '0x'))
-        .to.be.revertedWithCustomError(this.token, 'OwnableUnauthorizedAccount')
+    it('should gate via `_checkModuleManager`', async function () {
+      await expect(this.token.connect(this.anyone).uninstallModule(this.hookModule))
+        .to.be.revertedWithCustomError(this.token, 'ERC7984HookedUnauthorizedModuleManager')
         .withArgs(this.anyone);
 
-      await this.token.connect(this.admin).uninstallModule(this.hookModule, '0x');
+      await this.token.connect(this.admin).uninstallModule(this.hookModule);
       await expect(this.token.isModuleInstalled(this.hookModule)).to.eventually.be.false;
     });
   });
@@ -153,5 +161,35 @@ describe('ERC7984Hooked', function () {
         ).to.eventually.equal(approve ? 100 : 0);
       });
     }
+
+    it('refund bypasses pre-transfer hooks disabled during callback', async function () {
+      const receiver = await ethers.deployContract('ERC7984ReceiverMutatorMock');
+
+      await this.token
+        .connect(this.holder)
+        ['confidentialTransferAndCall(address,uint64,bytes)'](
+          receiver,
+          4000,
+          ethers.AbiCoder.defaultAbiCoder().encode(['uint8', 'address'], [2, this.hookModule.target]),
+        );
+
+      const holderBalance = await this.token.confidentialBalanceOf(this.holder);
+      await expect(
+        fhevm.userDecryptEuint(FhevmType.euint64, holderBalance, this.token.target, this.holder),
+      ).to.eventually.equal(1000);
+    });
   });
+
+  describe('isModuleManager', async function () {
+    it('should authorize the module manager (mock gates by ownable)', async function () {
+      await expect(this.token.isModuleManager(this.admin)).to.eventually.be.true;
+    });
+
+    it('should not authorize a non-module-manager', async function () {
+      await expect(this.token.isModuleManager(this.anyone)).to.eventually.be.false;
+      await expect(this.token.isModuleManager(this.holder)).to.eventually.be.false;
+    });
+  });
+
+  shouldBehaveLikeERC7984(name, symbol, uri, decimals);
 });

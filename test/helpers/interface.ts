@@ -55,7 +55,12 @@ export const SIGNATURES = {
     'preTransfer(address,address,bytes32)',
     'postTransfer(address,address,bytes32)',
     'onInstall(bytes)',
-    'onUninstall(bytes)',
+  ],
+  ERC7984Hooked: [
+    'isModuleInstalled(address)',
+    'installModule(address,bytes)',
+    'uninstallModule(address)',
+    'isModuleManager(address)',
   ],
 };
 

@@ -1,3 +1,4 @@
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { mine } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
@@ -6,6 +7,7 @@ import { ethers, fhevm } from 'hardhat';
 const name = 'Observer Access Token';
 const symbol = 'OAT';
 const uri = 'https://example.com/metadata';
+const decimals = 6;
 
 describe('ERC7984ObserverAccess', function () {
   beforeEach(async function () {
@@ -57,7 +59,7 @@ describe('ERC7984ObserverAccess', function () {
   it('observer should be able to set an observer to zero address', async function () {
     const observer = this.operator;
 
-    await expect(this.token.connect(this.holder).setObserver(this.holder, observer));
+    await this.token.connect(this.holder).setObserver(this.holder, observer);
     await expect(this.token.connect(observer).setObserver(this.holder, ethers.ZeroAddress))
       .to.emit(this.token, 'ERC7984ObserverAccessObserverSet')
       .withArgs(this.holder.address, observer.address, ethers.ZeroAddress);
@@ -137,4 +139,6 @@ describe('ERC7984ObserverAccess', function () {
       ).to.eventually.equal(900);
     });
   });
+
+  shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
 });

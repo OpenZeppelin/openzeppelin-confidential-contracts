@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984Freezable.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.5.0) (token/ERC7984/extensions/ERC7984Freezable.sol)
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
-import {FHE, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {FHESafeMath} from "../../../utils/FHESafeMath.sol";
 import {ERC7984} from "../ERC7984.sol";
 
@@ -55,7 +55,7 @@ abstract contract ERC7984Freezable is ERC7984 {
      * @dev See {ERC7984-_update}.
      *
      * The `from` account must have sufficient unfrozen balance,
-     * otherwise 0 tokens are transferred.
+     * otherwise 0 tokens are transferred. Updates with `bypassRestrictions` set to true skip this check.
      * The default freezing behavior can be changed (for a pass-through for instance) by overriding
      * {_confidentialAvailable}. The internal function is used for actual gating (not the public function)
      * to avoid unnecessarily granting ACL allowances.
@@ -64,12 +64,13 @@ abstract contract ERC7984Freezable is ERC7984 {
         address from,
         address to,
         euint64 encryptedAmount,
-        bytes32 memo
+        bytes32 memo,
+        bool bypassRestrictions
     ) internal virtual override returns (euint64) {
-        if (from != address(0)) {
+        if (from != address(0) && !bypassRestrictions) {
             euint64 unfrozen = _confidentialAvailable(from);
             encryptedAmount = FHE.select(FHE.le(encryptedAmount, unfrozen), encryptedAmount, FHE.asEuint64(0));
         }
-        return super._update(from, to, encryptedAmount, memo);
+        return super._update(from, to, encryptedAmount, memo, bypassRestrictions);
     }
 }

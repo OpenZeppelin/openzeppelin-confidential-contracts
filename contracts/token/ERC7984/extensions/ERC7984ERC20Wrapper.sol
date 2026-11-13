@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984ERC20Wrapper.sol)
+// OpenZeppelin Confidential Contracts (last updated v0.5.0) (token/ERC7984/extensions/ERC7984ERC20Wrapper.sol)
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
 import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC1363Receiver} from "@openzeppelin/contracts/interfaces/IERC1363Receiver.sol";
@@ -21,16 +21,27 @@ import {ERC7984} from "./../ERC7984.sol";
  *
  * WARNING: Minting assumes the full amount of the underlying token transfer has been received, hence some non-standard
  * tokens such as fee-on-transfer or other deflationary-type tokens are not supported by this wrapper.
+ *
+ * WARNING: This wrapper assumes that all minting activity will succeed. Any overrides to the {_mint} or
+ * {_update} functions must ensure they do not cause wrapping to fail silently. This extension should not be
+ * combined with {ERC7984Hooked} modules that may silently fail such as {ERC7984BalanceCapHookModule} and
+ * {ERC7984HolderCapHookModule}.
  */
 abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363Receiver {
+    struct UnwrapRequest {
+        address recipient;
+        bytes12 metadata;
+    }
+
     IERC20 private immutable _underlying;
     uint8 private immutable _decimals;
     uint256 private immutable _rate;
 
-    mapping(bytes32 unwrapRequestId => address recipient) private _unwrapRequests;
+    mapping(bytes32 unwrapRequestId => UnwrapRequest unwrapRequest) private _unwrapRequests;
 
     error InvalidUnwrapRequest(bytes32 unwrapRequestId);
     error ERC7984TotalSupplyOverflow();
+    error ERC7984InvalidTransferReceivedData();
 
     constructor(IERC20 underlying_) {
         _underlying = underlying_;
@@ -47,12 +58,12 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     }
 
     /**
-     * @dev `ERC1363` callback function which wraps tokens to the address specified in `data` or
-     * the address `from` (if no address is specified in `data`). This function refunds any excess tokens
-     * sent beyond the nearest multiple of {rate} to `from`. See {wrap} for more details on wrapping tokens.
+     * @dev `ERC1363` callback function which wraps tokens to the address resolved by
+     * {_getOnTransferReceivedWrapRecipient}. This function refunds any excess tokens sent beyond the nearest
+     * multiple of {rate} to `from`. See {wrap} for more details on wrapping tokens.
      */
     function onTransferReceived(
-        address /*operator*/,
+        address operator,
         address from,
         uint256 amount,
         bytes calldata data
@@ -61,8 +72,8 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(underlying() == msg.sender, ERC7984UnauthorizedCaller(msg.sender));
 
         // mint confidential token
-        address to = data.length < 20 ? from : address(bytes20(data));
-        _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), hex"");
+        address to = _getOnTransferReceivedWrapRecipient(operator, from, data);
+        _wrap(to, amount);
 
         // transfer excess back to the sender
         uint256 excess = amount % rate();
@@ -80,20 +91,20 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * Returns the amount of wrapped token sent.
      */
     function wrap(address to, uint256 amount) public virtual override returns (euint64) {
-        // take ownership of the tokens
         SafeERC20.safeTransferFrom(IERC20(underlying()), msg.sender, address(this), amount - (amount % rate()));
 
-        // mint confidential token
-        euint64 wrappedAmountSent = _mint(to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), hex"");
-        FHE.allowTransient(wrappedAmountSent, msg.sender);
+        euint64 wrappedAmount = _wrap(to, amount);
+        if (to != msg.sender) {
+            FHE.allowTransient(wrappedAmount, msg.sender);
+        }
 
-        return wrappedAmountSent;
+        return wrappedAmount;
     }
 
     /// @dev Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
     function unwrap(address from, address to, euint64 amount) public virtual returns (bytes32) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
-        return _unwrap(from, to, amount);
+        return _unwrap(from, to, amount, bytes12(0));
     }
 
     /**
@@ -107,7 +118,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (bytes32) {
-        return _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof));
+        return _unwrap(from, to, FHE.fromExternal(encryptedAmount, inputProof), bytes12(0));
     }
 
     /// @inheritdoc IERC7984ERC20Wrapper
@@ -184,7 +195,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
      * `unwrapRequestId`. Returns `address(0)` if there is no pending unwrap request with id `unwrapRequestId`.
      */
     function unwrapRequester(bytes32 unwrapRequestId) public view virtual returns (address) {
-        return _unwrapRequests[unwrapRequestId];
+        return _unwrapRequests[unwrapRequestId].recipient;
     }
 
     /**
@@ -205,16 +216,67 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         address from,
         address to,
         euint64 amount,
-        bytes32 memo
+        bytes32 memo,
+        bool bypassRestrictions
     ) internal virtual override returns (euint64) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
         }
-        return super._update(from, to, amount, memo);
+        return super._update(from, to, amount, memo, bypassRestrictions);
+    }
+
+    /**
+     * @dev Resolves the wrap recipient from an ERC-1363 `onTransferReceived` callback.
+     *
+     * Default encoding:
+     *
+     * * empty `data`: wrap to `from`
+     * * exactly 20 bytes: wrap to the recipient encoded in `data`
+     * * otherwise: revert with {ERC7984InvalidTransferReceivedData}
+     */
+    function _getOnTransferReceivedWrapRecipient(
+        address /*operator*/,
+        address from,
+        bytes calldata data
+    ) internal view virtual returns (address) {
+        uint256 length = data.length;
+        if (length == 0) {
+            return from;
+        }
+        if (length == 20) {
+            return address(bytes20(data));
+        }
+        revert ERC7984InvalidTransferReceivedData();
+    }
+
+    /**
+     * @dev Internal logic for handling wrapping of tokens. Sourcing of the underlying token must be handled by the caller.
+     * The `amount` parameter is the amount of underlying tokens to wrap.
+     *
+     * NOTE: Wrapping tokens mints with `bypassRestrictions` set to true on the confidential token to ensure there is no
+     * silent failure. This will bypass any restrictions on the confidential token implemented in other extensions.
+     */
+    function _wrap(address to, uint256 amount) internal virtual returns (euint64) {
+        require(to != address(0), ERC7984InvalidReceiver(to));
+        euint64 wrappedAmountSent = _update(
+            address(0),
+            to,
+            FHE.asEuint64(SafeCast.toUint64(amount / rate())),
+            hex"",
+            true
+        );
+        emit Wrap(to, amount - (amount % rate()), wrappedAmountSent);
+
+        return wrappedAmountSent;
     }
 
     /// @dev Internal logic for handling the creation of unwrap requests. Returns the unwrap request id.
-    function _unwrap(address from, address to, euint64 amount) internal virtual returns (bytes32) {
+    function _unwrap(
+        address from,
+        address to,
+        euint64 amount,
+        bytes12 unwrapMetadata
+    ) internal virtual returns (bytes32) {
         require(to != address(0), ERC7984InvalidReceiver(to));
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
@@ -228,10 +290,15 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         // cipher-texts are unique--this holds here but is not always true. Be cautious when assuming
         // cipher-text uniqueness.
         bytes32 unwrapRequestId = euint64.unwrap(unwrapAmount_);
-        _unwrapRequests[unwrapRequestId] = to;
+        _unwrapRequests[unwrapRequestId] = UnwrapRequest({recipient: to, metadata: unwrapMetadata});
 
         emit UnwrapRequested(to, unwrapRequestId, unwrapAmount_);
         return unwrapRequestId;
+    }
+
+    /// @dev Returns the metadata associated with a pending unwrap request identified by `unwrapRequestId`.
+    function _unwrapRequestMetadata(bytes32 unwrapRequestId) internal view virtual returns (bytes12) {
+        return _unwrapRequests[unwrapRequestId].metadata;
     }
 
     /**

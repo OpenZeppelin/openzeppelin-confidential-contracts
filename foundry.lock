@@ -1,0 +1,17 @@
+{
+  "lib/forge-fhevm": {
+    "rev": "3ee696fba62a32314fde457de28cc29f1191c4cb"
+  },
+  "lib/openzeppelin-contracts": {
+    "branch": {
+      "name": "release-v5.6",
+      "rev": "5fd1781b1454fd1ef8e722282f86f9293cacf256"
+    }
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "branch": {
+      "name": "release-v5.6",
+      "rev": "7bf4727aacdbfaa0f36cbd664654d0c9e1dc52bf"
+    }
+  }
+}

@@ -1,6 +1,6 @@
-import { IACL__factory } from '../../../../types';
 import { $ERC7984OmnibusMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984/extensions/ERC7984OmnibusMock.sol/$ERC7984OmnibusMock';
-import { getAclAddress } from '../../../helpers/accounts';
+import { getAcl } from '../../../helpers/acl';
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
@@ -8,6 +8,7 @@ import { ethers, fhevm } from 'hardhat';
 const name = 'OmnibusToken';
 const symbol = 'OBT';
 const uri = 'https://example.com/metadata';
+const decimals = 6;
 
 describe('ERC7984Omnibus', function () {
   beforeEach(async function () {
@@ -17,7 +18,7 @@ describe('ERC7984Omnibus', function () {
       symbol,
       uri,
     ])) as any as $ERC7984OmnibusMock;
-    const acl = IACL__factory.connect(await getAclAddress(), ethers.provider);
+    const acl = (await getAcl()).connect(holder);
     Object.assign(this, { token, acl, holder, recipient, operator, subaccount });
 
     await this.token['$_mint(address,uint64)'](this.holder.address, 1000);
@@ -201,6 +202,8 @@ describe('ERC7984Omnibus', function () {
       }
     });
   }
+
+  shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
 });
 
 const doConfidentialTransferOmnibus = (
