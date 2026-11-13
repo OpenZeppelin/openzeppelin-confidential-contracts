@@ -139,22 +139,22 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
       encryptedInput.inputProof,
     );
 
-    expect(vestingCreationTx)
+    await expect(vestingCreationTx)
       .to.emit(this.factory, 'VestingWalletConfidentialFunded')
-      .withArgs(vestingWalletAddress1, this.recipient, this.token.target, anyValue, initArgs1)
+      .withArgs(vestingWalletAddress1, this.token.target, anyValue, initArgs1)
       .to.emit(this.token, 'ConfidentialTransfer')
-      .withArgs(this.holder, vestingWalletAddress2, anyValue)
+      .withArgs(this.holder, vestingWalletAddress1, anyValue, ethers.ZeroHash)
       .to.emit(this.factory, 'VestingWalletConfidentialFunded')
-      .withArgs(vestingWalletAddress2, this.recipient2, this.token.target, anyValue, initArgs2)
+      .withArgs(vestingWalletAddress2, this.token.target, anyValue, initArgs2)
       .to.emit(this.token, 'ConfidentialTransfer')
-      .withArgs(this.holder, vestingWalletAddress2, anyValue);
+      .withArgs(this.holder, vestingWalletAddress2, anyValue, ethers.ZeroHash);
 
     const transferEvents = await vestingCreationTx
       .wait()
       .then(tx => tx!.logs.filter(log => log.address === this.token.target));
 
-    const vestingWallet1TransferAmount = transferEvents[0].topics[3];
-    const vestingWallet2TransferAmount = transferEvents[1].topics[3];
+    const vestingWallet1TransferAmount = this.token.interface.parseLog(transferEvents[0])!.args.amount;
+    const vestingWallet2TransferAmount = this.token.interface.parseLog(transferEvents[1])!.args.amount;
     expect(
       await fhevm.userDecryptEuint(FhevmType.euint64, vestingWallet1TransferAmount, this.token.target, this.holder),
     ).to.equal(amount1);

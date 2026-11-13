@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.27;
 
-import {euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984Mock} from "./ERC7984Mock.sol";
 
 contract ERC7984ReentrantMock is ERC7984Mock {
@@ -12,7 +12,11 @@ contract ERC7984ReentrantMock is ERC7984Mock {
         string memory tokenURI_
     ) ERC7984Mock(name_, symbol_, tokenURI_) {}
 
-    function confidentialTransfer(address, euint64) public returns (euint64 transferred) {
+    function confidentialTransfer(
+        address,
+        externalEuint64,
+        bytes calldata
+    ) public override returns (euint64 transferred) {
         IVestingWalletConfidential(msg.sender).release(address(this));
         transferred;
     }

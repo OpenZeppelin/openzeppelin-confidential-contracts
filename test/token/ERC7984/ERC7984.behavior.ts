@@ -1,8 +1,12 @@
 import { allowHandle } from '../../helpers/acl';
+import { callAndGetResult } from '../../helpers/event';
 import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
+
+const confidentialTransferSignature = 'ConfidentialTransfer(address,address,bytes32,bytes32)';
 
 // Shared behavior for ERC7984 tokens. Callers must deploy `this.token`. Holder (account[0]) must not be
 // minted more than 1000 tokens.
@@ -220,9 +224,9 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
                 .add64(transferAmount)
                 .encrypt();
 
-              let tx;
+              let txPromise;
               if (asSender) {
-                tx = await this.token
+                txPromise = this.token
                   .connect(this.holder)
                   ['confidentialTransfer(address,bytes32,bytes)'](
                     this.recipient.address,
@@ -230,7 +234,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
                     encryptedInput.inputProof,
                   );
               } else {
-                tx = await this.token
+                txPromise = this.token
                   .connect(this.operator)
                   ['confidentialTransferFrom(address,address,bytes32,bytes)'](
                     this.holder.address,
@@ -239,11 +243,10 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
                     encryptedInput.inputProof,
                   );
               }
-              const transferEvent = (await tx.wait()).logs.filter((log: any) => log.address === this.token.target)[0];
-              expect(transferEvent.args[0]).to.equal(this.holder.address);
-              expect(transferEvent.args[1]).to.equal(this.recipient.address);
+              const [from, to, transferAmountHandle] = await callAndGetResult(txPromise, confidentialTransferSignature);
+              expect(from).to.equal(this.holder.address);
+              expect(to).to.equal(this.recipient.address);
 
-              const transferAmountHandle = transferEvent.args[2];
               const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
               const recipientBalanceHandle = await this.token.confidentialBalanceOf(this.recipient);
 
@@ -302,25 +305,30 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
           describe(`using ${usingTransferFrom ? 'confidentialTransferFrom' : 'confidentialTransfer'} ${
             withCallback ? 'with callback' : ''
           }`, function () {
+            // An empty input proof makes the token use `amount` as an existing handle the sender must be allowed to use.
             async function callTransfer(contract: any, from: any, to: any, amount: any, sender: any = from) {
-              let functionParams = [to, amount];
+              let functionParams = [to, amount, '0x'];
 
               if (withCallback) {
                 functionParams.push('0x');
                 if (usingTransferFrom) {
                   functionParams.unshift(from);
-                  await contract.connect(sender).confidentialTransferFromAndCall(...functionParams);
+                  await contract
+                    .connect(sender)
+                    ['confidentialTransferFromAndCall(address,address,bytes32,bytes,bytes)'](...functionParams);
                 } else {
                   await contract
                     .connect(sender)
-                    ['confidentialTransferAndCall(address,bytes32,bytes)'](...functionParams);
+                    ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](...functionParams);
                 }
               } else {
                 if (usingTransferFrom) {
                   functionParams.unshift(from);
-                  await contract.connect(sender).confidentialTransferFrom(...functionParams);
+                  await contract
+                    .connect(sender)
+                    ['confidentialTransferFrom(address,address,bytes32,bytes)'](...functionParams);
                 } else {
-                  await contract.connect(sender)['confidentialTransfer(address,bytes32)'](...functionParams);
+                  await contract.connect(sender)['confidentialTransfer(address,bytes32,bytes)'](...functionParams);
                 }
               }
             }
@@ -352,7 +360,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
 
               const recipientBalanceHandle = await this.token.confidentialBalanceOf(this.recipient);
               await expect(callTransfer(this.token, this.holder, this.recipient, recipientBalanceHandle))
-                .to.be.revertedWithCustomError(this.token, 'ERC7984UnauthorizedUseOfEncryptedAmount')
+                .to.be.revertedWithCustomError(this.token, 'SenderNotAllowedToUseHandle')
                 .withArgs(recipientBalanceHandle, this.holder);
             });
 
@@ -400,6 +408,97 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
         )
           .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidSender')
           .withArgs(ethers.ZeroAddress);
+      });
+
+      describe('with memo', function () {
+        const memo = ethers.id('memo');
+
+        beforeEach(async function () {
+          this.recipientContract = await ethers.deployContract('ERC7984ReceiverMock');
+
+          const timestamp = (await ethers.provider.getBlock('latest'))!.timestamp + 100;
+          await this.token.connect(this.holder).setOperator(this.operator.address, timestamp);
+        });
+
+        it('transfers without memo emit an empty memo', async function () {
+          const encryptedInput = await fhevm
+            .createEncryptedInput(await this.token.getAddress(), this.holder.address)
+            .add64(100)
+            .encrypt();
+
+          await expect(
+            this.token
+              .connect(this.holder)
+              ['confidentialTransfer(address,bytes32,bytes)'](
+                this.recipient.address,
+                encryptedInput.handles[0],
+                encryptedInput.inputProof,
+              ),
+          )
+            .to.emit(this.token, 'ConfidentialTransfer')
+            .withArgs(this.holder.address, this.recipient.address, anyValue, ethers.ZeroHash);
+        });
+
+        for (const [usingTransferFrom, withCallback] of [false, true].flatMap(val => [
+          [val, false],
+          [val, true],
+        ])) {
+          const fnName = `confidentialTransfer${usingTransferFrom ? 'From' : ''}${
+            withCallback ? 'AndCall' : ''
+          }WithMemo`;
+
+          it(`${fnName} emits the memo`, async function () {
+            const sender = usingTransferFrom ? this.operator : this.holder;
+            const to = withCallback ? this.recipientContract.target : this.recipient.address;
+
+            const encryptedInput = await fhevm
+              .createEncryptedInput(await this.token.getAddress(), sender.address)
+              .add64(100)
+              .encrypt();
+
+            const params: any[] = [to, encryptedInput.handles[0], encryptedInput.inputProof];
+            if (usingTransferFrom) params.unshift(this.holder.address);
+            if (withCallback) params.push(ethers.AbiCoder.defaultAbiCoder().encode(['bool'], [true]));
+            params.push(memo);
+
+            const [eventFrom, eventTo, transferred, eventMemo] = await callAndGetResult(
+              this.token.connect(sender)[fnName](...params),
+              confidentialTransferSignature,
+            );
+
+            expect(eventFrom).to.equal(this.holder.address);
+            expect(eventTo).to.equal(to);
+            expect(eventMemo).to.equal(memo);
+            await expect(
+              fhevm.userDecryptEuint(FhevmType.euint64, transferred, await this.token.getAddress(), this.holder),
+            ).to.eventually.equal(100);
+          });
+        }
+
+        it('refund of a failed callback does not carry the memo', async function () {
+          const encryptedInput = await fhevm
+            .createEncryptedInput(await this.token.getAddress(), this.holder.address)
+            .add64(100)
+            .encrypt();
+
+          const tx = await this.token
+            .connect(this.holder)
+            .confidentialTransferAndCallWithMemo(
+              this.recipientContract.target,
+              encryptedInput.handles[0],
+              encryptedInput.inputProof,
+              ethers.AbiCoder.defaultAbiCoder().encode(['bool'], [false]),
+              memo,
+            );
+          const [outboundTransferEvent, refundTransferEvent] = (await tx.wait()).logs.filter(
+            (log: any) => log.address === this.token.target,
+          );
+
+          expect(outboundTransferEvent.args[3]).to.equal(memo);
+          expect(refundTransferEvent.args[0]).to.equal(this.recipientContract.target);
+          expect(refundTransferEvent.args[1]).to.equal(this.holder.address);
+          expect(refundTransferEvent.args[3]).to.equal(ethers.ZeroHash);
+        });
       });
     });
 
