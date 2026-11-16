@@ -77,9 +77,8 @@ describe('ERC7984Omnibus', function () {
                 if (transferFrom) {
                   args.unshift(this.holder.address);
                 }
-                if (withProof) {
-                  args.push(encryptedInputWithProof?.inputProof);
-                }
+                // An empty input proof makes the token use the handles as existing handles the caller must be allowed to use.
+                args.push(withProof ? encryptedInputWithProof?.inputProof : '0x');
                 if (withCallback) {
                   args.push('0x');
                 }
@@ -88,7 +87,6 @@ describe('ERC7984Omnibus', function () {
                   this.token.connect(caller),
                   transferFrom,
                   withCallback,
-                  withProof,
                   args,
                 );
 
@@ -163,9 +161,8 @@ describe('ERC7984Omnibus', function () {
                 if (transferFrom) {
                   args.unshift(this.holder.address);
                 }
-                if (withProof) {
-                  args.push(encryptedInputWithProof?.inputProof);
-                }
+                // An empty input proof makes the token use the handles as existing handles the caller must be allowed to use.
+                args.push(withProof ? encryptedInputWithProof?.inputProof : '0x');
                 if (withCallback) {
                   args.push('0x');
                 }
@@ -174,7 +171,6 @@ describe('ERC7984Omnibus', function () {
                   this.token.connect(caller),
                   transferFrom,
                   withCallback,
-                  withProof,
                   args,
                 );
                 const omnibusConfidentialTransferEvent = (await tx.wait()).logs.filter(
@@ -206,28 +202,14 @@ describe('ERC7984Omnibus', function () {
   shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
 });
 
-const doConfidentialTransferOmnibus = (
-  token: any,
-  transferFrom: boolean,
-  withCallback: boolean,
-  withProof: boolean,
-  args: any[],
-): any => {
+const doConfidentialTransferOmnibus = (token: any, transferFrom: boolean, withCallback: boolean, args: any[]): any => {
   const functionSignature = transferFrom
     ? withCallback
-      ? withProof
-        ? 'confidentialTransferFromAndCallOmnibus(address,address,bytes32,bytes32,bytes32,bytes,bytes)'
-        : 'confidentialTransferFromAndCallOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
-      : withProof
-      ? 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
-      : 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32)'
+      ? 'confidentialTransferFromAndCallOmnibus(address,address,bytes32,bytes32,bytes32,bytes,bytes)'
+      : 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
     : withCallback
-    ? withProof
-      ? 'confidentialTransferAndCallOmnibus(address,bytes32,bytes32,bytes32,bytes,bytes)'
-      : 'confidentialTransferAndCallOmnibus(address,bytes32,bytes32,bytes32,bytes)'
-    : withProof
-    ? 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32,bytes)'
-    : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32)';
+    ? 'confidentialTransferAndCallOmnibus(address,bytes32,bytes32,bytes32,bytes,bytes)'
+    : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32,bytes)';
 
   return token[functionSignature](...args);
 };
