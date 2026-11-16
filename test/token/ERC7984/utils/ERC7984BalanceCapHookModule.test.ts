@@ -81,6 +81,16 @@ describe('ERC7984BalanceCapHookModule', function () {
       ).to.eventually.equal(9_000n);
 
       await expect(tx).to.changeConfidentialBalance(this.token, this.recipient, 9_000n);
+
+      // The new balance must land exactly on the cap
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.token.confidentialBalanceOf(this.recipient),
+          this.token.target,
+          this.recipient,
+        ),
+      ).to.eventually.equal(10_000n);
     });
 
     it('should not allow transfer if new balance is greater than max balance', async function () {

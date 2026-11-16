@@ -376,11 +376,9 @@ describe('BatcherConfidential', function () {
       it('should send tokens to the depositor, not the relayer', async function () {
         const expectedAmount = BigInt(this.exchangeRate * this.deposit) / exchangeRateMantissa;
 
-        await expect(this.batcher.connect(this.operator).claim(this.batchId, this.holder)).to.changeConfidentialBalance(
-          this.toToken,
-          this.holder,
-          expectedAmount,
-        );
+        await expect(
+          this.batcher.connect(this.operator).claim(this.batchId, this.holder),
+        ).to.changeConfidentialBalances(this.toToken, [this.holder, this.operator], [expectedAmount, 0]);
       });
 
       it('should clear the depositor deposits', async function () {
@@ -533,7 +531,7 @@ describe('BatcherConfidential', function () {
           this.batcher
             .connect(this.operator)
             ['$_quit(uint256,address,address)'](this.batchId, this.holder, this.recipient),
-        ).to.changeConfidentialBalance(this.fromToken, this.recipient, this.deposit);
+        ).to.changeConfidentialBalances(this.fromToken, [this.recipient, this.operator], [this.deposit, 0]);
       });
 
       it('should clear the depositor deposits', async function () {
