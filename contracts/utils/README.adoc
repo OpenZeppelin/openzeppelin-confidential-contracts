@@ -9,6 +9,7 @@ Miscellaneous contracts and libraries containing utility functions you can use t
 - {FHESafeMath}: Implementation of safe math operations for encrypted values.
 - {CheckpointsConfidential}: Implementation of checkpoints for encrypted values.
 - {HandleAccessManager}: Minimal contract that adds a function to give allowance to callers for a given ciphertext handle.
+- {HandleHelper}: Library of helpers for working with ciphertext handles, such as converting a handle to its external type.
 
 == Math
 
@@ -20,3 +21,5 @@ Miscellaneous contracts and libraries containing utility functions you can use t
 
 == Other
 {{HandleAccessManager}}
+
+{{HandleHelper}}
