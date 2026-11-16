@@ -431,6 +431,7 @@ describe('ERC7984ERC20Wrapper', function () {
         .$_unwrap(
           this.holder,
           this.holder,
+          this.holder,
           await this.wrapper.confidentialBalanceOf(this.holder.address),
           `0x${'00'.repeat(12)}`,
         );
@@ -439,12 +440,34 @@ describe('ERC7984ERC20Wrapper', function () {
       await expect(this.wrapper.unwrapRequester(unwrapAmount)).to.eventually.eq(this.holder);
     });
 
+    it('checks the operator given to `_unwrap` rather than `msg.sender`', async function () {
+      await expect(
+        this.wrapper
+          .connect(this.holder)
+          .$_unwrap(
+            this.operator,
+            this.holder,
+            this.holder,
+            await this.wrapper.confidentialBalanceOf(this.holder.address),
+            `0x${'00'.repeat(12)}`,
+          ),
+      )
+        .to.be.revertedWithCustomError(this.wrapper, 'ERC7984UnauthorizedSpender')
+        .withArgs(this.holder, this.operator);
+    });
+
     describe('metadata', function () {
       it('can be associated with an unwrap request', async function () {
         const metadata = ethers.hexlify(ethers.randomBytes(12));
         await this.wrapper
           .connect(this.holder)
-          .$_unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address), metadata);
+          .$_unwrap(
+            this.holder,
+            this.holder,
+            this.holder,
+            await this.wrapper.confidentialBalanceOf(this.holder.address),
+            metadata,
+          );
 
         const [unwrapRequestId] = (await this.wrapper.queryFilter(this.wrapper.filters.return$_unwrap()))[0].args;
         await expect(this.wrapper.$_unwrapRequestMetadata(unwrapRequestId)).to.eventually.equal(metadata);

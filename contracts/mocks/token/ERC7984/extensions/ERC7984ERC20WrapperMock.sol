@@ -40,11 +40,12 @@ contract ERC7984ERC20WrapperMock is ERC7984ERC20Wrapper, ERC7984Mock {
     }
 
     function _update(
+        address operator,
         address from,
         address to,
         euint64 amount,
         bool bypassRestrictions
     ) internal virtual override(ERC7984ERC20Wrapper, ERC7984Mock) returns (euint64) {
-        return super._update(from, to, amount, bypassRestrictions);
+        return super._update(operator, from, to, amount, bypassRestrictions);
     }
 }

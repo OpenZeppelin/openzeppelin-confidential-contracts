@@ -13,12 +13,13 @@ contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, HandleAccessMana
     constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984Mock(name, symbol, tokenUri) {}
 
     function _update(
+        address operator,
         address from,
         address to,
         euint64 amount,
         bool bypassRestrictions
     ) internal virtual override(ERC7984Mock, ERC7984Freezable) returns (euint64) {
-        return super._update(from, to, amount, bypassRestrictions);
+        return super._update(operator, from, to, amount, bypassRestrictions);
     }
 
     // solhint-disable-next-line func-name-mixedcase
