@@ -297,24 +297,10 @@ describe('BatcherConfidential', function () {
     });
 
     it('should transfer out correct amount of toToken', async function () {
-      const beforeBalanceToTokens = await fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.toToken.confidentialBalanceOf(this.holder),
+      await expect(this.batcher.claim(this.batchId, this.holder)).to.changeConfidentialBalance(
         this.toToken,
         this.holder,
-      );
-
-      await this.batcher.claim(this.batchId, this.holder);
-
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await this.toToken.confidentialBalanceOf(this.holder),
-          this.toToken,
-          this.holder,
-        ),
-      ).to.eventually.eq(
-        BigInt(beforeBalanceToTokens) + BigInt(this.exchangeRate * this.deposit) / exchangeRateMantissa,
+        BigInt(this.exchangeRate * this.deposit) / exchangeRateMantissa,
       );
     });
 
@@ -388,25 +374,13 @@ describe('BatcherConfidential', function () {
 
     describe('on behalf of (relayer)', function () {
       it('should send tokens to the depositor, not the relayer', async function () {
-        const holderBalanceBefore = await fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await this.toToken.confidentialBalanceOf(this.holder),
-          this.toToken,
-          this.holder,
-        );
-
-        await this.batcher.connect(this.operator).claim(this.batchId, this.holder);
-
         const expectedAmount = BigInt(this.exchangeRate * this.deposit) / exchangeRateMantissa;
 
-        await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await this.toToken.confidentialBalanceOf(this.holder),
-            this.toToken,
-            this.holder,
-          ),
-        ).to.eventually.eq(BigInt(holderBalanceBefore) + expectedAmount);
+        await expect(this.batcher.connect(this.operator).claim(this.batchId, this.holder)).to.changeConfidentialBalance(
+          this.toToken,
+          this.holder,
+          expectedAmount,
+        );
       });
 
       it('should clear the depositor deposits', async function () {
@@ -439,23 +413,11 @@ describe('BatcherConfidential', function () {
     });
 
     it('should send back full deposit', async function () {
-      const beforeBalance = await fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.fromToken.confidentialBalanceOf(this.holder),
+      await expect(this.batcher.quit(this.batchId, this.holder)).to.changeConfidentialBalance(
         this.fromToken,
         this.holder,
+        this.deposit,
       );
-
-      await this.batcher.quit(this.batchId, this.holder);
-
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await this.fromToken.confidentialBalanceOf(this.holder),
-          this.fromToken,
-          this.holder,
-        ),
-      ).to.eventually.eq(beforeBalance + this.deposit);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -468,23 +430,11 @@ describe('BatcherConfidential', function () {
     });
 
     it('should send refund to the caller selected recipient', async function () {
-      const beforeBalance = await fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.fromToken.confidentialBalanceOf(this.recipient),
+      await expect(this.batcher.connect(this.holder).quit(this.batchId, this.recipient)).to.changeConfidentialBalance(
         this.fromToken,
         this.recipient,
+        this.deposit,
       );
-
-      await this.batcher.connect(this.holder).quit(this.batchId, this.recipient);
-
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await this.fromToken.confidentialBalanceOf(this.recipient),
-          this.fromToken,
-          this.recipient,
-        ),
-      ).to.eventually.eq(beforeBalance + this.deposit);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -507,17 +457,14 @@ describe('BatcherConfidential', function () {
           ),
         ).to.eventually.eq(amount);
 
-      const beforeBalance = await fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.fromToken.confidentialBalanceOf(this.recipient),
-        this.fromToken,
-        this.recipient,
-      );
-
       await expectTotalDeposits(this.deposit);
 
       await this.fromToken['$_burn(address,uint64)'](this.batcher, this.deposit);
-      await this.batcher.connect(this.holder).quit(this.batchId, this.recipient);
+      await expect(this.batcher.connect(this.holder).quit(this.batchId, this.recipient)).to.changeConfidentialBalance(
+        this.fromToken,
+        this.recipient,
+        0,
+      );
 
       await expect(
         fhevm.userDecryptEuint(
@@ -530,16 +477,11 @@ describe('BatcherConfidential', function () {
       await expectTotalDeposits(this.deposit);
 
       await this.fromToken['$_mint(address,uint64)'](this.batcher, this.deposit);
-      await this.batcher.connect(this.holder).quit(this.batchId, this.recipient);
-
-      await expect(
-        fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await this.fromToken.confidentialBalanceOf(this.recipient),
-          this.fromToken,
-          this.recipient,
-        ),
-      ).to.eventually.eq(beforeBalance + this.deposit);
+      await expect(this.batcher.connect(this.holder).quit(this.batchId, this.recipient)).to.changeConfidentialBalance(
+        this.fromToken,
+        this.recipient,
+        this.deposit,
+      );
 
       await expect(
         fhevm.userDecryptEuint(
@@ -587,25 +529,11 @@ describe('BatcherConfidential', function () {
 
     describe('on behalf of', function () {
       it('should send tokens to the recipient, not the caller', async function () {
-        const recipientBalanceBefore = await fhevm.userDecryptEuint(
-          FhevmType.euint64,
-          await this.fromToken.confidentialBalanceOf(this.recipient),
-          this.fromToken,
-          this.recipient,
-        );
-
-        await this.batcher
-          .connect(this.operator)
-          ['$_quit(uint256,address,address)'](this.batchId, this.holder, this.recipient);
-
         await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await this.fromToken.confidentialBalanceOf(this.recipient),
-            this.fromToken,
-            this.recipient,
-          ),
-        ).to.eventually.eq(recipientBalanceBefore + this.deposit);
+          this.batcher
+            .connect(this.operator)
+            ['$_quit(uint256,address,address)'](this.batchId, this.holder, this.recipient),
+        ).to.changeConfidentialBalance(this.fromToken, this.recipient, this.deposit);
       });
 
       it('should clear the depositor deposits', async function () {
@@ -977,23 +905,11 @@ describe('BatcherConfidential', function () {
       .withArgs(batcher, this.fromToken, amount1 * rate); // unwrap
 
     // quit
-    const balanceBefore = await fhevm.userDecryptEuint(
-      FhevmType.euint64,
-      await this.fromToken.confidentialBalanceOf(this.holder),
+    await expect(batcher.connect(this.holder).quit(batchId1, this.holder)).to.changeConfidentialBalance(
       this.fromToken,
       this.holder,
+      amount1,
     );
-
-    await batcher.connect(this.holder).quit(batchId1, this.holder);
-
-    const balanceAfter = await fhevm.userDecryptEuint(
-      FhevmType.euint64,
-      await this.fromToken.confidentialBalanceOf(this.holder),
-      this.fromToken,
-      this.holder,
-    );
-
-    expect(balanceAfter - balanceBefore).to.eq(amount1);
 
     // batch size was reduced
     await expect(
