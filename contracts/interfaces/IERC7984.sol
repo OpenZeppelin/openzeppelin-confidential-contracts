@@ -58,7 +58,7 @@ interface IERC7984 is IERC165 {
      * Returns the encrypted amount that was actually transferred.
      *
      * NOTE: To transfer an existing encrypted amount, pass its handle as `encryptedAmount` (see
-     * {HandleHelper-toExternal-euint64-}[HandleHelper.toExternal]) with an empty `inputProof`.
+     * {HandleHelper-toExternal-euint64}[HandleHelper.toExternal]) with an empty `inputProof`.
      */
     function confidentialTransfer(
         address to,
