@@ -85,14 +85,11 @@ describe('ERC7984', function () {
           .add64(burnAmount)
           .encrypt();
 
-        await this.token
-          .connect(this.holder)
-          ['$_burn(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
-
-        const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, await this.token.getAddress(), this.holder),
-        ).to.eventually.equal(sufficientBalance ? 600 : 1000);
+          this.token
+            .connect(this.holder)
+            ['$_burn(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof),
+        ).to.changeConfidentialBalance(this.token, this.holder, sufficientBalance ? -400 : 0);
 
         // Check total supply
         const totalSupplyHandle = await this.token.confidentialTotalSupply();

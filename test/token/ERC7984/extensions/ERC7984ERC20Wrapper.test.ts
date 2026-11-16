@@ -77,51 +77,34 @@ describe('ERC7984ERC20Wrapper', function () {
         it('with multiple of rate', async function () {
           const amountToWrap = ethers.parseUnits('100', 18);
 
-          if (viaCallback) {
-            await this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
-          } else {
-            await this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
-          }
+          const tx = viaCallback
+            ? this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap)
+            : this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
 
-          await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
-          const wrappedBalanceHandle = await this.wrapper.confidentialBalanceOf(this.holder.address);
-          await expect(
-            fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.holder),
-          ).to.eventually.equal(ethers.parseUnits('100', 6));
+          await expect(tx).to.changeTokenBalance(this.token, this.holder, -ethers.parseUnits('100', 18));
+          await expect(tx).to.changeConfidentialBalance(this.wrapper, this.holder, ethers.parseUnits('100', 6));
         });
 
         it('with value less than rate', async function () {
           const amountToWrap = ethers.parseUnits('100', 8);
 
-          if (viaCallback) {
-            await this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
-          } else {
-            await this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
-          }
+          const tx = viaCallback
+            ? this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap)
+            : this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
 
-          await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('1000', 18));
-          const wrappedBalanceHandle = await this.wrapper.confidentialBalanceOf(this.holder.address);
-          await expect(
-            fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.holder),
-          ).to.eventually.equal(0);
+          await expect(tx).to.changeTokenBalance(this.token, this.holder, 0);
+          await expect(tx).to.changeConfidentialBalance(this.wrapper, this.holder, 0);
         });
 
         it('with non-multiple of rate', async function () {
           const amountToWrap = ethers.parseUnits('101', 11);
 
-          if (viaCallback) {
-            await this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap);
-          } else {
-            await this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
-          }
+          const tx = viaCallback
+            ? this.token.connect(this.holder).transferAndCall(this.wrapper, amountToWrap)
+            : this.wrapper.connect(this.holder).wrap(this.holder.address, amountToWrap);
 
-          await expect(this.token.balanceOf(this.holder)).to.eventually.equal(
-            ethers.parseUnits('1000', 18) - ethers.parseUnits('10', 12),
-          );
-          const wrappedBalanceHandle = await this.wrapper.confidentialBalanceOf(this.holder.address);
-          await expect(
-            fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.holder),
-          ).to.eventually.equal(10);
+          await expect(tx).to.changeTokenBalance(this.token, this.holder, -ethers.parseUnits('10', 12));
+          await expect(tx).to.changeConfidentialBalance(this.wrapper, this.holder, 10);
         });
 
         it('max amount works', async function () {
@@ -131,20 +114,11 @@ describe('ERC7984ERC20Wrapper', function () {
           const maxConfidentialSupply = await this.wrapper.maxTotalSupply();
           const maxUnderlyingBalance = maxConfidentialSupply * rate;
 
-          if (viaCallback) {
-            await this.token.connect(this.holder).transferAndCall(this.wrapper, maxUnderlyingBalance);
-          } else {
-            await this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingBalance);
-          }
-
           await expect(
-            fhevm.userDecryptEuint(
-              FhevmType.euint64,
-              await this.wrapper.confidentialBalanceOf(this.holder.address),
-              this.wrapper.target,
-              this.holder,
-            ),
-          ).to.eventually.equal(maxConfidentialSupply);
+            viaCallback
+              ? this.token.connect(this.holder).transferAndCall(this.wrapper, maxUnderlyingBalance)
+              : this.wrapper.connect(this.holder).wrap(this.holder.address, maxUnderlyingBalance),
+          ).to.changeConfidentialBalance(this.wrapper, this.holder, maxConfidentialSupply);
         });
 
         it('amount exceeding max fails', async function () {
@@ -168,23 +142,18 @@ describe('ERC7984ERC20Wrapper', function () {
         it('to another address', async function () {
           const amountToWrap = ethers.parseUnits('100', 18);
 
-          if (viaCallback) {
-            await this.token
-              .connect(this.holder)
-              ['transferAndCall(address,uint256,bytes)'](
-                this.wrapper,
-                amountToWrap,
-                ethers.solidityPacked(['address'], [this.recipient.address]),
-              );
-          } else {
-            await this.wrapper.connect(this.holder).wrap(this.recipient.address, amountToWrap);
-          }
+          const tx = viaCallback
+            ? this.token
+                .connect(this.holder)
+                ['transferAndCall(address,uint256,bytes)'](
+                  this.wrapper,
+                  amountToWrap,
+                  ethers.solidityPacked(['address'], [this.recipient.address]),
+                )
+            : this.wrapper.connect(this.holder).wrap(this.recipient.address, amountToWrap);
 
-          await expect(this.token.balanceOf(this.holder)).to.eventually.equal(ethers.parseUnits('900', 18));
-          const wrappedBalanceHandle = await this.wrapper.confidentialBalanceOf(this.recipient.address);
-          await expect(
-            fhevm.userDecryptEuint(FhevmType.euint64, wrappedBalanceHandle, this.wrapper.target, this.recipient),
-          ).to.eventually.equal(ethers.parseUnits('100', 6));
+          await expect(tx).to.changeTokenBalance(this.token, this.holder, -ethers.parseUnits('100', 18));
+          await expect(tx).to.changeConfidentialBalance(this.wrapper, this.recipient, ethers.parseUnits('100', 6));
         });
 
         it('to zero address fails', async function () {

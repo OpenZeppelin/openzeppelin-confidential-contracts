@@ -58,29 +58,15 @@ describe('ERC7984BalanceCapHookModule', function () {
     });
 
     it('should allow transfer if new balance is less than max balance', async function () {
-      const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000n);
-      const transferEvent = await tx.wait().then((res: any) => {
-        return res.logs.filter((log: any) => log.address == this.token.target)[0];
-      });
-
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.recipient),
-      ).to.eventually.equal(1000n);
-
-      await expect(tx).to.changeConfidentialBalance(this.token, this.recipient, 1000n);
+        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000n),
+      ).to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-1000n, 1000n]);
     });
 
     it('should allow transfer if new balance is equal to max balance', async function () {
-      const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 9_000);
-      const transferEvent = await tx.wait().then((res: any) => {
-        return res.logs.filter((log: any) => log.address == this.token.target)[0];
-      });
-
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.recipient),
-      ).to.eventually.equal(9_000n);
-
-      await expect(tx).to.changeConfidentialBalance(this.token, this.recipient, 9_000n);
+        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 9_000),
+      ).to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-9_000n, 9_000n]);
 
       // The new balance must land exactly on the cap
       await expect(
@@ -94,19 +80,9 @@ describe('ERC7984BalanceCapHookModule', function () {
     });
 
     it('should not allow transfer if new balance is greater than max balance', async function () {
-      const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 9_001);
-      const transferEvent = await tx.wait().then((res: any) => {
-        return res.logs.filter((log: any) => log.address == this.token.target)[0];
-      });
-
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.recipient),
-      ).to.eventually.equal(0n);
-
-      const afterBalance = await this.token.confidentialBalanceOf(this.recipient);
-      await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, afterBalance, this.token.target, this.recipient),
-      ).to.eventually.equal(1_000n);
+        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 9_001),
+      ).to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [0n, 0n]);
     });
 
     it('should allow self transfer always', async function () {
@@ -125,14 +101,11 @@ describe('ERC7984BalanceCapHookModule', function () {
     });
 
     it('should allow burning', async function () {
-      const tx = await this.token['$_burn(address,uint64)'](this.holder, 1000n);
-      const transferEvent = await tx.wait().then((res: any) => {
-        return res.logs.filter((log: any) => log.address == this.token.target)[0];
-      });
-
-      await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.holder),
-      ).to.eventually.equal(1000n);
+      await expect(this.token['$_burn(address,uint64)'](this.holder, 1000n)).to.changeConfidentialBalance(
+        this.token,
+        this.holder,
+        -1000n,
+      );
     });
 
     it('should emit ERC7984HookModuleResult on allowed transfer', async function () {

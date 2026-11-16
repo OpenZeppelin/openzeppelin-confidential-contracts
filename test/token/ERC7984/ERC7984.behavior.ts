@@ -424,14 +424,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
               ethers.AbiCoder.defaultAbiCoder().encode(['bool'], [callbackSuccess]),
             );
 
-          await expect(
-            fhevm.userDecryptEuint(
-              FhevmType.euint64,
-              await this.token.confidentialBalanceOf(this.holder),
-              await this.token.getAddress(),
-              this.holder,
-            ),
-          ).to.eventually.equal(callbackSuccess ? 0 : 1000);
+          await expect(tx).to.changeConfidentialBalance(this.token, this.holder, callbackSuccess ? -1000 : 0);
 
           // Verify event contents
           await expect(tx).to.emit(this.recipientContract, 'ConfidentialTransferCallback').withArgs(callbackSuccess);
@@ -495,23 +488,16 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
           .add64(100)
           .encrypt();
 
-        await this.token
-          .connect(this.holder)
-          ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
-            receiver.target,
-            encryptedInput.handles[0],
-            encryptedInput.inputProof,
-            '0x',
-          );
-
         await expect(
-          fhevm.userDecryptEuint(
-            FhevmType.euint64,
-            await this.token.confidentialBalanceOf(this.holder),
-            await this.token.getAddress(),
-            this.holder,
-          ),
-        ).to.eventually.equal(1000);
+          this.token
+            .connect(this.holder)
+            ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
+              receiver.target,
+              encryptedInput.handles[0],
+              encryptedInput.inputProof,
+              '0x',
+            ),
+        ).to.changeConfidentialBalance(this.token, this.holder, 0);
       });
 
       it('with callback reverting without a reason', async function () {
@@ -545,19 +531,16 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
       });
 
       it('to an EOA', async function () {
-        await this.token
-          .connect(this.holder)
-          ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
-            this.recipient,
-            this.encryptedInput.handles[0],
-            this.encryptedInput.inputProof,
-            '0x',
-          );
-
-        const balanceOfHandle = await this.token.confidentialBalanceOf(this.recipient);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandle, await this.token.getAddress(), this.recipient),
-        ).to.eventually.equal(1000);
+          this.token
+            .connect(this.holder)
+            ['confidentialTransferAndCall(address,bytes32,bytes,bytes)'](
+              this.recipient,
+              this.encryptedInput.handles[0],
+              this.encryptedInput.inputProof,
+              '0x',
+            ),
+        ).to.changeConfidentialBalance(this.token, this.recipient, 1000);
       });
     });
   });

@@ -1,5 +1,4 @@
 import { shouldBehaveLikeVestingConfidential } from './VestingWalletConfidential.behavior';
-import { FhevmType } from '@fhevm/hardhat-plugin';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
@@ -47,12 +46,7 @@ describe(`VestingWalletCliffConfidential`, function () {
 
   it('should release nothing before cliff', async function () {
     await time.increaseTo(this.schedule[0] + 60);
-    await this.vesting.release(this.token);
-
-    const balanceOfHandle = await this.token.confidentialBalanceOf(this.recipient);
-    await expect(
-      fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandle, this.token.target, this.recipient),
-    ).to.eventually.equal(0);
+    await expect(this.vesting.release(this.token)).to.changeConfidentialBalance(this.token, this.recipient, 0);
   });
 
   it('should fail construction if cliff is longer than duration', async function () {
