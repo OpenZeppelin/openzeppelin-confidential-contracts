@@ -143,6 +143,36 @@ describe('Confidential balance matchers', function () {
       ).to.throw("The matcher 'changeConfidentialBalance' cannot be chained after 'emit'");
       await tx;
     });
+
+    it('cannot be chained after a chai-as-promised assertion', async function () {
+      const tx = this.transfer(100);
+      // `fulfilled` is typed as a PromisedAssertion, which doesn't declare the hardhat matchers
+      const assertion = expect(tx).to.be.fulfilled as unknown as Chai.Assertion;
+      expect(() => assertion.and.to.changeConfidentialBalance(this.token, this.holder, -100)).to.throw(
+        "The matcher 'changeConfidentialBalance' cannot be chained after another async matcher",
+      );
+      await tx;
+    });
+
+    it('cannot be chained after itself', async function () {
+      const tx = this.transfer(100);
+      expect(() =>
+        expect(tx)
+          .to.changeConfidentialBalance(this.token, this.holder, -100)
+          .and.to.changeConfidentialBalance(this.token, this.recipient, 100),
+      ).to.throw("The matcher 'changeConfidentialBalance' cannot be chained after 'changeConfidentialBalance'");
+      await tx;
+    });
+
+    it('prevents other async matchers from being chained after it', async function () {
+      const tx = this.transfer(100);
+      expect(() =>
+        expect(tx)
+          .to.changeConfidentialBalance(this.token, this.holder, -100)
+          .and.to.emit(this.token, 'ConfidentialTransfer'),
+      ).to.throw("The matcher 'emit' cannot be chained after 'changeConfidentialBalance'");
+      await tx;
+    });
   });
 
   describe('changeConfidentialBalances', function () {

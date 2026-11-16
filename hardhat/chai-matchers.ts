@@ -1,5 +1,4 @@
 import { FhevmType } from '@fhevm/hardhat-plugin';
-import { preventAsyncMatcherChaining } from '@nomicfoundation/hardhat-chai-matchers/internal/utils';
 import { buildAssert } from '@nomicfoundation/hardhat-chai-matchers/utils';
 import { use } from 'chai';
 import { Addressable, BaseContract, BaseContractMethod, BigNumberish, TransactionResponse, ethers } from 'ethers';
@@ -19,6 +18,9 @@ import { Addressable, BaseContract, BaseContractMethod, BigNumberish, Transactio
 
 const CHANGE_CONFIDENTIAL_BALANCE_MATCHER = 'changeConfidentialBalance';
 const CHANGE_CONFIDENTIAL_BALANCES_MATCHER = 'changeConfidentialBalances';
+
+// Chai flag the hardhat-chai-matchers async matchers use to refuse being chained (not exported by the package)
+const PREVIOUS_MATCHER_NAME = 'previousMatcherName';
 
 type ConfidentialToken = BaseContract & {
   confidentialBalanceOf: BaseContractMethod<[string], string, string>;
@@ -55,8 +57,9 @@ use(function (chai, chaiUtils) {
       balanceChange: BigNumberish | ((change: bigint) => boolean),
     ) {
       // capture negated flag before async code executes; see buildAssert's jsdoc
-      const negated = this.__flags.negate;
-      const subject: Subject = typeof this._obj === 'function' ? this._obj() : this._obj;
+      const negated = chaiUtils.flag(this, 'negate');
+      const object = chaiUtils.flag(this, 'object');
+      const subject: Subject = typeof object === 'function' ? object() : object;
 
       preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCE_MATCHER, chaiUtils);
       validateInput(subject, token, CHANGE_CONFIDENTIAL_BALANCE_MATCHER);
@@ -101,8 +104,9 @@ use(function (chai, chaiUtils) {
       balanceChanges: BigNumberish[] | ((changes: bigint[]) => boolean),
     ) {
       // capture negated flag before async code executes; see buildAssert's jsdoc
-      const negated = this.__flags.negate;
-      const subject: Subject = typeof this._obj === 'function' ? this._obj() : this._obj;
+      const negated = chaiUtils.flag(this, 'negate');
+      const object = chaiUtils.flag(this, 'object');
+      const subject: Subject = typeof object === 'function' ? object() : object;
 
       preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, chaiUtils);
       validateInput(subject, token, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, accounts, balanceChanges);
@@ -169,6 +173,24 @@ function validateInput(
     Promise.resolve(subject).catch(() => {});
     throw e;
   }
+}
+
+/**
+ * Async matchers resolve through the `then` they set on the assertion, so chaining two of them would replace the
+ * first one's promise and silently skip its check. Throws if an async matcher already ran on the assertion, and
+ * sets the flag the hardhat-chai-matchers check so that theirs refuse to run after this one.
+ */
+function preventAsyncMatcherChaining(assertion: any, matcherName: string, chaiUtils: Chai.ChaiUtils) {
+  if (assertion.then !== undefined) {
+    const previousMatcherName = chaiUtils.flag(assertion, PREVIOUS_MATCHER_NAME);
+    throw new Error(
+      `The matcher '${matcherName}' cannot be chained after ${
+        previousMatcherName === undefined ? 'another async matcher' : `'${previousMatcherName}'`
+      }`,
+    );
+  }
+
+  chaiUtils.flag(assertion, PREVIOUS_MATCHER_NAME, matcherName);
 }
 
 async function getConfidentialBalanceChanges(
