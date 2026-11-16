@@ -122,7 +122,7 @@ describe('ERC7984Restricted', function () {
           await this.token.$_blockUser(this.recipient); // Sets to BLOCKED
           await expect(
             this.token['$_update(address,address,uint64,bool)'](this.holder, this.recipient, initialSupply, true),
-          ).to.changeConfidentialBalance(this.token, this.holder, -initialSupply);
+          ).to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-initialSupply, initialSupply]);
         });
       });
     });

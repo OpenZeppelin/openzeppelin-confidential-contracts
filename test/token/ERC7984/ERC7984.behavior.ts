@@ -1,4 +1,4 @@
-import { allowHandle } from '../../helpers/acl';
+import { allowHandle, getAcl } from '../../helpers/acl';
 import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
@@ -28,6 +28,9 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
       await this.token
         .connect(this.holder)
         ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
+
+      // User decryption requires both the user and the token to be persistently allowed on the handle
+      this.acl = await getAcl();
     });
 
     describe('constructor', function () {
@@ -67,16 +70,14 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
     describe('confidentialBalanceOf', function () {
       it('handle can be decrypted by owner', async function () {
         const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
-        await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, await this.token.getAddress(), this.holder),
-        ).to.eventually.equal(1000);
+        await expect(this.acl.persistAllowed(balanceOfHandleHolder, this.token)).to.eventually.be.true;
+        await expect(this.acl.persistAllowed(balanceOfHandleHolder, this.holder)).to.eventually.be.true;
+        await expect(fhevm.debugger.decryptEuint(FhevmType.euint64, balanceOfHandleHolder)).to.eventually.equal(1000);
       });
 
       it('handle cannot be decrypted by non-owner', async function () {
         const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
-        await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, balanceOfHandleHolder, await this.token.getAddress(), this.anyone),
-        ).to.be.rejectedWith(generateDecryptionErrorMessage(balanceOfHandleHolder, this.anyone.address));
+        await expect(this.acl.persistAllowed(balanceOfHandleHolder, this.anyone)).to.eventually.be.false;
       });
     });
 
@@ -239,56 +240,35 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
                     encryptedInput.inputProof,
                   );
               }
+              const transferredAmount = sufficientBalance ? transferAmount : 0;
+              await expect(tx).to.changeConfidentialBalances(
+                this.token,
+                [this.holder, this.recipient],
+                [-transferredAmount, transferredAmount],
+              );
+
               const transferEvent = (await tx.wait()).logs.filter((log: any) => log.address === this.token.target)[0];
               expect(transferEvent.args[0]).to.equal(this.holder.address);
               expect(transferEvent.args[1]).to.equal(this.recipient.address);
 
               const transferAmountHandle = transferEvent.args[2];
-              const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
-              const recipientBalanceHandle = await this.token.confidentialBalanceOf(this.recipient);
+              await expect(fhevm.debugger.decryptEuint(FhevmType.euint64, transferAmountHandle)).to.eventually.equal(
+                transferredAmount,
+              );
 
-              await expect(
-                fhevm.userDecryptEuint(
-                  FhevmType.euint64,
-                  transferAmountHandle,
-                  await this.token.getAddress(),
-                  this.holder,
-                ),
-              ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
-              await expect(
-                fhevm.userDecryptEuint(
-                  FhevmType.euint64,
-                  transferAmountHandle,
-                  await this.token.getAddress(),
-                  this.recipient,
-                ),
-              ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
+              await expect(this.acl.persistAllowed(transferAmountHandle, this.token)).to.eventually.be.true;
+              await expect(this.acl.persistAllowed(transferAmountHandle, this.holder)).to.eventually.be.true;
+              await expect(this.acl.persistAllowed(transferAmountHandle, this.recipient)).to.eventually.be.true;
               // Other can not reencrypt the transfer amount
-              await expect(
-                fhevm.userDecryptEuint(
-                  FhevmType.euint64,
-                  transferAmountHandle,
-                  await this.token.getAddress(),
-                  this.operator,
-                ),
-              ).to.be.rejectedWith(generateDecryptionErrorMessage(transferAmountHandle, this.operator.address));
+              await expect(this.acl.persistAllowed(transferAmountHandle, this.operator)).to.eventually.be.false;
 
-              await expect(
-                fhevm.userDecryptEuint(
-                  FhevmType.euint64,
-                  holderBalanceHandle,
-                  await this.token.getAddress(),
-                  this.holder,
-                ),
-              ).to.eventually.equal(1000 - (sufficientBalance ? transferAmount : 0));
-              await expect(
-                fhevm.userDecryptEuint(
-                  FhevmType.euint64,
-                  recipientBalanceHandle,
-                  await this.token.getAddress(),
-                  this.recipient,
-                ),
-              ).to.eventually.equal(sufficientBalance ? transferAmount : 0);
+              const holderBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
+              await expect(this.acl.persistAllowed(holderBalanceHandle, this.token)).to.eventually.be.true;
+              await expect(this.acl.persistAllowed(holderBalanceHandle, this.holder)).to.eventually.be.true;
+
+              const recipientBalanceHandle = await this.token.confidentialBalanceOf(this.recipient);
+              await expect(this.acl.persistAllowed(recipientBalanceHandle, this.token)).to.eventually.be.true;
+              await expect(this.acl.persistAllowed(recipientBalanceHandle, this.recipient)).to.eventually.be.true;
             });
           }
         });
@@ -309,18 +289,18 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
                 functionParams.push('0x');
                 if (usingTransferFrom) {
                   functionParams.unshift(from);
-                  await contract.connect(sender).confidentialTransferFromAndCall(...functionParams);
+                  return contract.connect(sender).confidentialTransferFromAndCall(...functionParams);
                 } else {
-                  await contract
+                  return contract
                     .connect(sender)
                     ['confidentialTransferAndCall(address,bytes32,bytes)'](...functionParams);
                 }
               } else {
                 if (usingTransferFrom) {
                   functionParams.unshift(from);
-                  await contract.connect(sender).confidentialTransferFrom(...functionParams);
+                  return contract.connect(sender).confidentialTransferFrom(...functionParams);
                 } else {
-                  await contract.connect(sender)['confidentialTransfer(address,bytes32)'](...functionParams);
+                  return contract.connect(sender)['confidentialTransfer(address,bytes32)'](...functionParams);
                 }
               }
             }
@@ -328,16 +308,9 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
             it('full balance', async function () {
               const fullBalanceHandle = await this.token.confidentialBalanceOf(this.holder);
 
-              await callTransfer(this.token, this.holder, this.recipient, fullBalanceHandle);
-
               await expect(
-                fhevm.userDecryptEuint(
-                  FhevmType.euint64,
-                  await this.token.confidentialBalanceOf(this.recipient),
-                  await this.token.getAddress(),
-                  this.recipient,
-                ),
-              ).to.eventually.equal(1000);
+                callTransfer(this.token, this.holder, this.recipient, fullBalanceHandle),
+              ).to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-1000, 1000]);
             });
 
             it('other user balance should revert', async function () {
@@ -436,24 +409,18 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
           expect(outboundTransferEvent.args[0]).to.equal(this.holder.address);
           expect(outboundTransferEvent.args[1]).to.equal(this.recipientContract.target);
           await expect(
-            fhevm.userDecryptEuint(
-              FhevmType.euint64,
-              outboundTransferEvent.args[2],
-              await this.token.getAddress(),
-              this.holder,
-            ),
+            fhevm.debugger.decryptEuint(FhevmType.euint64, outboundTransferEvent.args[2]),
           ).to.eventually.equal(1000);
+          await expect(this.acl.persistAllowed(outboundTransferEvent.args[2], this.token)).to.eventually.be.true;
+          await expect(this.acl.persistAllowed(outboundTransferEvent.args[2], this.holder)).to.eventually.be.true;
 
           expect(inboundTransferEvent.args[0]).to.equal(this.recipientContract.target);
           expect(inboundTransferEvent.args[1]).to.equal(this.holder.address);
           await expect(
-            fhevm.userDecryptEuint(
-              FhevmType.euint64,
-              inboundTransferEvent.args[2],
-              await this.token.getAddress(),
-              this.holder,
-            ),
+            fhevm.debugger.decryptEuint(FhevmType.euint64, inboundTransferEvent.args[2]),
           ).to.eventually.equal(callbackSuccess ? 0 : 1000);
+          await expect(this.acl.persistAllowed(inboundTransferEvent.args[2], this.token)).to.eventually.be.true;
+          await expect(this.acl.persistAllowed(inboundTransferEvent.args[2], this.holder)).to.eventually.be.true;
         });
       }
 
@@ -544,10 +511,6 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
       });
     });
   });
-}
-
-function generateDecryptionErrorMessage(handle: string, account: string): RegExp {
-  return new RegExp(`User ${account} is not authorized to decrypt handle ${handle}!`);
 }
 
 export { shouldBehaveLikeERC7984 };
