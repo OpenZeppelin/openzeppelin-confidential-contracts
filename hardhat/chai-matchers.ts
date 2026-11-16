@@ -160,6 +160,10 @@ function validateInput(
       throw new Error('The given contract instance is not an ERC7984 token');
     }
 
+    if (accounts !== undefined && !Array.isArray(accounts)) {
+      throw new Error(`The second argument of ${method} must be an array of accounts`);
+    }
+
     if (Array.isArray(balanceChanges) && accounts!.length !== balanceChanges.length) {
       throw new Error(
         `The number of accounts (${accounts!.length}) is different than the number of expected balance changes (${

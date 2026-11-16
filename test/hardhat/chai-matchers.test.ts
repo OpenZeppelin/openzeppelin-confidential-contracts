@@ -119,6 +119,14 @@ describe('Confidential balance matchers', function () {
       );
     });
 
+    it('rejects a reverted transaction instead of reporting no balance change', async function () {
+      const tx = this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](ethers.ZeroAddress, 100);
+
+      await expect(expect(tx).to.changeConfidentialBalance(this.token, this.holder, 0)).to.be.rejectedWith(
+        'VM Exception while processing transaction: reverted',
+      );
+    });
+
     it('rejects a block containing multiple transactions', async function () {
       await network.provider.send('evm_setAutomine', [false]);
       try {
@@ -239,6 +247,22 @@ describe('Confidential balance matchers', function () {
       expect(() =>
         expect(this.transfer(100)).to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-100]),
       ).to.throw('The number of accounts (2) is different than the number of expected balance changes (1)');
+    });
+
+    it('rejects an account list that is not an array', function () {
+      expect(() =>
+        expect(this.transfer(100)).to.changeConfidentialBalances(this.token, this.holder.address, () => true),
+      ).to.throw('The second argument of changeConfidentialBalances must be an array of accounts');
+    });
+
+    it('cannot be chained after another async matcher', async function () {
+      const tx = this.transfer(100);
+      expect(() =>
+        expect(tx)
+          .to.emit(this.token, 'ConfidentialTransfer')
+          .and.to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-100, 100]),
+      ).to.throw("The matcher 'changeConfidentialBalances' cannot be chained after 'emit'");
+      await tx;
     });
   });
 });
