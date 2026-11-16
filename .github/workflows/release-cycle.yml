@@ -27,14 +27,14 @@ jobs:
       pull-requests: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
       - name: Set up environment
         uses: ./.github/actions/setup
       - id: state
         name: Get state
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           TRIGGERING_ACTOR: ${{ github.triggering_actor }}
         with:
@@ -60,7 +60,7 @@ jobs:
     if: needs.state.outputs.start == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
       - name: Set up environment
@@ -70,7 +70,7 @@ jobs:
         name: Create branch with release candidate
         run: bash scripts/release/workflow/start.sh
       - name: Re-run workflow
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           REF: ${{ steps.start.outputs.branch }}
         with:
@@ -85,7 +85,7 @@ jobs:
     if: needs.state.outputs.promote == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
       - name: Set up environment
@@ -95,7 +95,7 @@ jobs:
         if: needs.state.outputs.is_prerelease == 'true'
         run: bash scripts/release/workflow/exit-prerelease.sh
       - name: Re-run workflow
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: await require('./scripts/release/workflow/rerun.js')({ github, context })
 
@@ -108,19 +108,19 @@ jobs:
     if: needs.state.outputs.changesets == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # To get all tags
           submodules: recursive
       - name: Set up environment
         uses: ./.github/actions/setup
       - name: Set release title
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           result-encoding: string
           script: await require('./scripts/release/workflow/set-changesets-pr-title.js')({ core })
       - name: Create PR
-        uses: changesets/action@v1
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRERELEASE: ${{ needs.state.outputs.is_prerelease }}
@@ -144,7 +144,7 @@ jobs:
     if: needs.state.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
       - name: Set up environment
@@ -155,7 +155,7 @@ jobs:
         env:
           PRERELEASE: ${{ needs.state.outputs.is_prerelease }}
       - name: Upload tarball artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ github.ref_name }}
           path: ${{ steps.pack.outputs.tarball }}
@@ -165,7 +165,7 @@ jobs:
           TARBALL: ${{ steps.pack.outputs.tarball }}
           TAG: ${{ steps.pack.outputs.tag }}
       - name: Create Github Release
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PRERELEASE: ${{ needs.state.outputs.is_prerelease }}
         with:
@@ -178,12 +178,12 @@ jobs:
     name: Tarball Integrity Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
       - name: Download tarball artifact
         id: artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ github.ref_name }}
       - name: Check integrity
@@ -202,7 +202,7 @@ jobs:
     env:
       MERGE_BRANCH: merge/${{ github.ref_name }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # All branches
           submodules: recursive
@@ -214,7 +214,7 @@ jobs:
           git checkout -B "$MERGE_BRANCH" "$GITHUB_REF_NAME"
           git push -f origin "$MERGE_BRANCH"
       - name: Create PR back to master
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             await github.rest.pulls.create({
