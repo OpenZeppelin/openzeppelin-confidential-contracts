@@ -188,4 +188,36 @@ describe('ERC7984BalanceCapHookModule', function () {
         .withArgs(this.token, ethers.hexlify(enc.handles[0]));
     });
   });
+
+  describe('transferAndCall refund', function () {
+    it('cannot push a balance over the max', async function () {
+      const receiver = await ethers.deployContract('ERC7984ReceiverMoverMock');
+
+      // The recipient is at the max balance. The holder makes the receiver an operator.
+      await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 10_000);
+      await this.token.connect(this.holder).setOperator(receiver, 2n ** 47n);
+
+      // The recipient sends its whole balance to the receiver. During the callback the receiver moves 10000 from the
+      // holder to the recipient, then rejects. Refunding the recipient would put it at 20000, so the refund transfers 0.
+      await this.token
+        .connect(this.recipient)
+        ['confidentialTransferAndCall(address,uint64,bytes)'](
+          receiver,
+          10_000,
+          ethers.AbiCoder.defaultAbiCoder().encode(
+            ['address', 'address', 'uint64'],
+            [this.holder.address, this.recipient.address, 10_000],
+          ),
+        );
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.token.confidentialBalanceOf(this.recipient),
+          this.token.target,
+          this.recipient,
+        ),
+      ).to.eventually.equal(10_000);
+    });
+  });
 });

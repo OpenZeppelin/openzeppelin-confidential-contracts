@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {IERC7984} from "../../../interfaces/IERC7984.sol";
 import {IERC7984Receiver} from "../../../interfaces/IERC7984Receiver.sol";
 import {ERC7984HookModuleMock} from "./utils/ERC7984HookModuleMock.sol";
 
@@ -61,6 +62,30 @@ contract ERC7984ReceiverMutatorMock is IERC7984Receiver, ZamaEthereumConfig {
         ebool returnVal = FHE.asEbool(false);
         FHE.allowTransient(returnVal, msg.sender);
 
+        return returnVal;
+    }
+}
+
+/// @dev Receiver that moves tokens during the callback and then rejects the transfer, so the token attempts a refund.
+/// Data is `(address from, address to, uint64 amount)`. If `from` is this contract, it transfers its own tokens.
+/// Otherwise it transfers as an operator of `from`.
+contract ERC7984ReceiverMoverMock is IERC7984Receiver, ZamaEthereumConfig {
+    function move(address token, address from, address to, uint64 amount) public {
+        euint64 encryptedAmount = FHE.asEuint64(amount);
+        FHE.allowTransient(encryptedAmount, token);
+        if (from == address(this)) {
+            IERC7984(token).confidentialTransfer(to, encryptedAmount);
+        } else {
+            IERC7984(token).confidentialTransferFrom(from, to, encryptedAmount);
+        }
+    }
+
+    function onConfidentialTransferReceived(address, address, euint64, bytes calldata data) external returns (ebool) {
+        (address from, address to, uint64 amount) = abi.decode(data, (address, address, uint64));
+        move(msg.sender, from, to, amount);
+
+        ebool returnVal = FHE.asEbool(false);
+        FHE.allowTransient(returnVal, msg.sender);
         return returnVal;
     }
 }

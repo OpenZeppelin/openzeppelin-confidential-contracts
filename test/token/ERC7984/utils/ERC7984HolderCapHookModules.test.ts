@@ -284,4 +284,46 @@ describe('ERC7984HolderCapHookModules', function () {
       ).to.eventually.equal(3);
     });
   });
+
+  describe('transferAndCall refund', function () {
+    it('cannot push the holder count over the max', async function () {
+      await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 2);
+      const receiver = await ethers.deployContract('ERC7984ReceiverMoverMock');
+
+      // Holders: holder, recipient (max reached). The recipient makes the receiver an operator.
+      await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
+      await this.token.connect(this.recipient).setOperator(receiver, 2n ** 47n);
+
+      // The holder sends its whole balance to the receiver (holders: recipient, receiver). During the callback the
+      // receiver pulls 500 from the recipient, then rejects. Refunding the holder would make 3 holders, so the
+      // refund transfers 0.
+      await this.token
+        .connect(this.holder)
+        ['confidentialTransferAndCall(address,uint64,bytes)'](
+          receiver,
+          19000,
+          ethers.AbiCoder.defaultAbiCoder().encode(
+            ['address', 'address', 'uint64'],
+            [this.recipient.address, receiver.target, 500],
+          ),
+        );
+
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.token.confidentialBalanceOf(this.holder),
+          this.token.target,
+          this.holder,
+        ),
+      ).to.eventually.equal(0);
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          await this.complianceModule.holderCount(this.token),
+          this.complianceModule.target,
+          this.admin,
+        ),
+      ).to.eventually.equal(2);
+    });
+  });
 });

@@ -162,21 +162,22 @@ describe('ERC7984Hooked', function () {
       });
     }
 
-    it('refund bypasses pre-transfer hooks disabled during callback', async function () {
+    it('refund runs pre-transfer hooks', async function () {
       const receiver = await ethers.deployContract('ERC7984ReceiverMutatorMock');
 
+      // The callback makes the module non-compliant, so the refund is blocked and transfers 0.
       await this.token
         .connect(this.holder)
         ['confidentialTransferAndCall(address,uint64,bytes)'](
           receiver,
-          4000,
+          400,
           ethers.AbiCoder.defaultAbiCoder().encode(['uint8', 'address'], [2, this.hookModule.target]),
         );
 
       const holderBalance = await this.token.confidentialBalanceOf(this.holder);
       await expect(
         fhevm.userDecryptEuint(FhevmType.euint64, holderBalance, this.token.target, this.holder),
-      ).to.eventually.equal(1000);
+      ).to.eventually.equal(600);
     });
   });
 

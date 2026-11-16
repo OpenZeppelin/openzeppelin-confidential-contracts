@@ -272,8 +272,14 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * the hook can still return false, in which case the refund transfers zero tokens. The sender's tokens
      * end up with the recipient rather than being refunded.
      *
-     * Refunds set `bypassRestrictions` to true so extensions can identify and skip additional transfer restrictions.
-     * Extensions that ignore the `bypassRestrictions` flag may still cause a refund to fail.
+     * WARNING: Refunds are subject to the same validation flow as a normal transfer--they may fail for a variety of
+     * reasons. Checks on encrypted values (such as hook modules in {ERC7984Hooked} or frozen balances in
+     * {ERC7984Freezable}) make the refund transfer zero tokens, so the tokens do not return to the sender. Checks that
+     * revert (such as {ERC7984Restricted} when the recipient became restricted during its callback) revert the whole
+     * call, so the sender keeps its tokens.
+     * Refunds intentionally do not set `bypassRestrictions`: the recipient's callback runs before the refund and may
+     * change balances, so a refund that skipped restrictions could move tokens that a normal transfer would not
+     * (for example frozen tokens in {ERC7984Freezable}, or tokens past the limits of a hook module).
      */
     function _transferAndCall(
         address from,
@@ -288,7 +294,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         ebool success = ERC7984Utils.checkOnTransferReceived(msg.sender, from, to, sent, data);
 
         // Try to refund if callback fails
-        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent), true); // set bypassRestrictions to true for refunds
+        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent));
         transferred = FHE.sub(sent, refund);
         FHE.allowTransient(transferred, msg.sender);
     }
@@ -307,8 +313,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
 
     /**
      * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
-     * If `bypassRestrictions` is true, extensions should treat the update as a permissioned flow such as a refund or
-     * wrap and not apply any additional restrictions.
+     * If `bypassRestrictions` is true, extensions should treat the update as a permissioned flow such as a wrap and
+     * not apply any additional restrictions.
      *
      * Emits a {ConfidentialTransfer} event with the successfully transferred amount.
      */
