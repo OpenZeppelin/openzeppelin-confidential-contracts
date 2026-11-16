@@ -14,7 +14,7 @@ import {ERC7984} from "./../ERC7984.sol";
  * NOTE: There is no onchain accounting for sub-accounts--integrators must track sub-account
  * balances externally.
  *
- * NOTE: To use existing handles for the sender, recipient and amount, pass them (see {HandleHelper}) with an empty
+ * NOTE: To use existing handles for the sender, recipient and amount, pass them (see {HandleHelper-toExternal}) with an empty
  * `inputProof`. The caller *must* already be allowed by ACL for each handle.
  */
 abstract contract ERC7984Omnibus is ERC7984 {
