@@ -104,6 +104,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
     /// @dev Unwrap without passing an input proof. See {unwrap-address-address-bytes32-bytes} for more details.
     function unwrap(address from, address to, euint64 amount) public virtual returns (bytes32) {
         require(FHE.isAllowed(amount, msg.sender), ERC7984UnauthorizedUseOfEncryptedAmount(amount, msg.sender));
+        require(msg.sender == from || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
         return _unwrap(msg.sender, from, to, amount, bytes12(0));
     }
 
@@ -118,6 +119,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (bytes32) {
+        require(msg.sender == from || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
         return _unwrap(msg.sender, from, to, FHE.fromExternal(encryptedAmount, inputProof), bytes12(0));
     }
 
@@ -273,7 +275,10 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
 
     /**
      * @dev Internal logic for handling the creation of unwrap requests. Returns the unwrap request id.
-     * `operator` must be `from` or an operator of `from` (see {isOperator}).
+     * `operator` is the account that initiated the unwrap (`msg.sender` for {unwrap}).
+     *
+     * WARNING: This function does not check that `operator` is authorized to move funds of `from`. Callers are
+     * responsible for that check (see {unwrap}).
      */
     function _unwrap(
         address operator,
@@ -283,7 +288,6 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         bytes12 unwrapMetadata
     ) internal virtual returns (bytes32) {
         require(to != address(0), ERC7984InvalidReceiver(to));
-        require(isOperator(from, operator), ERC7984UnauthorizedSpender(from, operator));
 
         // try to burn, see how much we actually got
         euint64 unwrapAmount_ = _burn(operator, from, amount);

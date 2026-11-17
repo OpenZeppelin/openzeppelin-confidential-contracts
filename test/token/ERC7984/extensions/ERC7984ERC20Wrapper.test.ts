@@ -1,4 +1,5 @@
 import { ERC7984ERC20WrapperMock } from '../../../../types';
+import { allowHandle } from '../../../helpers/acl';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
@@ -380,6 +381,15 @@ describe('ERC7984ERC20Wrapper', function () {
         .withArgs(this.holder, this.operator);
     });
 
+    it('via an unapproved operator without an input proof', async function () {
+      const balanceHandle = await this.wrapper.confidentialBalanceOf(this.holder);
+      await allowHandle(this.holder, this.operator, balanceHandle);
+
+      await expect(this.wrapper.connect(this.operator).unwrap(this.holder, this.holder, balanceHandle))
+        .to.be.revertedWithCustomError(this.wrapper, 'ERC7984UnauthorizedSpender')
+        .withArgs(this.holder, this.operator);
+    });
+
     it('with a value not allowed to sender', async function () {
       const totalSupplyHandle = await this.wrapper.confidentialTotalSupply();
 
@@ -438,22 +448,6 @@ describe('ERC7984ERC20Wrapper', function () {
 
       const [unwrapAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.return$_unwrap()))[0].args;
       await expect(this.wrapper.unwrapRequester(unwrapAmount)).to.eventually.eq(this.holder);
-    });
-
-    it('checks the operator given to `_unwrap` rather than `msg.sender`', async function () {
-      await expect(
-        this.wrapper
-          .connect(this.holder)
-          .$_unwrap(
-            this.operator,
-            this.holder,
-            this.holder,
-            await this.wrapper.confidentialBalanceOf(this.holder.address),
-            `0x${'00'.repeat(12)}`,
-          ),
-      )
-        .to.be.revertedWithCustomError(this.wrapper, 'ERC7984UnauthorizedSpender')
-        .withArgs(this.holder, this.operator);
     });
 
     describe('metadata', function () {
