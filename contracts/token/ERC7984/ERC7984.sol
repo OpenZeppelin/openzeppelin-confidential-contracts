@@ -282,7 +282,9 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * {_update-address-address-address-euint64-bool} and passed as `operator` to the recipient callback.
      *
      * The token contract initiates a second transfer refunding the tokens from the recipient to the sender--the
-     * amount is 0 if the callback succeeds, otherwise the amount is the amount that was transferred.
+     * amount is 0 if the callback succeeds, otherwise the amount is the amount that was transferred. The refund
+     * uses the recipient `to` as its `operator`: the recipient's callback decides the refund and the tokens leave
+     * its balance.
      *
      * The returned `transferred` amount is a fresh ciphertext computed as `sent - refund`
      * and `msg.sender` only receives a transient FHE allowance for it. This value is generally
@@ -310,7 +312,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         ebool success = ERC7984Utils.checkOnTransferReceived(operator, from, to, sent, data);
 
         // Try to refund if callback fails
-        euint64 refund = _update(operator, to, from, FHE.select(success, FHE.asEuint64(0), sent), true); // set bypassRestrictions to true for refunds
+        euint64 refund = _update(to, to, from, FHE.select(success, FHE.asEuint64(0), sent), true); // set bypassRestrictions to true for refunds
         transferred = FHE.sub(sent, refund);
         FHE.allowTransient(transferred, msg.sender);
     }
