@@ -1,5 +1,6 @@
 import { $ERC7984OmnibusMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984/extensions/ERC7984OmnibusMock.sol/$ERC7984OmnibusMock';
 import { getAcl } from '../../../helpers/acl';
+import { callAndGetResultFromEmitter } from '../../../helpers/event';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
@@ -198,6 +199,46 @@ describe('ERC7984Omnibus', function () {
       }
     });
   }
+
+  describe('omnibus transfer from a contract with existing handles', function () {
+    beforeEach(async function () {
+      this.forwarder = await ethers.deployContract('ERC7984OmnibusForwarderMock');
+      await this.token['$_mint(address,uint64)'](this.forwarder.target, 1000);
+    });
+
+    it('normal transfer', async function () {
+      const tx = this.forwarder.forward(
+        this.token.target,
+        this.recipient.address,
+        this.holder.address,
+        this.subaccount.address,
+        100,
+      );
+
+      const omnibusConfidentialTransferEventArgs = await callAndGetResultFromEmitter(
+        tx,
+        this.token,
+        'OmnibusConfidentialTransfer(address,address,bytes32,bytes32,bytes32)',
+      );
+      expect(omnibusConfidentialTransferEventArgs[0]).to.equal(this.forwarder.target);
+      expect(omnibusConfidentialTransferEventArgs[1]).to.equal(this.recipient.address);
+
+      await expect(
+        fhevm.userDecryptEaddress(omnibusConfidentialTransferEventArgs[2], this.token.target, this.recipient),
+      ).to.eventually.equal(this.holder.address);
+      await expect(
+        fhevm.userDecryptEaddress(omnibusConfidentialTransferEventArgs[3], this.token.target, this.recipient),
+      ).to.eventually.equal(this.subaccount.address);
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          omnibusConfidentialTransferEventArgs[4],
+          this.token.target,
+          this.recipient,
+        ),
+      ).to.eventually.equal(100);
+    });
+  });
 
   shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
 });
