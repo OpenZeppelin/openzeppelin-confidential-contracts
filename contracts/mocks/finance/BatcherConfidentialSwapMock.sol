@@ -47,7 +47,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
             msg.sender,
             address(this),
             amount.toExternal(),
-            hex""
+            bytes32(0)
         );
 
         euint64 joinedAmount = _join(msg.sender, transferred);

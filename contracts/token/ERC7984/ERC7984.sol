@@ -117,7 +117,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64) {
-        return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), hex"");
+        return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), bytes32(0));
     }
 
     /// @inheritdoc IERC7984
@@ -138,7 +138,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof
     ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof), hex"");
+        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof), bytes32(0));
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -164,7 +164,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64) {
-        return _transferAndCall(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), data, hex"");
+        return _transferAndCall(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), data, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
@@ -187,7 +187,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata data
     ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        return _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data, hex"");
+        return _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
@@ -300,7 +300,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         ebool success = ERC7984Utils.checkOnTransferReceived(msg.sender, from, to, sent, data);
 
         // Try to refund if callback fails
-        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent), hex"", true); // set bypassRestrictions to true for refunds
+        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent), bytes32(0), true); // set bypassRestrictions to true for refunds
         transferred = FHE.sub(sent, refund);
         FHE.allowTransient(transferred, msg.sender);
     }

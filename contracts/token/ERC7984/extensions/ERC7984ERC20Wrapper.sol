@@ -262,7 +262,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
             address(0),
             to,
             FHE.asEuint64(SafeCast.toUint64(amount / rate())),
-            hex"",
+            bytes32(0),
             true
         );
         emit Wrap(to, amount - (amount % rate()), wrappedAmountSent);
@@ -281,7 +281,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(from == msg.sender || isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
 
         // try to burn, see how much we actually got
-        euint64 unwrapAmount_ = _burn(from, amount, hex"");
+        euint64 unwrapAmount_ = _burn(from, amount, bytes32(0));
         FHE.makePubliclyDecryptable(unwrapAmount_);
 
         assert(unwrapRequester(euint64.unwrap(unwrapAmount_)) == address(0));
