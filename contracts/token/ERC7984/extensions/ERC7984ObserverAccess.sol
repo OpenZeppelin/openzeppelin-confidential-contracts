@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984ObserverAccess.sol)
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
 import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {ERC7984} from "../ERC7984.sol";
@@ -43,8 +43,13 @@ abstract contract ERC7984ObserverAccess is ERC7984 {
         return _observers[account];
     }
 
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
-        transferred = super._update(from, to, amount);
+    function _update(
+        address from,
+        address to,
+        euint64 amount,
+        bool bypassRestrictions
+    ) internal virtual override returns (euint64 transferred) {
+        transferred = super._update(from, to, amount, bypassRestrictions);
 
         address fromObserver = observer(from);
         address toObserver = observer(to);

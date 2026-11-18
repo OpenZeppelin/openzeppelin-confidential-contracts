@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (last updated v0.4.0) (token/ERC7984/extensions/ERC7984Votes.sol)
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.26;
 
 import {euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {VotesConfidential} from "../../../governance/utils/VotesConfidential.sol";
@@ -19,8 +19,13 @@ abstract contract ERC7984Votes is ERC7984, VotesConfidential {
         return super.confidentialTotalSupply();
     }
 
-    function _update(address from, address to, euint64 amount) internal virtual override returns (euint64 transferred) {
-        transferred = super._update(from, to, amount);
+    function _update(
+        address from,
+        address to,
+        euint64 amount,
+        bool bypassRestrictions
+    ) internal virtual override returns (euint64 transferred) {
+        transferred = super._update(from, to, amount, bypassRestrictions);
 
         _transferVotingUnits(from, to, transferred);
     }

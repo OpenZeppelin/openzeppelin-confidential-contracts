@@ -22,8 +22,9 @@ contract ERC7984ContractURIMock is ERC7984ContractURI, ERC7984Mock {
     function _update(
         address from,
         address to,
-        euint64 amount
+        euint64 amount,
+        bool bypassRestrictions
     ) internal virtual override(ERC7984Mock, ERC7984) returns (euint64) {
-        return super._update(from, to, amount);
+        return super._update(from, to, amount, bypassRestrictions);
     }
 }
