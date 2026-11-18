@@ -27,6 +27,6 @@ contract SwapERC7984ToERC7984 {
         );
 
         FHE.allowTransient(amountTransferred, address(toToken));
-        toToken.confidentialTransfer(msg.sender, amountTransferred.toExternal(), bytes32(0));
+        toToken.confidentialTransfer(msg.sender, amountTransferred.toExternal(), hex"");
     }
 }

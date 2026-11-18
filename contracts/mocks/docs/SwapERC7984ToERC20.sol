@@ -28,7 +28,7 @@ contract SwapERC7984ToERC20 {
             msg.sender,
             address(this),
             amount.toExternal(),
-            bytes32(0)
+            hex""
         );
 
         FHE.makePubliclyDecryptable(amountTransferred);
