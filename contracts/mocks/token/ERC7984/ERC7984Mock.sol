@@ -4,8 +4,9 @@ pragma solidity ^0.8.27;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, eaddress, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
-import {ERC7984} from "../../../token/ERC7984/ERC7984.sol";
-import {HandleHelper} from "../../../utils/HandleHelper.sol";
+import {Calldata} from "@openzeppelin/contracts/utils/Calldata.sol";
+import {ERC7984} from "./../../../token/ERC7984/ERC7984.sol";
+import {HandleHelper} from "./../../../utils/HandleHelper.sol";
 
 // solhint-disable func-name-mixedcase
 contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
@@ -44,14 +45,14 @@ contract ERC7984Mock is ERC7984, ZamaEthereumConfig {
         euint64 ciphertext = FHE.asEuint64(amount);
         FHE.allowTransient(ciphertext, msg.sender);
 
-        return super.confidentialTransfer(to, ciphertext.toExternal(), msg.data[0:0]);
+        return super.confidentialTransfer(to, ciphertext.toExternal(), Calldata.emptyBytes());
     }
 
     function confidentialTransferAndCall(address to, uint64 amount, bytes calldata data) public returns (euint64) {
         euint64 ciphertext = FHE.asEuint64(amount);
         FHE.allowTransient(ciphertext, msg.sender);
 
-        return super.confidentialTransferAndCall(to, ciphertext.toExternal(), msg.data[0:0], data);
+        return super.confidentialTransferAndCall(to, ciphertext.toExternal(), Calldata.emptyBytes(), data);
     }
 
     function _update(
