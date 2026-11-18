@@ -44,7 +44,7 @@ Smart contracts that are the target of a callback must implement xref:api:interf
 [[bypass-restrictions]]
 === Bypassing restrictions
 
-All balance changes--transfers, mints, and burns--flow through the internal xref:api:token.adoc#ERC7984-_update-address-address-euint64-bool-[`++_update++`] function, which takes a `bypassRestrictions` flag. When this flag is `true`, extensions that override `_update` should skip any transfer restrictions they would normally enforce.
+All balance changes--transfers, mints, and burns--flow through the internal xref:api:token.adoc#ERC7984-_update-address-address-address-euint64-bool-[`++_update++`] function, which takes a `bypassRestrictions` flag. When this flag is `true`, extensions that override `_update` should skip any transfer restrictions they would normally enforce.
 
 This flag exists so that trusted, permissioned flows are not silently blocked by an extension. Because a confidential transfer that fails validation moves `0` tokens rather than reverting, a blocked update in one of these flows would be a silent loss of funds. Setting `bypassRestrictions` guarantees the balance change goes through.
 
@@ -113,16 +113,16 @@ Swapping from a non-confidential ERC-20 to a confidential ERC-7984 is simple and
 
 [source,solidity]
 ----
-function wrap(address to, uint256 amount) public virtual {
+function wrap(address to, uint256 amount) public virtual returns (euint64) {
     // take ownership of the tokens
-    SafeERC20.safeTransferFrom(underlying(), msg.sender, address(this), amount - (amount % rate()));
+    SafeERC20.safeTransferFrom(IERC20(underlying()), msg.sender, address(this), amount - (amount % rate()));
 
     // mint confidential token (bypassing restrictions, see below)
-    _mint(to, (amount / rate()).toUint64().asEuint64(), true);
+    return _update(msg.sender, address(0), to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), true);
 }
 ----
 
-The `ERC20` token is simply transferred in, which would revert on failure. We then transfer out the correct amount of the ERC-7984 using the internal `_mint` function. The mint passes `bypassRestrictions` as `true` (see xref:#bypass-restrictions[bypassing restrictions]), so it skips any extension restrictions and is guaranteed to succeed--otherwise the underlying tokens would be locked in the wrapper with nothing minted in return.
+The `ERC20` token is simply transferred in, which would revert on failure. We then mint the correct amount of the ERC-7984 by calling the internal `_update` function with `from` set to the zero address and `msg.sender` as the `operator`. The mint passes `bypassRestrictions` as `true` (see xref:#bypass-restrictions[bypassing restrictions]), so it skips any extension restrictions and is guaranteed to succeed--otherwise the underlying tokens would be locked in the wrapper with nothing minted in return.
 
 ==== Swap ERC-7984 to ERC-7984
 
