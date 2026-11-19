@@ -8,12 +8,13 @@ import {ERC7984Mock, ERC7984} from "../ERC7984Mock.sol";
 
 abstract contract ERC7984OmnibusMock is ERC7984Omnibus, ERC7984Mock {
     function _update(
+        address operator,
         address from,
         address to,
         euint64 amount,
         bytes32 memo,
         bool bypassRestrictions
     ) internal virtual override(ERC7984Mock, ERC7984) returns (euint64) {
-        return super._update(from, to, amount, memo, bypassRestrictions);
+        return super._update(operator, from, to, amount, memo, bypassRestrictions);
     }
 }

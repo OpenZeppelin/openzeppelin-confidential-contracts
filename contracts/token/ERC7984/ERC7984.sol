@@ -117,7 +117,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public virtual returns (euint64) {
-        return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), bytes32(0));
+        return _transfer(msg.sender, msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), bytes32(0));
     }
 
     /// @inheritdoc IERC7984
@@ -127,7 +127,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof,
         bytes32 memo
     ) public virtual returns (euint64) {
-        return _transfer(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), memo);
+        return _transfer(msg.sender, msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), memo);
     }
 
     /// @inheritdoc IERC7984
@@ -138,7 +138,13 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof
     ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof), bytes32(0));
+        euint64 transferred = _transfer(
+            msg.sender,
+            from,
+            to,
+            FHE.fromExternal(encryptedAmount, inputProof),
+            bytes32(0)
+        );
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -152,7 +158,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes32 memo
     ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(from, to, FHE.fromExternal(encryptedAmount, inputProof), memo);
+        euint64 transferred = _transfer(msg.sender, from, to, FHE.fromExternal(encryptedAmount, inputProof), memo);
         FHE.allowTransient(transferred, msg.sender);
         return transferred;
     }
@@ -164,7 +170,15 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof,
         bytes calldata data
     ) public virtual returns (euint64) {
-        return _transferAndCall(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), data, bytes32(0));
+        return
+            _transferAndCall(
+                msg.sender,
+                msg.sender,
+                to,
+                FHE.fromExternal(encryptedAmount, inputProof),
+                data,
+                bytes32(0)
+            );
     }
 
     /// @inheritdoc IERC7984
@@ -175,7 +189,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata data,
         bytes32 memo
     ) public virtual returns (euint64) {
-        return _transferAndCall(msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), data, memo);
+        return _transferAndCall(msg.sender, msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), data, memo);
     }
 
     /// @inheritdoc IERC7984
@@ -187,7 +201,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata data
     ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        return _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data, bytes32(0));
+        return _transferAndCall(msg.sender, from, to, FHE.fromExternal(encryptedAmount, inputProof), data, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
@@ -200,7 +214,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes32 memo
     ) public virtual returns (euint64) {
         require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        return _transferAndCall(from, to, FHE.fromExternal(encryptedAmount, inputProof), data, memo);
+        return _transferAndCall(msg.sender, from, to, FHE.fromExternal(encryptedAmount, inputProof), data, memo);
     }
 
     /**
@@ -251,28 +265,57 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         emit OperatorSet(holder, operator, until);
     }
 
-    function _mint(address to, euint64 amount, bytes32 memo) internal returns (euint64 transferred) {
+    /**
+     * @dev Mints `amount` to `to`. `operator` is the account that initiated the mint (e.g. `msg.sender`, or the signer
+     * of an authorization) and is forwarded to {_update-address-address-address-euint64-bytes32-bool}.
+     */
+    function _mint(address operator, address to, euint64 amount, bytes32 memo) internal returns (euint64 transferred) {
         require(to != address(0), ERC7984InvalidReceiver(address(0)));
-        return _update(address(0), to, amount, memo);
+        return _update(operator, address(0), to, amount, memo);
     }
 
-    function _burn(address from, euint64 amount, bytes32 memo) internal returns (euint64 transferred) {
+    /**
+     * @dev Burns `amount` from `from`. `operator` is the account that initiated the burn and is forwarded to
+     * {_update-address-address-address-euint64-bytes32-bool}.
+     */
+    function _burn(
+        address operator,
+        address from,
+        euint64 amount,
+        bytes32 memo
+    ) internal returns (euint64 transferred) {
         require(from != address(0), ERC7984InvalidSender(address(0)));
-        return _update(from, address(0), amount, memo);
+        return _update(operator, from, address(0), amount, memo);
     }
 
-    function _transfer(address from, address to, euint64 amount, bytes32 memo) internal returns (euint64 transferred) {
+    /**
+     * @dev Transfers `amount` from `from` to `to`. `operator` is the account that initiated the transfer and is
+     * forwarded to {_update-address-address-address-euint64-bytes32-bool}.
+     *
+     * NOTE: This function does not check that `operator` is authorized to move funds of `from`. Callers are
+     * responsible for that check (see {confidentialTransferFrom}).
+     */
+    function _transfer(
+        address operator,
+        address from,
+        address to,
+        euint64 amount,
+        bytes32 memo
+    ) internal returns (euint64 transferred) {
         require(from != address(0), ERC7984InvalidSender(address(0)));
         require(to != address(0), ERC7984InvalidReceiver(address(0)));
-        return _update(from, to, amount, memo);
+        return _update(operator, from, to, amount, memo);
     }
 
     /**
      * @dev Transfers the given amount of tokens from `from` to `to` and calls the `onConfidentialTransferReceived`
-     * function on the recipient.
+     * function on the recipient. `operator` is the account that initiated the transfer: it is forwarded to
+     * {_update-address-address-address-euint64-bytes32-bool} and passed as `operator` to the recipient callback.
      *
      * The token contract initiates a second transfer refunding the tokens from the recipient to the sender--the
-     * amount is 0 if the callback succeeds, otherwise the amount is the amount that was transferred.
+     * amount is 0 if the callback succeeds, otherwise the amount is the amount that was transferred. The refund
+     * uses the recipient `to` as its `operator`: the recipient's callback decides the refund and the tokens leave
+     * its balance.
      *
      * The returned `transferred` amount is a fresh ciphertext computed as `sent - refund`
      * and `msg.sender` only receives a transient FHE allowance for it. This value is generally
@@ -287,6 +330,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * Extensions that ignore the `bypassRestrictions` flag may still cause a refund to fail.
      */
     function _transferAndCall(
+        address operator,
         address from,
         address to,
         euint64 amount,
@@ -294,13 +338,13 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes32 memo
     ) internal returns (euint64 transferred) {
         // Try to transfer amount + replace input with actually transferred amount.
-        euint64 sent = _transfer(from, to, amount, memo);
+        euint64 sent = _transfer(operator, from, to, amount, memo);
 
         // Perform callback
-        ebool success = ERC7984Utils.checkOnTransferReceived(msg.sender, from, to, sent, data);
+        ebool success = ERC7984Utils.checkOnTransferReceived(operator, from, to, sent, data);
 
         // Try to refund if callback fails
-        euint64 refund = _update(to, from, FHE.select(success, FHE.asEuint64(0), sent), bytes32(0), true); // set bypassRestrictions to true for refunds
+        euint64 refund = _update(to, to, from, FHE.select(success, FHE.asEuint64(0), sent), bytes32(0), true); // set bypassRestrictions to true for refunds
         transferred = FHE.sub(sent, refund);
         FHE.allowTransient(transferred, msg.sender);
     }
@@ -309,12 +353,18 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * @dev Safely moves up to `amount` from `from` to `to`, or mints/burns if `from`/`to` is the zero address.
      *
      * This variant sets the `bypassRestrictions` flag to false, which is the default behavior for most transfers.
-     * This function is not virtual. Override the generic {_update-address-address-euint64-bytes32-bool} function to customize transfer behavior.
+     * This function is not virtual. Override the generic {_update-address-address-address-euint64-bytes32-bool} function to customize transfer behavior.
      *
      * Emits a {ConfidentialTransfer} event with the successfully transferred amount and the given `memo`.
      */
-    function _update(address from, address to, euint64 amount, bytes32 memo) internal returns (euint64 transferred) {
-        return _update(from, to, amount, memo, false);
+    function _update(
+        address operator,
+        address from,
+        address to,
+        euint64 amount,
+        bytes32 memo
+    ) internal returns (euint64 transferred) {
+        return _update(operator, from, to, amount, memo, false);
     }
 
     /**
@@ -322,9 +372,14 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * If `bypassRestrictions` is true, extensions should treat the update as a permissioned flow such as a refund or
      * wrap and not apply any additional restrictions.
      *
+     * `operator` is the account that initiated the update: the holder itself, an approved operator, the signer of an
+     * authorization, or the account that triggered a mint, burn, wrap or unwrap. It is not authenticated here and is
+     * informational for extensions (e.g. screening or hooks). The base implementation ignores it.
+     *
      * Emits a {ConfidentialTransfer} event with the successfully transferred amount and the given `memo`.
      */
     function _update(
+        address /* operator */,
         address from,
         address to,
         euint64 amount,
