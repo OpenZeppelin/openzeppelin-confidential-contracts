@@ -1,10 +1,12 @@
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
+import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
 const uri = 'https://example.com/metadata';
+const decimals = 6;
 
 describe('ERC7984ContractURI', function () {
   beforeEach(async function () {
@@ -32,4 +34,6 @@ describe('ERC7984ContractURI', function () {
       await expect(this.token.supportsInterface(INVALID_ID)).to.eventually.be.false;
     });
   });
+
+  shouldBehaveLikeERC7984(name, symbol, decimals);
 });

@@ -2,14 +2,13 @@
 // OpenZeppelin Confidential Contracts (token/ERC7984/extensions/ERC7984ContractURI.sol)
 pragma solidity ^0.8.26;
 
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IERC7984} from "../../../interfaces/IERC7984.sol";
 import {ERC7984} from "../ERC7984.sol";
 
 /**
- * @dev Extension of {ERC7984} that adds a {contractURI} function.
+ * @dev Extension of {ERC7984} that adds a {contractURI} function as defined in
+ * https://eips.ethereum.org/EIPS/eip-7572[ERC-7572].
  */
-abstract contract ERC7984ContractURI is IERC7984, ERC7984 {
+abstract contract ERC7984ContractURI is ERC7984 {
     /// @dev Event emitted when the contract URI is changed.
     event ContractURIUpdated();
 
@@ -22,11 +21,6 @@ abstract contract ERC7984ContractURI is IERC7984, ERC7984 {
     /// @dev Returns the contract URI.
     function contractURI() public view virtual returns (string memory) {
         return _contractURI;
-    }
-
-    /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984, IERC165) returns (bool) {
-        return super.supportsInterface(interfaceId);
     }
 
     /**

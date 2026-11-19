@@ -13,12 +13,6 @@ contract ERC7984ContractURIMock is ERC7984ContractURI, ERC7984Mock {
         string memory contractURI_
     ) ERC7984Mock(name_, symbol_) ERC7984ContractURI(contractURI_) {}
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC7984ContractURI, ERC7984) returns (bool) {
-        return super.supportsInterface(interfaceId);
-    }
-
     function _update(
         address from,
         address to,
