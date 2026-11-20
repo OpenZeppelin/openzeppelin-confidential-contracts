@@ -11,11 +11,7 @@ abstract contract ERC7984VotesMock is ERC7984Mock, ERC7984Votes {
 
     uint48 private _clockOverrideVal;
 
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        string memory tokenURI_
-    ) ERC7984Mock(name_, symbol_, tokenURI_) EIP712(name_, "1.0.0") {
+    constructor(string memory name_, string memory symbol_) ERC7984Mock(name_, symbol_) EIP712(name_, "1.0.0") {
         _OWNER = msg.sender;
     }
 

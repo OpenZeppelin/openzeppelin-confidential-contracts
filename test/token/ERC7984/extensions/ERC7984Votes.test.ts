@@ -8,7 +8,6 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleTokenVotes';
 const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
 const decimals = 6;
 
 describe('ERC7984Votes', function () {
@@ -16,7 +15,7 @@ describe('ERC7984Votes', function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract('$ERC7984VotesMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984VotesMock', [name, symbol]);
 
     this.accounts = accounts.slice(3);
     this.holder = holder;
@@ -288,5 +287,5 @@ describe('ERC7984Votes', function () {
     });
   });
 
-  shouldBehaveLikeERC7984(name, symbol, uri, decimals);
+  shouldBehaveLikeERC7984(name, symbol, decimals);
 });

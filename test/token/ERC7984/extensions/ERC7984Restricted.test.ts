@@ -5,14 +5,13 @@ const { shouldBehaveLikeERC7984 } = require('../ERC7984.behavior');
 
 const name = 'token';
 const symbol = 'tk';
-const uri = 'uri';
 const decimals = 6;
 const initialSupply = 1000n;
 
 async function fixture() {
   const [holder, recipient, approved] = await ethers.getSigners();
 
-  const token = await ethers.deployContract('$ERC7984RestrictedMock', [name, symbol, uri]);
+  const token = await ethers.deployContract('$ERC7984RestrictedMock', [name, symbol]);
   await token['$_mint(address,uint64)'](holder, initialSupply);
 
   return { holder, recipient, approved, token };
@@ -271,5 +270,5 @@ describe('ERC7984Restricted', function () {
     });
   });
 
-  shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
+  shouldBehaveLikeERC7984(name, symbol, decimals, { holderInitialBalance: 1000 });
 });

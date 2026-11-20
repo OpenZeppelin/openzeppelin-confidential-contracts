@@ -6,7 +6,6 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'Observer Access Token';
 const symbol = 'OAT';
-const uri = 'https://example.com/metadata';
 const decimals = 6;
 
 describe('ERC7984ObserverAccess', function () {
@@ -14,7 +13,7 @@ describe('ERC7984ObserverAccess', function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract('$ERC7984ObserverAccessMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984ObserverAccessMock', [name, symbol]);
     this.holder = holder;
     this.recipient = recipient;
     this.token = token;
@@ -140,5 +139,5 @@ describe('ERC7984ObserverAccess', function () {
     });
   });
 
-  shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
+  shouldBehaveLikeERC7984(name, symbol, decimals, { holderInitialBalance: 1000 });
 });

@@ -5,7 +5,6 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
 const decimals = 6;
 
 describe('ERC7984', function () {
@@ -13,7 +12,7 @@ describe('ERC7984', function () {
     const accounts = await ethers.getSigners();
     const [holder, recipient, operator] = accounts;
 
-    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984Mock', [name, symbol]);
     this.accounts = accounts.slice(3);
     this.holder = holder;
     this.recipient = recipient;
@@ -30,7 +29,7 @@ describe('ERC7984', function () {
       ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
   });
 
-  shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
+  shouldBehaveLikeERC7984(name, symbol, decimals, { holderInitialBalance: 1000 });
 
   describe('mint', function () {
     for (const existingUser of [false, true]) {

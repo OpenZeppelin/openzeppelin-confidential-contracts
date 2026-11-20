@@ -9,12 +9,7 @@ import {ERC7984Hooked} from "./../../../../token/ERC7984/extensions/ERC7984Hooke
 import {ERC7984Mock} from "./../ERC7984Mock.sol";
 
 contract ERC7984HookedMock is ERC7984Hooked, ERC7984Mock, Ownable {
-    constructor(
-        string memory name,
-        string memory symbol,
-        string memory tokenUri,
-        address admin
-    ) ERC7984Mock(name, symbol, tokenUri) Ownable(admin) {}
+    constructor(string memory name, string memory symbol, address admin) ERC7984Mock(name, symbol) Ownable(admin) {}
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC7984Hooked, ERC7984) returns (bool) {
         return super.supportsInterface(interfaceId);

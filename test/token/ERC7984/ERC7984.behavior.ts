@@ -6,7 +6,7 @@ import { ethers, fhevm } from 'hardhat';
 
 // Shared behavior for ERC7984 tokens. Callers must deploy `this.token`. Holder (account[0]) must not be
 // minted more than 1000 tokens.
-function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, decimals: number, opts: any = {}) {
+function shouldBehaveLikeERC7984(name: string, symbol: string, decimals: number, opts: any = {}) {
   describe('behaves like ERC7984', function () {
     beforeEach(async function () {
       const accounts = await ethers.getSigners();
@@ -37,10 +37,6 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
 
       it('sets the symbol', async function () {
         await expect(this.token.symbol()).to.eventually.equal(symbol);
-      });
-
-      it('sets the uri', async function () {
-        await expect(this.token.contractURI()).to.eventually.equal(uri);
       });
 
       it('sets the decimals', async function () {

@@ -7,7 +7,6 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'ConfidentialFungibleToken';
 const symbol = 'CFT';
-const uri = 'https://example.com/metadata';
 const decimals = 6;
 
 async function confidentialAvailableHandle(token: any, account: Signer) {
@@ -22,7 +21,7 @@ async function confidentialAvailableHandle(token: any, account: Signer) {
 describe('ERC7984Freezable', function () {
   beforeEach(async function () {
     const [holder, recipient, freezer, operator, anyone] = await ethers.getSigners();
-    const token = await ethers.deployContract('$ERC7984FreezableMock', [name, symbol, uri]);
+    const token = await ethers.deployContract('$ERC7984FreezableMock', [name, symbol]);
     const acl = (await getAcl()).connect(holder);
 
     Object.assign(this, { holder, recipient, freezer, operator, anyone, token, acl });
@@ -196,5 +195,5 @@ describe('ERC7984Freezable', function () {
       ),
     ).to.eventually.equal(1000);
   });
-  shouldBehaveLikeERC7984(name, symbol, uri, decimals);
+  shouldBehaveLikeERC7984(name, symbol, decimals);
 });

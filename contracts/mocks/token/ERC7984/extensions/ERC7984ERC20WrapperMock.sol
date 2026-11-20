@@ -14,9 +14,8 @@ contract ERC7984ERC20WrapperMock is ERC7984ERC20Wrapper, ERC7984Mock {
     constructor(
         IERC20 token,
         string memory name,
-        string memory symbol,
-        string memory uri
-    ) ERC7984ERC20Wrapper(token) ERC7984Mock(name, symbol, uri) {}
+        string memory symbol
+    ) ERC7984ERC20Wrapper(token) ERC7984Mock(name, symbol) {}
 
     function setRefuseFinalizeUnwrap(bool refuse) public {
         refuseFinalizeUnwrap = refuse;

@@ -7,13 +7,12 @@ import { ethers, fhevm } from 'hardhat';
 
 const name = 'name';
 const symbol = 'symbol';
-const uri = 'uri';
 const decimals = 6;
 
 describe('ERC7984Hooked', function () {
   beforeEach(async function () {
     const [admin, holder, recipient, anyone] = await ethers.getSigners();
-    const token = (await ethers.deployContract('$ERC7984HookedMock', [name, symbol, uri, admin])).connect(
+    const token = (await ethers.deployContract('$ERC7984HookedMock', [name, symbol, admin])).connect(
       anyone,
     ) as $ERC7984Hooked;
     const hookModule = await ethers.deployContract('$ERC7984HookModuleMock');
@@ -191,5 +190,5 @@ describe('ERC7984Hooked', function () {
     });
   });
 
-  shouldBehaveLikeERC7984(name, symbol, uri, decimals);
+  shouldBehaveLikeERC7984(name, symbol, decimals);
 });

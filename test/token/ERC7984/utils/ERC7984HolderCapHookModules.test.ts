@@ -6,7 +6,7 @@ describe('ERC7984HolderCapHookModules', function () {
   beforeEach(async function () {
     const [anyone, admin, holder, recipient, ...others] = await ethers.getSigners();
     // The token's `isModuleManager` (mock) gates module configuration to the owner (`admin`).
-    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', 'uri', admin])) as any;
+    const token = (await ethers.deployContract('$ERC7984HookedMock', ['name', 'symbol', admin])) as any;
     const complianceModule = await ethers.deployContract('$ERC7984HolderCapHookModuleMock', [admin]);
 
     await token
