@@ -28,7 +28,7 @@ type ConfidentialToken = BaseContract & {
   symbol: BaseContractMethod<[], string, string>;
 };
 
-type Subject = TransactionResponse | Promise<TransactionResponse>;
+type Transaction = TransactionResponse | Promise<TransactionResponse>;
 
 declare global {
   namespace Chai {
@@ -48,7 +48,11 @@ declare global {
 }
 
 use(function (chai, chaiUtils) {
-  chai.Assertion.addMethod(
+  supportChangeConfidentialBalance(chai.Assertion, chaiUtils);
+});
+
+function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiUtils: Chai.ChaiUtils) {
+  Assertion.addMethod(
     CHANGE_CONFIDENTIAL_BALANCE_MATCHER,
     function (
       this: any,
@@ -58,14 +62,16 @@ use(function (chai, chaiUtils) {
     ) {
       // capture negated flag before async code executes; see buildAssert's jsdoc
       const negated = chaiUtils.flag(this, 'negate');
-      // must run before evaluating a callback subject, otherwise a rejected chain would still send a transaction
+      const object = chaiUtils.flag(this, 'object');
+
+      // checked before invoking a callback subject, so that a rejected assertion doesn't send a transaction
       preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCE_MATCHER, chaiUtils);
 
-      const object = chaiUtils.flag(this, 'object');
-      const subject: Subject = typeof object === 'function' ? object() : object;
-      validateInput(subject, token, CHANGE_CONFIDENTIAL_BALANCE_MATCHER);
+      validateInput(object, token, CHANGE_CONFIDENTIAL_BALANCE_MATCHER);
 
-      const checkBalanceChange = ([[actualChange], address, tokenDescription]: [bigint[], string, string]) => {
+      const subject: Transaction = typeof object === 'function' ? object() : object;
+
+      const checkBalanceChange = ([actualChange, address, tokenDescription]: [bigint, string, string]) => {
         const assert = buildAssert(negated, checkBalanceChange);
 
         if (typeof balanceChange === 'function') {
@@ -84,8 +90,8 @@ use(function (chai, chaiUtils) {
       };
 
       const derivedPromise = Promise.all([
-        getConfidentialBalanceChanges(subject, token, [account]),
-        ethers.resolveAddress(account),
+        getConfidentialBalanceChange(subject, token, account),
+        getAddressOf(account),
         getTokenDescription(token),
       ]).then(checkBalanceChange);
 
@@ -96,7 +102,7 @@ use(function (chai, chaiUtils) {
     },
   );
 
-  chai.Assertion.addMethod(
+  Assertion.addMethod(
     CHANGE_CONFIDENTIAL_BALANCES_MATCHER,
     function (
       this: any,
@@ -106,39 +112,51 @@ use(function (chai, chaiUtils) {
     ) {
       // capture negated flag before async code executes; see buildAssert's jsdoc
       const negated = chaiUtils.flag(this, 'negate');
-      // must run before evaluating a callback subject, otherwise a rejected chain would still send a transaction
+      const object = chaiUtils.flag(this, 'object');
+
+      // checked before invoking a callback subject, so that a rejected assertion doesn't send a transaction
       preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, chaiUtils);
 
-      const object = chaiUtils.flag(this, 'object');
-      const subject: Subject = typeof object === 'function' ? object() : object;
-      validateInput(subject, token, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, accounts, balanceChanges);
+      validateInput(object, token, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, accounts, balanceChanges);
+
+      const subject: Transaction = typeof object === 'function' ? object() : object;
+
+      const balanceChangesPromise = Promise.all(
+        accounts.map(account => getConfidentialBalanceChange(subject, token, account)),
+      );
+      const addressesPromise = Promise.all(accounts.map(getAddressOf));
 
       const checkBalanceChanges = ([actualChanges, addresses, tokenDescription]: [bigint[], string[], string]) => {
         const assert = buildAssert(negated, checkBalanceChanges);
-        const actual = actualChanges.join(', ');
 
         if (typeof balanceChanges === 'function') {
           assert(
             balanceChanges(actualChanges),
-            `Expected the confidential balance changes of ${tokenDescription} to satisfy the predicate, but they didn't (confidential balance changes: ${actual})`,
-            `Expected the confidential balance changes of ${tokenDescription} to NOT satisfy the predicate, but they did (confidential balance changes: ${actual})`,
+            `Expected the confidential balance changes of ${tokenDescription} to satisfy the predicate, but they didn't (confidential balance changes: ${actualChanges.join(
+              ', ',
+            )})`,
+            `Expected the confidential balance changes of ${tokenDescription} to NOT satisfy the predicate, but they did (confidential balance changes: ${actualChanges.join(
+              ', ',
+            )})`,
           );
         } else {
-          const expected = balanceChanges.join(', ');
-          const accountList = addresses.join(', ');
           assert(
             actualChanges.every((change, i) => change === ethers.toBigInt(balanceChanges[i])),
-            `Expected the confidential balances of ${tokenDescription} tokens for ${accountList} to change by ${expected}, respectively, but they changed by ${actual}`,
-            `Expected the confidential balances of ${tokenDescription} tokens for ${accountList} NOT to change by ${expected}, respectively, but they did`,
+            `Expected the confidential balances of ${tokenDescription} tokens for ${addresses.join(
+              ', ',
+            )} to change by ${balanceChanges.join(', ')}, respectively, but they changed by ${actualChanges.join(
+              ', ',
+            )}`,
+            `Expected the confidential balances of ${tokenDescription} tokens for ${addresses.join(
+              ', ',
+            )} NOT to change by ${balanceChanges.join(', ')}, respectively, but they did`,
           );
         }
       };
 
-      const derivedPromise = Promise.all([
-        getConfidentialBalanceChanges(subject, token, accounts),
-        Promise.all(accounts.map(account => ethers.resolveAddress(account))),
-        getTokenDescription(token),
-      ]).then(checkBalanceChanges);
+      const derivedPromise = Promise.all([balanceChangesPromise, addressesPromise, getTokenDescription(token)]).then(
+        checkBalanceChanges,
+      );
 
       this.then = derivedPromise.then.bind(derivedPromise);
       this.catch = derivedPromise.catch.bind(derivedPromise);
@@ -146,21 +164,17 @@ use(function (chai, chaiUtils) {
       return this;
     },
   );
-});
+}
 
 function validateInput(
-  subject: Subject,
+  subject: unknown,
   token: unknown,
   method: string,
   accounts?: (Addressable | string)[],
   balanceChanges?: BigNumberish[] | ((changes: bigint[]) => boolean),
 ) {
   try {
-    if (typeof token !== 'object' || token === null || !('interface' in token)) {
-      throw new Error(`The first argument of ${method} must be the contract instance of the token`);
-    } else if ((token as BaseContract).interface.getFunction('confidentialBalanceOf') === null) {
-      throw new Error('The given contract instance is not an ERC7984 token');
-    }
+    checkToken(token, method);
 
     if (accounts !== undefined && !Array.isArray(accounts)) {
       throw new Error(`The second argument of ${method} must be an array of accounts`);
@@ -178,6 +192,14 @@ function validateInput(
     // potentially be a rejected promise
     Promise.resolve(subject).catch(() => {});
     throw e;
+  }
+}
+
+function checkToken(token: unknown, method: string) {
+  if (typeof token !== 'object' || token === null || !('interface' in token)) {
+    throw new Error(`The first argument of ${method} must be the contract instance of the token`);
+  } else if ((token as BaseContract).interface.getFunction('confidentialBalanceOf') === null) {
+    throw new Error('The given contract instance is not an ERC7984 token');
   }
 }
 
@@ -199,51 +221,68 @@ function preventAsyncMatcherChaining(assertion: any, matcherName: string, chaiUt
   chaiUtils.flag(assertion, PREVIOUS_MATCHER_NAME, matcherName);
 }
 
-async function getConfidentialBalanceChanges(
-  subject: Subject,
+async function getConfidentialBalanceChange(
+  transaction: Transaction,
   token: ConfidentialToken,
-  accounts: (Addressable | string)[],
-): Promise<bigint[]> {
+  account: Addressable | string,
+): Promise<bigint> {
   // `hardhat` can't be imported while the config is being loaded, so it is resolved lazily
   const { fhevm } = await import('hardhat');
 
-  const receipt = await (await subject).wait();
-  if (receipt === null) {
-    throw new Error('Transaction receipt is null');
-  }
+  const txResponse = await transaction;
 
-  const block = await receipt.getBlock();
+  const txReceipt = await txResponse.wait();
+  assertIsNotNull(txReceipt, 'txReceipt');
+  const txBlockNumber = txReceipt.blockNumber;
+
+  const block = await txReceipt.getBlock();
   if (block.transactions.length !== 1) {
     throw new Error('Multiple transactions found in block');
   }
+
+  const address = await getAddressOf(account);
 
   // uninitialized balances have no handle to decrypt
   const decrypt = (handle: string) =>
     handle === ethers.ZeroHash ? 0n : fhevm.debugger.decryptEuint(FhevmType.euint64, handle);
 
-  return Promise.all(
-    accounts.map(async account => {
-      const address = await ethers.resolveAddress(account);
-      const [balanceBefore, balanceAfter] = await Promise.all([
-        token.confidentialBalanceOf(address, { blockTag: receipt.blockNumber - 1 }).then(decrypt),
-        token.confidentialBalanceOf(address, { blockTag: receipt.blockNumber }).then(decrypt),
-      ]);
-      return balanceAfter - balanceBefore;
-    }),
-  );
+  const balanceAfter = await token.confidentialBalanceOf(address, { blockTag: txBlockNumber }).then(decrypt);
+
+  const balanceBefore = await token.confidentialBalanceOf(address, { blockTag: txBlockNumber - 1 }).then(decrypt);
+
+  return balanceAfter - balanceBefore;
 }
 
+async function getAddressOf(account: Addressable | string): Promise<string> {
+  return ethers.resolveAddress(account);
+}
+
+function assertIsNotNull<T>(value: T, valueName: string): asserts value is Exclude<T, null> {
+  if (value === null) {
+    throw new Error(`${valueName} should not be null`);
+  }
+}
+
+const tokenDescriptionsCache: Record<string, string> = {};
 /**
- * Describes the token by its symbol, falling back to its name and then its address.
+ * Get a description for the given token. Use the symbol of the token if
+ * possible; if it doesn't exist, the name is used; if the name doesn't
+ * exist, the address of the token is used.
  */
 async function getTokenDescription(token: ConfidentialToken): Promise<string> {
-  try {
-    return await token.symbol();
-  } catch {
+  const tokenAddress = await token.getAddress();
+  if (tokenDescriptionsCache[tokenAddress] === undefined) {
+    let tokenDescription = `<token at ${tokenAddress}>`;
     try {
-      return await token.name();
+      tokenDescription = await token.symbol();
     } catch {
-      return `<token at ${await token.getAddress()}>`;
+      try {
+        tokenDescription = await token.name();
+      } catch {}
     }
+
+    tokenDescriptionsCache[tokenAddress] = tokenDescription;
   }
+
+  return tokenDescriptionsCache[tokenAddress];
 }

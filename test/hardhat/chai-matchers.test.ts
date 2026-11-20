@@ -119,6 +119,14 @@ describe('Confidential balance matchers', function () {
       );
     });
 
+    it('does not invoke a callback subject when the input is invalid', function () {
+      let calls = 0;
+      expect(() =>
+        expect(() => (calls++, this.transfer(100))).to.changeConfidentialBalance(this.holder, this.holder, -100),
+      ).to.throw('The first argument of changeConfidentialBalance must be the contract instance of the token');
+      expect(calls).to.equal(0);
+    });
+
     it('rejects a reverted transaction instead of reporting no balance change', async function () {
       const tx = this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](ethers.ZeroAddress, 100);
 
@@ -257,6 +265,18 @@ describe('Confidential balance matchers', function () {
       expect(() =>
         expect(this.transfer(100)).to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-100]),
       ).to.throw('The number of accounts (2) is different than the number of expected balance changes (1)');
+    });
+
+    it('does not invoke a callback subject when the input is invalid', function () {
+      let calls = 0;
+      expect(() =>
+        expect(() => (calls++, this.transfer(100))).to.changeConfidentialBalances(
+          this.token,
+          [this.holder, this.recipient],
+          [-100],
+        ),
+      ).to.throw('The number of accounts (2) is different than the number of expected balance changes (1)');
+      expect(calls).to.equal(0);
     });
 
     it('rejects an account list that is not an array', function () {
