@@ -172,6 +172,16 @@ describe('Confidential balance matchers', function () {
       await tx;
     });
 
+    it('does not invoke a callback subject when chaining is rejected', function () {
+      let calls = 0;
+      expect(() =>
+        expect(() => (calls++, this.transfer(100)))
+          .to.changeConfidentialBalance(this.token, this.holder, -100)
+          .and.to.changeConfidentialBalance(this.token, this.recipient, 100),
+      ).to.throw("The matcher 'changeConfidentialBalance' cannot be chained after 'changeConfidentialBalance'");
+      expect(calls).to.equal(1);
+    });
+
     it('prevents other async matchers from being chained after it', async function () {
       const tx = this.transfer(100);
       expect(() =>
@@ -263,6 +273,16 @@ describe('Confidential balance matchers', function () {
           .and.to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-100, 100]),
       ).to.throw("The matcher 'changeConfidentialBalances' cannot be chained after 'emit'");
       await tx;
+    });
+
+    it('does not invoke a callback subject when chaining is rejected', function () {
+      let calls = 0;
+      expect(() =>
+        expect(() => (calls++, this.transfer(100)))
+          .to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-100, 100])
+          .and.to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-100, 100]),
+      ).to.throw("The matcher 'changeConfidentialBalances' cannot be chained after 'changeConfidentialBalances'");
+      expect(calls).to.equal(1);
     });
   });
 });

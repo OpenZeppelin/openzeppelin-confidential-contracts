@@ -58,10 +58,11 @@ use(function (chai, chaiUtils) {
     ) {
       // capture negated flag before async code executes; see buildAssert's jsdoc
       const negated = chaiUtils.flag(this, 'negate');
+      // must run before evaluating a callback subject, otherwise a rejected chain would still send a transaction
+      preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCE_MATCHER, chaiUtils);
+
       const object = chaiUtils.flag(this, 'object');
       const subject: Subject = typeof object === 'function' ? object() : object;
-
-      preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCE_MATCHER, chaiUtils);
       validateInput(subject, token, CHANGE_CONFIDENTIAL_BALANCE_MATCHER);
 
       const checkBalanceChange = ([[actualChange], address, tokenDescription]: [bigint[], string, string]) => {
@@ -105,10 +106,11 @@ use(function (chai, chaiUtils) {
     ) {
       // capture negated flag before async code executes; see buildAssert's jsdoc
       const negated = chaiUtils.flag(this, 'negate');
+      // must run before evaluating a callback subject, otherwise a rejected chain would still send a transaction
+      preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, chaiUtils);
+
       const object = chaiUtils.flag(this, 'object');
       const subject: Subject = typeof object === 'function' ? object() : object;
-
-      preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, chaiUtils);
       validateInput(subject, token, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, accounts, balanceChanges);
 
       const checkBalanceChanges = ([actualChanges, addresses, tokenDescription]: [bigint[], string[], string]) => {
