@@ -219,12 +219,13 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         address from,
         address to,
         euint64 amount,
+        bytes32 memo,
         bool bypassRestrictions
     ) internal virtual override returns (euint64) {
         if (from == address(0)) {
             _checkConfidentialTotalSupply();
         }
-        return super._update(operator, from, to, amount, bypassRestrictions);
+        return super._update(operator, from, to, amount, memo, bypassRestrictions);
     }
 
     /**
@@ -266,6 +267,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
             address(0),
             to,
             FHE.asEuint64(SafeCast.toUint64(amount / rate())),
+            bytes32(0),
             true
         );
         emit Wrap(to, amount - (amount % rate()), wrappedAmountSent);
@@ -290,7 +292,7 @@ abstract contract ERC7984ERC20Wrapper is ERC7984, IERC7984ERC20Wrapper, IERC1363
         require(to != address(0), ERC7984InvalidReceiver(to));
 
         // try to burn, see how much we actually got
-        euint64 unwrapAmount_ = _burn(operator, from, amount);
+        euint64 unwrapAmount_ = _burn(operator, from, amount, bytes32(0));
         FHE.makePubliclyDecryptable(unwrapAmount_);
 
         assert(unwrapRequester(euint64.unwrap(unwrapAmount_)) == address(0));

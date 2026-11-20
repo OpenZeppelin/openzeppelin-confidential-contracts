@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {FHE, ebool, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC7984Receiver} from "../../../interfaces/IERC7984Receiver.sol";
+import {HandleHelper} from "../../../utils/HandleHelper.sol";
 import {ERC7984HookModuleMock} from "./utils/ERC7984HookModuleMock.sol";
 
 contract ERC7984ReceiverMock is IERC7984Receiver, ZamaEthereumConfig {
@@ -28,6 +29,8 @@ contract ERC7984ReceiverMock is IERC7984Receiver, ZamaEthereumConfig {
 }
 
 contract ERC7984ReceiverMutatorMock is IERC7984Receiver, ZamaEthereumConfig {
+    using HandleHelper for euint64;
+
     enum Action {
         BLOCK_SELF,
         FREEZE_SELF,
@@ -47,11 +50,7 @@ contract ERC7984ReceiverMutatorMock is IERC7984Receiver, ZamaEthereumConfig {
         if (action == Action.BLOCK_SELF) {
             IERC7984RestrictedMock(msg.sender).$_blockUser(address(this));
         } else if (action == Action.FREEZE_SELF) {
-            IERC7984FreezableMock(msg.sender).$_setConfidentialFrozen(
-                address(this),
-                externalEuint64.wrap(euint64.unwrap(amount)),
-                hex""
-            );
+            IERC7984FreezableMock(msg.sender).$_setConfidentialFrozen(address(this), amount.toExternal(), hex"");
         } else if (action == Action.SET_MODULE_NONCOMPLIANT) {
             ERC7984HookModuleMock(target).setIsCompliant(false);
         } else {

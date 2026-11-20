@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.26;
 
-import {FHE, externalEuint64, euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
@@ -15,6 +15,7 @@ import {IERC7984ERC20Wrapper} from "./../interfaces/IERC7984ERC20Wrapper.sol";
 import {IERC7984Receiver} from "./../interfaces/IERC7984Receiver.sol";
 import {ERC7984ERC20Wrapper} from "./../token/ERC7984/extensions/ERC7984ERC20Wrapper.sol";
 import {FHESafeMath} from "./../utils/FHESafeMath.sol";
+import {HandleHelper} from "./../utils/HandleHelper.sol";
 
 /**
  * @dev `BatcherConfidential` is a batching primitive that enables routing between two {ERC7984ERC20Wrapper} contracts
@@ -44,6 +45,8 @@ import {FHESafeMath} from "./../utils/FHESafeMath.sol";
  * underlying tokens into {toToken}. Further, if {fromToken} is also filled, cancellation would also fail on rewrap.
  */
 abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Receiver {
+    using HandleHelper for euint64;
+
     /// @dev Enum representing the lifecycle state of a batch.
     enum BatchState {
         Pending, // Batch is active and accepting deposits (batchId == currentBatchId)
@@ -182,7 +185,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _batches[batchId].unwrapRequestId = fromToken().unwrap(
             address(this),
             address(this),
-            externalEuint64.wrap(euint64.unwrap(amountToUnwrap)),
+            amountToUnwrap.toExternal(),
             ""
         );
 
@@ -366,7 +369,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         );
         FHE.allowTransient(amountToSend, address(toToken()));
 
-        euint64 amountTransferred = toToken().confidentialTransfer(account, amountToSend);
+        euint64 amountTransferred = toToken().confidentialTransfer(account, amountToSend.toExternal(), hex"");
 
         ebool transferSuccess = FHE.ne(amountTransferred, FHE.asEuint64(0));
         euint64 newDeposit = FHE.select(transferSuccess, FHE.asEuint64(0), deposit);
@@ -399,7 +402,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         euint64 totalDeposits_ = totalDeposits(batchId);
 
         FHE.allowTransient(deposit, address(fromToken()));
-        euint64 sent = fromToken().confidentialTransfer(recipient, deposit);
+        euint64 sent = fromToken().confidentialTransfer(recipient, deposit.toExternal(), hex"");
         euint64 newTotalDeposits = FHE.sub(totalDeposits_, sent);
         euint64 newDeposit = FHE.sub(deposit, sent);
 

@@ -35,9 +35,10 @@ abstract contract ERC7984VotesMock is ERC7984Mock, ERC7984Votes {
         address from,
         address to,
         euint64 amount,
+        bytes32 memo,
         bool bypassRestrictions
     ) internal virtual override(ERC7984Mock, ERC7984Votes) returns (euint64) {
-        return super._update(operator, from, to, amount, bypassRestrictions);
+        return super._update(operator, from, to, amount, memo, bypassRestrictions);
     }
 
     function _setClockOverride(uint48 val) external {

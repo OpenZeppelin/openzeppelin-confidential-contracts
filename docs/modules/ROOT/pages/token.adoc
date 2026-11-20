@@ -13,10 +13,12 @@ While the standard is built with inspiration from ERC-20, it is not ERC-20 compl
 The token standard exposes eight different transfer functions. They are all permutations of the following options:
 
 * `transfer` and `transferFrom`: `transfer` moves tokens from the sender while `transferFrom` moves tokens from a specified `from` address. See xref:#operator[operator].
-* With and without `inputProof`: An `inputProof` can be provided to prove that the sender knows the value of the ciphertext `amount` provided.
 * With and without an `ERC1363` style callback: The standard implements callbacks, see the xref:#callback[callback] section for more details.
+* With and without a `memo`: A `bytes32` memo can be attached to the transfer and is emitted in the xref:api:interfaces.adoc#IERC7984-ConfidentialTransfer-address-address-euint64-bytes32-[`++ConfidentialTransfer++`] event.
 
-Select the appropriate transfer function and generate a ciphertext using https://github.com/zama-ai/fhevm-js[fhevm-js]. If the ciphertext is a new value, or the sender does not have permission to access the ciphertext, an input-proof must be provided to show that the sender knows the value of the ciphertext.
+All transfer functions take an encrypted amount and an `inputProof`. Select the appropriate transfer function and generate a ciphertext and input proof using https://github.com/zama-ai/fhevm-js[fhevm-js]. The input proof shows that the sender knows the value of the ciphertext.
+
+To transfer an existing ciphertext that the sender already has ACL permission to access, pass its handle with an empty `inputProof` instead. Contracts can convert a `euint64` handle to the expected `externalEuint64` type using xref:api:utils.adoc#HandleHelper-toExternal-euint64-[`++HandleHelper.toExternal++`].
 
 [[operator]]
 === Operator
@@ -44,7 +46,7 @@ Smart contracts that are the target of a callback must implement xref:api:interf
 [[bypass-restrictions]]
 === Bypassing restrictions
 
-All balance changes--transfers, mints, and burns--flow through the internal xref:api:token.adoc#ERC7984-_update-address-address-address-euint64-bool-[`++_update++`] function, which takes a `bypassRestrictions` flag. When this flag is `true`, extensions that override `_update` should skip any transfer restrictions they would normally enforce.
+All balance changes--transfers, mints, and burns--flow through the internal xref:api:token.adoc#ERC7984-_update-address-address-address-euint64-bytes32-bool-[`++_update++`] function, which takes a `bypassRestrictions` flag. When this flag is `true`, extensions that override `_update` should skip any transfer restrictions they would normally enforce.
 
 This flag exists so that trusted, permissioned flows are not silently blocked by an extension. Because a confidential transfer that fails validation moves `0` tokens rather than reverting, a blocked update in one of these flows would be a silent loss of funds. Setting `bypassRestrictions` guarantees the balance change goes through.
 
@@ -118,7 +120,7 @@ function wrap(address to, uint256 amount) public virtual returns (euint64) {
     SafeERC20.safeTransferFrom(IERC20(underlying()), msg.sender, address(this), amount - (amount % rate()));
 
     // mint confidential token (bypassing restrictions, see below)
-    return _update(msg.sender, address(0), to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), true);
+    return _update(msg.sender, address(0), to, FHE.asEuint64(SafeCast.toUint64(amount / rate())), bytes32(0), true);
 }
 ----
 

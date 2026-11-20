@@ -46,15 +46,16 @@ describe('ERC7821WithExecutor', function () {
           encodeBatch({
             target: this.token,
             value: 0n,
-            data: this.token.interface.encodeFunctionData('confidentialTransfer(address,bytes32)', [
+            data: this.token.interface.encodeFunctionData('confidentialTransfer(address,bytes32,bytes)', [
               this.recipient.address,
               balance,
+              '0x',
             ]),
           }),
         ),
       )
         .to.emit(this.token, 'ConfidentialTransfer')
-        .withArgs(this.executorWallet, this.recipient, anyValue);
+        .withArgs(this.executorWallet, this.recipient, anyValue, ethers.ZeroHash);
     });
 
     it('should call if called by itself', async function () {
@@ -73,9 +74,10 @@ describe('ERC7821WithExecutor', function () {
               encodeBatch({
                 target: this.token,
                 value: 0n,
-                data: this.token.interface.encodeFunctionData('confidentialTransfer(address,bytes32)', [
+                data: this.token.interface.encodeFunctionData('confidentialTransfer(address,bytes32,bytes)', [
                   this.recipient.address,
                   balance,
+                  '0x',
                 ]),
               }),
             ]),
@@ -83,7 +85,7 @@ describe('ERC7821WithExecutor', function () {
         ),
       )
         .to.emit(this.token, 'ConfidentialTransfer')
-        .withArgs(this.executorWallet, this.recipient, anyValue);
+        .withArgs(this.executorWallet, this.recipient, anyValue, ethers.ZeroHash);
     });
   });
 
