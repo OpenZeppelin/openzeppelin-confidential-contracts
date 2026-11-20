@@ -443,9 +443,16 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
           [val, false],
           [val, true],
         ])) {
-          const fnName = `confidentialTransfer${usingTransferFrom ? 'From' : ''}${
-            withCallback ? 'AndCall' : ''
-          }WithMemo`;
+          const fnName = `confidentialTransfer${usingTransferFrom ? 'From' : ''}${withCallback ? 'AndCall' : ''}(${[
+            usingTransferFrom && 'address',
+            'address',
+            'bytes32',
+            'bytes',
+            withCallback && 'bytes',
+            'bytes32',
+          ]
+            .filter(Boolean)
+            .join(',')})`;
 
           it(`${fnName} emits the memo`, async function () {
             const sender = usingTransferFrom ? this.operator : this.holder;
@@ -483,7 +490,7 @@ function shouldBehaveLikeERC7984(name: string, symbol: string, uri: string, deci
 
           const tx = await this.token
             .connect(this.holder)
-            .confidentialTransferAndCallWithMemo(
+            ['confidentialTransferAndCall(address,bytes32,bytes,bytes,bytes32)'](
               this.recipientContract.target,
               encryptedInput.handles[0],
               encryptedInput.inputProof,

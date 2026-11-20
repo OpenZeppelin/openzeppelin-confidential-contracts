@@ -117,11 +117,11 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public returns (euint64) {
-        return confidentialTransferWithMemo(to, encryptedAmount, inputProof, bytes32(0));
+        return confidentialTransfer(to, encryptedAmount, inputProof, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
-    function confidentialTransferWithMemo(
+    function confidentialTransfer(
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
@@ -137,11 +137,11 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
     ) public returns (euint64) {
-        return confidentialTransferFromWithMemo(from, to, encryptedAmount, inputProof, bytes32(0));
+        return confidentialTransferFrom(from, to, encryptedAmount, inputProof, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
-    function confidentialTransferFromWithMemo(
+    function confidentialTransferFrom(
         address from,
         address to,
         externalEuint64 encryptedAmount,
@@ -161,11 +161,11 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof,
         bytes calldata data
     ) public returns (euint64) {
-        return confidentialTransferAndCallWithMemo(to, encryptedAmount, inputProof, data, bytes32(0));
+        return confidentialTransferAndCall(to, encryptedAmount, inputProof, data, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
-    function confidentialTransferAndCallWithMemo(
+    function confidentialTransferAndCall(
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
@@ -183,11 +183,11 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         bytes calldata inputProof,
         bytes calldata data
     ) public returns (euint64) {
-        return confidentialTransferFromAndCallWithMemo(from, to, encryptedAmount, inputProof, data, bytes32(0));
+        return confidentialTransferFromAndCall(from, to, encryptedAmount, inputProof, data, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
-    function confidentialTransferFromAndCallWithMemo(
+    function confidentialTransferFromAndCall(
         address from,
         address to,
         externalEuint64 encryptedAmount,
@@ -275,7 +275,7 @@ abstract contract ERC7984 is IERC7984, ERC165 {
      * forwarded to {_update-address-address-address-euint64-bytes32-bool}.
      *
      * NOTE: This function does not check that `operator` is authorized to move funds of `from`. Callers are
-     * responsible for that check (see {confidentialTransferFrom}).
+     * responsible for that check (see {confidentialTransferFrom-address-address-externalEuint64-bytes-bytes32}).
      */
     function _transfer(
         address operator,

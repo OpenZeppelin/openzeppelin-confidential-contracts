@@ -12,7 +12,7 @@ contract ERC7984ReentrantMock is ERC7984Mock {
         string memory tokenURI_
     ) ERC7984Mock(name_, symbol_, tokenURI_) {}
 
-    function confidentialTransferWithMemo(
+    function confidentialTransfer(
         address,
         externalEuint64,
         bytes calldata,
