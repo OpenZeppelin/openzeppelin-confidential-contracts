@@ -176,7 +176,7 @@ function validateInput(
   try {
     checkToken(token, method);
 
-    if (accounts !== undefined && !Array.isArray(accounts)) {
+    if (accounts !== undefined && (!Array.isArray(accounts) || accounts.length === 0)) {
       throw new Error(`The second argument of ${method} must be an array of accounts`);
     }
 
