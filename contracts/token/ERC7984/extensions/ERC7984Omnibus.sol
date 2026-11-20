@@ -4,7 +4,9 @@
 pragma solidity ^0.8.26;
 
 import {FHE, euint64, externalEuint64, externalEaddress, eaddress} from "@fhevm/solidity/lib/FHE.sol";
-import {ERC7984} from "../ERC7984.sol";
+import {Calldata} from "@openzeppelin/contracts/utils/Calldata.sol";
+import {HandleHelper} from "./../../../utils/HandleHelper.sol";
+import {ERC7984} from "./../ERC7984.sol";
 
 /**
  * @dev Extension of {ERC7984} that emits additional events for omnibus transfers.
@@ -14,6 +16,8 @@ import {ERC7984} from "../ERC7984.sol";
  * balances externally.
  */
 abstract contract ERC7984Omnibus is ERC7984 {
+    using HandleHelper for euint64;
+
     /**
      * @dev Emitted when a confidential transfer is made representing the onchain settlement of
      * an omnibus transfer from `sender` to `recipient` of amount `amount`. Settlement occurs between
@@ -175,7 +179,12 @@ abstract contract ERC7984Omnibus is ERC7984 {
         FHE.allow(recipient, omnibusFrom);
         FHE.allow(recipient, omnibusTo);
 
-        euint64 transferred = confidentialTransferFrom(omnibusFrom, omnibusTo, amount);
+        euint64 transferred = confidentialTransferFrom(
+            omnibusFrom,
+            omnibusTo,
+            amount.toExternal(),
+            Calldata.emptyBytes()
+        );
         emit OmnibusConfidentialTransfer(omnibusFrom, omnibusTo, sender, recipient, transferred);
         return transferred;
     }
@@ -197,7 +206,13 @@ abstract contract ERC7984Omnibus is ERC7984 {
         FHE.allow(recipient, omnibusFrom);
         FHE.allow(recipient, omnibusTo);
 
-        euint64 transferred = confidentialTransferFromAndCall(omnibusFrom, omnibusTo, amount, data);
+        euint64 transferred = confidentialTransferFromAndCall(
+            omnibusFrom,
+            omnibusTo,
+            amount.toExternal(),
+            Calldata.emptyBytes(),
+            data
+        );
 
         FHE.allowThis(transferred);
         FHE.allow(transferred, omnibusFrom);

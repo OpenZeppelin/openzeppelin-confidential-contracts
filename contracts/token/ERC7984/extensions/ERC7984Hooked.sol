@@ -117,15 +117,17 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
      * post-transfer hooks.
      */
     function _update(
+        address operator,
         address from,
         address to,
         euint64 encryptedAmount,
+        bytes32 memo,
         bool bypassRestrictions
     ) internal virtual override returns (euint64 transferred) {
         euint64 amountToTransfer = bypassRestrictions
             ? encryptedAmount
             : FHE.select(_runPreTransferHooks(from, to, encryptedAmount), encryptedAmount, FHE.asEuint64(0));
-        transferred = super._update(from, to, amountToTransfer, bypassRestrictions);
+        transferred = super._update(operator, from, to, amountToTransfer, memo, bypassRestrictions);
         _runPostTransferHooks(from, to, transferred);
     }
 

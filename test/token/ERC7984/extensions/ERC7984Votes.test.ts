@@ -186,7 +186,12 @@ describe('ERC7984Votes', function () {
 
       // Burn total balance
       const amountToBurn = await this.token.confidentialBalanceOf(this.holder);
-      await this.token['$_burn(address,bytes32)'](this.holder, amountToBurn);
+      await this.token['$_burn(address,address,bytes32,bytes32)'](
+        this.holder,
+        this.holder,
+        amountToBurn,
+        ethers.ZeroHash,
+      );
       const afterBurnBlock = await ethers.provider.getBlockNumber();
       await mine();
 

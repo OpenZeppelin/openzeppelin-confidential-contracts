@@ -61,15 +61,17 @@ abstract contract ERC7984Freezable is ERC7984 {
      * to avoid unnecessarily granting ACL allowances.
      */
     function _update(
+        address operator,
         address from,
         address to,
         euint64 encryptedAmount,
+        bytes32 memo,
         bool bypassRestrictions
     ) internal virtual override returns (euint64) {
         if (from != address(0) && !bypassRestrictions) {
             euint64 unfrozen = _confidentialAvailable(from);
             encryptedAmount = FHE.select(FHE.le(encryptedAmount, unfrozen), encryptedAmount, FHE.asEuint64(0));
         }
-        return super._update(from, to, encryptedAmount, bypassRestrictions);
+        return super._update(operator, from, to, encryptedAmount, memo, bypassRestrictions);
     }
 }
