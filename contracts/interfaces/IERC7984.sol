@@ -70,7 +70,7 @@ interface IERC7984 is IERC165 {
      * @dev Similar to {confidentialTransfer-address-externalEuint64-bytes} but with a `memo` that is emitted in the
      * {ConfidentialTransfer} event.
      */
-    function confidentialTransferWithMemo(
+    function confidentialTransfer(
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
@@ -94,7 +94,7 @@ interface IERC7984 is IERC165 {
      * @dev Similar to {confidentialTransferFrom-address-address-externalEuint64-bytes} but with a `memo` that is
      * emitted in the {ConfidentialTransfer} event.
      */
-    function confidentialTransferFromWithMemo(
+    function confidentialTransferFrom(
         address from,
         address to,
         externalEuint64 encryptedAmount,
@@ -121,7 +121,7 @@ interface IERC7984 is IERC165 {
      * @dev Similar to {confidentialTransferAndCall-address-externalEuint64-bytes-bytes} but with a `memo` that is
      * emitted in the {ConfidentialTransfer} event.
      */
-    function confidentialTransferAndCallWithMemo(
+    function confidentialTransferAndCall(
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
@@ -145,7 +145,7 @@ interface IERC7984 is IERC165 {
      * @dev Similar to {confidentialTransferFromAndCall-address-address-externalEuint64-bytes-bytes} but with a `memo`
      * that is emitted in the {ConfidentialTransfer} event.
      */
-    function confidentialTransferFromAndCallWithMemo(
+    function confidentialTransferFromAndCall(
         address from,
         address to,
         externalEuint64 encryptedAmount,

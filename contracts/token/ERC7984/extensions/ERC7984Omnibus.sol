@@ -4,6 +4,7 @@
 pragma solidity ^0.8.26;
 
 import {FHE, euint64, externalEuint64, externalEaddress, eaddress} from "@fhevm/solidity/lib/FHE.sol";
+import {Calldata} from "@openzeppelin/contracts/utils/Calldata.sol";
 import {HandleHelper} from "./../../../utils/HandleHelper.sol";
 import {ERC7984} from "./../ERC7984.sol";
 
@@ -124,7 +125,12 @@ abstract contract ERC7984Omnibus is ERC7984 {
         FHE.allow(recipient, omnibusFrom);
         FHE.allow(recipient, omnibusTo);
 
-        euint64 transferred = confidentialTransferFrom(omnibusFrom, omnibusTo, amount.toExternal(), msg.data[0:0]);
+        euint64 transferred = confidentialTransferFrom(
+            omnibusFrom,
+            omnibusTo,
+            amount.toExternal(),
+            Calldata.emptyBytes()
+        );
         emit OmnibusConfidentialTransfer(omnibusFrom, omnibusTo, sender, recipient, transferred);
         return transferred;
     }
@@ -150,7 +156,7 @@ abstract contract ERC7984Omnibus is ERC7984 {
             omnibusFrom,
             omnibusTo,
             amount.toExternal(),
-            msg.data[0:0],
+            Calldata.emptyBytes(),
             data
         );
 

@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.26;
 
-import {FHE, externalEuint64, euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint64, ebool} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
@@ -185,7 +185,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _batches[batchId].unwrapRequestId = fromToken().unwrap(
             address(this),
             address(this),
-            externalEuint64.wrap(euint64.unwrap(amountToUnwrap)),
+            amountToUnwrap.toExternal(),
             ""
         );
 
@@ -283,7 +283,7 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         bytes calldata
     ) external returns (ebool) {
         require(msg.sender == address(fromToken()), Unauthorized());
-        ebool success = FHE.gt(_join(from, amount), FHE.asEuint64(0));
+        (ebool success, ) = _join(from, amount);
         FHE.allowTransient(success, msg.sender);
         return success;
     }
@@ -421,13 +421,14 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
 
     /**
      * @dev Joins a batch with amount `amount` on behalf of `to`. Does not do any transfers in.
-     * Returns the amount joined with.
+     * Returns whether the join succeeded and the amount joined with (`amount` on success, 0 otherwise).
      */
-    function _join(address to, euint64 amount) internal virtual returns (euint64) {
+    function _join(address to, euint64 amount) internal virtual returns (ebool success, euint64 joinedAmount) {
         uint256 batchId = currentBatchId();
 
-        (ebool success, euint64 newTotalDeposits) = FHESafeMath.tryIncrease(totalDeposits(batchId), amount);
-        euint64 joinedAmount = FHE.select(success, amount, FHE.asEuint64(0));
+        euint64 newTotalDeposits;
+        (success, newTotalDeposits) = FHESafeMath.tryIncrease(totalDeposits(batchId), amount);
+        joinedAmount = FHE.select(success, amount, FHE.asEuint64(0));
         euint64 newDeposits = FHE.add(deposits(batchId, to), joinedAmount);
 
         FHE.allowThis(newTotalDeposits);
@@ -440,8 +441,6 @@ abstract contract BatcherConfidential is ReentrancyGuardTransient, IERC7984Recei
         _batches[batchId].deposits[to] = newDeposits;
 
         emit Joined(batchId, to, joinedAmount);
-
-        return joinedAmount;
     }
 
     /**

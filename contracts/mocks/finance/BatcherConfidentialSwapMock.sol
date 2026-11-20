@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
-import {FHE, externalEuint64, euint64} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, externalEuint64, ebool, euint64} from "@fhevm/solidity/lib/FHE.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {BatcherConfidential} from "./../../finance/BatcherConfidential.sol";
@@ -50,7 +50,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
             hex""
         );
 
-        euint64 joinedAmount = _join(msg.sender, transferred);
+        (, euint64 joinedAmount) = _join(msg.sender, transferred);
         euint64 refundAmount = FHE.sub(transferred, joinedAmount);
 
         FHE.allowTransient(refundAmount, address(fromToken()));
@@ -64,11 +64,7 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         euint64 ciphertext = FHE.asEuint64(amount);
         FHE.allowTransient(ciphertext, msg.sender);
 
-        bytes memory callData = abi.encodeWithSignature(
-            "joinEncrypted(bytes32,bytes)",
-            externalEuint64.wrap(euint64.unwrap(ciphertext)),
-            hex""
-        );
+        bytes memory callData = abi.encodeCall(this.joinEncrypted, (ciphertext.toExternal(), hex""));
 
         Address.functionDelegateCall(address(this), callData);
     }
@@ -79,10 +75,9 @@ abstract contract BatcherConfidentialSwapMock is ZamaEthereumConfig, BatcherConf
         return amount;
     }
 
-    function _join(address to, euint64 amount) internal virtual override returns (euint64) {
-        euint64 joinedAmount = super._join(to, amount);
+    function _join(address to, euint64 amount) internal virtual override returns (ebool success, euint64 joinedAmount) {
+        (success, joinedAmount) = super._join(to, amount);
         FHE.allow(totalDeposits(currentBatchId()), admin);
-        return joinedAmount;
     }
 
     function _validateExchangeRate(uint64 exchangeRate_) internal view virtual override returns (bool) {
