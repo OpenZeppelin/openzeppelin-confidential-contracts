@@ -280,16 +280,7 @@ describe('VestingWalletCliffExecutorConfidentialFactory', function () {
     await this.factory.createVestingWalletConfidential(initArgs);
 
     await time.increaseTo(startTimestamp + duration / 2);
-    await vestingWallet.release(this.token);
-
-    await expect(
-      fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.token.confidentialBalanceOf(this.recipient),
-        this.token.target,
-        this.recipient,
-      ),
-    ).to.eventually.eq(50);
+    await expect(vestingWallet.release(this.token)).to.changeConfidentialBalance(this.token, this.recipient, 50);
   });
 });
 

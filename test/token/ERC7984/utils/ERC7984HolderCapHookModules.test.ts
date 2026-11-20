@@ -49,14 +49,9 @@ describe('ERC7984HolderCapHookModules', function () {
 
   describe('_preTransfer', function () {
     it('should allow transfer if new holder count is less than max holder count', async function () {
-      const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
-      const transferEvent = await tx.wait().then((res: any) => {
-        return res.logs.filter((log: any) => log.address == this.token.target)[0];
-      });
-
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.recipient),
-      ).to.eventually.equal(1000);
+        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000),
+      ).to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-1000, 1000]);
     });
 
     it('should not allow transfer if new holder count is greater than max holder count', async function () {
@@ -65,14 +60,9 @@ describe('ERC7984HolderCapHookModules', function () {
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
       await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.others[0], 1000);
 
-      const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.anyone, 1000);
-      const transferEvent = await tx.wait().then((res: any) => {
-        return res.logs.filter((log: any) => log.address == this.token.target)[0];
-      });
-
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.anyone),
-      ).to.eventually.equal(0);
+        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.anyone, 1000),
+      ).to.changeConfidentialBalances(this.token, [this.holder, this.anyone], [0, 0]);
 
       await expect(
         fhevm.userDecryptEuint(
@@ -103,14 +93,11 @@ describe('ERC7984HolderCapHookModules', function () {
     it('should allow burning always', async function () {
       await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 1);
 
-      const tx = await this.token['$_burn(address,uint64)'](this.holder, 1000);
-      const transferEvent = await tx.wait().then((res: any) => {
-        return res.logs.filter((log: any) => log.address == this.token.target)[0];
-      });
-
-      await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.holder),
-      ).to.eventually.equal(1000);
+      await expect(this.token['$_burn(address,uint64)'](this.holder, 1000)).to.changeConfidentialBalance(
+        this.token,
+        this.holder,
+        -1000,
+      );
     });
 
     it('should allow self transfers always', async function () {
@@ -181,14 +168,9 @@ describe('ERC7984HolderCapHookModules', function () {
         fhevm.userDecryptEuint(FhevmType.euint64, beforeHolderCount, this.complianceModule.target, this.admin),
       ).to.eventually.equal(3);
 
-      const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000);
-      const transferEvent = await tx.wait().then((res: any) => {
-        return res.logs.filter((log: any) => log.address == this.token.target)[0];
-      });
-
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.recipient),
-      ).to.eventually.equal(1000);
+        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 1000),
+      ).to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-1000, 1000]);
 
       const afterHolderCount = await this.complianceModule.holderCount(this.token);
       await expect(
@@ -249,13 +231,9 @@ describe('ERC7984HolderCapHookModules', function () {
     it('allows full transfer to new holder when at max holders', async function () {
       await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 1);
 
-      const tx = await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 20000);
-      const transferEvent = await tx.wait().then((res: any) => {
-        return res.logs.filter((log: any) => log.address == this.token.target)[0];
-      });
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.recipient),
-      ).to.eventually.equal(20000);
+        this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 20000),
+      ).to.changeConfidentialBalances(this.token, [this.holder, this.recipient], [-20000, 20000]);
     });
 
     it('blocks full transfer to new holder when above max holders', async function () {
@@ -269,14 +247,9 @@ describe('ERC7984HolderCapHookModules', function () {
 
       await this.complianceModule.connect(this.admin).setMaxHolderCount(this.token, 2);
 
-      const tx = await this.token.connect(this.recipient)['confidentialTransfer(address,uint64)'](this.anyone, 1000);
-      const transferEvent = await tx.wait().then((res: any) => {
-        return res.logs.filter((log: any) => log.address == this.token.target)[0];
-      });
-
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], this.token.target, this.anyone),
-      ).to.eventually.equal(0);
+        this.token.connect(this.recipient)['confidentialTransfer(address,uint64)'](this.anyone, 1000),
+      ).to.changeConfidentialBalances(this.token, [this.recipient, this.anyone], [0, 0]);
 
       const afterHolderCount = await this.complianceModule.holderCount(this.token);
       await expect(

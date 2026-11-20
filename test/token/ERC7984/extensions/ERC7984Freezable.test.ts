@@ -104,21 +104,15 @@ describe('ERC7984Freezable', function () {
       .createEncryptedInput(await this.token.getAddress(), this.recipient.address)
       .add64(900)
       .encrypt();
-    await this.token
-      .connect(this.recipient)
-      ['confidentialTransfer(address,bytes32,bytes)'](
-        this.anyone.address,
-        encryptedInput2.handles[0],
-        encryptedInput2.inputProof,
-      );
     await expect(
-      fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.token.confidentialBalanceOf(this.recipient.address),
-        await this.token.getAddress(),
-        this.recipient,
-      ),
-    ).to.eventually.equal(100);
+      this.token
+        .connect(this.recipient)
+        ['confidentialTransfer(address,bytes32,bytes)'](
+          this.anyone.address,
+          encryptedInput2.handles[0],
+          encryptedInput2.inputProof,
+        ),
+    ).to.changeConfidentialBalance(this.token, this.recipient, -900);
   });
 
   it('should transfer zero if transferring more than available', async function () {
@@ -161,40 +155,22 @@ describe('ERC7984Freezable', function () {
       .then((receipt: any) => receipt!.logs.filter((log: any) => log.address === this.token.target)[0])) as EventLog;
     expect(transferEvent.args[0]).to.equal(this.recipient.address);
     expect(transferEvent.args[1]).to.equal(this.anyone.address);
-    await expect(
-      fhevm.userDecryptEuint(FhevmType.euint64, transferEvent.args[2], await this.token.getAddress(), this.recipient),
-    ).to.eventually.equal(0);
-    // recipient balance is unchanged
-    await expect(
-      fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.token.confidentialBalanceOf(this.recipient.address),
-        await this.token.getAddress(),
-        this.recipient,
-      ),
-    ).to.eventually.equal(1000);
+    await expect(tx).to.changeConfidentialBalances(this.token, [this.recipient, this.anyone], [0, 0]);
   });
 
   it('refund bypasses restrictions applied during callback', async function () {
     const receiver = await ethers.deployContract('ERC7984ReceiverMutatorMock');
     await this.token.connect(this.holder)['$_mint(address,uint64)'](this.holder.address, 1000);
 
-    await this.token
-      .connect(this.holder)
-      ['confidentialTransferAndCall(address,uint64,bytes)'](
-        receiver,
-        400,
-        ethers.AbiCoder.defaultAbiCoder().encode(['uint8', 'address'], [1, ethers.ZeroAddress]),
-      );
-
     await expect(
-      fhevm.userDecryptEuint(
-        FhevmType.euint64,
-        await this.token.confidentialBalanceOf(this.holder.address),
-        await this.token.getAddress(),
-        this.holder,
-      ),
-    ).to.eventually.equal(1000);
+      this.token
+        .connect(this.holder)
+        ['confidentialTransferAndCall(address,uint64,bytes)'](
+          receiver,
+          400,
+          ethers.AbiCoder.defaultAbiCoder().encode(['uint8', 'address'], [1, ethers.ZeroAddress]),
+        ),
+    ).to.changeConfidentialBalance(this.token, this.holder, 0);
   });
   shouldBehaveLikeERC7984(name, symbol, uri, decimals);
 });
