@@ -1,3 +1,4 @@
+import './hardhat/chai-matchers';
 import './hardhat/remappings';
 import '@fhevm/hardhat-plugin';
 import '@nomicfoundation/hardhat-chai-matchers';
