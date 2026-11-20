@@ -114,7 +114,7 @@ abstract contract ERC7984Hooked is ERC7984, HandleAccessManager, IERC7984Hooked 
      *
      * Modified to run pre and post transfer hooks. Zero tokens are transferred if a module does not approve
      * the transfer. Updates with `bypassRestrictions` set to true skip pre-transfer hook gating but still run
-     * post-transfer hooks. Hooks receive `msg.sender` as the operator that initiated the update.
+     * post-transfer hooks. Hooks receive are passed the operator that initiated the update.
      */
     function _update(
         address operator,
