@@ -44,12 +44,13 @@ abstract contract ERC7984ObserverAccess is ERC7984 {
     }
 
     function _update(
+        address operator,
         address from,
         address to,
         euint64 amount,
         bool bypassRestrictions
     ) internal virtual override returns (euint64 transferred) {
-        transferred = super._update(from, to, amount, bypassRestrictions);
+        transferred = super._update(operator, from, to, amount, bypassRestrictions);
 
         address fromObserver = observer(from);
         address toObserver = observer(to);

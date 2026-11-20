@@ -10,11 +10,12 @@ contract ERC7984ObserverAccessMock is ERC7984ObserverAccess, ERC7984Mock {
     constructor(string memory name_, string memory symbol_) ERC7984Mock(name_, symbol_) {}
 
     function _update(
+        address operator,
         address from,
         address to,
         euint64 amount,
         bool bypassRestrictions
     ) internal virtual override(ERC7984ObserverAccess, ERC7984Mock) returns (euint64) {
-        return super._update(from, to, amount, bypassRestrictions);
+        return super._update(operator, from, to, amount, bypassRestrictions);
     }
 }
