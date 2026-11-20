@@ -52,8 +52,8 @@ export const SIGNATURES = {
     'recoverAddress(address,address)',
   ],
   ERC7984HookModule: [
-    'preTransfer(address,address,bytes32)',
-    'postTransfer(address,address,bytes32)',
+    'preTransfer(address,address,address,bytes32)',
+    'postTransfer(address,address,address,bytes32)',
     'onInstall(bytes)',
   ],
   ERC7984Hooked: [
