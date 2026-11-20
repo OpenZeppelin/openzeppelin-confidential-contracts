@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Confidential Contracts (token/ERC7984/extensions/ERC7984ContractURI.sol)
+
 pragma solidity ^0.8.26;
 
 import {ERC7984} from "../ERC7984.sol";
