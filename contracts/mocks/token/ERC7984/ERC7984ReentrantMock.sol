@@ -12,10 +12,11 @@ contract ERC7984ReentrantMock is ERC7984Mock {
         string memory tokenURI_
     ) ERC7984Mock(name_, symbol_, tokenURI_) {}
 
-    function confidentialTransfer(
+    function confidentialTransferWithMemo(
         address,
         externalEuint64,
-        bytes calldata
+        bytes calldata,
+        bytes32
     ) public override returns (euint64 transferred) {
         IVestingWalletConfidential(msg.sender).release(address(this));
         transferred;

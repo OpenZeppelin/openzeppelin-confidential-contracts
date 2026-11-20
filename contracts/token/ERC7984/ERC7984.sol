@@ -116,8 +116,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual returns (euint64) {
-        return _transfer(msg.sender, msg.sender, to, FHE.fromExternal(encryptedAmount, inputProof), bytes32(0));
+    ) public returns (euint64) {
+        return confidentialTransferWithMemo(to, encryptedAmount, inputProof, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
@@ -136,17 +136,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         address to,
         externalEuint64 encryptedAmount,
         bytes calldata inputProof
-    ) public virtual returns (euint64) {
-        require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        euint64 transferred = _transfer(
-            msg.sender,
-            from,
-            to,
-            FHE.fromExternal(encryptedAmount, inputProof),
-            bytes32(0)
-        );
-        FHE.allowTransient(transferred, msg.sender);
-        return transferred;
+    ) public returns (euint64) {
+        return confidentialTransferFromWithMemo(from, to, encryptedAmount, inputProof, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
@@ -169,16 +160,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
-    ) public virtual returns (euint64) {
-        return
-            _transferAndCall(
-                msg.sender,
-                msg.sender,
-                to,
-                FHE.fromExternal(encryptedAmount, inputProof),
-                data,
-                bytes32(0)
-            );
+    ) public returns (euint64) {
+        return confidentialTransferAndCallWithMemo(to, encryptedAmount, inputProof, data, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
@@ -199,9 +182,8 @@ abstract contract ERC7984 is IERC7984, ERC165 {
         externalEuint64 encryptedAmount,
         bytes calldata inputProof,
         bytes calldata data
-    ) public virtual returns (euint64) {
-        require(isOperator(from, msg.sender), ERC7984UnauthorizedSpender(from, msg.sender));
-        return _transferAndCall(msg.sender, from, to, FHE.fromExternal(encryptedAmount, inputProof), data, bytes32(0));
+    ) public returns (euint64) {
+        return confidentialTransferFromAndCallWithMemo(from, to, encryptedAmount, inputProof, data, bytes32(0));
     }
 
     /// @inheritdoc IERC7984
