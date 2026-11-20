@@ -8,15 +8,18 @@ import {HandleAccessManager} from "../../../../utils/HandleAccessManager.sol";
 import {ERC7984Mock} from "../ERC7984Mock.sol";
 
 contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, HandleAccessManager {
+    event ConfidentialAvailableAccessed(euint64 available);
+
     constructor(string memory name, string memory symbol, string memory tokenUri) ERC7984Mock(name, symbol, tokenUri) {}
 
     function _update(
+        address operator,
         address from,
         address to,
         euint64 amount,
         bool bypassRestrictions
     ) internal virtual override(ERC7984Mock, ERC7984Freezable) returns (euint64) {
-        return super._update(from, to, amount, bypassRestrictions);
+        return super._update(operator, from, to, amount, bypassRestrictions);
     }
 
     // solhint-disable-next-line func-name-mixedcase
@@ -28,10 +31,12 @@ contract ERC7984FreezableMock is ERC7984Mock, ERC7984Freezable, HandleAccessMana
         _setConfidentialFrozen(account, FHE.fromExternal(encryptedAmount, inputProof));
     }
 
-    function confidentialAvailableAccess(address account) public {
+    function confidentialAvailableAccess(address account) public returns (euint64) {
         euint64 available = _confidentialAvailable(account);
         FHE.allowThis(available);
         getHandleAllowance(euint64.unwrap(available), account, true);
+        emit ConfidentialAvailableAccessed(available);
+        return available;
     }
 
     function _validateHandleAllowance(bytes32) internal pure override returns (bool) {

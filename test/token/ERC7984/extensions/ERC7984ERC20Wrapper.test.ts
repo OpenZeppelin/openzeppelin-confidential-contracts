@@ -1,4 +1,5 @@
 import { ERC7984ERC20WrapperMock } from '../../../../types';
+import { allowHandle } from '../../../helpers/acl';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
@@ -380,6 +381,15 @@ describe('ERC7984ERC20Wrapper', function () {
         .withArgs(this.holder, this.operator);
     });
 
+    it('via an unapproved operator without an input proof', async function () {
+      const balanceHandle = await this.wrapper.confidentialBalanceOf(this.holder);
+      await allowHandle(this.holder, this.operator, balanceHandle);
+
+      await expect(this.wrapper.connect(this.operator).unwrap(this.holder, this.holder, balanceHandle))
+        .to.be.revertedWithCustomError(this.wrapper, 'ERC7984UnauthorizedSpender')
+        .withArgs(this.holder, this.operator);
+    });
+
     it('with a value not allowed to sender', async function () {
       const totalSupplyHandle = await this.wrapper.confidentialTotalSupply();
 
@@ -428,10 +438,43 @@ describe('ERC7984ERC20Wrapper', function () {
     it('returns unwrap amount', async function () {
       await this.wrapper
         .connect(this.holder)
-        .$_unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
+        .$_unwrap(
+          this.holder,
+          this.holder,
+          this.holder,
+          await this.wrapper.confidentialBalanceOf(this.holder.address),
+          `0x${'00'.repeat(12)}`,
+        );
 
       const [unwrapAmount] = (await this.wrapper.queryFilter(this.wrapper.filters.return$_unwrap()))[0].args;
       await expect(this.wrapper.unwrapRequester(unwrapAmount)).to.eventually.eq(this.holder);
+    });
+
+    describe('metadata', function () {
+      it('can be associated with an unwrap request', async function () {
+        const metadata = ethers.hexlify(ethers.randomBytes(12));
+        await this.wrapper
+          .connect(this.holder)
+          .$_unwrap(
+            this.holder,
+            this.holder,
+            this.holder,
+            await this.wrapper.confidentialBalanceOf(this.holder.address),
+            metadata,
+          );
+
+        const [unwrapRequestId] = (await this.wrapper.queryFilter(this.wrapper.filters.return$_unwrap()))[0].args;
+        await expect(this.wrapper.$_unwrapRequestMetadata(unwrapRequestId)).to.eventually.equal(metadata);
+      });
+
+      it('is 0 by default', async function () {
+        await this.wrapper
+          .connect(this.holder)
+          .unwrap(this.holder, this.holder, await this.wrapper.confidentialBalanceOf(this.holder.address));
+
+        const [, unwrapRequestId] = (await this.wrapper.queryFilter(this.wrapper.filters.UnwrapRequested()))[0].args;
+        await expect(this.wrapper.$_unwrapRequestMetadata(unwrapRequestId)).to.eventually.equal(`0x${'00'.repeat(12)}`);
+      });
     });
   });
 

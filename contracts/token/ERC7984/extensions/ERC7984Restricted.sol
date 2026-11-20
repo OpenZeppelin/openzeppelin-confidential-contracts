@@ -54,6 +54,7 @@ abstract contract ERC7984Restricted is ERC7984 {
      * Updates with `bypassRestrictions` set to true skip the sender and recipient restriction checks.
      */
     function _update(
+        address operator,
         address from,
         address to,
         euint64 value,
@@ -63,7 +64,7 @@ abstract contract ERC7984Restricted is ERC7984 {
             _checkSenderRestriction(from);
             _checkRecipientRestriction(to);
         }
-        return super._update(from, to, value, bypassRestrictions);
+        return super._update(operator, from, to, value, bypassRestrictions);
     }
 
     /// @dev Updates the restriction of a user account.
