@@ -1,25 +1,53 @@
-import { ethers, ContractTransactionResponse, EventLog, ContractTransactionReceipt, Contract, Log } from 'ethers';
+import { ContractTransactionResponse, EventLog, Contract } from 'ethers';
 
-export async function callAndGetResult(txPromise: Promise<ContractTransactionResponse>, eventName: string) {
+/**
+ * Returns the args of all `eventName` events emitted by the called contract, in emission order. `eventName` can be
+ * either the event name or its full signature.
+ */
+export async function callAndGetResults(txPromise: Promise<ContractTransactionResponse>, eventName: string) {
   const receipt = (await txPromise.then(tx => tx.wait()))!;
-  return ((await getResult(receipt, receipt.to!, eventName)) as EventLog).args;
+  return receipt.logs
+    .filter(
+      (log): log is EventLog =>
+        log instanceof EventLog &&
+        log.address == receipt.to &&
+        log.topics[0] == log.interface.getEvent(eventName)?.topicHash,
+    )
+    .map(log => log.args);
 }
 
-export async function callAndGetResultFromEmitter(
+/**
+ * Returns the args of the first `eventName` event emitted by the called contract. `eventName` can be either the
+ * event name or its full signature.
+ */
+export function callAndGetResult(txPromise: Promise<ContractTransactionResponse>, eventName: string) {
+  return callAndGetResults(txPromise, eventName).then(([first]) => first);
+}
+
+/**
+ * Returns the args of all `eventName` events emitted by `emitter`, in emission order. `eventName` can be either the
+ * event name or its full signature.
+ */
+export async function callAndGetResultsFromEmitter(
   txPromise: Promise<ContractTransactionResponse>,
   emitter: Contract,
   eventName: string,
 ) {
-  const receipt = await txPromise.then(tx => tx.wait());
-  const log = await getResult(receipt!, emitter.target as string, eventName);
-  return emitter.interface.parseLog(log)!.args;
+  const receipt = (await txPromise.then(tx => tx.wait()))!;
+  const { topicHash } = emitter.interface.getEvent(eventName)!;
+  return receipt.logs
+    .filter(log => log.address == emitter.target && log.topics[0] == topicHash)
+    .map(log => emitter.interface.parseLog(log)!.args);
 }
 
-async function getResult(
-  receipt: ContractTransactionReceipt,
-  emitter: string,
+/**
+ * Returns the args of the first `eventName` event emitted by `emitter`. `eventName` can be either the event name or
+ * its full signature.
+ */
+export function callAndGetResultFromEmitter(
+  txPromise: Promise<ContractTransactionResponse>,
+  emitter: Contract,
   eventName: string,
-): Promise<Log | EventLog> {
-  const logs = receipt?.logs.filter(log => log.address == emitter && log.topics[0] == ethers.id(eventName));
-  return logs![0];
+) {
+  return callAndGetResultsFromEmitter(txPromise, emitter, eventName).then(([first]) => first);
 }
