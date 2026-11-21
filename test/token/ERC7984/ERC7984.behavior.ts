@@ -3,10 +3,16 @@ import { MAX_UINT48 } from '../../helpers/constants';
 import { callAndGetResult, callAndGetResults } from '../../helpers/event';
 import { INTERFACE_IDS, INVALID_ID } from '../../helpers/interface';
 import { product } from '../../helpers/iterate';
+import { generators as random } from '../../helpers/random';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
 import { ethers, fhevm } from 'hardhat';
+
+const amountToMint = 1000n;
+
+const encryptedAmount = (contract: any, user: any, amount: any) =>
+  fhevm.createEncryptedInput(contract.target, user.address).add64(amount).encrypt();
 
 // Shared behavior for ERC7984 tokens. Callers must deploy `this.token`. Holder (account[0]) must not be
 // minted more than 1000 tokens.
@@ -17,21 +23,8 @@ export function shouldBehaveLikeERC7984(name: string, symbol: string, uri: strin
       [this.holder, this.recipient, this.operator, this.anyone] = accounts;
 
       // standardize holder initial balance to 1000
-      let amountToMint = 1000;
-      if (!!opts.holderInitialBalance) {
-        if (opts.holderInitialBalance > 1000) {
-          throw new Error('Holder initial balance cannot be greater than 1000');
-        }
-        amountToMint -= opts.holderInitialBalance;
-      }
-      const encryptedInput = await fhevm
-        .createEncryptedInput(this.token.target, this.holder.address)
-        .add64(amountToMint)
-        .encrypt();
-
-      await this.token
-        .connect(this.holder)
-        ['$_mint(address,bytes32,bytes)'](this.holder, encryptedInput.handles[0], encryptedInput.inputProof);
+      expect(opts.holderInitialBalance ?? 0n).to.be.at.most(amountToMint);
+      await this.token.$_mint(this.holder, amountToMint - BigInt(opts.holderInitialBalance ?? 0));
 
       // User decryption requires both the user and the token to be persistently allowed on the handle
       this.acl = await getAcl();
@@ -116,13 +109,10 @@ export function shouldBehaveLikeERC7984(name: string, symbol: string, uri: strin
     });
 
     describe('transfer', function () {
-      const encryptedAmount = (contract: any, user: any, amount: any) =>
-        fhevm.createEncryptedInput(contract.target, user.address).add64(amount).encrypt();
-
       for (const [operator, callback, memo] of product(
         [undefined, 'self', 'operator'], // operator. this[self] is undefined so sender falls back to from in {callTransfer}
         [undefined, '0x'], // callback
-        [undefined, ethers.ZeroHash, ethers.id('memo')], // memo
+        [undefined, random.bytes32()], // memo
       )) {
         const fnName = ['confidentialTransfer', operator && 'From', callback && 'AndCall'].filter(Boolean).join('');
 
@@ -146,11 +136,12 @@ export function shouldBehaveLikeERC7984(name: string, symbol: string, uri: strin
             ].filter(Boolean),
           );
 
-        describe(`${fnName} - operator: ${operator}, callback: ${callback}, memo: ${memo}`, function () {
+        describe(`${fnName} - called by ${
+          operator == 'operator' ? 'operator' : 'sender'
+        }, callback: ${!!callback}, memo: ${!!memo}`, function () {
           beforeEach(async function () {
             if (operator === 'operator') {
-              const timestamp = (await ethers.provider.getBlock('latest'))!.timestamp + 100;
-              await this.token.connect(this.holder).setOperator(this.operator, timestamp);
+              await this.token.connect(this.holder).setOperator(this.operator, MAX_UINT48);
             }
           });
 
