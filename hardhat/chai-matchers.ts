@@ -33,12 +33,12 @@ type Transaction = TransactionResponse | Promise<TransactionResponse>;
 declare global {
   namespace Chai {
     interface Assertion {
-      changeConfidentialBalance(
+      [CHANGE_CONFIDENTIAL_BALANCE_MATCHER](
         token: BaseContract,
         account: Addressable | string,
         balanceChange: BigNumberish | ((change: bigint) => boolean),
       ): AsyncAssertion;
-      changeConfidentialBalances(
+      [CHANGE_CONFIDENTIAL_BALANCES_MATCHER](
         token: BaseContract,
         accounts: (Addressable | string)[],
         balanceChanges: BigNumberish[] | ((changes: bigint[]) => boolean),
@@ -47,11 +47,7 @@ declare global {
   }
 }
 
-use(function (chai, chaiUtils) {
-  supportChangeConfidentialBalance(chai.Assertion, chaiUtils);
-});
-
-function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiUtils: Chai.ChaiUtils) {
+use(function ({ Assertion }, chaiUtils) {
   Assertion.addMethod(
     CHANGE_CONFIDENTIAL_BALANCE_MATCHER,
     function (
@@ -164,7 +160,7 @@ function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiU
       return this;
     },
   );
-}
+});
 
 function validateInput(subject: unknown, token: unknown) {
   try {
