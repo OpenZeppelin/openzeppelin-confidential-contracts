@@ -67,7 +67,7 @@ function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiU
       // checked before invoking a callback subject, so that a rejected assertion doesn't send a transaction
       preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCE_MATCHER, chaiUtils);
 
-      validateInput(object, token, CHANGE_CONFIDENTIAL_BALANCE_MATCHER);
+      validateInput(object, token);
 
       const subject: Transaction = typeof object === 'function' ? object() : object;
 
@@ -117,7 +117,7 @@ function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiU
       // checked before invoking a callback subject, so that a rejected assertion doesn't send a transaction
       preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, chaiUtils);
 
-      validateInput(object, token, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, accounts, balanceChanges);
+      validateInputs(object, token, accounts, balanceChanges);
 
       const subject: Transaction = typeof object === 'function' ? object() : object;
 
@@ -166,27 +166,34 @@ function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiU
   );
 }
 
-function validateInput(
+function validateInput(subject: unknown, token: unknown) {
+  discardSubjectOnError(subject, () => checkToken(token, CHANGE_CONFIDENTIAL_BALANCE_MATCHER));
+}
+
+function validateInputs(
   subject: unknown,
   token: unknown,
-  method: string,
-  accounts?: (Addressable | string)[],
-  balanceChanges?: BigNumberish[] | ((changes: bigint[]) => boolean),
+  accounts: (Addressable | string)[],
+  balanceChanges: BigNumberish[] | ((changes: bigint[]) => boolean),
 ) {
-  try {
-    checkToken(token, method);
+  discardSubjectOnError(subject, () => {
+    checkToken(token, CHANGE_CONFIDENTIAL_BALANCES_MATCHER);
 
-    if (accounts !== undefined && (!Array.isArray(accounts) || accounts.length === 0)) {
-      throw new Error(`The second argument of ${method} must be an array of accounts`);
+    if (!Array.isArray(accounts) || accounts.length === 0) {
+      throw new Error(`The second argument of ${CHANGE_CONFIDENTIAL_BALANCES_MATCHER} must be an array of accounts`);
     }
 
-    if (Array.isArray(balanceChanges) && accounts!.length !== balanceChanges.length) {
+    if (Array.isArray(balanceChanges) && accounts.length !== balanceChanges.length) {
       throw new Error(
-        `The number of accounts (${accounts!.length}) is different than the number of expected balance changes (${
-          balanceChanges.length
-        })`,
+        `The number of accounts (${accounts.length}) is different than the number of expected balance changes (${balanceChanges.length})`,
       );
     }
+  });
+}
+
+function discardSubjectOnError(subject: unknown, check: () => void) {
+  try {
+    check();
   } catch (e) {
     // if the input validation fails, we discard the subject since it could
     // potentially be a rejected promise
