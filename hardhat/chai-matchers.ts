@@ -167,7 +167,14 @@ function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiU
 }
 
 function validateInput(subject: unknown, token: unknown) {
-  discardSubjectOnError(subject, () => checkToken(token, CHANGE_CONFIDENTIAL_BALANCE_MATCHER));
+  try {
+    checkToken(token, CHANGE_CONFIDENTIAL_BALANCE_MATCHER);
+  } catch (e) {
+    // if the input validation fails, we discard the subject since it could
+    // potentially be a rejected promise
+    Promise.resolve(subject).catch(() => {});
+    throw e;
+  }
 }
 
 function validateInputs(
@@ -176,7 +183,7 @@ function validateInputs(
   accounts: (Addressable | string)[],
   balanceChanges: BigNumberish[] | ((changes: bigint[]) => boolean),
 ) {
-  discardSubjectOnError(subject, () => {
+  try {
     checkToken(token, CHANGE_CONFIDENTIAL_BALANCES_MATCHER);
 
     if (!Array.isArray(accounts) || accounts.length === 0) {
@@ -188,12 +195,6 @@ function validateInputs(
         `The number of accounts (${accounts.length}) is different than the number of expected balance changes (${balanceChanges.length})`,
       );
     }
-  });
-}
-
-function discardSubjectOnError(subject: unknown, check: () => void) {
-  try {
-    check();
   } catch (e) {
     // if the input validation fails, we discard the subject since it could
     // potentially be a rejected promise
