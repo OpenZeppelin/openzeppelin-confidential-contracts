@@ -1,10 +1,13 @@
-import { ContractTransactionResponse, EventLog, Contract } from 'ethers';
+import { ContractTransactionResponse, EventLog, Contract, Result } from 'ethers';
 
 /**
  * Returns the args of all `eventName` events emitted by the called contract, in emission order. `eventName` can be
  * either the event name or its full signature.
  */
-export async function callAndGetResults(txPromise: Promise<ContractTransactionResponse>, eventName: string) {
+export async function callAndGetResults(
+  txPromise: Promise<ContractTransactionResponse>,
+  eventName: string,
+): Promise<Result[]> {
   const receipt = (await txPromise.then(tx => tx.wait()))!;
   return receipt.logs
     .filter(
@@ -18,10 +21,10 @@ export async function callAndGetResults(txPromise: Promise<ContractTransactionRe
 
 /**
  * Returns the args of the first `eventName` event emitted by the called contract. `eventName` can be either the
- * event name or its full signature.
+ * event name or its full signature. Throws if no such event was emitted.
  */
-export function callAndGetResult(txPromise: Promise<ContractTransactionResponse>, eventName: string) {
-  return callAndGetResults(txPromise, eventName).then(([first]) => first);
+export function callAndGetResult(txPromise: Promise<ContractTransactionResponse>, eventName: string): Promise<Result> {
+  return callAndGetResults(txPromise, eventName).then(results => firstResult(results, eventName));
 }
 
 /**
@@ -32,7 +35,7 @@ export async function callAndGetResultsFromEmitter(
   txPromise: Promise<ContractTransactionResponse>,
   emitter: Contract,
   eventName: string,
-) {
+): Promise<Result[]> {
   const receipt = (await txPromise.then(tx => tx.wait()))!;
   const { topicHash } = emitter.interface.getEvent(eventName)!;
   return receipt.logs
@@ -42,12 +45,17 @@ export async function callAndGetResultsFromEmitter(
 
 /**
  * Returns the args of the first `eventName` event emitted by `emitter`. `eventName` can be either the event name or
- * its full signature.
+ * its full signature. Throws if no such event was emitted.
  */
 export function callAndGetResultFromEmitter(
   txPromise: Promise<ContractTransactionResponse>,
   emitter: Contract,
   eventName: string,
-) {
-  return callAndGetResultsFromEmitter(txPromise, emitter, eventName).then(([first]) => first);
+): Promise<Result> {
+  return callAndGetResultsFromEmitter(txPromise, emitter, eventName).then(results => firstResult(results, eventName));
+}
+
+function firstResult(results: Result[], eventName: string): Result {
+  if (results.length == 0) throw new Error(`No ${eventName} event emitted`);
+  return results[0];
 }

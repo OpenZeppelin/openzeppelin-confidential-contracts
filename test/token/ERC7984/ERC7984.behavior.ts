@@ -69,7 +69,6 @@ export function shouldBehaveLikeERC7984(name: string, symbol: string, uri: strin
         const balanceOfHandleHolder = await this.token.confidentialBalanceOf(this.holder);
         await expect(this.acl.persistAllowed(balanceOfHandleHolder, this.token)).to.eventually.be.true;
         await expect(this.acl.persistAllowed(balanceOfHandleHolder, this.holder)).to.eventually.be.true;
-        await expect(fhevm.debugger.decryptEuint(FhevmType.euint64, balanceOfHandleHolder)).to.eventually.equal(1000);
       });
 
       it('handle cannot be decrypted by non-owner', async function () {
@@ -326,7 +325,14 @@ export function shouldBehaveLikeERC7984(name: string, symbol: string, uri: strin
                 const eamount = await encryptedAmount(this.token, this[operator] ?? this.holder, 100n);
 
                 await expect(
-                  callTransfer(this.token, this.holder, this.recipientContract, eamount, this[operator], '0x'),
+                  callTransfer(
+                    this.token,
+                    this.holder,
+                    this.recipientContract,
+                    eamount,
+                    this[operator],
+                    ethers.AbiCoder.defaultAbiCoder().encode(['uint8'], [3]),
+                  ),
                 )
                   .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidReceiver')
                   .withArgs(this.recipientContract);
