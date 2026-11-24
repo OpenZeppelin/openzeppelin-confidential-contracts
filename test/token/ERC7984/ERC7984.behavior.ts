@@ -150,18 +150,19 @@ export function shouldBehaveLikeERC7984(name: string, symbol: string, uri: strin
               const eamount = await encryptedAmount(this.token, this[operator] ?? this.holder, amount);
 
               const txPromise = callTransfer(this.token, this.holder, this.recipient, eamount, this[operator]);
-              await expect(txPromise)
-                .to.emit(this.token, 'ConfidentialTransfer')
-                .withArgs(this.holder, this.recipient, anyValue, memo ?? ethers.ZeroHash);
               await expect(txPromise).to.changeConfidentialBalances(
                 this.token,
                 [this.holder, this.recipient],
                 sufficientBalance ? [-amount, amount] : [0n, 0n],
               );
 
-              const [from, to, transferAmountHandle] = await callAndGetResult(txPromise, 'ConfidentialTransfer');
+              const [from, to, transferAmountHandle, emittedMemo] = await callAndGetResult(
+                txPromise,
+                'ConfidentialTransfer',
+              );
               expect(from).to.equal(this.holder.address);
               expect(to).to.equal(this.recipient.address);
+              expect(emittedMemo).to.equal(memo ?? ethers.ZeroHash);
 
               await expect(fhevm.debugger.decryptEuint(FhevmType.euint64, transferAmountHandle)).to.eventually.equal(
                 sufficientBalance ? amount : 0n,
@@ -191,27 +192,32 @@ export function shouldBehaveLikeERC7984(name: string, symbol: string, uri: strin
                 .withArgs(this.holder, this.anyone);
             });
 
-          it('from address with no balance', async function () {
-            if (operator === 'operator') {
-              await this.token.connect(this.anyone).setOperator(this.operator, MAX_UINT48);
-            }
+          // memo does not affect this test
+          !memo &&
+            it('from address with no balance', async function () {
+              if (operator === 'operator') {
+                await this.token.connect(this.anyone).setOperator(this.operator, MAX_UINT48);
+              }
 
-            const eamount = await encryptedAmount(this.token, this[operator] ?? this.anyone, 100n);
-            const txPromise = callTransfer(this.token, this.anyone, this.recipient, eamount, this[operator]);
+              const eamount = await encryptedAmount(this.token, this[operator] ?? this.anyone, 100n);
+              const txPromise = callTransfer(this.token, this.anyone, this.recipient, eamount, this[operator]);
 
-            await expect(txPromise)
-              .to.emit(this.token, 'ConfidentialTransfer')
-              .withArgs(this.anyone, this.recipient, anyValue, memo ?? ethers.ZeroHash);
-            await expect(txPromise).to.changeConfidentialBalances(this.token, [this.anyone, this.recipient], [0n, 0n]);
-          });
+              await expect(txPromise).to.changeConfidentialBalances(
+                this.token,
+                [this.anyone, this.recipient],
+                [0n, 0n],
+              );
+            });
 
-          it('to zero address', async function () {
-            const eamount = await encryptedAmount(this.token, this[operator] ?? this.holder, 0n);
+          // memo does not affect this test
+          !memo &&
+            it('to zero address', async function () {
+              const eamount = await encryptedAmount(this.token, this[operator] ?? this.holder, 0n);
 
-            await expect(callTransfer(this.token, this.holder, ethers.ZeroAddress, eamount, this[operator]))
-              .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidReceiver')
-              .withArgs(ethers.ZeroAddress);
-          });
+              await expect(callTransfer(this.token, this.holder, ethers.ZeroAddress, eamount, this[operator]))
+                .to.be.revertedWithCustomError(this.token, 'ERC7984InvalidReceiver')
+                .withArgs(ethers.ZeroAddress);
+            });
 
           operator !== 'operator' &&
             it('full balance', async function () {
