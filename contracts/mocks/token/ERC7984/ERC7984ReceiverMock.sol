@@ -16,7 +16,8 @@ contract ERC7984ReceiverMock is IERC7984Receiver, ZamaEthereumConfig {
     function onConfidentialTransferReceived(address, address, euint64, bytes calldata data) external returns (ebool) {
         uint8 input = abi.decode(data, (uint8));
 
-        if (input > 1) revert InvalidInput(input);
+        if (input == 2) revert InvalidInput(input);
+        if (input == 3) revert();
 
         bool success = input == 1;
         emit ConfidentialTransferCallback(success);
