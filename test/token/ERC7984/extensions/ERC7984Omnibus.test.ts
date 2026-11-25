@@ -1,5 +1,6 @@
 import { $ERC7984OmnibusMock } from '../../../../types/contracts-exposed/mocks/token/ERC7984/extensions/ERC7984OmnibusMock.sol/$ERC7984OmnibusMock';
 import { getAcl } from '../../../helpers/acl';
+import { callAndGetResultFromEmitter } from '../../../helpers/event';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
 import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
@@ -77,9 +78,8 @@ describe('ERC7984Omnibus', function () {
                 if (transferFrom) {
                   args.unshift(this.holder.address);
                 }
-                if (withProof) {
-                  args.push(encryptedInputWithProof?.inputProof);
-                }
+                // An empty input proof makes the token use the handles as existing handles the caller must be allowed to use.
+                args.push(withProof ? encryptedInputWithProof?.inputProof : '0x');
                 if (withCallback) {
                   args.push('0x');
                 }
@@ -88,7 +88,6 @@ describe('ERC7984Omnibus', function () {
                   this.token.connect(caller),
                   transferFrom,
                   withCallback,
-                  withProof,
                   args,
                 );
 
@@ -163,9 +162,8 @@ describe('ERC7984Omnibus', function () {
                 if (transferFrom) {
                   args.unshift(this.holder.address);
                 }
-                if (withProof) {
-                  args.push(encryptedInputWithProof?.inputProof);
-                }
+                // An empty input proof makes the token use the handles as existing handles the caller must be allowed to use.
+                args.push(withProof ? encryptedInputWithProof?.inputProof : '0x');
                 if (withCallback) {
                   args.push('0x');
                 }
@@ -174,7 +172,6 @@ describe('ERC7984Omnibus', function () {
                   this.token.connect(caller),
                   transferFrom,
                   withCallback,
-                  withProof,
                   args,
                 );
                 const omnibusConfidentialTransferEvent = (await tx.wait()).logs.filter(
@@ -203,31 +200,57 @@ describe('ERC7984Omnibus', function () {
     });
   }
 
+  describe('omnibus transfer from a contract with existing handles', function () {
+    beforeEach(async function () {
+      this.forwarder = await ethers.deployContract('ERC7984OmnibusForwarderMock');
+      await this.token['$_mint(address,uint64)'](this.forwarder.target, 1000);
+    });
+
+    it('normal transfer', async function () {
+      const tx = this.forwarder.forward(
+        this.token.target,
+        this.recipient.address,
+        this.holder.address,
+        this.subaccount.address,
+        100,
+      );
+
+      const omnibusConfidentialTransferEventArgs = await callAndGetResultFromEmitter(
+        tx,
+        this.token,
+        'OmnibusConfidentialTransfer(address,address,bytes32,bytes32,bytes32)',
+      );
+      expect(omnibusConfidentialTransferEventArgs[0]).to.equal(this.forwarder.target);
+      expect(omnibusConfidentialTransferEventArgs[1]).to.equal(this.recipient.address);
+
+      await expect(
+        fhevm.userDecryptEaddress(omnibusConfidentialTransferEventArgs[2], this.token.target, this.recipient),
+      ).to.eventually.equal(this.holder.address);
+      await expect(
+        fhevm.userDecryptEaddress(omnibusConfidentialTransferEventArgs[3], this.token.target, this.recipient),
+      ).to.eventually.equal(this.subaccount.address);
+      await expect(
+        fhevm.userDecryptEuint(
+          FhevmType.euint64,
+          omnibusConfidentialTransferEventArgs[4],
+          this.token.target,
+          this.recipient,
+        ),
+      ).to.eventually.equal(100);
+    });
+  });
+
   shouldBehaveLikeERC7984(name, symbol, uri, decimals, { holderInitialBalance: 1000 });
 });
 
-const doConfidentialTransferOmnibus = (
-  token: any,
-  transferFrom: boolean,
-  withCallback: boolean,
-  withProof: boolean,
-  args: any[],
-): any => {
+const doConfidentialTransferOmnibus = (token: any, transferFrom: boolean, withCallback: boolean, args: any[]): any => {
   const functionSignature = transferFrom
     ? withCallback
-      ? withProof
-        ? 'confidentialTransferFromAndCallOmnibus(address,address,bytes32,bytes32,bytes32,bytes,bytes)'
-        : 'confidentialTransferFromAndCallOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
-      : withProof
-      ? 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
-      : 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32)'
+      ? 'confidentialTransferFromAndCallOmnibus(address,address,bytes32,bytes32,bytes32,bytes,bytes)'
+      : 'confidentialTransferFromOmnibus(address,address,bytes32,bytes32,bytes32,bytes)'
     : withCallback
-    ? withProof
-      ? 'confidentialTransferAndCallOmnibus(address,bytes32,bytes32,bytes32,bytes,bytes)'
-      : 'confidentialTransferAndCallOmnibus(address,bytes32,bytes32,bytes32,bytes)'
-    : withProof
-    ? 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32,bytes)'
-    : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32)';
+    ? 'confidentialTransferAndCallOmnibus(address,bytes32,bytes32,bytes32,bytes,bytes)'
+    : 'confidentialTransferOmnibus(address,bytes32,bytes32,bytes32,bytes)';
 
   return token[functionSignature](...args);
 };
