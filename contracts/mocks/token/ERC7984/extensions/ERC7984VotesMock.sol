@@ -6,7 +6,7 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ERC7984, ERC7984Votes} from "../../../../token/ERC7984/extensions/ERC7984Votes.sol";
 import {ERC7984Mock} from "../ERC7984Mock.sol";
 
-abstract contract ERC7984VotesMock is ERC7984Mock, ERC7984Votes {
+contract ERC7984VotesMock is ERC7984Mock, ERC7984Votes {
     address private immutable _OWNER;
 
     uint48 private _clockOverrideVal;
