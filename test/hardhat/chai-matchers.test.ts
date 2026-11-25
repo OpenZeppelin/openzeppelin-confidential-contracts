@@ -285,6 +285,22 @@ describe('Confidential balance matchers', function () {
       ).to.throw('The second argument of changeConfidentialBalances must be an array of accounts');
     });
 
+    for (const balanceChanges of [[-100, 100], () => true]) {
+      it(`rejects an undefined account list without invoking a callback subject (${
+        typeof balanceChanges === 'function' ? 'predicate' : 'array'
+      } of balance changes)`, function () {
+        let calls = 0;
+        expect(() =>
+          expect(() => (calls++, this.transfer(100))).to.changeConfidentialBalances(
+            this.token,
+            undefined as any,
+            balanceChanges as any,
+          ),
+        ).to.throw('The second argument of changeConfidentialBalances must be an array of accounts');
+        expect(calls).to.equal(0);
+      });
+    }
+
     it('cannot be chained after another async matcher', async function () {
       const tx = this.transfer(100);
       expect(() =>

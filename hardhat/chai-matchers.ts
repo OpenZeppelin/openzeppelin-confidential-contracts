@@ -33,12 +33,12 @@ type Transaction = TransactionResponse | Promise<TransactionResponse>;
 declare global {
   namespace Chai {
     interface Assertion {
-      changeConfidentialBalance(
+      [CHANGE_CONFIDENTIAL_BALANCE_MATCHER](
         token: BaseContract,
         account: Addressable | string,
         balanceChange: BigNumberish | ((change: bigint) => boolean),
       ): AsyncAssertion;
-      changeConfidentialBalances(
+      [CHANGE_CONFIDENTIAL_BALANCES_MATCHER](
         token: BaseContract,
         accounts: (Addressable | string)[],
         balanceChanges: BigNumberish[] | ((changes: bigint[]) => boolean),
@@ -47,11 +47,7 @@ declare global {
   }
 }
 
-use(function (chai, chaiUtils) {
-  supportChangeConfidentialBalance(chai.Assertion, chaiUtils);
-});
-
-function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiUtils: Chai.ChaiUtils) {
+use(function ({ Assertion }, chaiUtils) {
   Assertion.addMethod(
     CHANGE_CONFIDENTIAL_BALANCE_MATCHER,
     function (
@@ -67,7 +63,7 @@ function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiU
       // checked before invoking a callback subject, so that a rejected assertion doesn't send a transaction
       preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCE_MATCHER, chaiUtils);
 
-      validateInput(object, token, CHANGE_CONFIDENTIAL_BALANCE_MATCHER);
+      validateInput(object, token);
 
       const subject: Transaction = typeof object === 'function' ? object() : object;
 
@@ -117,7 +113,7 @@ function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiU
       // checked before invoking a callback subject, so that a rejected assertion doesn't send a transaction
       preventAsyncMatcherChaining(this, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, chaiUtils);
 
-      validateInput(object, token, CHANGE_CONFIDENTIAL_BALANCES_MATCHER, accounts, balanceChanges);
+      validateInputs(object, token, accounts, balanceChanges);
 
       const subject: Transaction = typeof object === 'function' ? object() : object;
 
@@ -164,27 +160,35 @@ function supportChangeConfidentialBalance(Assertion: Chai.AssertionStatic, chaiU
       return this;
     },
   );
+});
+
+function validateInput(subject: unknown, token: unknown) {
+  try {
+    checkToken(token, CHANGE_CONFIDENTIAL_BALANCE_MATCHER);
+  } catch (e) {
+    // if the input validation fails, we discard the subject since it could
+    // potentially be a rejected promise
+    Promise.resolve(subject).catch(() => {});
+    throw e;
+  }
 }
 
-function validateInput(
+function validateInputs(
   subject: unknown,
   token: unknown,
-  method: string,
-  accounts?: (Addressable | string)[],
-  balanceChanges?: BigNumberish[] | ((changes: bigint[]) => boolean),
+  accounts: (Addressable | string)[],
+  balanceChanges: BigNumberish[] | ((changes: bigint[]) => boolean),
 ) {
   try {
-    checkToken(token, method);
+    checkToken(token, CHANGE_CONFIDENTIAL_BALANCES_MATCHER);
 
-    if (accounts !== undefined && (!Array.isArray(accounts) || accounts.length === 0)) {
-      throw new Error(`The second argument of ${method} must be an array of accounts`);
+    if (!Array.isArray(accounts) || accounts.length === 0) {
+      throw new Error(`The second argument of ${CHANGE_CONFIDENTIAL_BALANCES_MATCHER} must be an array of accounts`);
     }
 
-    if (Array.isArray(balanceChanges) && accounts!.length !== balanceChanges.length) {
+    if (Array.isArray(balanceChanges) && accounts.length !== balanceChanges.length) {
       throw new Error(
-        `The number of accounts (${accounts!.length}) is different than the number of expected balance changes (${
-          balanceChanges.length
-        })`,
+        `The number of accounts (${accounts.length}) is different than the number of expected balance changes (${balanceChanges.length})`,
       );
     }
   } catch (e) {
