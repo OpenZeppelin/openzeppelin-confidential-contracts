@@ -1,9 +1,8 @@
 import { $ERC7984Hooked } from '../../../../types/contracts-exposed/token/ERC7984/extensions/ERC7984Hooked.sol/$ERC7984Hooked';
 import { INTERFACE_IDS, INVALID_ID } from '../../../helpers/interface';
 import { shouldBehaveLikeERC7984 } from '../ERC7984.behavior';
-import { FhevmType } from '@fhevm/hardhat-plugin';
 import { expect } from 'chai';
-import { ethers, fhevm } from 'hardhat';
+import { ethers } from 'hardhat';
 
 const name = 'name';
 const symbol = 'symbol';
@@ -153,30 +152,24 @@ describe('ERC7984Hooked', function () {
     for (const approve of [true, false]) {
       it(`should react correctly to module ${approve ? 'approval' : 'denial'}`, async function () {
         await this.hookModule.setIsCompliant(approve);
-        await this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n);
-
-        const recipientBalance = await this.token.confidentialBalanceOf(this.recipient);
         await expect(
-          fhevm.userDecryptEuint(FhevmType.euint64, recipientBalance, this.token.target, this.recipient),
-        ).to.eventually.equal(approve ? 100 : 0);
+          this.token.connect(this.holder)['confidentialTransfer(address,uint64)'](this.recipient, 100n),
+        ).to.changeConfidentialBalance(this.token, this.recipient, approve ? 100 : 0);
       });
     }
 
     it('refund bypasses pre-transfer hooks disabled during callback', async function () {
       const receiver = await ethers.deployContract('ERC7984ReceiverMutatorMock');
 
-      await this.token
-        .connect(this.holder)
-        ['confidentialTransferAndCall(address,uint64,bytes)'](
-          receiver,
-          4000,
-          ethers.AbiCoder.defaultAbiCoder().encode(['uint8', 'address'], [2, this.hookModule.target]),
-        );
-
-      const holderBalance = await this.token.confidentialBalanceOf(this.holder);
       await expect(
-        fhevm.userDecryptEuint(FhevmType.euint64, holderBalance, this.token.target, this.holder),
-      ).to.eventually.equal(1000);
+        this.token
+          .connect(this.holder)
+          ['confidentialTransferAndCall(address,uint64,bytes)'](
+            receiver,
+            4000,
+            ethers.AbiCoder.defaultAbiCoder().encode(['uint8', 'address'], [2, this.hookModule.target]),
+          ),
+      ).to.changeConfidentialBalance(this.token, this.holder, 0);
     });
   });
 
